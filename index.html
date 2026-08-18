@@ -60,11 +60,12 @@
   }
   h1{
     font-family:'Fraunces',Georgia,serif;
-    font-size:2.3rem;
+    font-size:2.2rem;
     font-weight:700;
-    font-style:italic;
-    margin-bottom:2px;
-    letter-spacing:-0.01em;
+    font-style:normal;
+    margin-bottom:6px;
+    letter-spacing:-0.02em;
+    line-height:1.15;
     color:var(--ink);
   }
   .title{
@@ -200,9 +201,10 @@
     </div>
 
     <div class="card hidden" id="editCard">
-      <label>Profile Photo URL</label>
-      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Paste a link to an image hosted online (e.g. from Google Drive "share" link, Imgur, or your school website). Direct file upload isn't supported here since this is a simple hosted page.</div>
-      <input type="text" id="photoUrlInput" placeholder="https://example.com/your-photo.jpg">
+      <label>Profile Photo</label>
+      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Choose an image from your device. It will be resized automatically to keep things fast.</div>
+      <input type="file" id="photoFileInput" accept="image/*" onchange="handlePhotoSelect(event)">
+      <div id="photoPreviewWrap" style="margin-bottom:14px;"></div>
 
       <label>Bio</label>
       <textarea id="bioInput" placeholder="Write a few sentences about yourself..."></textarea>
@@ -278,17 +280,23 @@ async function loadProfile(){
       ? pubLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')
       : "<li>No publications added yet.</li>";
 
-    // profile photo
-    const photoUrl = profile.photoUrl || "";
+    // profile photo (stored as base64 image data, uploaded from device)
+    const photoData = profile.photoData || "";
     const picImg = document.getElementById('profilePic');
     const picPlaceholder = document.getElementById('profilePicPlaceholder');
-    if(photoUrl){
-      picImg.src = photoUrl;
+    if(photoData){
+      picImg.src = photoData;
       picImg.style.display = 'block';
       picPlaceholder.style.display = 'none';
     } else {
       picImg.style.display = 'none';
       picPlaceholder.style.display = 'flex';
+    }
+    const previewWrap = document.getElementById('photoPreviewWrap');
+    if(previewWrap){
+      previewWrap.innerHTML = photoData
+        ? `<img src="${photoData}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);">`
+        : '';
     }
 
     // social links, format: "Label, URL" per line
@@ -305,8 +313,10 @@ async function loadProfile(){
       socialContainer.innerHTML = '';
     }
 
+    // store current photo data so save doesn't lose it if the user didn't pick a new file
+    window.currentPhotoData = photoData;
+
     // pre-fill edit fields too
-    document.getElementById('photoUrlInput').value = profile.photoUrl || "";
     document.getElementById('bioInput').value = profile.bio || "";
     document.getElementById('contactInput').value = profile.contact || "";
     document.getElementById('socialInput').value = profile.social || "";
@@ -314,6 +324,32 @@ async function loadProfile(){
   }catch(e){
     document.getElementById('bioDisplay').textContent = "Could not load profile info.";
   }
+}
+
+function handlePhotoSelect(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      // Resize to max 400px on the longest side, compress to JPEG
+      const maxSize = 400;
+      let w = img.width, h = img.height;
+      if(w > h && w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
+      else if(h > maxSize){ w = Math.round(w * (maxSize / h)); h = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      window.currentPhotoData = dataUrl;
+      document.getElementById('photoPreviewWrap').innerHTML =
+        `<img src="${dataUrl}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);">`;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function checkPasscode(){
@@ -328,7 +364,7 @@ function checkPasscode(){
 }
 
 async function saveProfile(){
-  const photoUrl = document.getElementById('photoUrlInput').value.trim();
+  const photoData = window.currentPhotoData || "";
   const bio = document.getElementById('bioInput').value.trim();
   const contact = document.getElementById('contactInput').value.trim();
   const social = document.getElementById('socialInput').value.trim();
@@ -341,7 +377,7 @@ async function saveProfile(){
 
   try{
     const bin = await fetchBin();
-    bin.profile = { photoUrl, bio, contact, social, publications };
+    bin.profile = { photoData, bio, contact, social, publications };
     await saveBin(bin);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
     loadProfile();

@@ -4,108 +4,109 @@
 <meta charset="UTF-8">
 <title>Assessment Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blueprint:#0d3a5c;
-    --blueprint-line:#2f6a94;
-    --blueprint-line-soft:rgba(120,180,220,0.16);
-    --paper:#eef3f6;
-    --card:#0f4267;
-    --ink:#eaf2f8;
-    --muted:#9cc2dc;
-    --accent:#ff6b35;
-    --accent-dark:#e5501c;
-    --line:#1c5580;
-    --danger:#ff8a7a;
-    --ok:#7fe0b5;
+    --paper:#f4ecd8;
+    --paper-line:rgba(120,60,50,0.10);
+    --margin-red:#b3432b;
+    --card:#fffdf7;
+    --ink:#2b2420;
+    --muted:#7a6f60;
+    --accent:#b3432b;
+    --accent-dark:#8c331f;
+    --copper:#a8763e;
+    --line:#dcd0b4;
+    --danger:#a8332a;
+    --ok:#3f6b4a;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background-color:var(--blueprint);
+    background-color:var(--paper);
     background-image:
-      linear-gradient(var(--blueprint-line-soft) 1px, transparent 1px),
-      linear-gradient(90deg, var(--blueprint-line-soft) 1px, transparent 1px);
-    background-size:28px 28px;
+      repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px);
     color:var(--ink);
-    padding:24px;
+    padding:24px 24px 24px 56px;
     min-height:100vh;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; top:0; left:38px; width:2px; height:100%;
+    background:var(--margin-red);
+    opacity:0.35;
   }
   .wrap{max-width:720px;margin:0 auto;position:relative;}
   .stamp{
     position:absolute; top:-6px; right:0;
-    border:2px solid var(--accent);
-    color:var(--accent);
+    border:2px solid var(--copper);
+    color:var(--copper);
     font-family:'Space Mono',monospace;
-    font-size:0.65rem;
+    font-size:0.62rem;
     letter-spacing:0.12em;
     padding:5px 10px;
-    border-radius:4px;
-    transform:rotate(4deg);
+    border-radius:2px;
+    transform:rotate(-3deg);
     text-transform:uppercase;
-    opacity:0.85;
+    opacity:0.75;
   }
   h1{
-    font-family:'Space Mono',monospace;
-    font-size:1.5rem;
+    font-family:'Fraunces',Georgia,serif;
+    font-size:1.9rem;
     font-weight:700;
+    font-style:italic;
     margin-bottom:4px;
     letter-spacing:-0.01em;
-    color:#fff;
+    color:var(--ink);
   }
-  h1::before{
-    content:"// ";
-    color:var(--accent);
-  }
-  p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.92rem;}
-  .tabs{display:flex;gap:2px;margin-bottom:20px;border:1px solid var(--line);border-radius:10px;padding:3px;background:rgba(0,0,0,0.15);}
+  p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.9rem;}
+  .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--line);}
   .tab{
-    flex:1;padding:10px 14px;text-align:center;border-radius:7px;
-    background:transparent;border:none;cursor:pointer;
-    font-weight:600;color:var(--muted);font-size:0.9rem;
-    letter-spacing:0.02em;
-    transition:background 0.15s, color 0.15s;
+    padding:9px 18px;text-align:center;border-radius:0;
+    background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;
+    font-weight:600;color:var(--muted);font-size:0.88rem;
+    letter-spacing:0.02em;font-family:'Space Mono',monospace;
   }
-  .tab.active{background:var(--accent);color:#1a1a1a;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
   .card{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:10px;
-    padding:22px;
+    border-radius:2px;
+    padding:24px;
     margin-bottom:16px;
-    box-shadow:0 4px 18px rgba(0,0,0,0.25);
+    box-shadow:3px 3px 0 rgba(43,36,32,0.06);
   }
-  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Space Mono',monospace;}
   input[type=text], input[type=password], textarea, select{
-    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
     font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;
-    background:rgba(0,0,0,0.2);color:var(--ink);
+    background:#fffef9;color:var(--ink);
   }
-  input::placeholder, textarea::placeholder{color:rgba(156,194,220,0.45);}
+  input::placeholder, textarea::placeholder{color:rgba(122,111,96,0.5);}
   input:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
   textarea{min-height:140px;resize:vertical;font-size:0.85rem;}
   button{
-    background:var(--accent);color:#1a1a1a;border:none;padding:11px 20px;
-    border-radius:6px;font-weight:700;cursor:pointer;font-size:0.9rem;
-    letter-spacing:0.02em;text-transform:uppercase;
+    background:var(--accent);color:#fffef9;border:none;padding:11px 22px;
+    border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;
+    letter-spacing:0.03em;text-transform:uppercase;font-family:'Space Mono',monospace;
     transition:background 0.15s, transform 0.1s;
   }
-  button:hover{background:var(--accent-dark);color:#fff;}
+  button:hover{background:var(--accent-dark);}
   button:active{transform:translateY(1px);}
   button.secondary{background:transparent;color:var(--danger);border:1px solid var(--danger);}
-  button.secondary:hover{background:var(--danger);color:#1a1a1a;}
+  button.secondary:hover{background:var(--danger);color:#fffef9;}
   button:disabled{opacity:0.5;cursor:not-allowed;}
   .hidden{display:none;}
-  .msg{padding:10px 12px;border-radius:6px;margin-bottom:14px;font-size:0.88rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
-  .msg.ok{background:rgba(127,224,181,0.12);color:var(--ok);border-left-color:var(--ok);}
-  .msg.err{background:rgba(255,138,122,0.12);color:var(--danger);border-left-color:var(--danger);}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
   table{width:100%;border-collapse:collapse;margin-top:10px;}
   th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;font-family:'Space Mono',monospace;}
-  th{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.06em;}
-  .result-name{font-family:'Space Mono',monospace;font-size:1.15rem;font-weight:700;margin-bottom:10px;color:#fff;}
+  th{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.06em;}
+  .result-name{font-family:'Fraunces',serif;font-style:italic;font-size:1.2rem;font-weight:700;margin-bottom:10px;color:var(--ink);}
   .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Space Mono',monospace;}
   .hint{font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;}
 </style>
@@ -113,6 +114,7 @@
 </head>
 <body>
 <div class="wrap">
+  <a href="index.html" style="position:absolute;top:-6px;left:0;font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:4px;">&larr; Home</a>
   <div class="stamp">Verified</div>
   <h1>Assessment Portal</h1>
   <p style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent);margin-top:0;margin-bottom:6px;letter-spacing:0.03em;">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>

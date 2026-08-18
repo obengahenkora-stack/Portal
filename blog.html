@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Engineering Notes — Blog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4ecd8;
+    --paper-line:rgba(120,60,50,0.10);
+    --margin-red:#b3432b;
+    --card:#fffdf7;
+    --ink:#2b2420;
+    --muted:#7a6f60;
+    --accent:#b3432b;
+    --accent-dark:#8c331f;
+    --copper:#a8763e;
+    --line:#dcd0b4;
+    --danger:#a8332a;
+    --ok:#3f6b4a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background-color:var(--paper);
+    background-image:repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px);
+    color:var(--ink);
+    padding:24px 24px 24px 56px;
+    min-height:100vh;
+    position:relative;
+  }
+  body::before{
+    content:"";
+    position:fixed; top:0; left:38px; width:2px; height:100%;
+    background:var(--margin-red);
+    opacity:0.35;
+  }
+  .wrap{max-width:720px;margin:0 auto;position:relative;}
+  .home-link{position:absolute;top:-6px;left:0;font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:3px;}
+  h1{font-family:'Fraunces',Georgia,serif;font-size:2rem;font-weight:700;font-style:italic;margin-bottom:4px;color:var(--ink);}
+  p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.9rem;}
+  .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--line);}
+  .tab{padding:9px 18px;text-align:center;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Space Mono',monospace;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:24px;margin-bottom:18px;box-shadow:3px 3px 0 rgba(43,36,32,0.06);}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Space Mono',monospace;}
+  input[type=text], input[type=password], textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
+    font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;background:#fffef9;color:var(--ink);
+  }
+  textarea{min-height:220px;resize:vertical;font-family:'Inter',sans-serif;font-size:0.95rem;line-height:1.6;}
+  input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Space Mono',monospace;}
+  button:hover{background:var(--accent-dark);}
+  button.secondary{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+  button.secondary:hover{background:var(--danger);color:#fffef9;}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .hidden{display:none;}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
+  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Space Mono',monospace;}
+
+  .post-title{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;margin:0 0 4px 0;color:var(--ink);}
+  .post-date{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
+  .post-body{line-height:1.7;font-size:0.98rem;white-space:pre-wrap;color:var(--ink);}
+  .post-actions{margin-top:16px;display:flex;gap:8px;}
+  .post-actions button{padding:6px 14px;font-size:0.72rem;}
+  .back-to-list{font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
+  .post-preview{cursor:pointer;}
+  .post-preview .post-body{max-height:70px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 40%,transparent 100%);mask-image:linear-gradient(180deg,#000 40%,transparent 100%);}
+  .read-more{font-family:'Space Mono',monospace;font-size:0.78rem;color:var(--accent);margin-top:8px;display:inline-block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="home-link">&larr; Home</a>
+  <h1>Engineering Notes</h1>
+  <p class="sub">Short articles and explainers to help students understand key engineering concepts.</p>
+
+  <div class="tabs">
+    <div class="tab active" id="tabPosts" onclick="switchTab('posts')">Posts</div>
+  </div>
+
+  <!-- POSTS LIST -->
+  <div id="postsView">
+    <div id="postsList"><div class="empty">Loading posts...</div></div>
+  </div>
+
+  <!-- SINGLE POST -->
+  <div id="singlePostView" class="hidden">
+    <span class="back-to-list" onclick="showPostsList()">&larr; Back to all posts</span>
+    <div class="card" id="singlePostContent"></div>
+  </div>
+
+  <div style="text-align:center;margin-top:8px;">
+    <button onclick="switchTab('write')" id="writeToggleBtn" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Write a Post</button>
+  </div>
+
+  <!-- WRITE / ADMIN VIEW -->
+  <div id="writeView" class="hidden" style="margin-top:20px;">
+    <span class="back-to-list" onclick="switchTab('posts')">&larr; Back to posts</span>
+
+    <div class="card" id="loginCard">
+      <label>Passcode</label>
+      <input type="password" id="passcodeInput" placeholder="Enter passcode">
+      <button onclick="checkPasscode()">Unlock</button>
+      <div id="loginMsg"></div>
+    </div>
+
+    <div class="card hidden" id="composeCard">
+      <label>Post Title</label>
+      <input type="text" id="postTitleInput" placeholder="e.g. Understanding Load Distribution in Beams">
+      <label>Content</label>
+      <textarea id="postBodyInput" placeholder="Write your post here..."></textarea>
+      <button id="publishBtn" onclick="publishPost()">Publish Post</button>
+      <div id="publishMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageCard">
+      <label>Your Posts (manage / delete)</label>
+      <div id="manageList"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== JSONBin.io configuration (shared with portal + homepage) =====
+const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
+const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+// =======================================================================
+
+const PASSCODE = "teacher123"; // same passcode used across the site; change if you'd like a different one here
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function fetchBin(){
+  const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
+  if(!res.ok) throw new Error("Could not reach storage");
+  const data = await res.json();
+  return data.record || {};
+}
+
+async function saveBin(binData){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
+    body: JSON.stringify(binData)
+  });
+  if(!res.ok) throw new Error("Could not save to storage");
+  return res.json();
+}
+
+function formatDate(iso){
+  try{
+    return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  }catch(e){ return ''; }
+}
+
+function switchTab(tab){
+  document.getElementById('postsView').classList.toggle('hidden', tab!=='posts');
+  document.getElementById('singlePostView').classList.add('hidden');
+  document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
+  document.getElementById('tabPosts').classList.toggle('active', tab==='posts');
+  if(tab === 'write') loadManageList();
+}
+
+async function loadPosts(){
+  const container = document.getElementById('postsList');
+  container.innerHTML = '<div class="empty">Loading posts...</div>';
+  try{
+    const bin = await fetchBin();
+    const posts = (bin.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(posts.length === 0){
+      container.innerHTML = '<div class="empty">No posts yet. Check back soon.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(p => `
+      <div class="card post-preview" onclick="showPost('${p.id}')">
+        <div class="post-title">${escapeHtml(p.title)}</div>
+        <div class="post-date">${formatDate(p.date)}</div>
+        <div class="post-body">${escapeHtml(p.body)}</div>
+        <div class="read-more">Read more &rarr;</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load posts.</div>';
+  }
+}
+
+async function showPost(id){
+  try{
+    const bin = await fetchBin();
+    const posts = bin.blogPosts || [];
+    const post = posts.find(p => p.id === id);
+    if(!post) return;
+    document.getElementById('postsView').classList.add('hidden');
+    document.getElementById('singlePostView').classList.remove('hidden');
+    document.getElementById('singlePostContent').innerHTML = `
+      <div class="post-title">${escapeHtml(post.title)}</div>
+      <div class="post-date">${formatDate(post.date)}</div>
+      <div class="post-body">${escapeHtml(post.body)}</div>
+    `;
+    window.scrollTo(0,0);
+  }catch(e){}
+}
+
+function showPostsList(){
+  document.getElementById('singlePostView').classList.add('hidden');
+  document.getElementById('postsView').classList.remove('hidden');
+}
+
+function checkPasscode(){
+  const val = document.getElementById('passcodeInput').value;
+  const msg = document.getElementById('loginMsg');
+  if(val === PASSCODE){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('composeCard').classList.remove('hidden');
+    document.getElementById('manageCard').classList.remove('hidden');
+    loadManageList();
+  } else {
+    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+  }
+}
+
+async function publishPost(){
+  const title = document.getElementById('postTitleInput').value.trim();
+  const body = document.getElementById('postBodyInput').value.trim();
+  const msg = document.getElementById('publishMsg');
+  const btn = document.getElementById('publishBtn');
+
+  if(!title || !body){
+    msg.innerHTML = '<div class="msg err">Please add both a title and content.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Publishing...</div>';
+
+  try{
+    const bin = await fetchBin();
+    const posts = bin.blogPosts || [];
+    posts.push({
+      id: 'post_' + Date.now(),
+      title, body,
+      date: new Date().toISOString()
+    });
+    bin.blogPosts = posts;
+    await saveBin(bin);
+    msg.innerHTML = '<div class="msg ok">Post published.</div>';
+    document.getElementById('postTitleInput').value = '';
+    document.getElementById('postBodyInput').value = '';
+    loadManageList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not publish: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadManageList(){
+  const container = document.getElementById('manageList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const bin = await fetchBin();
+    const posts = (bin.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(posts.length === 0){
+      container.innerHTML = '<div class="empty">No posts yet.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:0.95rem;">${escapeHtml(p.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatDate(p.date)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deletePost('${p.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load posts.</div>';
+  }
+}
+
+async function deletePost(id){
+  if(!confirm('Delete this post? This cannot be undone.')) return;
+  try{
+    const bin = await fetchBin();
+    bin.blogPosts = (bin.blogPosts || []).filter(p => p.id !== id);
+    await saveBin(bin);
+    loadManageList();
+  }catch(e){
+    alert('Could not delete post.');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', loadPosts);
+</script>
+</body>
+</html>

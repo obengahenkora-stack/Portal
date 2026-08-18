@@ -4,96 +4,164 @@
 <meta charset="UTF-8">
 <title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blueprint:#0d3a5c;
-    --blueprint-line:#2f6a94;
-    --blueprint-line-soft:rgba(120,180,220,0.16);
-    --card:#0f4267;
-    --ink:#eaf2f8;
-    --muted:#9cc2dc;
-    --accent:#ff6b35;
-    --accent-dark:#e5501c;
-    --line:#1c5580;
-    --danger:#ff8a7a;
-    --ok:#7fe0b5;
+    --paper:#f4ecd8;
+    --paper-line:rgba(120,60,50,0.10);
+    --margin-red:#b3432b;
+    --card:#fffdf7;
+    --ink:#2b2420;
+    --muted:#7a6f60;
+    --accent:#b3432b;
+    --accent-dark:#8c331f;
+    --copper:#a8763e;
+    --line:#dcd0b4;
+    --danger:#a8332a;
+    --ok:#3f6b4a;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background-color:var(--blueprint);
+    background-color:var(--paper);
     background-image:
-      linear-gradient(var(--blueprint-line-soft) 1px, transparent 1px),
-      linear-gradient(90deg, var(--blueprint-line-soft) 1px, transparent 1px);
-    background-size:28px 28px;
+      repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px);
     color:var(--ink);
-    padding:24px;
+    padding:24px 24px 24px 56px;
     min-height:100vh;
+    position:relative;
   }
-  .wrap{max-width:760px;margin:0 auto;position:relative;}
+  body::before{
+    content:"";
+    position:fixed; top:0; left:38px; width:2px; height:100%;
+    background:var(--margin-red);
+    opacity:0.35;
+  }
+  .wrap{max-width:720px;margin:0 auto;position:relative;}
   .stamp{
     position:absolute; top:-6px; right:0;
-    border:2px solid var(--accent);
-    color:var(--accent);
+    border:2px solid var(--copper);
+    color:var(--copper);
     font-family:'Space Mono',monospace;
-    font-size:0.65rem;
+    font-size:0.62rem;
     letter-spacing:0.12em;
     padding:5px 10px;
-    border-radius:4px;
-    transform:rotate(4deg);
+    border-radius:2px;
+    transform:rotate(-3deg);
     text-transform:uppercase;
-    opacity:0.85;
+    opacity:0.75;
+    animation:stampIn 0.6s ease-out;
+  }
+  @keyframes stampIn{
+    0%{opacity:0;transform:rotate(-3deg) scale(0.7);}
+    100%{opacity:0.75;transform:rotate(-3deg) scale(1);}
   }
   h1{
-    font-family:'Space Mono',monospace;
-    font-size:1.7rem;
+    font-family:'Fraunces',Georgia,serif;
+    font-size:2.3rem;
     font-weight:700;
-    margin-bottom:4px;
+    font-style:italic;
+    margin-bottom:2px;
     letter-spacing:-0.01em;
-    color:#fff;
+    color:var(--ink);
   }
-  h1::before{ content:"// "; color:var(--accent); }
-  .title{font-family:'Space Mono',monospace;font-size:0.85rem;color:var(--accent);margin-top:0;margin-bottom:24px;letter-spacing:0.03em;}
-  h2{font-family:'Space Mono',monospace;font-size:1rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;margin-top:0;}
-  .tabs{display:flex;gap:2px;margin-bottom:20px;border:1px solid var(--line);border-radius:10px;padding:3px;background:rgba(0,0,0,0.15);}
-  .tab{flex:1;padding:10px 14px;text-align:center;border-radius:7px;background:transparent;border:none;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;letter-spacing:0.02em;}
-  .tab.active{background:var(--accent);color:#1a1a1a;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;margin-bottom:16px;box-shadow:0 4px 18px rgba(0,0,0,0.25);}
-  .card p{line-height:1.6;color:var(--ink);white-space:pre-wrap;}
-  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  .title{
+    font-family:'Space Mono',monospace;
+    font-size:0.78rem;
+    color:var(--accent);
+    margin-top:0;
+    margin-bottom:20px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+  }
+  .profile-pic{
+    width:104px;height:104px;border-radius:6px;
+    border:1px solid var(--ink);
+    box-shadow:5px 5px 0 var(--copper);
+    object-fit:cover;
+    margin-bottom:18px;
+    background:var(--card);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-size:2.2rem;color:var(--muted);
+    transition:transform 0.25s ease;
+  }
+  .profile-pic:hover{ transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--copper); }
+  .social-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;margin-bottom:6px;}
+  .social-links a{
+    font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--accent);
+    text-decoration:none;border-bottom:1px solid var(--accent);padding:2px 1px;
+  }
+  .social-links a:hover{color:var(--accent-dark);border-color:var(--accent-dark);}
+  h2{
+    font-family:'Fraunces',serif;
+    font-size:1.05rem;
+    font-weight:700;
+    color:var(--ink);
+    letter-spacing:0.01em;
+    margin-bottom:12px;margin-top:0;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:6px;
+    display:inline-block;
+  }
+  .tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:0;}
+  .tab{padding:9px 18px;text-align:center;border-radius:0;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Space Mono',monospace;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:26px;
+    margin-bottom:18px;
+    box-shadow:3px 3px 0 rgba(43,36,32,0.06);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    position:relative;
+  }
+  .card:hover{ transform:translate(-1px,-1px); box-shadow:5px 5px 0 rgba(43,36,32,0.1); }
+  .card p{line-height:1.65;color:var(--ink);white-space:pre-wrap;}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Space Mono',monospace;}
   input[type=text], input[type=password], textarea{
-    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
     font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;
-    background:rgba(0,0,0,0.2);color:var(--ink);
+    background:#fffef9;color:var(--ink);
   }
   textarea{min-height:120px;resize:vertical;}
   input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
-  button{background:var(--accent);color:#1a1a1a;border:none;padding:11px 20px;border-radius:6px;font-weight:700;cursor:pointer;font-size:0.9rem;letter-spacing:0.02em;text-transform:uppercase;}
-  button:hover{background:var(--accent-dark);color:#fff;}
+  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Space Mono',monospace;transition:background 0.15s ease, transform 0.1s ease;}
+  button:hover{background:var(--accent-dark);}
+  button:active{ transform:translateY(1px); }
   button:disabled{opacity:0.5;cursor:not-allowed;}
   a.portal-btn{display:inline-block;text-decoration:none;}
-  .msg{padding:10px 12px;border-radius:6px;margin-bottom:14px;font-size:0.88rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
-  .msg.ok{background:rgba(127,224,181,0.12);color:var(--ok);border-left-color:var(--ok);}
-  .msg.err{background:rgba(255,138,122,0.12);color:var(--danger);border-left-color:var(--danger);}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
   .hidden{display:none;}
   .pub-list{padding-left:0;list-style:none;}
-  .pub-list li{padding:10px 0;border-bottom:1px solid var(--line);font-size:0.92rem;color:var(--ink);}
+  .pub-list li{padding:11px 0;border-bottom:1px dashed var(--line);font-size:0.92rem;color:var(--ink);font-family:'Fraunces',serif;}
   .pub-list li:last-child{border-bottom:none;}
-  .contact-line{font-family:'Space Mono',monospace;font-size:0.92rem;color:var(--ink);margin:4px 0;}
+  .pub-list li::before{ content:"§ "; color:var(--copper); font-family:'Space Mono',monospace; }
+  .contact-line{font-family:'Space Mono',monospace;font-size:0.88rem;color:var(--ink);margin:4px 0;}
+  .divider{
+    display:flex; align-items:center; gap:10px;
+    margin:22px 0; color:var(--copper); font-family:'Fraunces',serif; font-style:italic; font-size:0.9rem;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px; background:var(--line);
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="stamp">Verified</div>
+  <img class="profile-pic" id="profilePic" src="" alt="Profile photo" style="display:none;">
+  <div class="profile-pic" id="profilePicPlaceholder">NO</div>
   <h1>Engr. Nana Kwame Obeng-Ahenkora</h1>
   <p class="title">Ph.D &nbsp;|&nbsp; Dept. of Civil &amp; Environmental Engineering</p>
+  <div class="social-links" id="socialLinksDisplay"></div>
 
   <div class="tabs">
     <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
-    <div class="tab" id="tabEdit" onclick="switchTab('edit')">Edit Info</div>
   </div>
 
   <!-- VIEW MODE -->
@@ -113,15 +181,29 @@
       <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
     </div>
 
+    <div class="divider">◆ Access Tools ◆</div>
+
     <div class="card" style="text-align:center;">
       <h2>Assessment Portal</h2>
       <p style="margin-bottom:16px;">Upload and check course assessment results, or report a course-related issue.</p>
       <a class="portal-btn" href="portal.html"><button>Go to Assessment Portal</button></a>
     </div>
+
+    <div class="card" style="text-align:center;">
+      <h2>Engineering Notes</h2>
+      <p style="margin-bottom:16px;">Articles and explainers to help students understand key engineering concepts.</p>
+      <a class="portal-btn" href="blog.html"><button>Read the Blog</button></a>
+    </div>
+
+    <div style="text-align:center;margin-top:8px;">
+      <button onclick="switchTab('edit')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Edit Info</button>
+    </div>
   </div>
 
   <!-- EDIT MODE -->
   <div id="editMode" class="hidden">
+    <button onclick="switchTab('view')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:6px 12px;margin-bottom:14px;">&larr; Back to Home</button>
+
     <div class="card" id="loginCard">
       <label>Passcode</label>
       <input type="password" id="passcodeInput" placeholder="Enter passcode">
@@ -158,7 +240,6 @@ function switchTab(tab){
   document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');
   document.getElementById('editMode').classList.toggle('hidden', tab!=='edit');
   document.getElementById('tabView').classList.toggle('active', tab==='view');
-  document.getElementById('tabEdit').classList.toggle('active', tab==='edit');
 }
 
 async function fetchBin(){

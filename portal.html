@@ -673,7 +673,16 @@ async function saveBin(binData){
     },
     body: JSON.stringify(binData)
   });
-  if(!res.ok) throw new Error("Could not save to storage");
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to storage (${detail})`);
+  }
   return res.json();
 }
 

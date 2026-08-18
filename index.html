@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Assessment Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blueprint:#0d3a5c;
+    --blueprint-line:#2f6a94;
+    --blueprint-line-soft:rgba(120,180,220,0.16);
+    --paper:#eef3f6;
+    --card:#0f4267;
+    --ink:#eaf2f8;
+    --muted:#9cc2dc;
+    --accent:#ff6b35;
+    --accent-dark:#e5501c;
+    --line:#1c5580;
+    --danger:#ff8a7a;
+    --ok:#7fe0b5;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background-color:var(--blueprint);
+    background-image:
+      linear-gradient(var(--blueprint-line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--blueprint-line-soft) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    padding:24px;
+    min-height:100vh;
+  }
+  .wrap{max-width:720px;margin:0 auto;position:relative;}
+  .stamp{
+    position:absolute; top:-6px; right:0;
+    border:2px solid var(--accent);
+    color:var(--accent);
+    font-family:'Space Mono',monospace;
+    font-size:0.65rem;
+    letter-spacing:0.12em;
+    padding:5px 10px;
+    border-radius:4px;
+    transform:rotate(4deg);
+    text-transform:uppercase;
+    opacity:0.85;
+  }
+  h1{
+    font-family:'Space Mono',monospace;
+    font-size:1.5rem;
+    font-weight:700;
+    margin-bottom:4px;
+    letter-spacing:-0.01em;
+    color:#fff;
+  }
+  h1::before{
+    content:"// ";
+    color:var(--accent);
+  }
+  p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.92rem;}
+  .tabs{display:flex;gap:2px;margin-bottom:20px;border:1px solid var(--line);border-radius:10px;padding:3px;background:rgba(0,0,0,0.15);}
+  .tab{
+    flex:1;padding:10px 14px;text-align:center;border-radius:7px;
+    background:transparent;border:none;cursor:pointer;
+    font-weight:600;color:var(--muted);font-size:0.9rem;
+    letter-spacing:0.02em;
+    transition:background 0.15s, color 0.15s;
+  }
+  .tab.active{background:var(--accent);color:#1a1a1a;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px;
+    margin-bottom:16px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.25);
+  }
+  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  input[type=text], input[type=password], textarea, select{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;
+    font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;
+    background:rgba(0,0,0,0.2);color:var(--ink);
+  }
+  input::placeholder, textarea::placeholder{color:rgba(156,194,220,0.45);}
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  textarea{min-height:140px;resize:vertical;font-size:0.85rem;}
+  button{
+    background:var(--accent);color:#1a1a1a;border:none;padding:11px 20px;
+    border-radius:6px;font-weight:700;cursor:pointer;font-size:0.9rem;
+    letter-spacing:0.02em;text-transform:uppercase;
+    transition:background 0.15s, transform 0.1s;
+  }
+  button:hover{background:var(--accent-dark);color:#fff;}
+  button:active{transform:translateY(1px);}
+  button.secondary{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+  button.secondary:hover{background:var(--danger);color:#1a1a1a;}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .hidden{display:none;}
+  .msg{padding:10px 12px;border-radius:6px;margin-bottom:14px;font-size:0.88rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(127,224,181,0.12);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(255,138,122,0.12);color:var(--danger);border-left-color:var(--danger);}
+  table{width:100%;border-collapse:collapse;margin-top:10px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;font-family:'Space Mono',monospace;}
+  th{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.06em;}
+  .result-name{font-family:'Space Mono',monospace;font-size:1.15rem;font-weight:700;margin-bottom:10px;color:#fff;}
+  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Space Mono',monospace;}
+  .hint{font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="stamp">Verified</div>
+  <h1>Assessment Portal</h1>
+  <p style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent);margin-top:0;margin-bottom:6px;letter-spacing:0.03em;">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
+  <p class="sub">Teachers upload scores. Students look up their own result using their index number only.</p>
+
+  <div class="tabs">
+    <div class="tab active" id="tabTeacher" onclick="switchTab('teacher')">Teacher</div>
+    <div class="tab" id="tabStudent" onclick="switchTab('student')">Student Lookup</div>
+    <div class="tab" id="tabReport" onclick="switchTab('report')">Report Issue</div>
+  </div>
+
+  <!-- TEACHER VIEW -->
+  <div id="teacherView">
+    <div class="card" id="loginCard">
+      <label>Teacher Passcode</label>
+      <input type="password" id="passcodeInput" placeholder="Enter passcode">
+      <button onclick="checkPasscode()">Unlock</button>
+      <div id="loginMsg"></div>
+    </div>
+
+    <div class="card hidden" id="uploadCard">
+      <label>Assessment Name (e.g. "Mid-Term 2026")</label>
+      <input type="text" id="assessmentName" placeholder="Assessment name">
+
+      <label>Upload Assessment Sheet (.csv)</label>
+      <div class="hint">Reads the official sheet format automatically — columns IndexNumber, Name, Level, CourseCode, ClassScore. Name is ignored; Level, Course, and Score are kept.</div>
+      <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom:14px;">
+      <button id="uploadFileBtn" onclick="uploadScoresFromFile()">Upload From File</button>
+      <div id="fileUploadMsg"></div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
+
+      <label>Or paste scores manually — one per line: Index Number, Course, Score</label>
+      <div class="hint">Example: 4501, CIVL 368, 78 (no names — index number only)</div>
+      <textarea id="csvInput" placeholder="4501, CIVL 368, 78&#10;4502, CIVL 368, 65"></textarea>
+
+      <button id="uploadBtn" onclick="uploadScores()">Upload Pasted Scores</button>
+      <button class="secondary" onclick="clearAllData()" style="margin-left:8px;">Clear All Data</button>
+      <div id="uploadMsg"></div>
+    </div>
+
+    <div class="card hidden" id="deleteCourseCard">
+      <label>Delete All Results For a Course</label>
+      <select id="deleteCourseSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+        <option value="">Select a course...</option>
+      </select>
+      <button class="secondary" id="deleteCourseBtn" onclick="deleteCourse()">Delete This Course's Results</button>
+      <div id="deleteCourseMsg"></div>
+    </div>
+
+    <div class="card hidden" id="dataCard">
+      <label>Filter by Course</label>
+      <select id="courseFilter" onchange="loadRecords()" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#fdfcfa;">
+        <option value="">All Courses</option>
+      </select>
+      <label>Current Records (<span id="recordCount">0</span>)</label>
+      <button id="toggleResultsBtn" onclick="toggleResultsVisibility()" style="margin-bottom:12px;">Show Results</button>
+      <div id="recordsTable" class="hidden"></div>
+    </div>
+
+    <div class="card hidden" id="manageCoursesCard">
+      <label>Manage Courses (shown to students on the Report Issue tab)</label>
+      <div class="hint">Add the courses you want students to be able to select when reporting an issue.</div>
+      <input type="text" id="newCourseInput" placeholder="e.g. CIVL 368">
+      <button onclick="addCourseOption()">Add Course</button>
+      <div id="courseManageMsg"></div>
+      <div id="courseListDisplay" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card hidden" id="reportsCard">
+      <label>Student Issue Reports (<span id="reportCount">0</span>)</label>
+      <div id="reportsTable"></div>
+    </div>
+  </div>
+
+  <!-- STUDENT VIEW -->
+  <div id="studentView" class="hidden">
+    <div class="card">
+      <label>Enter your Index Number</label>
+      <input type="text" id="indexLookup" placeholder="e.g. 4501">
+      <button id="lookupBtn" onclick="lookupScore()">View My Results</button>
+      <div id="lookupMsg"></div>
+    </div>
+    <div class="card hidden" id="resultCard"></div>
+  </div>
+
+  <!-- REPORT ISSUE VIEW -->
+  <div id="reportView" class="hidden">
+    <div class="card">
+      <label>Course</label>
+      <select id="reportCourseSelect">
+        <option value="">Select your course...</option>
+      </select>
+
+      <label>Your Index Number</label>
+      <input type="text" id="reportIndexInput" placeholder="e.g. 4501">
+
+      <label>Your Email (so the lecturer can reply to you)</label>
+      <input type="text" id="reportEmailInput" placeholder="e.g. you@school.edu">
+
+      <label>Describe your issue</label>
+      <textarea id="reportIssueInput" placeholder="Describe your issue here..."></textarea>
+
+      <button id="reportSubmitBtn" onclick="submitIssueReport()">Submit Report</button>
+      <div id="reportSubmitMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+
+// ===== JSONBin.io configuration =====
+const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
+const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+// =====================================
+
+const PASSCODE = "teacher123"; // change this if you want a different passcode
+const LOCK_KEY = "assessment_locked_index";
+
+// ===== EmailJS configuration =====
+const EMAILJS_SERVICE_ID = "service_cs5nqqo";
+const EMAILJS_TEMPLATE_ID = "template_xtvjkab";
+const EMAILJS_PUBLIC_KEY = "YAoDPw-tkurcPjVrU";
+if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
+// ===================================
+
+function switchTab(tab){
+  document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
+  document.getElementById('studentView').classList.toggle('hidden', tab!=='student');
+  document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
+  document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
+  document.getElementById('tabStudent').classList.toggle('active', tab==='student');
+  document.getElementById('tabReport').classList.toggle('active', tab==='report');
+  if(tab === 'report') loadCourseOptionsForStudents();
+}
+
+function toggleResultsVisibility(){
+  const table = document.getElementById('recordsTable');
+  const btn = document.getElementById('toggleResultsBtn');
+  const isHidden = table.classList.contains('hidden');
+  table.classList.toggle('hidden', !isHidden);
+  btn.textContent = isHidden ? 'Hide Results' : 'Show Results';
+}
+
+function checkPasscode(){
+  const val = document.getElementById('passcodeInput').value;
+  const msg = document.getElementById('loginMsg');
+  if(val === PASSCODE){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('uploadCard').classList.remove('hidden');
+    document.getElementById('dataCard').classList.remove('hidden');
+    document.getElementById('deleteCourseCard').classList.remove('hidden');
+    document.getElementById('manageCoursesCard').classList.remove('hidden');
+    document.getElementById('reportsCard').classList.remove('hidden');
+    loadRecords();
+    loadCourseManageList();
+    loadIssueReports();
+  } else {
+    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+  }
+}
+
+async function fetchAllRecords(){
+  const bin = await fetchBin();
+  return bin.records || [];
+}
+
+async function saveAllRecords(records){
+  const bin = await fetchBin();
+  bin.records = records;
+  return saveBin(bin);
+}
+
+async function loadRecords(){
+  const container = document.getElementById('recordsTable');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const records = await fetchAllRecords();
+
+    // populate course filter options
+    const filterSelect = document.getElementById('courseFilter');
+    const courses = [...new Set(records.map(r => r.course || 'General'))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' +
+      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+
+    const deleteSelect = document.getElementById('deleteCourseSelect');
+    const currentDeleteVal = deleteSelect.value;
+    deleteSelect.innerHTML = '<option value="">Select a course...</option>' +
+      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    deleteSelect.value = currentDeleteVal;
+
+    const filtered = currentFilter
+      ? records.filter(r => (r.course || 'General') === currentFilter)
+      : records;
+
+    document.getElementById('recordCount').textContent = filtered.length;
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No records uploaded yet.</div>';
+      return;
+    }
+    let html = '<table><tr><th>Index #</th><th>Level</th><th>Course</th><th>Score</th><th>Assessment</th></tr>';
+    filtered.slice().reverse().forEach(r=>{
+      html += `<tr><td>${escapeHtml(r.indexNumber)}</td><td>${escapeHtml(r.level||'')}</td><td>${escapeHtml(r.course||'')}</td><td>${escapeHtml(r.score)}</td><td>${escapeHtml(r.assessmentName)}</td></tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load records. Check your connection.</div>';
+  }
+}
+
+async function uploadScores(){
+  const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
+  const raw = document.getElementById('csvInput').value.trim();
+  const msg = document.getElementById('uploadMsg');
+  if(!raw){
+    msg.innerHTML = '<div class="msg err">Please paste some scores first.</div>';
+    return;
+  }
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const newRecords = [];
+  for(const line of lines){
+    const parts = line.split(',').map(p=>p.trim());
+    if(parts.length < 3) continue;
+    const [indexNumber, course, score] = parts;
+    if(!indexNumber) continue;
+    newRecords.push({ indexNumber, score, assessmentName, course: course || 'General' });
+  }
+  if(newRecords.length === 0){
+    msg.innerHTML = '<div class="msg err">No valid rows found. Use format: index, course, score</div>';
+    return;
+  }
+
+  const uploadBtn = document.getElementById('uploadBtn');
+  uploadBtn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Uploading...</div>';
+
+  try{
+    const existing = await fetchAllRecords();
+    const combined = existing.concat(newRecords);
+    await saveAllRecords(combined);
+    msg.innerHTML = `<div class="msg ok">Uploaded ${newRecords.length} record(s) for "${assessmentName}". Total now: ${combined.length}.</div>`;
+    document.getElementById('csvInput').value = '';
+    loadRecords();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    uploadBtn.disabled = false;
+  }
+}
+
+function parseCsvLine(line){
+  // simple CSV split respecting quoted fields
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      inQuotes = !inQuotes;
+    }else if(ch === ',' && !inQuotes){
+      result.push(cur.trim());
+      cur = '';
+    }else{
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+async function uploadScoresFromFile(){
+  const fileInput = document.getElementById('csvFileInput');
+  const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
+  const msg = document.getElementById('fileUploadMsg');
+
+  if(!fileInput.files || fileInput.files.length === 0){
+    msg.innerHTML = '<div class="msg err">Please choose a CSV file first.</div>';
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+
+  if(lines.length < 2){
+    msg.innerHTML = '<div class="msg err">File looks empty or missing data rows.</div>';
+    return;
+  }
+
+  const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const idxCol = headers.indexOf('indexnumber');
+  const levelCol = headers.indexOf('level');
+  const courseCol = headers.indexOf('coursecode');
+  const scoreCol = headers.indexOf('classscore');
+
+  if(idxCol === -1 || courseCol === -1 || scoreCol === -1){
+    msg.innerHTML = '<div class="msg err">Could not find expected columns (IndexNumber, CourseCode, ClassScore) in this file.</div>';
+    return;
+  }
+
+  const newRecords = [];
+  let skippedEmpty = 0;
+  for(let i=1;i<lines.length;i++){
+    const cols = parseCsvLine(lines[i]);
+    const indexNumber = (cols[idxCol] || '').trim();
+    const level = levelCol !== -1 ? (cols[levelCol] || '').trim() : '';
+    const course = (cols[courseCol] || '').trim() || 'General';
+    const score = (cols[scoreCol] || '').trim();
+    if(!indexNumber) continue;
+    if(!score){ skippedEmpty++; continue; } // no score yet for this student
+    newRecords.push({ indexNumber, score, assessmentName, course, level });
+  }
+
+  if(newRecords.length === 0){
+    msg.innerHTML = `<div class="msg err">No rows with scores found (${skippedEmpty} row(s) had blank scores and were skipped).</div>`;
+    return;
+  }
+
+  const btn = document.getElementById('uploadFileBtn');
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Uploading...</div>';
+
+  try{
+    const existing = await fetchAllRecords();
+    const combined = existing.concat(newRecords);
+    await saveAllRecords(combined);
+    let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}".`;
+    if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
+    note += ` Total now: ${combined.length}.`;
+    msg.innerHTML = `<div class="msg ok">${note}</div>`;
+    fileInput.value = '';
+    loadRecords();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function clearAllData(){
+  if(!confirm("This will permanently delete ALL uploaded records. Continue?")) return;
+  const msg = document.getElementById('uploadMsg');
+  try{
+    await saveAllRecords([]);
+    msg.innerHTML = '<div class="msg ok">All data cleared.</div>';
+    loadRecords();
+  }catch(e){
+    msg.innerHTML = '<div class="msg err">Could not clear data.</div>';
+  }
+}
+
+async function deleteCourse(){
+  const select = document.getElementById('deleteCourseSelect');
+  const course = select.value;
+  const msg = document.getElementById('deleteCourseMsg');
+  const btn = document.getElementById('deleteCourseBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please select a course first.</div>';
+    return;
+  }
+  if(!confirm(`Delete ALL results for "${course}"? This cannot be undone.`)) return;
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Deleting...</div>';
+
+  try{
+    const existing = await fetchAllRecords();
+    const remaining = existing.filter(r => (r.course || 'General') !== course);
+    const removedCount = existing.length - remaining.length;
+    await saveAllRecords(remaining);
+    msg.innerHTML = `<div class="msg ok">Deleted ${removedCount} record(s) for "${course}".</div>`;
+    loadRecords();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Delete failed: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function lookupScore(){
+  const idxInput = document.getElementById('indexLookup');
+  const idx = idxInput.value.trim();
+  const msg = document.getElementById('lookupMsg');
+  const resultCard = document.getElementById('resultCard');
+  const lookupBtn = document.getElementById('lookupBtn');
+
+  if(!idx){
+    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
+    resultCard.classList.add('hidden');
+    return;
+  }
+
+  // If this device is already locked to a confirmed index number, block switching to another
+  const lockedIndex = localStorage.getItem(LOCK_KEY);
+  if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
+    msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number. Each device can only check one student's results.</div>";
+    resultCard.classList.add('hidden');
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Searching...</div>';
+
+  try{
+    const records = await fetchAllRecords();
+    const matches = records.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase());
+
+    if(matches.length === 0){
+      // Wrong/mistyped index number — do NOT lock, let them try again
+      msg.innerHTML = '<div class="msg err">No results found for that index number. Please check and try again.</div>';
+      resultCard.classList.add('hidden');
+      return;
+    }
+
+    // Only lock the device once a real, matching index number is confirmed
+    if(!lockedIndex){
+      localStorage.setItem(LOCK_KEY, idx);
+      idxInput.disabled = true;
+      if(lookupBtn) lookupBtn.disabled = true;
+    }
+
+    msg.innerHTML = '';
+    let html = `<div class="result-name">Index Number: ${escapeHtml(idx)}</div>`;
+    html += '<table><tr><th>Course</th><th>Level</th><th>Assessment</th><th>Score</th></tr>';
+    matches.forEach(r=>{
+      html += `<tr><td>${escapeHtml(r.course||'')}</td><td>${escapeHtml(r.level||'')}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}</td></tr>`;
+    });
+    html += '</table>';
+    resultCard.innerHTML = html;
+    resultCard.classList.remove('hidden');
+  }catch(e){
+    msg.innerHTML = '<div class="msg err">Could not reach server. Try again.</div>';
+    resultCard.classList.add('hidden');
+  }
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== Full bin read/write (extends storage to include courses + reports) =====
+async function fetchBin(){
+  const res = await fetch(`${JSONBIN_URL}/latest`, {
+    headers: { "X-Master-Key": JSONBIN_API_KEY }
+  });
+  if(!res.ok) throw new Error("Could not reach storage");
+  const data = await res.json();
+  return data.record || {};
+}
+
+async function saveBin(binData){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Master-Key": JSONBIN_API_KEY
+    },
+    body: JSON.stringify(binData)
+  });
+  if(!res.ok) throw new Error("Could not save to storage");
+  return res.json();
+}
+
+// ===== Course list management (Teacher) =====
+async function addCourseOption(){
+  const input = document.getElementById('newCourseInput');
+  const course = input.value.trim();
+  const msg = document.getElementById('courseManageMsg');
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Enter a course name first.</div>';
+    return;
+  }
+  try{
+    const bin = await fetchBin();
+    const courses = bin.courses || [];
+    if(courses.some(c => c.toLowerCase() === course.toLowerCase())){
+      msg.innerHTML = '<div class="msg err">That course is already in the list.</div>';
+      return;
+    }
+    courses.push(course);
+    bin.courses = courses;
+    await saveBin(bin);
+    msg.innerHTML = `<div class="msg ok">Added "${escapeHtml(course)}".</div>`;
+    input.value = '';
+    loadCourseManageList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not add course: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function removeCourseOption(course){
+  if(!confirm(`Remove "${course}" from the course list? (Existing scores/reports for it are not deleted.)`)) return;
+  const msg = document.getElementById('courseManageMsg');
+  try{
+    const bin = await fetchBin();
+    bin.courses = (bin.courses || []).filter(c => c !== course);
+    await saveBin(bin);
+    msg.innerHTML = `<div class="msg ok">Removed "${escapeHtml(course)}".</div>`;
+    loadCourseManageList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not remove course: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadCourseManageList(){
+  const container = document.getElementById('courseListDisplay');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const bin = await fetchBin();
+    const courses = bin.courses || [];
+    if(courses.length === 0){
+      container.innerHTML = '<div class="empty">No courses added yet.</div>';
+      return;
+    }
+    let html = '<table><tr><th>Course</th><th></th></tr>';
+    courses.forEach(c => {
+      html += `<tr><td>${escapeHtml(c)}</td><td><button class="secondary" style="padding:4px 10px;font-size:0.75rem;" onclick="removeCourseOption('${escapeHtml(c).replace(/'/g,"\\'")}')">Remove</button></td></tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load courses.</div>';
+  }
+}
+
+// ===== Course dropdown for students (Report Issue tab) =====
+async function loadCourseOptionsForStudents(){
+  const select = document.getElementById('reportCourseSelect');
+  try{
+    const bin = await fetchBin();
+    const courses = bin.courses || [];
+    select.innerHTML = '<option value="">Select your course...</option>' +
+      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  }catch(e){
+    select.innerHTML = '<option value="">Could not load courses</option>';
+  }
+}
+
+// ===== Issue report submission (Student) =====
+async function submitIssueReport(){
+  const course = document.getElementById('reportCourseSelect').value;
+  const indexNumber = document.getElementById('reportIndexInput').value.trim();
+  const email = document.getElementById('reportEmailInput').value.trim();
+  const issue = document.getElementById('reportIssueInput').value.trim();
+  const msg = document.getElementById('reportSubmitMsg');
+  const btn = document.getElementById('reportSubmitBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please select your course.</div>';
+    return;
+  }
+  if(!indexNumber){
+    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
+    return;
+  }
+  if(!email || !email.includes('@')){
+    msg.innerHTML = '<div class="msg err">Please enter a valid email address.</div>';
+    return;
+  }
+  if(!issue){
+    msg.innerHTML = '<div class="msg err">Please describe your issue.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Submitting...</div>';
+
+  const report = {
+    course, indexNumber, email, issue,
+    submittedAt: new Date().toISOString()
+  };
+
+  try{
+    // Save to storage
+    const bin = await fetchBin();
+    const reports = bin.reports || [];
+    reports.push(report);
+    bin.reports = reports;
+    await saveBin(bin);
+
+    // Send email notification via EmailJS
+    if(window.emailjs){
+      try{
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          course: course,
+          issue: issue,
+          student_email: email,
+          student_index: indexNumber
+        });
+      }catch(emailErr){
+        console.error("Email send failed:", emailErr);
+        // Report is still saved even if email fails
+      }
+    }
+
+    msg.innerHTML = '<div class="msg ok">Your report has been submitted. The lecturer will reply to your email if a meeting is needed.</div>';
+    document.getElementById('reportCourseSelect').value = '';
+    document.getElementById('reportIndexInput').value = '';
+    document.getElementById('reportEmailInput').value = '';
+    document.getElementById('reportIssueInput').value = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not submit report: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+// ===== Issue reports list (Teacher) =====
+async function loadIssueReports(){
+  const container = document.getElementById('reportsTable');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const bin = await fetchBin();
+    const reports = bin.reports || [];
+    document.getElementById('reportCount').textContent = reports.length;
+    if(reports.length === 0){
+      container.innerHTML = '<div class="empty">No issue reports yet.</div>';
+      return;
+    }
+    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th></tr>';
+    reports.slice().reverse().forEach(r=>{
+      html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.indexNumber)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.issue)}</td></tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load reports.</div>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const lockedIndex = localStorage.getItem(LOCK_KEY);
+  if(lockedIndex){
+    const idxInput = document.getElementById('indexLookup');
+    if(idxInput) idxInput.value = lockedIndex;
+  }
+});
+</script>
+</body>
+</html>

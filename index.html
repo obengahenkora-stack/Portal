@@ -162,6 +162,8 @@
 
   <div class="tabs">
     <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
+    <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
+    <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
   </div>
 
   <!-- VIEW MODE -->
@@ -181,20 +183,6 @@
       <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
     </div>
 
-    <div class="divider">◆ Access Tools ◆</div>
-
-    <div class="card" style="text-align:center;">
-      <h2>Assessment Portal</h2>
-      <p style="margin-bottom:16px;">Upload and check course assessment results, or report a course-related issue.</p>
-      <a class="portal-btn" href="portal.html"><button>Go to Assessment Portal</button></a>
-    </div>
-
-    <div class="card" style="text-align:center;">
-      <h2>Engineering Notes</h2>
-      <p style="margin-bottom:16px;">Articles and explainers to help students understand key engineering concepts.</p>
-      <a class="portal-btn" href="blog.html"><button>Read the Blog</button></a>
-    </div>
-
     <div style="text-align:center;margin-top:8px;">
       <button onclick="switchTab('edit')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Edit Info</button>
     </div>
@@ -212,11 +200,18 @@
     </div>
 
     <div class="card hidden" id="editCard">
+      <label>Profile Photo URL</label>
+      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Paste a link to an image hosted online (e.g. from Google Drive "share" link, Imgur, or your school website). Direct file upload isn't supported here since this is a simple hosted page.</div>
+      <input type="text" id="photoUrlInput" placeholder="https://example.com/your-photo.jpg">
+
       <label>Bio</label>
       <textarea id="bioInput" placeholder="Write a few sentences about yourself..."></textarea>
 
       <label>Contact (one item per line, e.g. "Email: name@school.edu")</label>
       <textarea id="contactInput" placeholder="Email: name@school.edu&#10;Office: Dept of Civil &amp; Env. Engineering, Room 12&#10;Phone: +233..."></textarea>
+
+      <label>Social Links (one per line: Label, URL)</label>
+      <textarea id="socialInput" placeholder="LinkedIn, https://linkedin.com/in/yourname&#10;ResearchGate, https://researchgate.net/profile/yourname"></textarea>
 
       <label>Publications / Research (one per line)</label>
       <textarea id="pubInput" placeholder="Title of paper, Journal, Year&#10;Another publication title..."></textarea>
@@ -283,9 +278,38 @@ async function loadProfile(){
       ? pubLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')
       : "<li>No publications added yet.</li>";
 
+    // profile photo
+    const photoUrl = profile.photoUrl || "";
+    const picImg = document.getElementById('profilePic');
+    const picPlaceholder = document.getElementById('profilePicPlaceholder');
+    if(photoUrl){
+      picImg.src = photoUrl;
+      picImg.style.display = 'block';
+      picPlaceholder.style.display = 'none';
+    } else {
+      picImg.style.display = 'none';
+      picPlaceholder.style.display = 'flex';
+    }
+
+    // social links, format: "Label, URL" per line
+    const socialLines = (profile.social || "").split('\n').filter(l => l.trim());
+    const socialContainer = document.getElementById('socialLinksDisplay');
+    if(socialLines.length){
+      socialContainer.innerHTML = socialLines.map(line => {
+        const parts = line.split(',').map(p => p.trim());
+        const label = parts[0] || 'Link';
+        const url = parts[1] || '#';
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+      }).join('');
+    } else {
+      socialContainer.innerHTML = '';
+    }
+
     // pre-fill edit fields too
+    document.getElementById('photoUrlInput').value = profile.photoUrl || "";
     document.getElementById('bioInput').value = profile.bio || "";
     document.getElementById('contactInput').value = profile.contact || "";
+    document.getElementById('socialInput').value = profile.social || "";
     document.getElementById('pubInput').value = profile.publications || "";
   }catch(e){
     document.getElementById('bioDisplay').textContent = "Could not load profile info.";
@@ -304,8 +328,10 @@ function checkPasscode(){
 }
 
 async function saveProfile(){
+  const photoUrl = document.getElementById('photoUrlInput').value.trim();
   const bio = document.getElementById('bioInput').value.trim();
   const contact = document.getElementById('contactInput').value.trim();
+  const social = document.getElementById('socialInput').value.trim();
   const publications = document.getElementById('pubInput').value.trim();
   const msg = document.getElementById('saveMsg');
   const btn = document.getElementById('saveBtn');
@@ -315,7 +341,7 @@ async function saveProfile(){
 
   try{
     const bin = await fetchBin();
-    bin.profile = { bio, contact, publications };
+    bin.profile = { photoUrl, bio, contact, social, publications };
     await saveBin(bin);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
     loadProfile();

@@ -273,6 +273,7 @@
 
     <div class="card hidden" id="reportsCard">
       <label>Student Issue Reports (<span id="reportCount">0</span>)</label>
+      <button class="secondary" onclick="clearAllReports()" style="margin-bottom:12px;">Clear All Reports</button>
       <div id="reportsTable"></div>
     </div>
   </div>
@@ -876,14 +877,39 @@ async function loadIssueReports(){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
       return;
     }
-    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th></tr>';
+    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th></th></tr>';
     reports.slice().reverse().forEach(r=>{
-      html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.indexNumber)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.issue)}</td></tr>`;
+      const safeTimestamp = escapeHtml(r.submittedAt || '').replace(/'/g, "\\'");
+      html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.indexNumber)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.issue)}</td><td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td></tr>`;
     });
     html += '</table>';
     container.innerHTML = html;
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load reports.</div>';
+  }
+}
+
+async function deleteReport(submittedAt){
+  if(!confirm('Delete this issue report? This cannot be undone.')) return;
+  try{
+    const bin = await fetchBin();
+    bin.reports = (bin.reports || []).filter(r => r.submittedAt !== submittedAt);
+    await saveBin(bin);
+    loadIssueReports();
+  }catch(e){
+    alert('Could not delete report: ' + e.message);
+  }
+}
+
+async function clearAllReports(){
+  if(!confirm('Delete ALL issue reports? This cannot be undone.')) return;
+  try{
+    const bin = await fetchBin();
+    bin.reports = [];
+    await saveBin(bin);
+    loadIssueReports();
+  }catch(e){
+    alert('Could not clear reports: ' + e.message);
   }
 }
 

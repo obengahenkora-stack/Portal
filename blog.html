@@ -4,75 +4,72 @@
 <meta charset="UTF-8">
 <title>Engineering Notes — Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f4ecd8;
-    --paper-line:rgba(120,60,50,0.10);
-    --margin-red:#b3432b;
-    --card:#fffdf7;
-    --ink:#2b2420;
-    --muted:#7a6f60;
-    --accent:#b3432b;
-    --accent-dark:#8c331f;
-    --copper:#a8763e;
-    --line:#dcd0b4;
-    --danger:#a8332a;
-    --ok:#3f6b4a;
+    --paper:#f5f7fa;
+    --paper-line:rgba(11,37,69,0.04);
+    --margin-red:#0b2545;
+    --card:#ffffff;
+    --ink:#1a2433;
+    --muted:#64748b;
+    --accent:#0b2545;
+    --accent-dark:#071a33;
+    --copper:#d4a017;
+    --line:#e3e8ef;
+    --danger:#c0392b;
+    --ok:#1f8a4c;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background-color:var(--paper);
-    background-image:repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px);
+    background:var(--paper);
     color:var(--ink);
-    padding:24px 24px 24px 56px;
+    padding:24px;
     min-height:100vh;
-    position:relative;
-  }
-  body::before{
-    content:"";
-    position:fixed; top:0; left:38px; width:2px; height:100%;
-    background:var(--margin-red);
-    opacity:0.35;
   }
   .wrap{max-width:720px;margin:0 auto;position:relative;}
-  .home-link{position:absolute;top:-6px;left:0;font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:3px;}
-  h1{font-family:'Fraunces',Georgia,serif;font-size:2rem;font-weight:700;font-style:normal;letter-spacing:-0.02em;margin-bottom:4px;color:var(--ink);}
+  .home-link{position:absolute;top:-6px;left:0;font-family:'Inter',sans-serif;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:3px;}
+  h1{font-family:'Poppins',sans-serif;font-size:2rem;font-weight:700;font-style:normal;letter-spacing:-0.02em;margin-bottom:4px;color:var(--ink);}
   p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.9rem;}
   .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--line);}
-  .tab{padding:9px 18px;text-align:center;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Space Mono',monospace;}
+  .tab{padding:9px 18px;text-align:center;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Inter',sans-serif;}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
   .card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:24px;margin-bottom:18px;box-shadow:3px 3px 0 rgba(43,36,32,0.06);}
-  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Space Mono',monospace;}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Inter',sans-serif;}
   input[type=text], input[type=password], textarea{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
-    font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;background:#fffef9;color:var(--ink);
+    font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#fffef9;color:var(--ink);
   }
   textarea{min-height:220px;resize:vertical;font-family:'Inter',sans-serif;font-size:0.95rem;line-height:1.6;}
   input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
-  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Space Mono',monospace;}
+  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Inter',sans-serif;}
   button:hover{background:var(--accent-dark);}
   button.secondary{background:transparent;color:var(--danger);border:1px solid var(--danger);}
   button.secondary:hover{background:var(--danger);color:#fffef9;}
   button:disabled{opacity:0.5;cursor:not-allowed;}
   .hidden{display:none;}
-  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Inter',sans-serif;border-left:3px solid transparent;}
   .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
   .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
-  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Space Mono',monospace;}
+  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Inter',sans-serif;}
 
-  .post-title{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;margin:0 0 4px 0;color:var(--ink);}
-  .post-date{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
+  .post-title{font-family:'Poppins',sans-serif;font-size:1.4rem;font-weight:700;margin:0 0 4px 0;color:var(--ink);}
+  .post-date{font-family:'Inter',sans-serif;font-size:0.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
   .post-body{line-height:1.7;font-size:0.98rem;white-space:pre-wrap;color:var(--ink);}
-  .post-actions{margin-top:16px;display:flex;gap:8px;}
+  .post-actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
+  .share-btn{
+    display:inline-block;background:#eef1f6;color:var(--navy);text-decoration:none;
+    padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;
+  }
+  .share-btn:hover{background:var(--gold);color:#fff;}
   .post-actions button{padding:6px 14px;font-size:0.72rem;}
-  .back-to-list{font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
+  .back-to-list{font-family:'Inter',sans-serif;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
   .post-preview{cursor:pointer;}
   .post-preview .post-body{max-height:70px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 40%,transparent 100%);mask-image:linear-gradient(180deg,#000 40%,transparent 100%);}
-  .read-more{font-family:'Space Mono',monospace;font-size:0.78rem;color:var(--accent);margin-top:8px;display:inline-block;}
+  .read-more{font-family:'Inter',sans-serif;font-size:0.78rem;color:var(--accent);margin-top:8px;display:inline-block;}
 </style>
 </head>
 <body>
@@ -208,13 +205,36 @@ async function showPost(id){
     if(!post) return;
     document.getElementById('postsView').classList.add('hidden');
     document.getElementById('singlePostView').classList.remove('hidden');
+
+    const pageUrl = window.location.origin + window.location.pathname;
+    const shareText = encodeURIComponent(post.title);
+    const whatsappUrl = `https://wa.me/?text=${shareText}%20${encodeURIComponent(pageUrl)}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(pageUrl)}`;
+    const emailUrl = `mailto:?subject=${shareText}&body=${encodeURIComponent('Thought you might find this useful: ' + pageUrl)}`;
+
     document.getElementById('singlePostContent').innerHTML = `
       <div class="post-title">${escapeHtml(post.title)}</div>
       <div class="post-date">${formatDate(post.date)}</div>
       <div class="post-body">${escapeHtml(post.body)}</div>
+      <div class="post-actions" style="border-top:1px solid var(--line);padding-top:16px;">
+        <a href="${whatsappUrl}" target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
+        <a href="${twitterUrl}" target="_blank" rel="noopener" class="share-btn">Twitter/X</a>
+        <a href="${emailUrl}" class="share-btn">Email</a>
+        <button onclick="copyPostLink()" class="share-btn" style="border:none;">Copy Link</button>
+      </div>
+      <div id="copyMsg" style="margin-top:8px;"></div>
     `;
     window.scrollTo(0,0);
   }catch(e){}
+}
+
+function copyPostLink(){
+  const url = window.location.origin + window.location.pathname;
+  navigator.clipboard.writeText(url).then(() => {
+    document.getElementById('copyMsg').innerHTML = '<div class="msg ok" style="margin-top:0;">Link copied.</div>';
+  }).catch(() => {
+    document.getElementById('copyMsg').innerHTML = '<div class="msg err" style="margin-top:0;">Could not copy link.</div>';
+  });
 }
 
 function showPostsList(){
@@ -283,7 +303,7 @@ async function loadManageList(){
     container.innerHTML = posts.map(p => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
         <div>
-          <div style="font-family:'Fraunces',serif;font-size:0.95rem;">${escapeHtml(p.title)}</div>
+          <div style="font-family:'Poppins',sans-serif;font-size:0.95rem;">${escapeHtml(p.title)}</div>
           <div class="post-date" style="margin-bottom:0;">${formatDate(p.date)}</div>
         </div>
         <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deletePost('${p.id}')">Delete</button>

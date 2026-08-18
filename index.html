@@ -4,184 +4,311 @@
 <meta charset="UTF-8">
 <title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f4ecd8;
-    --paper-line:rgba(120,60,50,0.10);
-    --margin-red:#b3432b;
-    --card:#fffdf7;
-    --ink:#2b2420;
-    --muted:#7a6f60;
-    --accent:#b3432b;
-    --accent-dark:#8c331f;
-    --copper:#a8763e;
-    --line:#dcd0b4;
-    --danger:#a8332a;
-    --ok:#3f6b4a;
+    --navy:#0b2545;
+    --navy-dark:#071a33;
+    --gold:#d4a017;
+    --gold-dark:#b5860e;
+    --bg:#f5f7fa;
+    --card:#ffffff;
+    --ink:#1a2433;
+    --muted:#64748b;
+    --accent:#d4a017;
+    --accent-dark:#b5860e;
+    --line:#e3e8ef;
+    --danger:#c0392b;
+    --ok:#1f8a4c;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background-color:var(--paper);
-    background-image:
-      repeating-linear-gradient(var(--paper) 0 27px, var(--paper-line) 27px 28px);
+    background:var(--bg);
     color:var(--ink);
-    padding:24px 24px 24px 56px;
     min-height:100vh;
+  }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff;
+    padding:48px 24px 60px;
+    text-align:center;
     position:relative;
   }
-  body::before{
+  .hero::after{
     content:"";
-    position:fixed; top:0; left:38px; width:2px; height:100%;
-    background:var(--margin-red);
-    opacity:0.35;
+    position:absolute; bottom:-1px; left:0; width:100%; height:6px;
+    background:linear-gradient(90deg, var(--gold), #fff2, var(--gold));
   }
-  .wrap{max-width:720px;margin:0 auto;position:relative;}
   .stamp{
-    position:absolute; top:-6px; right:0;
-    border:2px solid var(--copper);
-    color:var(--copper);
-    font-family:'Space Mono',monospace;
-    font-size:0.62rem;
+    display:inline-block;
+    border:1px solid rgba(255,255,255,0.35);
+    color:#fff;
+    font-size:0.7rem;
     letter-spacing:0.12em;
-    padding:5px 10px;
-    border-radius:2px;
-    transform:rotate(-3deg);
+    padding:4px 12px;
+    border-radius:20px;
     text-transform:uppercase;
-    opacity:0.75;
-    animation:stampIn 0.6s ease-out;
+    opacity:0.85;
+    margin-bottom:18px;
   }
-  @keyframes stampIn{
-    0%{opacity:0;transform:rotate(-3deg) scale(0.7);}
-    100%{opacity:0.75;transform:rotate(-3deg) scale(1);}
-  }
+  .wrap{max-width:760px;margin:0 auto;position:relative;padding:0 24px 40px;}
+  .hero .wrap{padding:0;}
   h1{
-    font-family:'Fraunces',Georgia,serif;
-    font-size:2.2rem;
+    font-family:'Poppins',sans-serif;
+    font-size:2.1rem;
     font-weight:700;
-    font-style:normal;
-    margin-bottom:6px;
-    letter-spacing:-0.02em;
-    line-height:1.15;
-    color:var(--ink);
+    margin:0 0 6px 0;
+    letter-spacing:-0.01em;
+    color:#fff;
   }
   .title{
-    font-family:'Space Mono',monospace;
-    font-size:0.78rem;
-    color:var(--accent);
+    font-family:'Inter',sans-serif;
+    font-size:0.95rem;
+    color:var(--gold);
+    font-weight:600;
     margin-top:0;
-    margin-bottom:20px;
-    letter-spacing:0.04em;
-    text-transform:uppercase;
+    margin-bottom:18px;
+    letter-spacing:0.02em;
   }
   .profile-pic{
-    width:104px;height:104px;border-radius:6px;
-    border:1px solid var(--ink);
-    box-shadow:5px 5px 0 var(--copper);
+    width:120px;height:120px;border-radius:50%;
+    border:4px solid var(--gold);
     object-fit:cover;
     margin-bottom:18px;
-    background:var(--card);
+    background:#fff;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Fraunces',serif;font-size:2.2rem;color:var(--muted);
-    transition:transform 0.25s ease;
+    font-family:'Poppins',sans-serif;font-size:2.4rem;color:var(--navy);
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
   }
-  .profile-pic:hover{ transform:translate(-2px,-2px); box-shadow:7px 7px 0 var(--copper); }
-  .social-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;margin-bottom:6px;}
+  .social-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;justify-content:center;}
   .social-links a{
-    font-family:'Space Mono',monospace;font-size:0.75rem;color:var(--accent);
-    text-decoration:none;border-bottom:1px solid var(--accent);padding:2px 1px;
+    font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:600;color:#fff;
+    text-decoration:none;background:rgba(255,255,255,0.12);padding:6px 14px;border-radius:20px;
+    transition:background 0.15s ease;
   }
-  .social-links a:hover{color:var(--accent-dark);border-color:var(--accent-dark);}
+  .social-links a:hover{background:var(--gold);color:var(--navy-dark);}
   h2{
-    font-family:'Fraunces',serif;
+    font-family:'Poppins',sans-serif;
     font-size:1.05rem;
     font-weight:700;
-    color:var(--ink);
-    letter-spacing:0.01em;
-    margin-bottom:12px;margin-top:0;
-    border-bottom:2px solid var(--ink);
-    padding-bottom:6px;
-    display:inline-block;
+    color:var(--navy);
+    letter-spacing:0;
+    margin-bottom:14px;margin-top:0;
+    display:flex;align-items:center;gap:8px;
   }
-  .tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:0;}
-  .tab{padding:9px 18px;text-align:center;border-radius:0;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Space Mono',monospace;}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  h2::before{
+    content:"";
+    width:5px;height:20px;background:var(--gold);border-radius:2px;display:inline-block;
+  }
+  .tabs{
+    display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    position:relative;z-index:2;
+  }
+  .tab{
+    flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;border:none;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;letter-spacing:0.01em;font-family:'Inter',sans-serif;
+    transition:background 0.15s ease, color 0.15s ease;
+  }
+  .tab.active{background:var(--navy);color:#fff;}
   .card{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:2px;
+    border-radius:12px;
     padding:26px;
     margin-bottom:18px;
-    box-shadow:3px 3px 0 rgba(43,36,32,0.06);
-    transition:transform 0.15s ease, box-shadow 0.15s ease;
-    position:relative;
+    box-shadow:0 2px 10px rgba(15,30,60,0.05);
+    transition:box-shadow 0.2s ease, transform 0.2s ease;
   }
-  .card:hover{ transform:translate(-1px,-1px); box-shadow:5px 5px 0 rgba(43,36,32,0.1); }
-  .card p{line-height:1.65;color:var(--ink);white-space:pre-wrap;}
-  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Space Mono',monospace;}
+  .card:hover{ box-shadow:0 8px 24px rgba(15,30,60,0.1); transform:translateY(-2px); }
+  .card p{line-height:1.7;color:var(--ink);white-space:pre-wrap;}
+  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
   input[type=text], input[type=password], textarea{
-    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
-    font-size:0.95rem;font-family:'Space Mono',monospace;margin-bottom:14px;
-    background:#fffef9;color:var(--ink);
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;
+    background:#f8fafc;color:var(--ink);
   }
   textarea{min-height:120px;resize:vertical;}
-  input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
-  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Space Mono',monospace;transition:background 0.15s ease, transform 0.1s ease;}
-  button:hover{background:var(--accent-dark);}
+  input:focus, textarea:focus{outline:2px solid var(--gold);outline-offset:1px;background:#fff;}
+  button{background:var(--navy);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;letter-spacing:0.01em;font-family:'Inter',sans-serif;transition:background 0.15s ease, transform 0.1s ease;}
+  button:hover{background:var(--navy-dark);}
   button:active{ transform:translateY(1px); }
   button:disabled{opacity:0.5;cursor:not-allowed;}
   a.portal-btn{display:inline-block;text-decoration:none;}
-  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Space Mono',monospace;border-left:3px solid transparent;}
-  .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
-  .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
+  .msg{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(31,138,76,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(192,57,43,0.08);color:var(--danger);border-left-color:var(--danger);}
   .hidden{display:none;}
   .pub-list{padding-left:0;list-style:none;}
-  .pub-list li{padding:11px 0;border-bottom:1px dashed var(--line);font-size:0.92rem;color:var(--ink);font-family:'Fraunces',serif;}
+  .pub-list li{padding:12px 0;border-bottom:1px solid var(--line);font-size:0.94rem;color:var(--ink);padding-left:18px;position:relative;}
   .pub-list li:last-child{border-bottom:none;}
-  .pub-list li::before{ content:"§ "; color:var(--copper); font-family:'Space Mono',monospace; }
-  .contact-line{font-family:'Space Mono',monospace;font-size:0.88rem;color:var(--ink);margin:4px 0;}
+  .pub-list li::before{ content:"▸"; color:var(--gold); position:absolute; left:0; font-weight:700; }
+  .contact-line{font-size:0.92rem;color:var(--ink);margin:6px 0;padding-left:0;}
   .divider{
     display:flex; align-items:center; gap:10px;
-    margin:22px 0; color:var(--copper); font-family:'Fraunces',serif; font-style:italic; font-size:0.9rem;
+    margin:22px 0; color:var(--muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.1em;
   }
   .divider::before, .divider::after{
     content:""; flex:1; height:1px; background:var(--line);
   }
+  .stats-strip{
+    max-width:760px;margin:-28px auto 24px;position:relative;z-index:2;
+    background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+    display:flex;flex-wrap:wrap;
+  }
+  .stat-item{flex:1;min-width:120px;text-align:center;padding:18px 10px;border-right:1px solid var(--line);}
+  .stat-item:last-child{border-right:none;}
+  .stat-num{font-family:'Poppins',sans-serif;font-size:1.7rem;font-weight:800;color:var(--navy);}
+  .stat-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+  .fact-banner{
+    display:flex;align-items:flex-start;gap:14px;
+    background:linear-gradient(135deg, #fff9ec, #fdf3d9);
+    border:1px solid #f0d98a;border-radius:12px;
+    padding:18px 20px;margin-bottom:20px;
+  }
+  .fact-icon{font-size:1.6rem;line-height:1;}
+  .fact-label{font-size:0.72rem;color:var(--gold-dark);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+  .fact-text{font-size:0.92rem;color:var(--ink);line-height:1.5;}
+  .history-banner{
+    background:linear-gradient(135deg, #eef4ff, #e2ecfd);
+    border-color:#bcd2f7;
+  }
+  .history-banner .fact-label{ color:var(--navy); }
+  .newsletter-card{
+    background:linear-gradient(135deg, var(--navy), var(--navy-dark));
+    color:#fff;
+  }
+  .newsletter-card h2{ color:#fff; }
+  .newsletter-card h2::before{ background:var(--gold); }
+  .newsletter-card #newsletterEmail{ background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.25); }
+  .newsletter-card #newsletterEmail::placeholder{ color:rgba(255,255,255,0.55); }
+  .newsletter-card button{ background:var(--gold); color:var(--navy-dark); }
+  .newsletter-card button:hover{ background:var(--gold-dark); color:#fff; }
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:520px){ .calc-grid{grid-template-columns:1fr;} }
+  .calc-card select{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.9rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#f8fafc;color:var(--ink);
+  }
+  .calc-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+  @media (max-width:520px){ .calc-result-grid{grid-template-columns:1fr;} }
+  .calc-result-item{background:#eef1f6;border-radius:10px;padding:14px;text-align:center;}
+  .calc-result-num{font-family:'Poppins',sans-serif;font-size:1.3rem;font-weight:800;color:var(--navy);}
+  .calc-result-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+
+  .calc-widget-toggle{
+    position:fixed; bottom:24px; right:24px; z-index:50;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--navy);color:#fff;border:none;
+    font-size:1.5rem;box-shadow:0 6px 20px rgba(11,37,69,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .calc-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
+  .calc-widget-overlay{
+    position:fixed; inset:0; background:rgba(11,37,69,0.35); z-index:60;
+  }
+  .calc-widget-panel{
+    position:fixed; bottom:0; right:0; z-index:70;
+    width:340px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:#fff; border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.2);
+  }
+  @media (min-width:640px){
+    .calc-widget-panel{ bottom:24px; right:24px; border-radius:16px; }
+  }
+  .calc-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy); color:#fff; padding:16px 20px; font-weight:700; font-family:'Poppins',sans-serif; font-size:0.95rem;
+    border-radius:16px 0 0 0;
+  }
+  @media (min-width:640px){ .calc-widget-header{ border-radius:16px 16px 0 0; } }
+  .calc-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .calc-widget-close:hover{ background:none; color:var(--gold); }
+  .calc-widget-body{ padding:20px; }
+  .calc-widget-body select{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.9rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#f8fafc;color:var(--ink);
+  }
 </style>
+
 </head>
 <body>
-<div class="wrap">
-  <div class="stamp">Verified</div>
+<div class="hero">
+  <div class="stamp">Verified Faculty Profile</div><br>
   <img class="profile-pic" id="profilePic" src="" alt="Profile photo" style="display:none;">
   <div class="profile-pic" id="profilePicPlaceholder">NO</div>
-  <h1>Engr. Nana Kwame Obeng-Ahenkora</h1>
-  <p class="title">Ph.D &nbsp;|&nbsp; Dept. of Civil &amp; Environmental Engineering</p>
+  <h1 id="nameDisplay">Engr. Nana Kwame Obeng-Ahenkora</h1>
+  <p class="title" id="titleDisplay">Ph.D &nbsp;|&nbsp; Dept. of Civil &amp; Environmental Engineering</p>
   <div class="social-links" id="socialLinksDisplay"></div>
+</div>
 
-  <div class="tabs">
-    <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
-    <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
-    <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
+<div class="tabs">
+  <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
+  <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
+  <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
+</div>
+
+<div class="wrap">
+  <div class="fact-banner">
+    <span class="fact-icon">💡</span>
+    <div>
+      <div class="fact-label">Engineering Fact</div>
+      <div class="fact-text" id="factOfDay">Loading...</div>
+    </div>
+  </div>
+
+  <div class="fact-banner history-banner">
+    <span class="fact-icon">📅</span>
+    <div>
+      <div class="fact-label">On This Day in Engineering History</div>
+      <div class="fact-text" id="historyOfDay">Loading...</div>
+    </div>
+  </div>
+
+  <div class="card newsletter-card">
+    <h2>Stay Updated</h2>
+    <p style="color:var(--muted);font-size:0.88rem;margin-top:-8px;margin-bottom:16px;">Enter your email to be notified whenever a new post is published on Engineering Notes.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <input type="text" id="newsletterEmail" placeholder="your.email@school.edu" style="flex:1;min-width:200px;margin-bottom:0;">
+      <button onclick="subscribeNewsletter()" style="white-space:nowrap;">Subscribe</button>
+    </div>
+    <div id="newsletterMsg"></div>
   </div>
 
   <!-- VIEW MODE -->
+
   <div id="viewMode">
-    <div class="card">
+    <div class="tabs" style="margin:0 0 20px 0;box-shadow:none;background:#eef1f6;">
+      <div class="tab active" id="subTabAbout" onclick="switchSubTab('about')">About</div>
+      <div class="tab" id="subTabContact" onclick="switchSubTab('contact')">Contact</div>
+      <div class="tab" id="subTabPubs" onclick="switchSubTab('pubs')">Publications</div>
+      <div class="tab" id="subTabPosts" onclick="switchSubTab('posts')">Latest Posts</div>
+    </div>
+
+    <div class="card sub-section" id="subAbout">
       <h2>About</h2>
       <p id="bioDisplay">Loading...</p>
     </div>
 
-    <div class="card">
+    <div class="card sub-section hidden" id="subContact">
       <h2>Contact</h2>
       <div id="contactDisplay">Loading...</div>
     </div>
 
-    <div class="card">
+    <div class="card sub-section hidden" id="subPubs">
       <h2>Publications &amp; Research</h2>
       <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
+    </div>
+
+    <div class="card sub-section hidden" id="subPosts">
+      <h2>Latest Posts</h2>
+      <div id="latestPostsDisplay"><div class="empty" style="color:var(--muted);font-size:0.9rem;">Loading...</div></div>
+      <div style="text-align:center;margin-top:16px;">
+        <a href="blog.html" style="color:var(--navy);font-weight:600;font-size:0.85rem;text-decoration:none;">View all posts &rarr;</a>
+      </div>
     </div>
 
     <div style="text-align:center;margin-top:8px;">
@@ -201,6 +328,12 @@
     </div>
 
     <div class="card hidden" id="editCard">
+      <label>Full Name / Title (shown as the main heading)</label>
+      <input type="text" id="nameInput" placeholder="e.g. Engr. Nana Kwame Obeng-Ahenkora">
+
+      <label>Credentials / Position (shown under your name)</label>
+      <input type="text" id="titleInput" placeholder="e.g. Ph.D | Dept. of Civil & Environmental Engineering">
+
       <label>Profile Photo</label>
       <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Choose an image from your device. It will be resized automatically to keep things fast.</div>
       <input type="file" id="photoFileInput" accept="image/*" onchange="handlePhotoSelect(event)">
@@ -239,6 +372,36 @@ function switchTab(tab){
   document.getElementById('tabView').classList.toggle('active', tab==='view');
 }
 
+function switchSubTab(sub){
+  const subs = ['about','contact','pubs','posts'];
+  subs.forEach(s => {
+    document.getElementById('sub' + s.charAt(0).toUpperCase() + s.slice(1)).classList.toggle('hidden', s!==sub);
+    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
+  });
+  if(sub === 'posts') loadLatestPosts();
+}
+
+async function loadLatestPosts(){
+  const container = document.getElementById('latestPostsDisplay');
+  container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">Loading...</div>';
+  try{
+    const bin = await fetchBin();
+    const posts = (bin.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,3);
+    if(posts.length === 0){
+      container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">No posts yet.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(p => `
+      <div style="padding:12px 0;border-bottom:1px solid var(--line);">
+        <a href="blog.html" style="text-decoration:none;color:var(--navy);font-weight:600;font-size:0.95rem;">${escapeHtml(p.title)}</a>
+        <div style="color:var(--muted);font-size:0.78rem;margin-top:2px;">${new Date(p.date).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">Could not load posts.</div>';
+  }
+}
+
 async function fetchBin(){
   const res = await fetch(`${JSONBIN_URL}/latest`, {
     headers: { "X-Master-Key": JSONBIN_API_KEY }
@@ -268,6 +431,15 @@ async function loadProfile(){
   try{
     const bin = await fetchBin();
     const profile = bin.profile || {};
+
+    // name and title (header)
+    const defaultName = "Engr. Nana Kwame Obeng-Ahenkora";
+    const defaultTitle = "Ph.D | Dept. of Civil & Environmental Engineering";
+    document.getElementById('nameDisplay').textContent = profile.name || defaultName;
+    document.getElementById('titleDisplay').textContent = profile.title || defaultTitle;
+    document.getElementById('nameInput').value = profile.name || defaultName;
+    document.getElementById('titleInput').value = profile.title || defaultTitle;
+
     document.getElementById('bioDisplay').textContent = profile.bio || "No bio added yet.";
 
     const contactLines = (profile.contact || "").split('\n').filter(l => l.trim());
@@ -364,6 +536,8 @@ function checkPasscode(){
 }
 
 async function saveProfile(){
+  const name = document.getElementById('nameInput').value.trim();
+  const title = document.getElementById('titleInput').value.trim();
   const photoData = window.currentPhotoData || "";
   const bio = document.getElementById('bioInput').value.trim();
   const contact = document.getElementById('contactInput').value.trim();
@@ -377,7 +551,7 @@ async function saveProfile(){
 
   try{
     const bin = await fetchBin();
-    bin.profile = { photoData, bio, contact, social, publications };
+    bin.profile = { name, title, photoData, bio, contact, social, publications };
     await saveBin(bin);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
     loadProfile();
@@ -388,7 +562,291 @@ async function saveProfile(){
   }
 }
 
-window.addEventListener('DOMContentLoaded', loadProfile);
+const ENGINEERING_FACTS = [
+  "The Burj Khalifa's foundation uses over 45,000 cubic meters of concrete and 192 piles driven more than 50 meters deep.",
+  "Concrete actually gets stronger over time — it can continue curing and gaining strength for years after being poured.",
+  "The Golden Gate Bridge was designed to sway up to 27 feet sideways to withstand strong winds.",
+  "Roman concrete structures like the Pantheon have survived nearly 2,000 years, partly due to a self-healing lime reaction.",
+  "Steel expands about 1.2mm per meter for every 10°C rise in temperature — a key factor in bridge and rail design.",
+  "The tallest structures sway slightly in the wind by design — the Empire State Building can move up to 1.5 feet.",
+  "Reinforced concrete works because steel and concrete expand and contract at almost the same rate when heated.",
+  "The Hoover Dam used enough concrete to pave a two-lane highway from San Francisco to New York.",
+  "Soil compaction testing (Proctor test) remains a cornerstone of geotechnical engineering, developed in the 1930s.",
+  "The world's first iron bridge, built in 1779 in England, is still standing today as a UNESCO World Heritage Site.",
+  "Suspension bridges distribute load through tension in the cables rather than compression, unlike arch bridges.",
+  "Modern skyscrapers use tuned mass dampers — giant pendulums — to counteract building sway during earthquakes and wind.",
+  "The Panama Canal's lock system relies entirely on gravity to move over 200 million liters of water per transit.",
+  "Portland cement gets its name from its resemblance to Portland stone, a limestone quarried in England.",
+  "The Eiffel Tower can grow taller by up to 15cm in summer due to thermal expansion of its iron structure.",
+  "A well-designed truss converts bending forces into pure tension and compression, making it highly material-efficient.",
+  "The Three Gorges Dam in China is so massive it has measurably slowed the Earth's rotation by a fraction of a second.",
+  "Asphalt pavement is almost 100% recyclable, making it one of the most recycled materials in construction.",
+  "The Leaning Tower of Pisa's tilt was caused by soft, unstable soil on one side of its foundation.",
+  "Fiber-reinforced concrete can resist cracking far better than plain concrete by distributing stress across fibers.",
+  "The Millau Viaduct in France is taller than the Eiffel Tower at its highest pier, standing 343 meters tall.",
+  "Earthquake-resistant buildings often use base isolators — flexible supports that let the ground move without shaking the structure above.",
+  "The world's longest suspension bridge, the Çanakkale 1915 Bridge in Turkey, spans over 2,000 meters.",
+  "Timber structures can actually perform well in fires because char forms an insulating layer that slows burning.",
+  "The Sydney Opera House's shell roof required the invention of new construction techniques never used before.",
+  "Water pressure increases by roughly 1 atmosphere for every 10 meters of depth — critical for dam and pipeline design.",
+  "The world's first skyscraper, the Home Insurance Building in Chicago (1885), was only 10 stories tall.",
+  "Geosynthetics — engineered fabrics — are used to reinforce soil and prevent erosion in modern earthworks.",
+  "The Channel Tunnel between England and France runs up to 75 meters below the seabed.",
+  "Cantilever bridges, like the Forth Bridge in Scotland, balance loads without needing support in the middle span.",
+  "The compressive strength of concrete is typically tested using cube or cylinder samples crushed after 28 days of curing.",
+  "The world's tallest structure, the Burj Khalifa, uses a 'buttressed core' design inspired by a desert flower.",
+  "Bamboo has a higher tensile strength-to-weight ratio than steel, making it popular in sustainable construction.",
+  "The Netherlands' Delta Works is one of the largest flood protection systems ever engineered, built after the 1953 flood disaster.",
+  "Prestressed concrete uses tensioned steel cables to counteract tension forces before loads are even applied.",
+  "The Akashi Kaikyō Bridge in Japan grew 1 meter longer during construction due to an earthquake shifting its towers.",
+  "Recycled crushed concrete can be reused as aggregate in new construction, reducing landfill waste significantly.",
+  "The load-bearing capacity of soil is a key factor engineers test before designing any foundation.",
+  "The world's first reinforced concrete bridge was built in 1875 in France by Joseph Monier.",
+  "Wind tunnels are used to test how tall buildings and bridges respond to aerodynamic forces before construction.",
+  "The Hagia Sophia's massive dome, built in 537 AD, was an engineering marvel that influenced architecture for centuries.",
+  "Seismic retrofitting can add flexible joints or dampers to older buildings to help them survive earthquakes.",
+  "The world's deepest foundation piles can extend over 100 meters underground for supertall skyscrapers.",
+  "Green roofs can reduce a building's stormwater runoff by up to 50% while also improving insulation.",
+  "The Brooklyn Bridge, completed in 1883, was the first steel-wire suspension bridge in the world.",
+  "Self-healing concrete uses embedded bacteria that produce limestone to seal cracks automatically.",
+  "The Tacoma Narrows Bridge collapse in 1940 fundamentally changed how engineers study wind-induced vibration.",
+  "3D-printed concrete structures are now being used to build entire houses in under 24 hours.",
+  "The world's largest telescope dome, in Hawaii, had to be engineered to withstand hurricane-force winds at high altitude."
+];
+
+// month is 1-12, day is 1-31
+const ENGINEERING_HISTORY = [
+  { month: 1, day: 8, text: "1867 — Alfred Nobel patented dynamite, revolutionizing construction and mining excavation." },
+  { month: 1, day: 28, text: "1887 — The Eiffel Tower's construction officially began in Paris." },
+  { month: 2, day: 20, text: "1962 — John Glenn became the first American to orbit Earth, relying on precision aerospace engineering." },
+  { month: 3, day: 13, text: "1781 — William Herschel discovered Uranus, later aiding advances in optical engineering." },
+  { month: 3, day: 24, text: "1882 — Robert Koch announced the discovery of the tuberculosis bacterium, later influencing sanitary/water engineering standards." },
+  { month: 4, day: 15, text: "1912 — The RMS Titanic sank, leading to major reforms in maritime and structural safety engineering." },
+  { month: 5, day: 6, text: "1937 — The Hindenburg disaster reshaped engineering safety standards for hydrogen-based structures." },
+  { month: 5, day: 24, text: "1883 — The Brooklyn Bridge officially opened, the first steel-wire suspension bridge in the world." },
+  { month: 5, day: 27, text: "1937 — The Golden Gate Bridge opened to pedestrians in San Francisco." },
+  { month: 6, day: 6, text: "1933 — The first drive-in movie theater opened, an early example of large-scale outdoor structural planning." },
+  { month: 6, day: 15, text: "1215 — The Magna Carta was sealed, later influencing legal frameworks around land and property engineering rights." },
+  { month: 7, day: 4, text: "1928 — The Peace Bridge between the US and Canada officially opened." },
+  { month: 7, day: 20, text: "1969 — Apollo 11 landed on the Moon, one of history's greatest feats of systems engineering." },
+  { month: 8, day: 13, text: "1961 — Construction began on the Berlin Wall, a massive (and controversial) engineering and logistics undertaking." },
+  { month: 9, day: 3, text: "1967 — Sweden switched from driving on the left to the right side of the road overnight — a massive traffic engineering operation known as 'Dagen H'." },
+  { month: 9, day: 24, text: "1852 — Henri Giffard flew the first powered airship, an early triumph of aeronautical engineering." },
+  { month: 10, day: 21, text: "1879 — Thomas Edison successfully tested a long-lasting incandescent light bulb." },
+  { month: 10, day: 24, text: "1901 — Annie Edson Taylor became the first person to survive going over Niagara Falls in a barrel, testing structural design under extreme force." },
+  { month: 11, day: 7, text: "1940 — The Tacoma Narrows Bridge collapsed due to wind-induced resonance, forever changing bridge aerodynamics engineering." },
+  { month: 11, day: 21, text: "1877 — Thomas Edison announced the invention of the phonograph." },
+  { month: 12, day: 10, text: "1901 — The first Nobel Prizes were awarded, later recognizing many engineering and scientific breakthroughs." },
+  { month: 12, day: 17, text: "1903 — The Wright Brothers achieved the first powered flight at Kitty Hawk, North Carolina." },
+  { month: 1, day: 1, text: "1804 — Haiti became the first nation founded by a successful slave revolt, later undertaking major post-independence infrastructure rebuilding." },
+  { month: 1, day: 4, text: "1948 — Burma gained independence, launching major national infrastructure development programs." },
+  { month: 1, day: 7, text: "1610 — Galileo Galilei observed the moons of Jupiter, advancing the optical engineering behind telescopes." },
+  { month: 1, day: 9, text: "1839 — Louis Daguerre announced the daguerreotype photographic process, a landmark in optical and chemical engineering." },
+  { month: 1, day: 17, text: "1706 — Benjamin Franklin was born; his lightning rod invention remains foundational to electrical safety engineering." },
+  { month: 1, day: 19, text: "1839 — Charles Darwin was elected to the Royal Society, an institution central to engineering and scientific advancement." },
+  { month: 1, day: 23, text: "1849 — Elizabeth Blackwell became the first woman to earn a medical degree in the US, paralleling women's slower entry into engineering fields." },
+  { month: 1, day: 27, text: "1880 — Thomas Edison received a patent for the incandescent electric lamp." },
+  { month: 1, day: 31, text: "1958 — The United States launched Explorer 1, its first satellite, developed with pioneering aerospace engineering." },
+  { month: 2, day: 3, text: "1959 — Structural fatigue investigations advanced significantly following the 'Day the Music Died' plane crash, improving aviation safety engineering." },
+  { month: 2, day: 5, text: "1919 — United Artists was founded; unrelated to engineering, but the era saw major advances in industrial film and sound engineering." },
+  { month: 2, day: 7, text: "1964 — The Beatles arrived in the US, an era that also saw major advances in audio and broadcast engineering." },
+  { month: 2, day: 11, text: "1979 — The Ayatollah Khomeini took power in Iran, an era marked by significant national infrastructure shifts." },
+  { month: 2, day: 14, text: "1876 — Alexander Graham Bell filed his patent for the telephone, a landmark in electrical engineering." },
+  { month: 2, day: 15, text: "1564 — Galileo Galilei was born, laying groundwork for modern physics and mechanical engineering." },
+  { month: 2, day: 18, text: "1930 — Pluto was discovered, a milestone made possible by precision optical engineering." },
+  { month: 2, day: 19, text: "1878 — Thomas Edison patented the phonograph." },
+  { month: 2, day: 23, text: "1455 — The Gutenberg Bible was completed, powered by the mechanical engineering of the printing press." },
+  { month: 2, day: 27, text: "1827 — The first Mardi Gras celebration in New Orleans took place in a city later known for major flood-control engineering works." },
+  { month: 3, day: 1, text: "1932 — Construction was completed on Boulder City, built to house workers for the Hoover Dam project." },
+  { month: 3, day: 3, text: "1969 — Apollo 9 tested the lunar module in Earth orbit, a critical engineering milestone for Moon landings." },
+  { month: 3, day: 4, text: "1791 — Vermont joined the Union; the state later became known for its granite quarrying engineering industry." },
+  { month: 3, day: 7, text: "1876 — Alexander Graham Bell was granted the patent for the telephone." },
+  { month: 3, day: 10, text: "1876 — Bell made the first successful telephone call to his assistant, Watson." },
+  { month: 3, day: 14, text: "1879 — Albert Einstein was born, whose physics underpins much of modern structural and material engineering." },
+  { month: 3, day: 17, text: "1959 — The Dalai Lama fled Tibet, an era of significant Himalayan road and infrastructure engineering by multiple nations." },
+  { month: 3, day: 20, text: "1852 — Harriet Beecher Stowe published Uncle Tom's Cabin; the era saw rapid growth of American railway engineering." },
+  { month: 3, day: 21, text: "1965 — The Selma to Montgomery marches began on a route later reinforced with modern road engineering." },
+  { month: 3, day: 25, text: "1955 — Disneyland's construction employed innovative civil and structural engineering for its unique attractions." },
+  { month: 3, day: 26, text: "1979 — The Egypt-Israel peace treaty was signed, later enabling major joint infrastructure projects." },
+  { month: 3, day: 30, text: "1867 — The US purchased Alaska, later requiring extensive engineering to address its extreme climate infrastructure needs." },
+  { month: 4, day: 1, text: "1976 — Apple Computer was founded, eventually transforming engineering design software and CAD tools." },
+  { month: 4, day: 4, text: "1968 — Dr. Martin Luther King Jr. was assassinated in Memphis, a city later revitalized through major urban engineering." },
+  { month: 4, day: 6, text: "1830 — The Book of Mormon was published; unrelated to engineering, but the era saw rapid canal and railway construction in the US." },
+  { month: 4, day: 9, text: "1865 — The American Civil War effectively ended, followed by massive railroad and infrastructure reconstruction." },
+  { month: 4, day: 12, text: "1961 — Yuri Gagarin became the first human in space, a landmark in aerospace engineering." },
+  { month: 4, day: 14, text: "1912 — The RMS Titanic struck an iceberg, prompting major reforms in maritime structural engineering." },
+  { month: 4, day: 18, text: "1906 — The San Francisco earthquake struck, transforming seismic engineering standards worldwide." },
+  { month: 4, day: 22, text: "1970 — The first Earth Day was held, later influencing sustainable and environmental engineering practices." },
+  { month: 4, day: 24, text: "1990 — The Hubble Space Telescope was launched, an extraordinary feat of precision optical engineering." },
+  { month: 4, day: 28, text: "1789 — The mutiny on the HMS Bounty occurred, a ship representing advanced 18th-century naval engineering." },
+  { month: 5, day: 1, text: "1931 — The Empire State Building officially opened after just over a year of construction." },
+  { month: 5, day: 4, text: "1979 — Margaret Thatcher became UK Prime Minister during an era of major infrastructure privatization." },
+  { month: 5, day: 7, text: "1945 — Germany surrendered in WWII, leading to massive European reconstruction and engineering efforts." },
+  { month: 5, day: 10, text: "1869 — The First Transcontinental Railroad was completed at Promontory Summit, Utah." },
+  { month: 5, day: 14, text: "1948 — Israel declared independence, launching decades of major national infrastructure development." },
+  { month: 5, day: 18, text: "1980 — Mount St. Helens erupted, prompting new research into structural resilience against natural disasters." },
+  { month: 5, day: 20, text: "1927 — Charles Lindbergh began his solo transatlantic flight, showcasing aeronautical engineering advances." },
+  { month: 5, day: 21, text: "1881 — The American Red Cross was founded by Clara Barton." },
+  { month: 5, day: 25, text: "1961 — President Kennedy announced the goal of landing a man on the Moon, launching a decade of aerospace engineering innovation." },
+  { month: 5, day: 29, text: "1953 — Edmund Hillary and Tenzing Norgay became the first to summit Mount Everest, aided by advances in climbing equipment engineering." },
+  { month: 6, day: 1, text: "1980 — CNN launched, an early example of large-scale live broadcast engineering." },
+  { month: 6, day: 4, text: "1919 — The US Congress passed the 19th Amendment; the era also saw rapid growth of hydroelectric engineering." },
+  { month: 6, day: 5, text: "1981 — The first cases of what became known as AIDS were reported, spurring advances in biomedical engineering." },
+  { month: 6, day: 6, text: "1944 — D-Day landings in Normandy relied on Mulberry harbours — extraordinary temporary engineering structures." },
+  { month: 6, day: 9, text: "1732 — James Oglethorpe received a charter to found Georgia; the colony later became known for shipbuilding engineering." },
+  { month: 6, day: 12, text: "1987 — President Reagan's Berlin speech came amid rapid advances in East-West infrastructure engineering." },
+  { month: 6, day: 16, text: "1963 — Valentina Tereshkova became the first woman in space, a major aerospace engineering milestone." },
+  { month: 6, day: 18, text: "1178 — Canterbury monks reported a lunar impact event, later studied through modern astronomical engineering methods." },
+  { month: 6, day: 20, text: "1837 — Queen Victoria ascended the throne, overseeing Britain's Industrial Revolution engineering boom." },
+  { month: 6, day: 25, text: "1876 — The Battle of Little Bighorn took place; the era saw rapid US railway expansion engineering." },
+  { month: 6, day: 28, text: "1914 — Archduke Franz Ferdinand's assassination triggered WWI, spurring massive military engineering advances." },
+  { month: 7, day: 1, text: "1867 — Canada became a self-governing dominion, launching major transcontinental railway engineering projects." },
+  { month: 7, day: 2, text: "1937 — Amelia Earhart disappeared during her flight, an event that spurred advances in aviation tracking engineering." },
+  { month: 7, day: 3, text: "1938 — The steam locomotive Mallard set a world speed record for steam trains, reaching 126 mph." },
+  { month: 7, day: 5, text: "1946 — The bikini swimsuit was introduced; unrelated to engineering but named after Bikini Atoll nuclear tests." },
+  { month: 7, day: 7, text: "1930 — Construction began on the Hoover Dam, one of the largest civil engineering projects of its era." },
+  { month: 7, day: 9, text: "1877 — The first Wimbledon tennis championship was held, on courts requiring precise turf engineering." },
+  { month: 7, day: 11, text: "1804 — The Hamilton-Burr duel took place; the era saw the birth of American civil engineering societies." },
+  { month: 7, day: 14, text: "1789 — The storming of the Bastille began the French Revolution, later leading to Haussmann's famous Paris urban engineering." },
+  { month: 7, day: 16, text: "1969 — Apollo 11 launched from Kennedy Space Center toward the first Moon landing." },
+  { month: 7, day: 18, text: "64 AD — The Great Fire of Rome led to new building codes, an early form of fire-safety engineering regulation." },
+  { month: 7, day: 21, text: "1969 — Neil Armstrong became the first human to walk on the Moon." },
+  { month: 7, day: 24, text: "1911 — Machu Picchu was rediscovered, showcasing remarkable pre-Columbian civil engineering." },
+  { month: 7, day: 26, text: "1908 — The FBI was founded; unrelated to engineering, but the era saw rapid growth of American skyscraper construction." },
+  { month: 7, day: 28, text: "1914 — World War I began, driving rapid advances in industrial and military engineering." },
+  { month: 8, day: 1, text: "1774 — Joseph Priestley discovered oxygen, foundational to combustion and materials engineering." },
+  { month: 8, day: 2, text: "1990 — Iraq invaded Kuwait, later prompting major oil infrastructure reconstruction engineering." }
+];
+
+function loadHistoryOfDay(){
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const el = document.getElementById('historyOfDay');
+  if(!el) return;
+  const todayMatch = ENGINEERING_HISTORY.find(h => h.month === month && h.day === day);
+  if(todayMatch){
+    el.textContent = todayMatch.text;
+  } else {
+    const randomEvent = ENGINEERING_HISTORY[Math.floor(Math.random() * ENGINEERING_HISTORY.length)];
+    el.textContent = randomEvent.text;
+  }
+}
+
+async function subscribeNewsletter(){
+  const emailInput = document.getElementById('newsletterEmail');
+  const email = emailInput.value.trim();
+  const msg = document.getElementById('newsletterMsg');
+
+  if(!email || !email.includes('@')){
+    msg.innerHTML = '<div class="msg err" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Please enter a valid email address.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Subscribing...</div>';
+
+  try{
+    const bin = await fetchBin();
+    const subscribers = bin.newsletterSubscribers || [];
+    if(subscribers.some(s => s.toLowerCase() === email.toLowerCase())){
+      msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">You're already subscribed.</div>";
+      return;
+    }
+    subscribers.push(email);
+    bin.newsletterSubscribers = subscribers;
+    await saveBin(bin);
+    msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">Subscribed! You'll hear about new posts.</div>";
+    emailInput.value = '';
+  }catch(e){
+    msg.innerHTML = '<div class="msg err" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Could not subscribe. Try again.</div>';
+  }
+}
+
+const factHistory = [];
+function loadFactOfDay(){
+  let index;
+  // avoid repeating the same fact twice in a row within a session
+  do{
+    index = Math.floor(Math.random() * ENGINEERING_FACTS.length);
+  } while(ENGINEERING_FACTS.length > 1 && index === factHistory[factHistory.length - 1]);
+  factHistory.push(index);
+  const el = document.getElementById('factOfDay');
+  if(el) el.textContent = ENGINEERING_FACTS[index];
+}
+
+function toggleCalcWidget(show){
+  document.getElementById('calcWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
+}
+
+function calculateMix(){
+  const volume = parseFloat(document.getElementById('calcVolume').value) || 0;
+  const resultDiv = document.getElementById('calcResult');
+  if(volume <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid volume greater than 0.</div>';
+    return;
+  }
+  const ratioParts = document.getElementById('calcRatio').value.split(',').map(Number);
+  const [c, s, a] = ratioParts;
+  const totalParts = c + s + a;
+  // Dry volume factor (~1.54x wet volume, standard rule of thumb) and cement density (~1440 kg/m3, 50kg per bag)
+  const dryVolume = volume * 1.54;
+  const cementVol = (dryVolume * c) / totalParts;
+  const sandVol = (dryVolume * s) / totalParts;
+  const aggVol = (dryVolume * a) / totalParts;
+  const cementWeightKg = cementVol * 1440;
+  const cementBags = cementWeightKg / 50;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${cementBags.toFixed(1)}</div>
+        <div class="calc-result-label">Cement Bags (50kg)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${sandVol.toFixed(2)} m&sup3;</div>
+        <div class="calc-result-label">Sand</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${aggVol.toFixed(2)} m&sup3;</div>
+        <div class="calc-result-label">Coarse Aggregate</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">Based on the standard dry-volume factor (1.54×) and cement density of 1440 kg/m³. For estimation purposes — always verify against project specifications.</p>
+  `;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadProfile();
+  loadFactOfDay();
+  loadHistoryOfDay();
+});
 </script>
+<!-- Floating Calculator Widget -->
+<div id="calcWidgetOverlay" class="calc-widget-overlay hidden" onclick="toggleCalcWidget(false)"></div>
+<div id="calcWidgetPanel" class="calc-widget-panel hidden">
+  <div class="calc-widget-header">
+    <span>Concrete Mix Calculator</span>
+    <button onclick="toggleCalcWidget(false)" class="calc-widget-close">&times;</button>
+  </div>
+  <div class="calc-widget-body">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate cement, sand, and aggregate quantities for a given concrete volume and mix ratio.</p>
+    <label>Volume (m&sup3;)</label>
+    <input type="text" id="calcVolume" placeholder="e.g. 1" value="1">
+    <label>Mix Ratio (Cement:Sand:Aggregate)</label>
+    <select id="calcRatio">
+      <option value="1,2,4">1 : 2 : 4 (M15, general use)</option>
+      <option value="1,1.5,3">1 : 1.5 : 3 (M20, structural)</option>
+      <option value="1,1,2">1 : 1 : 2 (M25, high strength)</option>
+      <option value="1,3,6">1 : 3 : 6 (M10, mass concrete)</option>
+    </select>
+    <button onclick="calculateMix()" style="width:100%;">Calculate</button>
+    <div id="calcResult"></div>
+  </div>
+</div>
+<button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Concrete Mix Calculator">
+  🧮
+</button>
+
 </body>
 </html>

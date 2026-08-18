@@ -232,11 +232,35 @@
     width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
     font-size:0.9rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#f8fafc;color:var(--ink);
   }
+
+  .datetime-display{
+    font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
+  }
+  @media (max-width:640px){
+    .hero{ padding:32px 16px 48px; margin-left:-16px; margin-right:-16px; }
+    .hero h1{ font-size:1.5rem; }
+    .hero .hero-sub, .title{ font-size:0.8rem; }
+    .profile-pic{ width:84px; height:84px; }
+    .wrap{ padding:0 16px 32px; }
+    .card{ padding:18px; }
+    .tabs, .hero-tabs{ flex-wrap:wrap; }
+    .tab, .hero-tabs a, .hero-tabs .tab-static{ font-size:0.8rem; padding:8px 10px; }
+    h2{ font-size:0.95rem; }
+    body{ padding-left:0; padding-right:0; }
+    .calc-widget-panel{ width:100%; max-width:100%; }
+    table{ font-size:0.78rem; }
+    th, td{ padding:7px 6px; }
+  }
+  @media (max-width:400px){
+    .hero h1{ font-size:1.3rem; }
+    .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
+  }
 </style>
 
 </head>
 <body>
 <div class="hero">
+  <div class="datetime-display" id="liveDateTime">Loading...</div>
   <div class="stamp">Verified Faculty Profile</div><br>
   <img class="profile-pic" id="profilePic" src="" alt="Profile photo" style="display:none;">
   <div class="profile-pic" id="profilePicPlaceholder">NO</div>
@@ -417,7 +441,16 @@ async function saveBin(binData){
     headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
     body: JSON.stringify(binData)
   });
-  if(!res.ok) throw new Error("Could not save to storage");
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to storage (${detail})`);
+  }
   return res.json();
 }
 
@@ -500,24 +533,44 @@ async function loadProfile(){
 
 function handlePhotoSelect(event){
   const file = event.target.files[0];
+  const previewWrap = document.getElementById('photoPreviewWrap');
   if(!file) return;
+
+  if(!file.type.startsWith('image/')){
+    previewWrap.innerHTML = '<div class="msg err">Please choose an image file (JPG, PNG, etc.).</div>';
+    return;
+  }
+
+  previewWrap.innerHTML = '<div class="msg ok">Processing image...</div>';
+
   const reader = new FileReader();
+  reader.onerror = function(){
+    previewWrap.innerHTML = '<div class="msg err">Could not read that file. Try a different image.</div>';
+  };
   reader.onload = function(e){
     const img = new Image();
+    img.onerror = function(){
+      previewWrap.innerHTML = '<div class="msg err">Could not process that image. Try a different file.</div>';
+    };
     img.onload = function(){
-      // Resize to max 400px on the longest side, compress to JPEG
-      const maxSize = 400;
-      let w = img.width, h = img.height;
-      if(w > h && w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
-      else if(h > maxSize){ w = Math.round(w * (maxSize / h)); h = maxSize; }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-      window.currentPhotoData = dataUrl;
-      document.getElementById('photoPreviewWrap').innerHTML =
-        `<img src="${dataUrl}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);">`;
+      try{
+        // Resize to max 260px on the longest side, compress to JPEG to keep storage small
+        const maxSize = 260;
+        let w = img.width, h = img.height;
+        if(w > h && w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
+        else if(h > maxSize){ w = Math.round(w * (maxSize / h)); h = maxSize; }
+        else if(w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+        window.currentPhotoData = dataUrl;
+        previewWrap.innerHTML =
+          `<img src="${dataUrl}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);"> <div class="msg ok" style="display:inline-block;margin-left:10px;vertical-align:middle;">Ready — click Save Changes below to apply.</div>`;
+      }catch(err){
+        previewWrap.innerHTML = `<div class="msg err">Error processing image: ${escapeHtml(err.message)}</div>`;
+      }
     };
     img.src = e.target.result;
   };
@@ -816,7 +869,19 @@ function calculateMix(){
   `;
 }
 
+
+function updateLiveDateTime(){
+  const el = document.getElementById('liveDateTime');
+  if(!el) return;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  el.textContent = `${dateStr} · ${timeStr}`;
+}
+setInterval(updateLiveDateTime, 1000 * 30);
+
 window.addEventListener('DOMContentLoaded', () => {
+  updateLiveDateTime();
   loadProfile();
   loadFactOfDay();
   loadHistoryOfDay();

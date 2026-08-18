@@ -19,7 +19,50 @@
     --line:#e3e8ef;
     --danger:#c0392b;
     --ok:#1f8a4c;
+    --navy:#0b2545;
+    --navy-dark:#071a33;
+    --gold:#d4a017;
+    --gold-dark:#b5860e;
   }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff;
+    padding:40px 24px 56px;
+    text-align:center;
+    position:relative;
+    margin:-24px -24px 0 -24px;
+  }
+  .hero::after{
+    content:"";
+    position:absolute; bottom:-1px; left:0; width:100%; height:6px;
+    background:linear-gradient(90deg, var(--gold), #fff2, var(--gold));
+  }
+  .hero .stamp{
+    display:inline-block;position:static;
+    border:1px solid rgba(255,255,255,0.35);color:#fff;
+    font-size:0.68rem;letter-spacing:0.12em;padding:4px 12px;border-radius:20px;
+    text-transform:uppercase;opacity:0.85;margin-bottom:16px;
+  }
+  .hero .profile-pic{
+    width:88px;height:88px;border-radius:50%;border:3px solid var(--gold);
+    object-fit:cover;margin-bottom:14px;background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Poppins',sans-serif;font-size:1.8rem;color:var(--navy);
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  }
+  .hero h1{ color:#fff; font-family:'Poppins',sans-serif; font-size:1.7rem; margin-bottom:4px; }
+  .hero .hero-sub{ font-size:0.85rem; color:var(--gold); font-weight:600; margin-top:0; margin-bottom:4px; }
+  .hero-tabs{
+    display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    position:relative;z-index:2;
+  }
+  .hero-tabs a, .hero-tabs .tab-static{
+    flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'Inter',sans-serif;
+    text-decoration:none;
+  }
+  .hero-tabs .active{ background:var(--navy); color:#fff; }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
@@ -100,19 +143,55 @@
   .result-name{font-family:'Poppins',sans-serif;font-style:italic;font-size:1.2rem;font-weight:700;margin-bottom:10px;color:var(--ink);}
   .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Inter',sans-serif;}
   .hint{font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;}
+  .switch{ position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider{ position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#cbd5e1; border-radius:26px; transition:0.2s; }
+  .slider::before{ position:absolute; content:""; height:20px; width:20px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s; }
+  .switch input:checked + .slider{ background:var(--navy); }
+  .switch input:checked + .slider::before{ transform:translateX(20px); }
+
+  .datetime-display{
+    font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
+  }
+  @media (max-width:640px){
+    .hero{ padding:32px 16px 48px; margin-left:-16px; margin-right:-16px; }
+    .hero h1{ font-size:1.5rem; }
+    .hero .hero-sub, .title{ font-size:0.8rem; }
+    .profile-pic{ width:84px; height:84px; }
+    .wrap{ padding:0 16px 32px; }
+    .card{ padding:18px; }
+    .tabs, .hero-tabs{ flex-wrap:wrap; }
+    .tab, .hero-tabs a, .hero-tabs .tab-static{ font-size:0.8rem; padding:8px 10px; }
+    h2{ font-size:0.95rem; }
+    body{ padding-left:0; padding-right:0; }
+    .calc-widget-panel{ width:100%; max-width:100%; }
+    table{ font-size:0.78rem; }
+    th, td{ padding:7px 6px; }
+  }
+  @media (max-width:400px){
+    .hero h1{ font-size:1.3rem; }
+    .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
+  }
 </style>
 
 </head>
 <body>
-<div class="wrap">
-  <div class="stamp">Verified</div>
-  <div class="tabs" style="margin-bottom:10px;">
-    <a href="index.html" class="tab" style="text-decoration:none;">Home</a>
-    <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
-    <div class="tab active" style="cursor:default;">Assessment Portal</div>
-  </div>
+<div class="hero">
+  <div class="datetime-display" id="liveDateTime">Loading...</div>
+  <div class="stamp">Verified Faculty Profile</div>
+  <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
+  <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
   <h1>Assessment Portal</h1>
-  <p style="font-family:'Inter',sans-serif;font-size:0.8rem;color:var(--accent);margin-top:0;margin-bottom:6px;letter-spacing:0.03em;">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
+  <p class="hero-sub" id="heroName">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
+</div>
+
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="blog.html">Blog</a>
+  <div class="tab-static active">Assessment Portal</div>
+</div>
+
+<div class="wrap">
   <p class="sub">Teachers upload scores. Students look up their own result using their index number only.</p>
 
   <div class="tabs">
@@ -149,6 +228,19 @@
       <button id="uploadBtn" onclick="uploadScores()">Upload Pasted Scores</button>
       <button class="secondary" onclick="clearAllData()" style="margin-left:8px;">Clear All Data</button>
       <div id="uploadMsg"></div>
+    </div>
+
+    <div class="card hidden" id="settingsCard">
+      <label>Device Lock (Student Lookup)</label>
+      <div class="hint">When ON, once a student looks up their index number on a device, that device can only ever check that same index number again. When OFF, students can search any index number freely.</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <label class="switch">
+          <input type="checkbox" id="deviceLockToggle" onchange="toggleDeviceLockSetting()">
+          <span class="slider"></span>
+        </label>
+        <span id="deviceLockStatusText" style="font-size:0.9rem;font-weight:600;">Loading...</span>
+      </div>
+      <div id="deviceLockMsg"></div>
     </div>
 
     <div class="card hidden" id="deleteCourseCard">
@@ -265,6 +357,8 @@ function checkPasscode(){
     document.getElementById('dataCard').classList.remove('hidden');
     document.getElementById('deleteCourseCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
+    document.getElementById('settingsCard').classList.remove('hidden');
+    loadDeviceLockSetting();
     document.getElementById('reportsCard').classList.remove('hidden');
     loadRecords();
     loadCourseManageList();
@@ -509,8 +603,10 @@ async function lookupScore(){
   }
 
   // If this device is already locked to a confirmed index number, block switching to another
+  // (only enforced when the teacher has the Device Lock setting turned ON)
+  const lockEnabled = await isDeviceLockEnabled();
   const lockedIndex = localStorage.getItem(LOCK_KEY);
-  if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
+  if(lockEnabled && lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
     msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number. Each device can only check one student's results.</div>";
     resultCard.classList.add('hidden');
     return;
@@ -529,8 +625,8 @@ async function lookupScore(){
       return;
     }
 
-    // Only lock the device once a real, matching index number is confirmed
-    if(!lockedIndex){
+    // Only lock the device once a real, matching index number is confirmed, and only if enabled
+    if(lockEnabled && !lockedIndex){
       localStorage.setItem(LOCK_KEY, idx);
       idxInput.disabled = true;
       if(lookupBtn) lookupBtn.disabled = true;
@@ -578,6 +674,50 @@ async function saveBin(binData){
   });
   if(!res.ok) throw new Error("Could not save to storage");
   return res.json();
+}
+
+async function isDeviceLockEnabled(){
+  try{
+    const bin = await fetchBin();
+    // default to true (locked) if never set, preserving existing behavior
+    return bin.settings && typeof bin.settings.deviceLockEnabled === 'boolean'
+      ? bin.settings.deviceLockEnabled
+      : true;
+  }catch(e){
+    return true;
+  }
+}
+
+async function loadDeviceLockSetting(){
+  const toggle = document.getElementById('deviceLockToggle');
+  const statusText = document.getElementById('deviceLockStatusText');
+  try{
+    const enabled = await isDeviceLockEnabled();
+    toggle.checked = enabled;
+    statusText.textContent = enabled ? 'ON — device locking active' : 'OFF — students can search freely';
+  }catch(e){
+    statusText.textContent = 'Could not load setting.';
+  }
+}
+
+async function toggleDeviceLockSetting(){
+  const toggle = document.getElementById('deviceLockToggle');
+  const statusText = document.getElementById('deviceLockStatusText');
+  const msg = document.getElementById('deviceLockMsg');
+  const enabled = toggle.checked;
+
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const bin = await fetchBin();
+    bin.settings = bin.settings || {};
+    bin.settings.deviceLockEnabled = enabled;
+    await saveBin(bin);
+    statusText.textContent = enabled ? 'ON — device locking active' : 'OFF — students can search freely';
+    msg.innerHTML = `<div class="msg ok">Device lock turned ${enabled ? 'ON' : 'OFF'}.</div>`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save setting: ${escapeHtml(e.message)}</div>`;
+    toggle.checked = !enabled;
+  }
 }
 
 // ===== Course list management (Teacher) =====
@@ -747,7 +887,38 @@ async function loadIssueReports(){
   }
 }
 
+async function loadHeroProfile(){
+  try{
+    const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
+    if(!res.ok) return;
+    const data = await res.json();
+    const profile = (data.record && data.record.profile) || {};
+    const nameEl = document.getElementById('heroName');
+    if(nameEl) nameEl.textContent = profile.name || "Engr. Nana Kwame Obeng-Ahenkora, Ph.D";
+    const picImg = document.getElementById('heroProfilePic');
+    const picPlaceholder = document.getElementById('heroProfilePicPlaceholder');
+    if(profile.photoData){
+      picImg.src = profile.photoData;
+      picImg.style.display = 'block';
+      picPlaceholder.style.display = 'none';
+    }
+  }catch(e){}
+}
+
+
+function updateLiveDateTime(){
+  const el = document.getElementById('liveDateTime');
+  if(!el) return;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  el.textContent = `${dateStr} · ${timeStr}`;
+}
+setInterval(updateLiveDateTime, 1000 * 30);
+
 window.addEventListener('DOMContentLoaded', () => {
+  updateLiveDateTime();
+  loadHeroProfile();
   const lockedIndex = localStorage.getItem(LOCK_KEY);
   if(lockedIndex){
     const idxInput = document.getElementById('indexLookup');

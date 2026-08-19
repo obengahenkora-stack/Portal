@@ -315,11 +315,52 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 
-// ===== JSONBin.io configuration =====
+// ===== JSONBin.io configuration (records, courses, reports, settings) =====
 const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
 const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-// =====================================
+// ============================================================================
+
+// ===== Supabase configuration (profile/photo, blog posts) =====
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){
+    return {};
+  }
+}
+
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true"
+    },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to Supabase (${detail})`);
+  }
+  return true;
+}
+// =================================================================
 
 const PASSCODE = "teacher123"; // change this if you want a different passcode
 const LOCK_KEY = "assessment_locked_index";
@@ -656,6 +697,16 @@ function escapeHtml(str){
 
 // ===== Full bin read/write (extends storage to include courses + reports) =====
 async function fetchBin(){
+  // If a previous save overflowed to Supabase, that copy is the freshest source of truth.
+  try{
+    const supaData = await fetchSupabaseData();
+    if(supaData.portalDataOverflow){
+      return supaData.portalDataOverflow;
+    }
+  }catch(e){
+    // ignore, fall through to JSONBin
+  }
+
   const res = await fetch(`${JSONBIN_URL}/latest`, {
     headers: { "X-Master-Key": JSONBIN_API_KEY }
   });
@@ -673,17 +724,41 @@ async function saveBin(binData){
     },
     body: JSON.stringify(binData)
   });
-  if(!res.ok){
-    let detail = "";
+
+  if(res.ok){
+    // Successful JSONBin save — clear any old Supabase overflow copy so we don't read stale data later.
     try{
-      const errBody = await res.json();
-      detail = errBody.message || JSON.stringify(errBody);
-    }catch(e){
-      detail = `HTTP ${res.status}`;
-    }
-    throw new Error(`Could not save to storage (${detail})`);
+      const supaData = await fetchSupabaseData();
+      if(supaData.portalDataOverflow){
+        delete supaData.portalDataOverflow;
+        await saveSupabaseData(supaData);
+      }
+    }catch(e){ /* non-critical, ignore */ }
+    return res.json();
   }
-  return res.json();
+
+  // JSONBin save failed — check if it's specifically a size-limit issue, and if so, fall back to Supabase automatically.
+  let detail = "";
+  try{
+    const errBody = await res.json();
+    detail = errBody.message || JSON.stringify(errBody);
+  }catch(e){
+    detail = `HTTP ${res.status}`;
+  }
+
+  const isSizeLimitError = /100\s*kb|over\s*100kb|upgrade to pro/i.test(detail);
+  if(isSizeLimitError){
+    try{
+      const supaData = await fetchSupabaseData();
+      supaData.portalDataOverflow = binData;
+      await saveSupabaseData(supaData);
+      return { success: true, overflow: true };
+    }catch(overflowErr){
+      throw new Error(`JSONBin is full and the automatic backup to Supabase also failed (${overflowErr.message})`);
+    }
+  }
+
+  throw new Error(`Could not save to storage (${detail})`);
 }
 
 async function isDeviceLockEnabled(){
@@ -924,10 +999,8 @@ async function clearAllReports(){
 
 async function loadHeroProfile(){
   try{
-    const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
-    if(!res.ok) return;
-    const data = await res.json();
-    const profile = (data.record && data.record.profile) || {};
+    const data = await fetchSupabaseData();
+    const profile = data.profile || {};
     const nameEl = document.getElementById('heroName');
     if(nameEl) nameEl.textContent = profile.name || "Engr. Nana Kwame Obeng-Ahenkora, Ph.D";
     const picImg = document.getElementById('heroProfilePic');

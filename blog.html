@@ -206,11 +206,12 @@
 </div>
 
 <script>
-// ===== JSONBin.io configuration (shared with portal + homepage) =====
-const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
-const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-// =======================================================================
+// ===== Supabase configuration (blog posts + profile) =====
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+// ============================================================
 
 const PASSCODE = "teacher123"; // same passcode used across the site; change if you'd like a different one here
 
@@ -220,21 +221,38 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
-async function fetchBin(){
-  const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
-  if(!res.ok) throw new Error("Could not reach storage");
-  const data = await res.json();
-  return data.record || {};
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){
+    return {};
+  }
 }
 
-async function saveBin(binData){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
-    body: JSON.stringify(binData)
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true"
+    },
+    body: JSON.stringify(data)
   });
-  if(!res.ok) throw new Error("Could not save to storage");
-  return res.json();
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to Supabase (${detail})`);
+  }
+  return true;
 }
 
 function formatDate(iso){
@@ -255,8 +273,8 @@ async function loadPosts(){
   const container = document.getElementById('postsList');
   container.innerHTML = '<div class="empty">Loading posts...</div>';
   try{
-    const bin = await fetchBin();
-    const posts = (bin.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    const data = await fetchSupabaseData();
+    const posts = (data.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
     if(posts.length === 0){
       container.innerHTML = '<div class="empty">No posts yet. Check back soon.</div>';
       return;
@@ -276,8 +294,8 @@ async function loadPosts(){
 
 async function showPost(id){
   try{
-    const bin = await fetchBin();
-    const posts = bin.blogPosts || [];
+    const data = await fetchSupabaseData();
+    const posts = data.blogPosts || [];
     const post = posts.find(p => p.id === id);
     if(!post) return;
     document.getElementById('postsView').classList.add('hidden');
@@ -347,15 +365,15 @@ async function publishPost(){
   msg.innerHTML = '<div class="msg ok">Publishing...</div>';
 
   try{
-    const bin = await fetchBin();
-    const posts = bin.blogPosts || [];
+    const data = await fetchSupabaseData();
+    const posts = data.blogPosts || [];
     posts.push({
       id: 'post_' + Date.now(),
       title, body,
       date: new Date().toISOString()
     });
-    bin.blogPosts = posts;
-    await saveBin(bin);
+    data.blogPosts = posts;
+    await saveSupabaseData(data);
     msg.innerHTML = '<div class="msg ok">Post published.</div>';
     document.getElementById('postTitleInput').value = '';
     document.getElementById('postBodyInput').value = '';
@@ -371,8 +389,8 @@ async function loadManageList(){
   const container = document.getElementById('manageList');
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
-    const bin = await fetchBin();
-    const posts = (bin.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    const data = await fetchSupabaseData();
+    const posts = (data.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
     if(posts.length === 0){
       container.innerHTML = '<div class="empty">No posts yet.</div>';
       return;
@@ -394,9 +412,9 @@ async function loadManageList(){
 async function deletePost(id){
   if(!confirm('Delete this post? This cannot be undone.')) return;
   try{
-    const bin = await fetchBin();
-    bin.blogPosts = (bin.blogPosts || []).filter(p => p.id !== id);
-    await saveBin(bin);
+    const data = await fetchSupabaseData();
+    data.blogPosts = (data.blogPosts || []).filter(p => p.id !== id);
+    await saveSupabaseData(data);
     loadManageList();
   }catch(e){
     alert('Could not delete post.');
@@ -405,10 +423,8 @@ async function deletePost(id){
 
 async function loadHeroProfile(){
   try{
-    const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
-    if(!res.ok) return;
-    const data = await res.json();
-    const profile = (data.record && data.record.profile) || {};
+    const data = await fetchSupabaseData();
+    const profile = data.profile || {};
     const nameEl = document.getElementById('heroName');
     if(nameEl) nameEl.textContent = profile.name || "Engr. Nana Kwame Obeng-Ahenkora, Ph.D";
     const picImg = document.getElementById('heroProfilePic');

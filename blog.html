@@ -65,6 +65,13 @@
     padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:600;cursor:pointer;
   }
   .share-btn:hover{background:var(--gold);color:#fff;}
+  .comments-section{margin-top:28px;border-top:1px solid var(--line);padding-top:20px;}
+  .comment-item{padding:12px 0;border-bottom:1px solid var(--line);}
+  .comment-item:last-child{border-bottom:none;}
+  .comment-name{font-weight:700;font-size:0.88rem;color:var(--navy);}
+  .comment-date{font-size:0.72rem;color:var(--muted);margin-left:6px;}
+  .comment-text{font-size:0.9rem;color:var(--ink);margin-top:4px;line-height:1.5;white-space:pre-wrap;}
+  .comment-form{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);}
   .post-actions button{padding:6px 14px;font-size:0.72rem;}
   .back-to-list{font-family:'Inter',sans-serif;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
   .post-preview{cursor:pointer;}
@@ -152,17 +159,13 @@
 
 <div class="hero-tabs">
   <a href="index.html">Home</a>
-  <div class="tab-static active">Blog</div>
+  <div class="tab-static" id="navBlog" onclick="switchTab('posts')">Blog</div>
+  <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
   <a href="portal.html">Assessment Portal</a>
 </div>
 
 <div class="wrap">
-  <p class="sub">Short articles and explainers to help students understand key engineering concepts.</p>
-
-  <div class="tabs">
-    <div class="tab active" id="tabPosts" onclick="switchTab('posts')">Posts</div>
-    <div class="tab" id="tabResources" onclick="switchTab('resources')">Lecture Notes</div>
-  </div>
+  <p class="sub" id="pageSubtitle">Short articles and explainers to help students understand key engineering concepts.</p>
 
   <!-- POSTS LIST -->
   <div id="postsView">
@@ -288,8 +291,16 @@ function switchTab(tab){
   document.getElementById('resourcesView').classList.toggle('hidden', tab!=='resources');
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
-  document.getElementById('tabPosts').classList.toggle('active', tab==='posts');
-  document.getElementById('tabResources').classList.toggle('active', tab==='resources');
+  document.getElementById('navBlog').classList.toggle('active', tab==='posts' || tab==='write');
+  document.getElementById('navResources').classList.toggle('active', tab==='resources');
+
+  const subtitle = document.getElementById('pageSubtitle');
+  if(subtitle){
+    subtitle.textContent = tab === 'resources'
+      ? "Download lecture notes and course materials."
+      : "Short articles and explainers to help students understand key engineering concepts.";
+  }
+
   if(tab === 'write'){ loadManageList(); loadManageResourcesList(); }
   if(tab === 'resources') loadResourcesList();
 }
@@ -307,7 +318,7 @@ async function loadPosts(){
     container.innerHTML = posts.map(p => `
       <div class="card post-preview" onclick="showPost('${p.id}')">
         <div class="post-title">${escapeHtml(p.title)}</div>
-        <div class="post-date">${formatDate(p.date)}</div>
+        <div class="post-date">${formatDate(p.date)} &middot; ❤️ ${p.likes || 0}</div>
         <div class="post-body">${escapeHtml(p.body)}</div>
         <div class="read-more">Read more &rarr;</div>
       </div>
@@ -350,8 +361,23 @@ async function showPost(id){
         <button onclick="copyPostLink()" class="share-btn" style="border:none;">Copy Link</button>
       </div>
       <div id="copyMsg" style="margin-top:8px;"></div>
+
+      <div class="comments-section">
+        <h2 style="font-size:1rem;margin-bottom:14px;">Comments</h2>
+        <div id="commentsList"><div class="empty">Loading comments...</div></div>
+
+        <div class="comment-form">
+          <label>Your Name</label>
+          <input type="text" id="commentNameInput" placeholder="e.g. Kwame A.">
+          <label>Comment</label>
+          <textarea id="commentTextInput" placeholder="Write a comment..." style="min-height:80px;"></textarea>
+          <button id="commentSubmitBtn" onclick="submitComment('${id}')">Post Comment</button>
+          <div id="commentMsg"></div>
+        </div>
+      </div>
     `;
     window.scrollTo(0,0);
+    loadComments(id);
   }catch(e){}
 }
 
@@ -385,6 +411,78 @@ async function toggleLike(postId){
     likeBtn.disabled = false;
   }
 }
+
+async function loadComments(postId){
+  const container = document.getElementById('commentsList');
+  if(!container) return;
+  container.innerHTML = '<div class="empty">Loading comments...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const allComments = data.comments || [];
+    const comments = allComments
+      .filter(c => c.postId === postId)
+      .sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    if(comments.length === 0){
+      container.innerHTML = '<div class="empty">No comments yet. Be the first to comment.</div>';
+      return;
+    }
+    container.innerHTML = comments.map(c => `
+      <div class="comment-item">
+        <span class="comment-name">${escapeHtml(c.name)}</span><span class="comment-date">${formatDate(c.createdAt)}</span>
+        <div class="comment-text">${escapeHtml(c.text)}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load comments.</div>';
+  }
+}
+
+async function submitComment(postId){
+  const nameInput = document.getElementById('commentNameInput');
+  const textInput = document.getElementById('commentTextInput');
+  const msg = document.getElementById('commentMsg');
+  const btn = document.getElementById('commentSubmitBtn');
+
+  const name = nameInput.value.trim();
+  const text = textInput.value.trim();
+
+  if(!name){
+    msg.innerHTML = '<div class="msg err">Please enter your name.</div>';
+    return;
+  }
+  if(!text){
+    msg.innerHTML = '<div class="msg err">Please write a comment.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Posting...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const comments = data.comments || [];
+    comments.push({
+      id: 'comment_' + Date.now(),
+      postId,
+      name,
+      text,
+      createdAt: new Date().toISOString()
+    });
+    data.comments = comments;
+    await saveSupabaseData(data);
+
+    nameInput.value = '';
+    textInput.value = '';
+    msg.innerHTML = '<div class="msg ok">Comment posted.</div>';
+    loadComments(postId);
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not post comment: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 
 function copyPostLink(){
   const url = window.location.origin + window.location.pathname;
@@ -487,6 +585,140 @@ async function deletePost(id){
   }
 }
 
+// ===== Lecture Notes / Resources =====
+
+async function uploadResource(){
+  const titleInput = document.getElementById('resourceTitleInput');
+  const fileInput = document.getElementById('resourceFileInput');
+  const msg = document.getElementById('uploadResourceMsg');
+  const btn = document.getElementById('uploadResourceBtn');
+
+  const title = titleInput.value.trim();
+  const file = fileInput.files[0];
+
+  if(!title){
+    msg.innerHTML = '<div class="msg err">Please enter a title.</div>';
+    return;
+  }
+  if(!file){
+    msg.innerHTML = '<div class="msg err">Please choose a file.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Uploading...</div>';
+
+  try{
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const storagePath = `resources/${Date.now()}_${safeFileName}`;
+
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${storagePath}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "true"
+      },
+      body: file
+    });
+
+    if(!uploadRes.ok){
+      let detail = "";
+      try{
+        const errBody = await uploadRes.json();
+        detail = errBody.message || JSON.stringify(errBody);
+      }catch(e){
+        detail = `HTTP ${uploadRes.status}`;
+      }
+      throw new Error(detail);
+    }
+
+    const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${storagePath}`;
+
+    const data = await fetchSupabaseData();
+    const resources = data.resources || [];
+    resources.push({
+      id: 'res_' + Date.now(),
+      title,
+      fileName: file.name,
+      url: fileUrl,
+      uploadedAt: new Date().toISOString()
+    });
+    data.resources = resources;
+    await saveSupabaseData(data);
+
+    msg.innerHTML = '<div class="msg ok">Resource uploaded.</div>';
+    titleInput.value = '';
+    fileInput.value = '';
+    loadManageResourcesList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadResourcesList(){
+  const container = document.getElementById('resourcesList');
+  container.innerHTML = '<div class="empty">Loading resources...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const resources = (data.resources || []).slice().sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    if(resources.length === 0){
+      container.innerHTML = '<div class="empty">No lecture notes uploaded yet.</div>';
+      return;
+    }
+    container.innerHTML = resources.map(r => `
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="post-title" style="font-size:1rem;">${escapeHtml(r.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatDate(r.uploadedAt)} &middot; ${escapeHtml(r.fileName)}</div>
+        </div>
+        <a href="${r.url}" target="_blank" rel="noopener"><button style="white-space:nowrap;">Download</button></a>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load resources.</div>';
+  }
+}
+
+async function loadManageResourcesList(){
+  const container = document.getElementById('manageResourcesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const resources = (data.resources || []).slice().sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    if(resources.length === 0){
+      container.innerHTML = '<div class="empty">No resources uploaded yet.</div>';
+      return;
+    }
+    container.innerHTML = resources.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Poppins',sans-serif;font-size:0.9rem;">${escapeHtml(r.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatDate(r.uploadedAt)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteResource('${r.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load resources.</div>';
+  }
+}
+
+async function deleteResource(id){
+  if(!confirm('Delete this resource? This cannot be undone.')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.resources = (data.resources || []).filter(r => r.id !== id);
+    await saveSupabaseData(data);
+    loadManageResourcesList();
+  }catch(e){
+    alert('Could not delete resource.');
+  }
+}
+
 async function loadHeroProfile(){
   try{
     const data = await fetchSupabaseData();
@@ -516,8 +748,14 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 window.addEventListener('DOMContentLoaded', () => {
   updateLiveDateTime();
-  loadPosts();
   loadHeroProfile();
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('view') === 'resources'){
+    switchTab('resources');
+  } else {
+    switchTab('posts');
+    loadPosts();
+  }
 });
 </script>
 </body>

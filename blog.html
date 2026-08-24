@@ -161,6 +161,7 @@
 
   <div class="tabs">
     <div class="tab active" id="tabPosts" onclick="switchTab('posts')">Posts</div>
+    <div class="tab" id="tabResources" onclick="switchTab('resources')">Lecture Notes</div>
   </div>
 
   <!-- POSTS LIST -->
@@ -174,8 +175,13 @@
     <div class="card" id="singlePostContent"></div>
   </div>
 
+  <!-- RESOURCES / LECTURE NOTES -->
+  <div id="resourcesView" class="hidden">
+    <div id="resourcesList"><div class="empty">Loading resources...</div></div>
+  </div>
+
   <div style="text-align:center;margin-top:8px;">
-    <button onclick="switchTab('write')" id="writeToggleBtn" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Write a Post</button>
+    <button onclick="switchTab('write')" id="writeToggleBtn" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Write a Post / Manage</button>
   </div>
 
   <!-- WRITE / ADMIN VIEW -->
@@ -196,6 +202,22 @@
       <textarea id="postBodyInput" placeholder="Write your post here..."></textarea>
       <button id="publishBtn" onclick="publishPost()">Publish Post</button>
       <div id="publishMsg"></div>
+    </div>
+
+    <div class="card hidden" id="uploadResourceCard">
+      <label>Upload Lecture Notes / Resource</label>
+      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, or any file up to 50MB.</div>
+      <label>Title</label>
+      <input type="text" id="resourceTitleInput" placeholder="e.g. Week 3 - Structural Loads Notes">
+      <label>File</label>
+      <input type="file" id="resourceFileInput">
+      <button id="uploadResourceBtn" onclick="uploadResource()">Upload Resource</button>
+      <div id="uploadResourceMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageResourcesCard">
+      <label>Manage Resources</label>
+      <div id="manageResourcesList"><div class="empty">Loading...</div></div>
     </div>
 
     <div class="card hidden" id="manageCard">
@@ -263,10 +285,13 @@ function formatDate(iso){
 
 function switchTab(tab){
   document.getElementById('postsView').classList.toggle('hidden', tab!=='posts');
+  document.getElementById('resourcesView').classList.toggle('hidden', tab!=='resources');
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
   document.getElementById('tabPosts').classList.toggle('active', tab==='posts');
-  if(tab === 'write') loadManageList();
+  document.getElementById('tabResources').classList.toggle('active', tab==='resources');
+  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); }
+  if(tab === 'resources') loadResourcesList();
 }
 
 async function loadPosts(){
@@ -307,11 +332,18 @@ async function showPost(id){
     const twitterUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(pageUrl)}`;
     const emailUrl = `mailto:?subject=${shareText}&body=${encodeURIComponent('Thought you might find this useful: ' + pageUrl)}`;
 
+    const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
+    const alreadyLiked = likedPosts.includes(id);
+    const likeCount = post.likes || 0;
+
     document.getElementById('singlePostContent').innerHTML = `
       <div class="post-title">${escapeHtml(post.title)}</div>
       <div class="post-date">${formatDate(post.date)}</div>
       <div class="post-body">${escapeHtml(post.body)}</div>
       <div class="post-actions" style="border-top:1px solid var(--line);padding-top:16px;">
+        <button onclick="toggleLike('${id}')" id="likeBtn" class="share-btn" style="${alreadyLiked ? 'background:var(--gold);color:#fff;' : ''}">
+          ${alreadyLiked ? '❤️' : '🤍'} <span id="likeCount">${likeCount}</span>
+        </button>
         <a href="${whatsappUrl}" target="_blank" rel="noopener" class="share-btn">WhatsApp</a>
         <a href="${twitterUrl}" target="_blank" rel="noopener" class="share-btn">Twitter/X</a>
         <a href="${emailUrl}" class="share-btn">Email</a>
@@ -321,6 +353,37 @@ async function showPost(id){
     `;
     window.scrollTo(0,0);
   }catch(e){}
+}
+
+async function toggleLike(postId){
+  const likeBtn = document.getElementById('likeBtn');
+  likeBtn.disabled = true;
+  try{
+    const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
+    const alreadyLiked = likedPosts.includes(postId);
+
+    const data = await fetchSupabaseData();
+    const posts = data.blogPosts || [];
+    const post = posts.find(p => p.id === postId);
+    if(!post){ likeBtn.disabled = false; return; }
+
+    post.likes = (post.likes || 0) + (alreadyLiked ? -1 : 1);
+    if(post.likes < 0) post.likes = 0;
+    data.blogPosts = posts;
+    await saveSupabaseData(data);
+
+    if(alreadyLiked){
+      const idx = likedPosts.indexOf(postId);
+      likedPosts.splice(idx, 1);
+    } else {
+      likedPosts.push(postId);
+    }
+    localStorage.setItem('liked_posts', JSON.stringify(likedPosts));
+
+    showPost(postId);
+  }catch(e){
+    likeBtn.disabled = false;
+  }
 }
 
 function copyPostLink(){
@@ -344,7 +407,10 @@ function checkPasscode(){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('composeCard').classList.remove('hidden');
     document.getElementById('manageCard').classList.remove('hidden');
+    document.getElementById('uploadResourceCard').classList.remove('hidden');
+    document.getElementById('manageResourcesCard').classList.remove('hidden');
     loadManageList();
+    loadManageResourcesList();
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
   }

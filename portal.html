@@ -189,7 +189,8 @@
   <a href="index.html">Home</a>
   <a href="blog.html">Blog</a>
   <a href="blog.html?view=resources">Lecture Notes</a>
-  <div class="tab-static active">Assessment Portal</div>
+  <div class="tab-static" id="navPortal" onclick="switchTab('teacher')">Assessment Portal</div>
+  <div class="tab-static" id="navAttendance" onclick="switchTab('attendance')">Attendance</div>
 </div>
 
 <div class="wrap">
@@ -311,6 +312,54 @@
       <div id="reportSubmitMsg"></div>
     </div>
   </div>
+
+  <!-- ATTENDANCE VIEW (teacher-only, passcode protected) -->
+  <div id="attendanceView" class="hidden">
+    <div class="card" id="attendanceLoginCard">
+      <label>Teacher Passcode</label>
+      <input type="password" id="attendancePasscodeInput" placeholder="Enter passcode">
+      <button onclick="checkAttendancePasscode()">Unlock</button>
+      <div id="attendanceLoginMsg"></div>
+    </div>
+
+    <div class="card hidden" id="rosterUploadCard">
+      <label>Upload Class Roster (once per course)</label>
+      <div class="hint">Paste one student per line: Index Number, Name. Uploading again for the same course replaces its roster.</div>
+      <label>Course</label>
+      <input type="text" id="rosterCourseInput" placeholder="e.g. CIVL 368">
+      <label>Roster</label>
+      <textarea id="rosterInput" placeholder="UEB0700123, ANSU-GYEABOUR Pious&#10;UEB0700223, MOHAMMED AWAL Anaaha"></textarea>
+      <button id="rosterUploadBtn" onclick="uploadRoster()">Save Roster</button>
+      <div id="rosterUploadMsg"></div>
+    </div>
+
+    <div class="card hidden" id="takeAttendanceCard">
+      <label>Take Attendance</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="flex:1;min-width:160px;">
+          <label>Course</label>
+          <select id="attendanceCourseSelect" onchange="loadAttendanceForDate()">
+            <option value="">Select course...</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label>Date</label>
+          <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
+        </div>
+      </div>
+      <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
+      <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
+      <div id="saveAttendanceMsg"></div>
+    </div>
+
+    <div class="card hidden" id="attendanceSummaryCard">
+      <label>Attendance History</label>
+      <select id="attendanceSummaryCourseSelect" onchange="loadAttendanceSummary()" style="margin-bottom:14px;">
+        <option value="">Select course...</option>
+      </select>
+      <div id="attendanceSummaryList"><div class="empty">Select a course to view session history.</div></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -377,9 +426,12 @@ function switchTab(tab){
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('studentView').classList.toggle('hidden', tab!=='student');
   document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
+  document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
   document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
   document.getElementById('tabStudent').classList.toggle('active', tab==='student');
   document.getElementById('tabReport').classList.toggle('active', tab==='report');
+  document.getElementById('navPortal').classList.toggle('active', tab==='teacher' || tab==='student' || tab==='report');
+  document.getElementById('navAttendance').classList.toggle('active', tab==='attendance');
   if(tab === 'report') loadCourseOptionsForStudents();
 }
 
@@ -1025,6 +1077,214 @@ function updateLiveDateTime(){
 }
 setInterval(updateLiveDateTime, 1000 * 30);
 
+// ===== Attendance Tracker =====
+const ATTENDANCE_PASSCODE = PASSCODE; // reuses the same teacher passcode
+
+function checkAttendancePasscode(){
+  const val = document.getElementById('attendancePasscodeInput').value;
+  const msg = document.getElementById('attendanceLoginMsg');
+  if(val === ATTENDANCE_PASSCODE){
+    document.getElementById('attendanceLoginCard').classList.add('hidden');
+    document.getElementById('rosterUploadCard').classList.remove('hidden');
+    document.getElementById('takeAttendanceCard').classList.remove('hidden');
+    document.getElementById('attendanceSummaryCard').classList.remove('hidden');
+    loadAttendanceCourseOptions();
+    const dateInput = document.getElementById('attendanceDateInput');
+    if(dateInput && !dateInput.value){
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+  } else {
+    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+  }
+}
+
+async function loadAttendanceCourseOptions(){
+  try{
+    const data = await fetchSupabaseData();
+    const rosters = data.rosters || {};
+    const courses = Object.keys(rosters);
+    const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    document.getElementById('attendanceCourseSelect').innerHTML = options;
+    document.getElementById('attendanceSummaryCourseSelect').innerHTML = options;
+  }catch(e){}
+}
+
+async function uploadRoster(){
+  const course = document.getElementById('rosterCourseInput').value.trim();
+  const raw = document.getElementById('rosterInput').value.trim();
+  const msg = document.getElementById('rosterUploadMsg');
+  const btn = document.getElementById('rosterUploadBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please enter a course name.</div>';
+    return;
+  }
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+  const roster = [];
+  for(const line of lines){
+    const parts = line.split(',').map(p => p.trim());
+    if(parts.length < 1 || !parts[0]) continue;
+    roster.push({ indexNumber: parts[0], name: parts[1] || '' });
+  }
+  if(roster.length === 0){
+    msg.innerHTML = '<div class="msg err">No valid student rows found. Use format: index, name</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Saving roster...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    data.rosters = data.rosters || {};
+    data.rosters[course] = roster;
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Saved roster for "${escapeHtml(course)}" — ${roster.length} student(s).</div>`;
+    document.getElementById('rosterInput').value = '';
+    loadAttendanceCourseOptions();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save roster: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadAttendanceForDate(){
+  const course = document.getElementById('attendanceCourseSelect').value;
+  const date = document.getElementById('attendanceDateInput').value;
+  const container = document.getElementById('attendanceChecklist');
+
+  if(!course || !date){
+    container.innerHTML = '<div class="empty">Select a course and date to begin.</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="empty">Loading roster...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const roster = (data.rosters && data.rosters[course]) || [];
+    if(roster.length === 0){
+      container.innerHTML = '<div class="empty">No roster uploaded for this course yet.</div>';
+      return;
+    }
+
+    const attendanceRecords = data.attendance || [];
+    const sessionKey = `${course}__${date}`;
+    const existingRecord = attendanceRecords.find(a => a.sessionKey === sessionKey);
+    const presentSet = new Set(existingRecord ? existingRecord.present : []);
+
+    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    roster.forEach(s => {
+      const isPresent = presentSet.has(s.indexNumber);
+      html += `
+        <div class="attendance-row" data-index="${escapeHtml(s.indexNumber)}" onclick="toggleAttendanceRow(this)" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:${isPresent ? 'rgba(31,138,76,0.08)' : '#fff'};">
+          <div>
+            <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(s.name || s.indexNumber)}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">${escapeHtml(s.indexNumber)}</div>
+          </div>
+          <span class="attendance-status" style="font-weight:700;font-size:0.8rem;color:${isPresent ? 'var(--ok)' : 'var(--danger)'};">${isPresent ? 'PRESENT' : 'ABSENT'}</span>
+        </div>
+      `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load roster.</div>';
+  }
+}
+
+function toggleAttendanceRow(row){
+  const statusEl = row.querySelector('.attendance-status');
+  const isPresent = statusEl.textContent === 'PRESENT';
+  if(isPresent){
+    statusEl.textContent = 'ABSENT';
+    statusEl.style.color = 'var(--danger)';
+    row.style.background = '#fff';
+  } else {
+    statusEl.textContent = 'PRESENT';
+    statusEl.style.color = 'var(--ok)';
+    row.style.background = 'rgba(31,138,76,0.08)';
+  }
+}
+
+async function saveAttendance(){
+  const course = document.getElementById('attendanceCourseSelect').value;
+  const date = document.getElementById('attendanceDateInput').value;
+  const msg = document.getElementById('saveAttendanceMsg');
+  const btn = document.getElementById('saveAttendanceBtn');
+
+  if(!course || !date){
+    msg.innerHTML = '<div class="msg err">Select a course and date first.</div>';
+    return;
+  }
+
+  const rows = document.querySelectorAll('#attendanceChecklist .attendance-row');
+  if(rows.length === 0){
+    msg.innerHTML = '<div class="msg err">No roster loaded to save.</div>';
+    return;
+  }
+
+  const present = [];
+  rows.forEach(row => {
+    const statusEl = row.querySelector('.attendance-status');
+    if(statusEl.textContent === 'PRESENT'){
+      present.push(row.getAttribute('data-index'));
+    }
+  });
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const attendanceRecords = data.attendance || [];
+    const sessionKey = `${course}__${date}`;
+    const idx = attendanceRecords.findIndex(a => a.sessionKey === sessionKey);
+    const record = { sessionKey, course, date, present };
+    if(idx >= 0){
+      attendanceRecords[idx] = record;
+    } else {
+      attendanceRecords.push(record);
+    }
+    data.attendance = attendanceRecords;
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Saved. ${present.length} of ${rows.length} present.</div>`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadAttendanceSummary(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  const container = document.getElementById('attendanceSummaryList');
+  if(!course){
+    container.innerHTML = '<div class="empty">Select a course to view session history.</div>';
+    return;
+  }
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const roster = (data.rosters && data.rosters[course]) || [];
+    const attendanceRecords = (data.attendance || []).filter(a => a.course === course).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    if(attendanceRecords.length === 0){
+      container.innerHTML = '<div class="empty">No attendance sessions recorded for this course yet.</div>';
+      return;
+    }
+
+    let html = '<table><tr><th>Date</th><th>Present</th><th>Total</th></tr>';
+    attendanceRecords.forEach(a => {
+      html += `<tr><td>${escapeHtml(a.date)}</td><td>${a.present.length}</td><td>${roster.length}</td></tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load attendance history.</div>';
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   updateLiveDateTime();
   loadHeroProfile();
@@ -1032,6 +1292,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if(lockedIndex){
     const idxInput = document.getElementById('indexLookup');
     if(idxInput) idxInput.value = lockedIndex;
+  }
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('view') === 'attendance'){
+    switchTab('attendance');
   }
 });
 </script>

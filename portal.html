@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assessment Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -71,6 +72,7 @@
   .hero-tabs .active{ background:var(--navy); color:#fff; }
   *{box-sizing:border-box;}
   html,body{height:100%;}
+  html{ font-size:17px; }
   body{
     margin:0;
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -161,21 +163,24 @@
   }
   @media (max-width:640px){
     .hero{ padding:32px 16px 48px; margin-left:-16px; margin-right:-16px; }
-    .hero h1{ font-size:1.5rem; }
-    .hero .hero-sub, .title{ font-size:0.8rem; }
+    .hero h1{ font-size:1.7rem; }
+    .hero .hero-sub, .title{ font-size:0.9rem; }
     .profile-pic{ width:84px; height:84px; }
     .wrap{ padding:0 16px 32px; }
-    .card{ padding:18px; }
+    .card{ padding:20px; }
     .tabs, .hero-tabs{ flex-wrap:wrap; }
-    .tab, .hero-tabs a, .hero-tabs .tab-static{ font-size:0.8rem; padding:8px 10px; }
-    h2{ font-size:0.95rem; }
-    body{ padding-left:0; padding-right:0; }
+    .tab, .hero-tabs a, .hero-tabs .tab-static{ font-size:0.9rem; padding:10px 12px; }
+    h2{ font-size:1.05rem; }
+    body{ padding-left:0; padding-right:0; font-size:1rem; }
     .calc-widget-panel{ width:100%; max-width:100%; }
-    table{ font-size:0.78rem; }
-    th, td{ padding:7px 6px; }
+    table{ font-size:0.88rem; }
+    th, td{ padding:9px 8px; }
+    label{ font-size:0.85rem; }
+    input, textarea, select, button{ font-size:1rem !important; }
+    p{ font-size:1rem; }
   }
   @media (max-width:400px){
-    .hero h1{ font-size:1.3rem; }
+    .hero h1{ font-size:1.5rem; }
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
 

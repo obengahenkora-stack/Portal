@@ -163,6 +163,18 @@ async function fetchJsonBinRecords(){
   }catch(e){ return {}; }
 }
 
+async function isDeviceLockEnabled(){
+  // Shares the same on/off setting as the Assessment Portal's Teacher tab.
+  try{
+    const bin = await fetchJsonBinRecords();
+    return bin.settings && typeof bin.settings.deviceLockEnabled === 'boolean'
+      ? bin.settings.deviceLockEnabled
+      : true; // defaults to on, matching the Portal's default
+  }catch(e){
+    return true;
+  }
+}
+
 const LOCK_KEY = "assessment_locked_index"; // shared with the Assessment Portal's lock, so a device stays tied to one student everywhere
 
 async function loadDashboard(){
@@ -176,8 +188,9 @@ async function loadDashboard(){
     return;
   }
 
+  const lockEnabled = await isDeviceLockEnabled();
   const lockedIndex = localStorage.getItem(LOCK_KEY);
-  if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
+  if(lockEnabled && lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
     msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number and cannot be switched.</div>";
     return;
   }
@@ -254,12 +267,14 @@ async function loadDashboard(){
     resultsDiv.classList.remove('hidden');
     msg.innerHTML = '';
 
-    // Lock this device to this index number permanently — no switching allowed afterward.
-    if(!lockedIndex){
-      localStorage.setItem(LOCK_KEY, idx);
+    // Lock this device to this index number permanently — no switching allowed afterward — only if the setting is on.
+    if(lockEnabled){
+      if(!lockedIndex){
+        localStorage.setItem(LOCK_KEY, idx);
+      }
+      idxInput.disabled = true;
+      document.getElementById('dashLoadBtn').disabled = true;
     }
-    idxInput.disabled = true;
-    document.getElementById('dashLoadBtn').disabled = true;
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not load dashboard: ${escapeHtml(e.message)}</div>`;
   }

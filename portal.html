@@ -395,6 +395,20 @@
       <button id="rosterUploadBtn" onclick="uploadRoster()">Save Pasted Roster</button>
       <div id="rosterUploadMsg"></div>
     </div>
+
+    <div class="card hidden" id="attendanceCleanupCard">
+      <label>End of Semester Cleanup</label>
+      <div class="hint">Choose a course, then pick what to clear before starting a new semester.</div>
+      <label>Course</label>
+      <select id="cleanupCourseSelect">
+        <option value="">Select course...</option>
+      </select>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <button class="secondary" onclick="clearAttendanceHistory()">Clear Attendance Records Only</button>
+        <button class="secondary" onclick="clearRosterAndAttendance()">Delete Roster &amp; All Attendance</button>
+      </div>
+      <div id="cleanupMsg" style="margin-top:12px;"></div>
+    </div>
   </div>
 </div>
 
@@ -1129,8 +1143,63 @@ function checkAttendancePasscode(){
   if(val === ATTENDANCE_PASSCODE){
     document.getElementById('attendanceLoginCard').classList.add('hidden');
     document.getElementById('rosterUploadCard').classList.remove('hidden');
+    document.getElementById('attendanceCleanupCard').classList.remove('hidden');
+    loadCleanupCourseOptions();
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+  }
+}
+
+async function loadCleanupCourseOptions(){
+  try{
+    const data = await fetchSupabaseData();
+    const rosters = data.rosters || {};
+    const courses = Object.keys(rosters);
+    const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    document.getElementById('cleanupCourseSelect').innerHTML = options;
+  }catch(e){}
+}
+
+async function clearAttendanceHistory(){
+  const course = document.getElementById('cleanupCourseSelect').value;
+  const msg = document.getElementById('cleanupMsg');
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Select a course first.</div>';
+    return;
+  }
+  if(!confirm(`Delete ALL attendance session records for "${course}"? The roster stays intact. This cannot be undone.`)) return;
+
+  msg.innerHTML = '<div class="msg ok">Clearing...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    data.attendance = (data.attendance || []).filter(a => a.course !== course);
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Attendance records cleared for "${escapeHtml(course)}". Roster kept.</div>`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not clear: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function clearRosterAndAttendance(){
+  const course = document.getElementById('cleanupCourseSelect').value;
+  const msg = document.getElementById('cleanupMsg');
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Select a course first.</div>';
+    return;
+  }
+  if(!confirm(`Delete the ROSTER and ALL attendance records for "${course}"? This fully removes the course from Attendance. This cannot be undone.`)) return;
+
+  msg.innerHTML = '<div class="msg ok">Deleting...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    data.attendance = (data.attendance || []).filter(a => a.course !== course);
+    if(data.rosters) delete data.rosters[course];
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Roster and attendance records deleted for "${escapeHtml(course)}".</div>`;
+    loadCleanupCourseOptions();
+    loadAttendanceSummaryCourseOptions();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not delete: ${escapeHtml(e.message)}</div>`;
   }
 }
 

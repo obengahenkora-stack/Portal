@@ -101,6 +101,12 @@
     cursor:pointer;display:flex;align-items:center;justify-content:center;
   }
   [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
+  .overview-grid{ display:flex; gap:12px; flex-wrap:wrap; }
+  .overview-item{ flex:1; min-width:110px; text-align:center; background:#f0f4f9; border-radius:10px; padding:16px 10px; }
+  [data-theme="dark"] .overview-item{ background:#101c34; }
+  .overview-num{ font-family:'Poppins',sans-serif; font-size:1.5rem; font-weight:800; color:var(--navy); }
+  [data-theme="dark"] .overview-num{ color:var(--gold); }
+  .overview-label{ font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -119,6 +125,14 @@
 </div>
 
 <div class="wrap">
+  <div class="card" style="text-align:center;background:linear-gradient(135deg,#f0f4f9,#e8eef7);">
+    <h2 style="justify-content:center;">What is My Dashboard?</h2>
+    <p style="color:var(--muted);font-size:0.92rem;line-height:1.6;max-width:520px;margin:0 auto;">
+      My Dashboard brings everything tied to your index number into one place — your assessment scores across all courses, your attendance record and percentage, and any issue reports you've submitted along with the lecturer's replies. Instead of checking the Assessment Portal, Attendance, and Report Issue sections separately, you can see it all here at a glance.
+      Once you enter your index number below, this device will remember it, so you won't need to type it in again.
+    </p>
+  </div>
+
   <div class="card">
     <label>Your Index Number</label>
     <input type="text" id="dashIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') loadDashboard()">
@@ -127,6 +141,24 @@
   </div>
 
   <div id="dashResults" class="hidden">
+    <div class="card" id="dashOverviewCard">
+      <h2>Overview</h2>
+      <div class="overview-grid" id="dashOverview">
+        <div class="overview-item">
+          <div class="overview-num" id="ovAvgScore">–</div>
+          <div class="overview-label">Avg. Score</div>
+        </div>
+        <div class="overview-item">
+          <div class="overview-num" id="ovAttendance">–</div>
+          <div class="overview-label">Attendance</div>
+        </div>
+        <div class="overview-item">
+          <div class="overview-num" id="ovReports">–</div>
+          <div class="overview-label">Reports Filed</div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>My Scores</h2>
       <div id="dashScores"><div class="empty">No data.</div></div>
@@ -286,6 +318,22 @@ async function loadDashboard(){
       });
       reportsContainer.innerHTML = html;
     }
+
+    // ----- Overview -----
+    const numericScores = myRecords.map(r => parseFloat(r.score)).filter(n => !isNaN(n));
+    const avgScore = numericScores.length ? (numericScores.reduce((a,b)=>a+b,0) / numericScores.length).toFixed(1) : '–';
+    document.getElementById('ovAvgScore').textContent = avgScore;
+
+    let totalAttended = 0, totalSessions = 0;
+    myCourses.forEach(course => {
+      const courseSessions = attendanceRecords.filter(a => a.course === course);
+      totalSessions += courseSessions.length;
+      totalAttended += courseSessions.filter(a => (a.present||[]).some(p => p.toLowerCase() === idx.toLowerCase())).length;
+    });
+    const overallAttPct = totalSessions > 0 ? Math.round((totalAttended/totalSessions)*100) : null;
+    document.getElementById('ovAttendance').textContent = overallAttPct !== null ? overallAttPct + '%' : '–';
+
+    document.getElementById('ovReports').textContent = myReports.length;
 
     resultsDiv.classList.remove('hidden');
     msg.innerHTML = '';

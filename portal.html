@@ -197,6 +197,7 @@
   <a href="blog.html?view=resources">Lecture Notes</a>
   <div class="tab-static" id="navPortal" onclick="switchTab('teacher')">Assessment Portal</div>
   <div class="tab-static" id="navAttendance" onclick="switchTab('attendance')">Attendance</div>
+  <a href="dashboard.html">My Dashboard</a>
 </div>
 
 <div class="wrap">
@@ -258,6 +259,13 @@
       </select>
       <button class="secondary" id="deleteCourseBtn" onclick="deleteCourse()">Delete This Course's Results</button>
       <div id="deleteCourseMsg"></div>
+    </div>
+
+    <div class="card hidden" id="backupCard">
+      <label>Data Backup</label>
+      <div class="hint">Downloads everything — scores, courses, reports, settings, blog posts, profile, attendance, and rosters — as one JSON file you can keep safe.</div>
+      <button onclick="downloadBackup()">Download Full Backup</button>
+      <div id="backupMsg"></div>
     </div>
 
     <div class="card hidden" id="dataCard">
@@ -364,6 +372,8 @@
 
       <div id="attendanceSummaryByStudent"><div class="empty">Select a course to view attendance.</div></div>
       <div id="attendanceSummaryBySession" class="hidden"><div class="empty">Select a course to view attendance.</div></div>
+
+      <button onclick="printAttendanceSummary()" style="margin-top:14px;">Print / Export as PDF</button>
     </div>
 
     <div style="text-align:center;margin-top:8px;">
@@ -469,7 +479,13 @@ async function saveSupabaseData(data){
 }
 // =================================================================
 
-const PASSCODE = "teacher123"; // change this if you want a different passcode
+const TEACHER_PASSCODES = {
+  "teacher123": "Main Instructor",
+  "assist456": "Teaching Assistant"
+  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+};
+function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+
 const LOCK_KEY = "assessment_locked_index";
 
 // ===== EmailJS configuration =====
@@ -509,11 +525,12 @@ function toggleResultsVisibility(){
 function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
-  if(val === PASSCODE){
+  if(isValidPasscode(val)){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('uploadCard').classList.remove('hidden');
     document.getElementById('dataCard').classList.remove('hidden');
     document.getElementById('deleteCourseCard').classList.remove('hidden');
+    document.getElementById('backupCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
     document.getElementById('settingsCard').classList.remove('hidden');
     loadDeviceLockSetting();
@@ -744,6 +761,38 @@ async function deleteCourse(){
     msg.innerHTML = `<div class="msg err">Delete failed: ${escapeHtml(e.message)}</div>`;
   }finally{
     btn.disabled = false;
+  }
+}
+
+async function downloadBackup(){
+  const msg = document.getElementById('backupMsg');
+  msg.innerHTML = '<div class="msg ok">Preparing backup...</div>';
+  try{
+    const [jsonBinData, supabaseData] = await Promise.all([
+      fetchBin().catch(() => ({})),
+      fetchSupabaseData().catch(() => ({}))
+    ]);
+
+    const fullBackup = {
+      exportedAt: new Date().toISOString(),
+      jsonBinData,   // records, courses, reports, settings (or overflow)
+      supabaseData   // profile, blogPosts, resources, comments, rosters, attendance
+    };
+
+    const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    a.href = url;
+    a.download = `portal-backup-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    msg.innerHTML = '<div class="msg ok">Backup downloaded.</div>';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not create backup: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1077,15 +1126,44 @@ async function loadIssueReports(){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
       return;
     }
-    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th></th></tr>';
+    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th>Reply</th><th></th></tr>';
     reports.slice().reverse().forEach(r=>{
       const safeTimestamp = escapeHtml(r.submittedAt || '').replace(/'/g, "\\'");
-      html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.indexNumber)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.issue)}</td><td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td></tr>`;
+      const replyVal = escapeHtml(r.reply || '');
+      html += `<tr>
+        <td>${escapeHtml(r.course)}</td>
+        <td>${escapeHtml(r.indexNumber)}</td>
+        <td>${escapeHtml(r.email)}</td>
+        <td>${escapeHtml(r.issue)}</td>
+        <td>
+          <input type="text" value="${replyVal}" id="reply_${safeTimestamp}" placeholder="Type a reply for the student..." style="width:160px;padding:6px 8px;font-size:0.78rem;">
+          <button style="padding:5px 8px;font-size:0.7rem;margin-top:4px;" onclick="saveReportReply('${safeTimestamp}')">Save</button>
+        </td>
+        <td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td>
+      </tr>`;
     });
     html += '</table>';
     container.innerHTML = html;
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load reports.</div>';
+  }
+}
+
+async function saveReportReply(submittedAt){
+  const input = document.getElementById('reply_' + submittedAt.replace(/\\'/g, "'"));
+  const replyText = input.value.trim();
+  try{
+    const bin = await fetchBin();
+    const reports = bin.reports || [];
+    const report = reports.find(r => r.submittedAt === submittedAt.replace(/\\'/g, "'"));
+    if(report){
+      report.reply = replyText;
+      bin.reports = reports;
+      await saveBin(bin);
+      alert('Reply saved. The student can see it on their Dashboard.');
+    }
+  }catch(e){
+    alert('Could not save reply: ' + e.message);
   }
 }
 
@@ -1141,12 +1219,11 @@ function updateLiveDateTime(){
 setInterval(updateLiveDateTime, 1000 * 30);
 
 // ===== Attendance Tracker =====
-const ATTENDANCE_PASSCODE = PASSCODE; // reuses the same teacher passcode
 
 function checkAttendancePasscode(){
   const val = document.getElementById('attendancePasscodeInput').value;
   const msg = document.getElementById('attendanceLoginMsg');
-  if(val === ATTENDANCE_PASSCODE){
+  if(isValidPasscode(val)){
     document.getElementById('attendanceLoginCard').classList.add('hidden');
     document.getElementById('rosterUploadCard').classList.remove('hidden');
     document.getElementById('attendanceCleanupCard').classList.remove('hidden');
@@ -1212,7 +1289,7 @@ async function clearRosterAndAttendance(){
 function checkTakeAttendancePasscode(){
   const val = document.getElementById('takeAttendancePasscodeInput').value;
   const msg = document.getElementById('takeAttendanceLoginMsg');
-  if(val === ATTENDANCE_PASSCODE){
+  if(isValidPasscode(val)){
     document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
     document.getElementById('takeAttendanceCard').classList.remove('hidden');
     loadAttendanceCourseOptions();
@@ -1504,6 +1581,42 @@ function switchSummaryView(view){
   document.getElementById('attendanceSummaryBySession').classList.toggle('hidden', view!=='session');
   document.getElementById('summaryTabByStudent').classList.toggle('active', view==='student');
   document.getElementById('summaryTabBySession').classList.toggle('active', view==='session');
+}
+
+function printAttendanceSummary(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  if(!course){
+    alert('Select a course first.');
+    return;
+  }
+  const visibleView = document.getElementById('attendanceSummaryByStudent').classList.contains('hidden')
+    ? document.getElementById('attendanceSummaryBySession')
+    : document.getElementById('attendanceSummaryByStudent');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>Attendance - ${escapeHtml(course)}</title>
+      <style>
+        body{ font-family: Arial, sans-serif; padding: 24px; color:#1a2433; }
+        h1{ font-size: 1.2rem; margin-bottom:4px; }
+        p{ color:#64748b; font-size:0.85rem; margin-top:0; }
+        table{ width:100%; border-collapse: collapse; margin-top:16px; font-size:0.8rem; }
+        th, td{ border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th{ background:#f0f0f0; }
+      </style>
+    </head>
+    <body>
+      <h1>Attendance — ${escapeHtml(course)}</h1>
+      <p>Printed on ${new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}</p>
+      ${visibleView.innerHTML}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); }, 300);
 }
 
 async function loadAttendanceSummary(){

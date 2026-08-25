@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b2545">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f7fa; --card:#ffffff; --ink:#1a2433; --muted:#64748b;
+    --accent:#0b2545; --accent-dark:#071a33; --line:#e3e8ef;
+    --danger:#c0392b; --ok:#1f8a4c; --navy:#0b2545; --navy-dark:#071a33;
+    --gold:#d4a017; --gold-dark:#b5860e;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--paper); color:var(--ink); min-height:100vh;
+  }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff; padding:36px 24px 52px; text-align:center; position:relative;
+  }
+  .hero::after{
+    content:""; position:absolute; bottom:-1px; left:0; width:100%; height:6px;
+    background:linear-gradient(90deg, var(--gold), #fff2, var(--gold));
+  }
+  .hero h1{ font-family:'Poppins',sans-serif; font-size:1.6rem; margin:0 0 6px 0; }
+  .hero p{ font-size:0.85rem; color:rgba(255,255,255,0.75); margin:0; }
+  .hero-tabs{
+    display:flex;gap:6px;margin:-28px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    position:relative;z-index:2;
+  }
+  .hero-tabs a, .hero-tabs .tab-static{
+    flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;font-family:'Inter',sans-serif;
+    text-decoration:none;
+  }
+  .hero-tabs .active{ background:var(--navy); color:#fff; }
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px 40px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:24px; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,30,60,0.05);
+  }
+  h2{ font-family:'Poppins',sans-serif; font-size:1rem; color:var(--navy); margin:0 0 14px 0; display:flex; align-items:center; gap:8px; }
+  h2::before{ content:""; width:5px; height:20px; background:var(--gold); border-radius:2px; display:inline-block; }
+  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+  input[type=text]{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--gold);outline-offset:1px;background:#fff;}
+  button{
+    background:var(--navy);color:#fff;border:none;padding:11px 24px;border-radius:8px;
+    font-weight:600;cursor:pointer;font-size:0.88rem;font-family:'Inter',sans-serif;
+  }
+  button:hover{background:var(--navy-dark);}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .msg{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(31,138,76,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(192,57,43,0.08);color:var(--danger);border-left-color:var(--danger);}
+  .hidden{display:none;}
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;}
+  th{color:var(--navy);font-weight:700;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.05em;}
+  .empty{color:var(--muted);font-size:0.88rem;padding:6px 0;}
+  .pct-badge{font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.8rem;}
+  .report-item{padding:12px 0;border-bottom:1px dashed var(--line);}
+  .report-item:last-child{border-bottom:none;}
+  .report-course{font-weight:700;font-size:0.88rem;color:var(--navy);}
+  .report-issue{font-size:0.88rem;margin:4px 0;}
+  .report-reply{background:rgba(31,138,76,0.06);border-left:3px solid var(--ok);padding:8px 10px;border-radius:6px;font-size:0.85rem;margin-top:6px;}
+  .report-pending{color:var(--muted);font-size:0.8rem;font-style:italic;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Student Dashboard</h1>
+  <p>See your scores, attendance, and report replies all in one place.</p>
+</div>
+
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="blog.html">Blog</a>
+  <a href="portal.html">Assessment Portal</a>
+  <div class="tab-static active">My Dashboard</div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <label>Your Index Number</label>
+    <input type="text" id="dashIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') loadDashboard()">
+    <button onclick="loadDashboard()">View My Dashboard</button>
+    <div id="dashMsg"></div>
+  </div>
+
+  <div id="dashResults" class="hidden">
+    <div class="card">
+      <h2>My Scores</h2>
+      <div id="dashScores"><div class="empty">No data.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>My Attendance</h2>
+      <div id="dashAttendance"><div class="empty">No data.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>My Reports</h2>
+      <div id="dashReports"><div class="empty">No data.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== JSONBin.io configuration (records, courses, reports, settings) =====
+const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
+const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+// ===== Supabase configuration (profile, blog, rosters, attendance) =====
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
+async function fetchJsonBinRecords(){
+  // Mirrors portal.html's overflow-aware fetch: check Supabase overflow first, fallback to JSONBin.
+  try{
+    const supaData = await fetchSupabaseData();
+    if(supaData.portalDataOverflow){
+      return supaData.portalDataOverflow;
+    }
+  }catch(e){}
+  try{
+    const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
+    if(!res.ok) return {};
+    const data = await res.json();
+    return data.record || {};
+  }catch(e){ return {}; }
+}
+
+async function loadDashboard(){
+  const idx = document.getElementById('dashIndexInput').value.trim();
+  const msg = document.getElementById('dashMsg');
+  const resultsDiv = document.getElementById('dashResults');
+
+  if(!idx){
+    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Loading...</div>';
+
+  try{
+    const [jsonBinData, supaData] = await Promise.all([
+      fetchJsonBinRecords(),
+      fetchSupabaseData()
+    ]);
+
+    // ----- Scores -----
+    const allRecords = jsonBinData.records || [];
+    const myRecords = allRecords.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase());
+    const scoresContainer = document.getElementById('dashScores');
+    if(myRecords.length === 0){
+      scoresContainer.innerHTML = '<div class="empty">No scores found for this index number.</div>';
+    } else {
+      let html = '<table><tr><th>Course</th><th>Level</th><th>Assessment</th><th>Score</th></tr>';
+      myRecords.forEach(r => {
+        html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.level)}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}</td></tr>`;
+      });
+      html += '</table>';
+      scoresContainer.innerHTML = html;
+    }
+
+    // ----- Attendance -----
+    const rosters = supaData.rosters || {};
+    const attendanceRecords = supaData.attendance || [];
+    const myCourses = Object.keys(rosters).filter(course =>
+      (rosters[course] || []).some(s => (s.indexNumber||'').toLowerCase() === idx.toLowerCase())
+    );
+    const attContainer = document.getElementById('dashAttendance');
+    if(myCourses.length === 0){
+      attContainer.innerHTML = '<div class="empty">No attendance record found for this index number.</div>';
+    } else {
+      let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
+      myCourses.forEach(course => {
+        const courseSessions = attendanceRecords.filter(a => a.course === course);
+        const totalSessions = courseSessions.length;
+        const attended = courseSessions.filter(a => (a.present||[]).some(p => p.toLowerCase() === idx.toLowerCase())).length;
+        const pct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
+        const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
+        html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${totalSessions}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
+      });
+      html += '</table>';
+      attContainer.innerHTML = html;
+    }
+
+    // ----- Reports -----
+    const allReports = jsonBinData.reports || [];
+    const myReports = allReports.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase())
+      .sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    const reportsContainer = document.getElementById('dashReports');
+    if(myReports.length === 0){
+      reportsContainer.innerHTML = '<div class="empty">No issue reports submitted from this index number.</div>';
+    } else {
+      let html = '';
+      myReports.forEach(r => {
+        html += `
+          <div class="report-item">
+            <div class="report-course">${escapeHtml(r.course)}</div>
+            <div class="report-issue">${escapeHtml(r.issue)}</div>
+            ${r.reply
+              ? `<div class="report-reply"><strong>Reply:</strong> ${escapeHtml(r.reply)}</div>`
+              : `<div class="report-pending">No reply yet — the lecturer may respond directly to your email.</div>`}
+          </div>
+        `;
+      });
+      reportsContainer.innerHTML = html;
+    }
+
+    resultsDiv.classList.remove('hidden');
+    msg.innerHTML = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not load dashboard: ${escapeHtml(e.message)}</div>`;
+  }
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

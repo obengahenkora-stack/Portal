@@ -169,6 +169,7 @@
   <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
   <a href="portal.html">Assessment Portal</a>
   <a href="portal.html?view=attendance">Attendance</a>
+  <a href="dashboard.html">My Dashboard</a>
 </div>
 
 <div class="wrap">
@@ -245,7 +246,13 @@ const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
 // ============================================================
 
-const PASSCODE = "teacher123"; // same passcode used across the site; change if you'd like a different one here
+const TEACHER_PASSCODES = {
+  "teacher123": "Main Instructor",
+  "assist456": "Teaching Assistant"
+  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+};
+function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+
 
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -508,7 +515,7 @@ function showPostsList(){
 function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
-  if(val === PASSCODE){
+  if(isValidPasscode(val)){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('composeCard').classList.remove('hidden');
     document.getElementById('manageCard').classList.remove('hidden');

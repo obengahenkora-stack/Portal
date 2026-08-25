@@ -281,6 +281,7 @@
   <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
   <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
   <a href="portal.html?view=attendance" class="tab" style="text-decoration:none;">Attendance</a>
+  <a href="dashboard.html" class="tab" style="text-decoration:none;">My Dashboard</a>
 </div>
 
 <div class="wrap">
@@ -437,7 +438,13 @@ async function saveSupabaseData(data){
   return true;
 }
 
-const PASSCODE = "teacher123"; // same passcode as the portal's Teacher tab; change if you'd like a different one here
+const TEACHER_PASSCODES = {
+  "teacher123": "Main Instructor",
+  "assist456": "Teaching Assistant"
+  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+};
+function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+
 
 function switchTab(tab){
   document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');
@@ -629,7 +636,7 @@ function handlePhotoSelect(event){
 function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
-  if(val === PASSCODE){
+  if(isValidPasscode(val)){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('editCard').classList.remove('hidden');
   } else {

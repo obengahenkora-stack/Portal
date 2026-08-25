@@ -316,7 +316,14 @@
   <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" class="hidden">
 
-    <div class="card" id="takeAttendanceCard">
+    <div class="card" id="takeAttendanceLoginCard">
+      <label>Teacher Passcode (required to mark attendance)</label>
+      <input type="password" id="takeAttendancePasscodeInput" placeholder="Enter passcode">
+      <button onclick="checkTakeAttendancePasscode()">Unlock</button>
+      <div id="takeAttendanceLoginMsg"></div>
+    </div>
+
+    <div class="card hidden" id="takeAttendanceCard">
       <label>Take Attendance</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <div style="flex:1;min-width:160px;">
@@ -458,7 +465,7 @@ function switchTab(tab){
   document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance' && tab!=='roster');
   document.getElementById('rosterView').classList.toggle('hidden', tab!=='roster');
-  document.getElementById('takeAttendanceCard').classList.toggle('hidden', tab==='roster');
+  document.getElementById('takeAttendanceLoginCard').classList.toggle('hidden', tab==='roster');
   document.getElementById('attendanceSummaryCard').classList.toggle('hidden', tab==='roster');
   document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
   document.getElementById('tabStudent').classList.toggle('active', tab==='student');
@@ -466,12 +473,8 @@ function switchTab(tab){
   document.getElementById('navPortal').classList.toggle('active', tab==='teacher' || tab==='student' || tab==='report');
   document.getElementById('navAttendance').classList.toggle('active', tab==='attendance' || tab==='roster');
   if(tab === 'report') loadCourseOptionsForStudents();
-  if(tab === 'attendance'){
-    loadAttendanceCourseOptions();
-    const dateInput = document.getElementById('attendanceDateInput');
-    if(dateInput && !dateInput.value){
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
+  if(tab === 'attendance' || tab === 'roster'){
+    loadAttendanceSummaryCourseOptions();
   }
 }
 
@@ -1131,6 +1134,22 @@ function checkAttendancePasscode(){
   }
 }
 
+function checkTakeAttendancePasscode(){
+  const val = document.getElementById('takeAttendancePasscodeInput').value;
+  const msg = document.getElementById('takeAttendanceLoginMsg');
+  if(val === ATTENDANCE_PASSCODE){
+    document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
+    document.getElementById('takeAttendanceCard').classList.remove('hidden');
+    loadAttendanceCourseOptions();
+    const dateInput = document.getElementById('attendanceDateInput');
+    if(dateInput && !dateInput.value){
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+  } else {
+    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+  }
+}
+
 async function loadAttendanceCourseOptions(){
   try{
     const data = await fetchSupabaseData();
@@ -1139,6 +1158,17 @@ async function loadAttendanceCourseOptions(){
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     document.getElementById('attendanceCourseSelect').innerHTML = options;
     document.getElementById('attendanceSummaryCourseSelect').innerHTML = options;
+  }catch(e){}
+}
+
+async function loadAttendanceSummaryCourseOptions(){
+  try{
+    const data = await fetchSupabaseData();
+    const rosters = data.rosters || {};
+    const courses = Object.keys(rosters);
+    const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    const summarySelect = document.getElementById('attendanceSummaryCourseSelect');
+    if(summarySelect) summarySelect.innerHTML = options;
   }catch(e){}
 }
 
@@ -1426,16 +1456,27 @@ async function loadAttendanceSummary(){
     }
 
     const totalSessions = attendanceRecords.length;
+    const sortedByDateAsc = attendanceRecords.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
 
-    // By Student
-    let studentHtml = '<table><tr><th>Index #</th><th>Name</th><th>Present</th><th>Total</th><th>%</th></tr>';
+    // By Student — matrix with one column per date
+    let studentHtml = '<div style="overflow-x:auto;"><table><tr><th style="position:sticky;left:0;background:var(--card);">Index #</th><th style="position:sticky;left:0;background:var(--card);">Name</th>';
+    sortedByDateAsc.forEach(a => {
+      studentHtml += `<th style="white-space:nowrap;">${escapeHtml(a.date)}</th>`;
+    });
+    studentHtml += '<th>Present</th><th>%</th></tr>';
+
     roster.forEach(s => {
       const presentCount = attendanceRecords.filter(a => a.present.includes(s.indexNumber)).length;
       const pct = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
       const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
-      studentHtml += `<tr><td>${escapeHtml(s.indexNumber)}</td><td>${escapeHtml(s.name||'')}</td><td>${presentCount}</td><td>${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
+      studentHtml += `<tr><td style="position:sticky;left:0;background:var(--card);">${escapeHtml(s.indexNumber)}</td><td style="position:sticky;left:0;background:var(--card);">${escapeHtml(s.name||'')}</td>`;
+      sortedByDateAsc.forEach(a => {
+        const wasPresent = a.present.includes(s.indexNumber);
+        studentHtml += `<td style="text-align:center;color:${wasPresent ? 'var(--ok)' : 'var(--danger)'};font-weight:700;">${wasPresent ? '✓' : '✗'}</td>`;
+      });
+      studentHtml += `<td>${presentCount}/${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
     });
-    studentHtml += '</table>';
+    studentHtml += '</table></div>';
     byStudentContainer.innerHTML = studentHtml;
 
     // By Session

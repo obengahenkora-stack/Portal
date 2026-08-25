@@ -99,7 +99,7 @@
   <div class="card">
     <label>Your Index Number</label>
     <input type="text" id="dashIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') loadDashboard()">
-    <button onclick="loadDashboard()">View My Dashboard</button>
+    <button id="dashLoadBtn" onclick="loadDashboard()">View My Dashboard</button>
     <div id="dashMsg"></div>
   </div>
 
@@ -163,13 +163,22 @@ async function fetchJsonBinRecords(){
   }catch(e){ return {}; }
 }
 
+const LOCK_KEY = "assessment_locked_index"; // shared with the Assessment Portal's lock, so a device stays tied to one student everywhere
+
 async function loadDashboard(){
-  const idx = document.getElementById('dashIndexInput').value.trim();
+  const idxInput = document.getElementById('dashIndexInput');
+  const idx = idxInput.value.trim();
   const msg = document.getElementById('dashMsg');
   const resultsDiv = document.getElementById('dashResults');
 
   if(!idx){
     msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
+    return;
+  }
+
+  const lockedIndex = localStorage.getItem(LOCK_KEY);
+  if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
+    msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number and cannot be switched.</div>";
     return;
   }
 
@@ -244,10 +253,25 @@ async function loadDashboard(){
 
     resultsDiv.classList.remove('hidden');
     msg.innerHTML = '';
+
+    // Lock this device to this index number permanently — no switching allowed afterward.
+    if(!lockedIndex){
+      localStorage.setItem(LOCK_KEY, idx);
+    }
+    idxInput.disabled = true;
+    document.getElementById('dashLoadBtn').disabled = true;
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not load dashboard: ${escapeHtml(e.message)}</div>`;
   }
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  const lockedIndex = localStorage.getItem(LOCK_KEY);
+  if(lockedIndex){
+    document.getElementById('dashIndexInput').value = lockedIndex;
+    loadDashboard();
+  }
+});
 </script>
 
 <script>

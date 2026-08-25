@@ -259,6 +259,10 @@
       <div id="publishMsg"></div>
     </div>
 
+    <div class="card hidden" id="taWriteNotice">
+      <div class="msg ok">You're logged in as a Teaching Assistant. You can publish new blog posts. Managing/deleting existing posts, uploading lecture notes, and posting announcements are Main Instructor only.</div>
+    </div>
+
     <div class="card hidden" id="uploadResourceCard">
       <label>Upload Lecture Notes / Resource</label>
       <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, or any file up to 50MB.</div>
@@ -306,11 +310,23 @@ const SUPABASE_FILE = "site-data.json";
 // ============================================================
 
 const TEACHER_PASSCODES = {
-  "teacher123": "Main Instructor",
-  "assist456": "Teaching Assistant"
-  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+  "teacher123": { label: "Main Instructor", role: "admin" },
+  "assist456": { label: "Teaching Assistant", role: "ta" }
+  // Add more "passcode": { label: "Name", role: "admin" or "ta" } pairs here
 };
 function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+async function loadTeamMembers(){
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    members.forEach(m => {
+      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
+    });
+  }catch(e){}
+}
+function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
+let currentUserRole = null; // set after successful login: 'admin' or 'ta'
+function isAdmin(){ return currentUserRole === 'admin'; }
 
 
 function escapeHtml(str){
@@ -578,16 +594,22 @@ function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
   if(isValidPasscode(val)){
+    currentUserRole = getPasscodeRole(val);
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('composeCard').classList.remove('hidden');
-    document.getElementById('manageCard').classList.remove('hidden');
-    document.getElementById('uploadResourceCard').classList.remove('hidden');
-    document.getElementById('manageResourcesCard').classList.remove('hidden');
-    document.getElementById('postAnnouncementCard').classList.remove('hidden');
-    document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
-    loadManageList();
-    loadManageResourcesList();
-    loadManageAnnouncementsList();
+
+    if(isAdmin()){
+      document.getElementById('manageCard').classList.remove('hidden');
+      document.getElementById('uploadResourceCard').classList.remove('hidden');
+      document.getElementById('manageResourcesCard').classList.remove('hidden');
+      document.getElementById('postAnnouncementCard').classList.remove('hidden');
+      document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
+      loadManageList();
+      loadManageResourcesList();
+      loadManageAnnouncementsList();
+    } else {
+      document.getElementById('taWriteNotice').classList.remove('hidden');
+    }
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
   }
@@ -653,6 +675,7 @@ async function loadManageList(){
 }
 
 async function deletePost(id){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete posts.'); return; }
   if(!confirm('Delete this post? This cannot be undone.')) return;
   try{
     const data = await fetchSupabaseData();
@@ -667,6 +690,7 @@ async function deletePost(id){
 // ===== Lecture Notes / Resources =====
 
 async function uploadResource(){
+  if(!isAdmin()){ document.getElementById('uploadResourceMsg').innerHTML = '<div class="msg err">Only the Main Instructor can upload resources.</div>'; return; }
   const titleInput = document.getElementById('resourceTitleInput');
   const fileInput = document.getElementById('resourceFileInput');
   const msg = document.getElementById('uploadResourceMsg');
@@ -787,6 +811,7 @@ async function loadManageResourcesList(){
 }
 
 async function deleteResource(id){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete resources.'); return; }
   if(!confirm('Delete this resource? This cannot be undone.')) return;
   try{
     const data = await fetchSupabaseData();
@@ -801,6 +826,7 @@ async function deleteResource(id){
 // ===== Announcements =====
 
 async function postAnnouncement(){
+  if(!isAdmin()){ document.getElementById('postAnnouncementMsg').innerHTML = '<div class="msg err">Only the Main Instructor can post announcements.</div>'; return; }
   const course = document.getElementById('announcementCourseInput').value.trim();
   const text = document.getElementById('announcementTextInput').value.trim();
   const msg = document.getElementById('postAnnouncementMsg');
@@ -895,6 +921,7 @@ async function loadManageAnnouncementsList(){
 }
 
 async function deleteAnnouncement(id){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete announcements.'); return; }
   if(!confirm('Delete this announcement?')) return;
   try{
     const data = await fetchSupabaseData();
@@ -1014,6 +1041,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
+  loadTeamMembers();
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'resources'){
     switchTab('resources');

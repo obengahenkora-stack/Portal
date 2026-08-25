@@ -480,11 +480,23 @@ async function saveSupabaseData(data){
 }
 
 const TEACHER_PASSCODES = {
-  "teacher123": "Main Instructor",
-  "assist456": "Teaching Assistant"
-  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+  "teacher123": { label: "Main Instructor", role: "admin" },
+  "assist456": { label: "Teaching Assistant", role: "ta" }
+  // Add more "passcode": { label: "Name", role: "admin" or "ta" } pairs here
 };
 function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+async function loadTeamMembers(){
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    members.forEach(m => {
+      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
+    });
+  }catch(e){}
+}
+function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
+let currentUserRole = null; // set after successful login: 'admin' or 'ta'
+function isAdmin(){ return currentUserRole === 'admin'; }
 
 
 function switchTab(tab){
@@ -709,6 +721,11 @@ function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
   if(isValidPasscode(val)){
+    if(getPasscodeRole(val) !== 'admin'){
+      msg.innerHTML = '<div class="msg err">Only the Main Instructor can edit site info.</div>';
+      return;
+    }
+    currentUserRole = 'admin';
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('editCard').classList.remove('hidden');
   } else {
@@ -1035,6 +1052,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDarkMode();
   updateLiveDateTime();
   loadProfile();
+  loadTeamMembers();
   loadFactOfDay();
   loadHistoryOfDay();
   const qrImg = document.getElementById('siteQrCode');

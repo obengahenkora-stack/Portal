@@ -280,6 +280,25 @@
       <div id="deviceLockMsg"></div>
     </div>
 
+    <div class="card hidden" id="teamAccessCard">
+      <label>Team Access</label>
+      <div class="hint">Add lecturers or teaching assistants. They'll be able to log in with the passcode you set here, site-wide, once saved.</div>
+      <label>Name</label>
+      <input type="text" id="teamMemberNameInput" placeholder="e.g. Dr. Ama Owusu">
+      <label>Passcode (they'll use this to log in)</label>
+      <input type="text" id="teamMemberPasscodeInput" placeholder="e.g. amaowusu2026">
+      <label>Role</label>
+      <select id="teamMemberRoleSelect" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
+        <option value="lecturer">Lecturer — upload scores, manage attendance/rosters</option>
+        <option value="ta">Teaching Assistant — mark attendance, reply to reports, post blog</option>
+        <option value="admin">Admin — full access (use sparingly)</option>
+      </select>
+      <button onclick="addTeamMember()">Add Team Member</button>
+      <div id="teamMemberMsg"></div>
+
+      <div id="teamMemberList" style="margin-top:16px;"></div>
+    </div>
+
     <div class="card hidden" id="deleteCourseCard">
       <label>Delete All Results For a Course</label>
       <select id="deleteCourseSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
@@ -324,9 +343,17 @@
       <div id="courseListDisplay" style="margin-top:14px;"></div>
     </div>
 
+    <div class="card hidden" id="taNoticeCard">
+      <div class="msg ok">You're logged in as a Teaching Assistant. You can mark attendance, view records, and reply to student issue reports. Uploading scores, managing courses, deleting data, backups, and settings are Main Instructor only.</div>
+    </div>
+
+    <div class="card hidden" id="lecturerNoticeCard">
+      <div class="msg ok">You're logged in as a Lecturer. You can upload scores, manage courses, mark attendance, manage rosters, and reply to student issue reports. Backups, settings, and deleting data are Main Instructor only.</div>
+    </div>
+
     <div class="card hidden" id="reportsCard">
       <label>Student Issue Reports (<span id="reportCount">0</span>)</label>
-      <button class="secondary" onclick="clearAllReports()" style="margin-bottom:12px;">Clear All Reports</button>
+      <button class="secondary" id="clearAllReportsBtn" onclick="clearAllReports()" style="margin-bottom:12px;">Clear All Reports</button>
       <div id="reportsTable"></div>
     </div>
   </div>
@@ -517,11 +544,104 @@ async function saveSupabaseData(data){
 // =================================================================
 
 const TEACHER_PASSCODES = {
-  "teacher123": "Main Instructor",
-  "assist456": "Teaching Assistant"
-  // Add more "passcode": "Label" pairs here for additional co-instructors/TAs
+  "teacher123": { label: "Main Instructor", role: "admin" },
+  "assist456": { label: "Teaching Assistant", role: "ta" },
+  "lecturer789": { label: "Co-Lecturer", role: "lecturer" }
+  // Add more "passcode": { label: "Name", role: "admin", "lecturer", or "ta" } pairs here
 };
 function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
+function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
+let currentUserRole = null; // set after successful login: 'admin' or 'ta'
+function isAdmin(){ return currentUserRole === 'admin'; }
+function canUploadScores(){ return currentUserRole === 'admin' || currentUserRole === 'lecturer'; }
+function canManageRosters(){ return currentUserRole === 'admin' || currentUserRole === 'lecturer'; }
+
+async function loadTeamMembers(){
+  // Merges admin-added team members (stored in Supabase) into the in-memory passcode list.
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    members.forEach(m => {
+      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
+    });
+  }catch(e){ /* if this fails, only the built-in passcodes work until reload */ }
+}
+
+async function addTeamMember(){
+  const name = document.getElementById('teamMemberNameInput').value.trim();
+  const passcode = document.getElementById('teamMemberPasscodeInput').value.trim();
+  const role = document.getElementById('teamMemberRoleSelect').value;
+  const msg = document.getElementById('teamMemberMsg');
+
+  if(!name || !passcode){
+    msg.innerHTML = '<div class="msg err">Please enter both a name and a passcode.</div>';
+    return;
+  }
+  if(passcode.length < 6){
+    msg.innerHTML = '<div class="msg err">Use a passcode of at least 6 characters.</div>';
+    return;
+  }
+  if(TEACHER_PASSCODES[passcode]){
+    msg.innerHTML = '<div class="msg err">That passcode is already in use. Choose a different one.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    members.push({ passcode, name, role });
+    data.teamMembers = members;
+    await saveSupabaseData(data);
+
+    TEACHER_PASSCODES[passcode] = { label: name, role };
+    msg.innerHTML = `<div class="msg ok">Added ${escapeHtml(name)}. Share their passcode with them directly.</div>`;
+    document.getElementById('teamMemberNameInput').value = '';
+    document.getElementById('teamMemberPasscodeInput').value = '';
+    loadTeamMemberList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadTeamMemberList(){
+  const container = document.getElementById('teamMemberList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    if(members.length === 0){
+      container.innerHTML = '<div class="empty">No additional team members added yet.</div>';
+      return;
+    }
+    const roleLabels = { admin: 'Admin', lecturer: 'Lecturer', ta: 'Teaching Assistant' };
+    container.innerHTML = members.map(m => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(m.name)}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">${roleLabels[m.role] || m.role}</div>
+        </div>
+        <button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.passcode).replace(/'/g,"\\'")}')">Remove</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load team members.</div>';
+  }
+}
+
+async function removeTeamMember(passcode){
+  if(!confirm('Remove this team member? Their passcode will stop working immediately.')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.teamMembers = (data.teamMembers || []).filter(m => m.passcode !== passcode);
+    await saveSupabaseData(data);
+    delete TEACHER_PASSCODES[passcode];
+    loadTeamMemberList();
+  }catch(e){
+    alert('Could not remove team member: ' + e.message);
+  }
+}
+
 
 const LOCK_KEY = "assessment_locked_index";
 
@@ -563,18 +683,34 @@ function checkPasscode(){
   const val = document.getElementById('passcodeInput').value;
   const msg = document.getElementById('loginMsg');
   if(isValidPasscode(val)){
+    currentUserRole = getPasscodeRole(val);
     document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('uploadCard').classList.remove('hidden');
     document.getElementById('dataCard').classList.remove('hidden');
-    document.getElementById('deleteCourseCard').classList.remove('hidden');
-    document.getElementById('backupCard').classList.remove('hidden');
-    document.getElementById('digestCard').classList.remove('hidden');
-    document.getElementById('manageCoursesCard').classList.remove('hidden');
-    document.getElementById('settingsCard').classList.remove('hidden');
-    loadDeviceLockSetting();
     document.getElementById('reportsCard').classList.remove('hidden');
+
+    if(canUploadScores()){
+      document.getElementById('uploadCard').classList.remove('hidden');
+      document.getElementById('manageCoursesCard').classList.remove('hidden');
+      loadCourseManageList();
+    }
+
+    if(isAdmin()){
+      document.getElementById('deleteCourseCard').classList.remove('hidden');
+      document.getElementById('backupCard').classList.remove('hidden');
+      document.getElementById('digestCard').classList.remove('hidden');
+      document.getElementById('settingsCard').classList.remove('hidden');
+      document.getElementById('teamAccessCard').classList.remove('hidden');
+      loadDeviceLockSetting();
+      loadTeamMemberList();
+    }
+
+    if(!isAdmin() && !canUploadScores()){
+      document.getElementById('taNoticeCard').classList.remove('hidden');
+    } else if(!isAdmin()){
+      document.getElementById('lecturerNoticeCard').classList.remove('hidden');
+    }
+
     loadRecords();
-    loadCourseManageList();
     loadIssueReports();
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
@@ -633,6 +769,7 @@ async function loadRecords(){
 }
 
 async function uploadScores(){
+  if(!canUploadScores()){ document.getElementById('uploadMsg').innerHTML = '<div class="msg err">You do not have permission to upload scores.</div>'; return; }
   const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
   const raw = document.getElementById('csvInput').value.trim();
   const msg = document.getElementById('uploadMsg');
@@ -693,6 +830,7 @@ function parseCsvLine(line){
 }
 
 async function uploadScoresFromFile(){
+  if(!canUploadScores()){ document.getElementById('fileUploadMsg').innerHTML = '<div class="msg err">You do not have permission to upload scores.</div>'; return; }
   const fileInput = document.getElementById('csvFileInput');
   const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
   const msg = document.getElementById('fileUploadMsg');
@@ -774,6 +912,7 @@ async function clearAllData(){
 }
 
 async function deleteCourse(){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete course results.'); return; }
   const select = document.getElementById('deleteCourseSelect');
   const course = select.value;
   const msg = document.getElementById('deleteCourseMsg');
@@ -803,6 +942,7 @@ async function deleteCourse(){
 }
 
 async function downloadBackup(){
+  if(!isAdmin()){ alert('Only the Main Instructor can download backups.'); return; }
   const msg = document.getElementById('backupMsg');
   msg.innerHTML = '<div class="msg ok">Preparing backup...</div>';
   try{
@@ -835,6 +975,7 @@ async function downloadBackup(){
 }
 
 async function sendWeeklyDigest(){
+  if(!isAdmin()){ alert('Only the Main Instructor can send the weekly digest.'); return; }
   const email = document.getElementById('digestEmailInput').value.trim();
   const msg = document.getElementById('digestMsg');
 
@@ -1050,6 +1191,7 @@ async function loadDeviceLockSetting(){
 }
 
 async function toggleDeviceLockSetting(){
+  if(!isAdmin()){ alert('Only the Main Instructor can change this setting.'); return; }
   const toggle = document.getElementById('deviceLockToggle');
   const statusText = document.getElementById('deviceLockStatusText');
   const msg = document.getElementById('deviceLockMsg');
@@ -1071,6 +1213,7 @@ async function toggleDeviceLockSetting(){
 
 // ===== Course list management (Teacher) =====
 async function addCourseOption(){
+  if(!canUploadScores()){ document.getElementById('courseManageMsg').innerHTML = '<div class="msg err">You do not have permission to manage courses.</div>'; return; }
   const input = document.getElementById('newCourseInput');
   const course = input.value.trim();
   const msg = document.getElementById('courseManageMsg');
@@ -1097,6 +1240,7 @@ async function addCourseOption(){
 }
 
 async function removeCourseOption(course){
+  if(!isAdmin()){ alert('Only the Main Instructor can manage courses.'); return; }
   if(!confirm(`Remove "${course}" from the course list? (Existing scores/reports for it are not deleted.)`)) return;
   const msg = document.getElementById('courseManageMsg');
   try{
@@ -1217,6 +1361,8 @@ async function submitIssueReport(){
 async function loadIssueReports(){
   const container = document.getElementById('reportsTable');
   container.innerHTML = '<div class="empty">Loading...</div>';
+  const clearBtn = document.getElementById('clearAllReportsBtn');
+  if(clearBtn) clearBtn.style.display = isAdmin() ? 'inline-block' : 'none';
   try{
     const bin = await fetchBin();
     const reports = bin.reports || [];
@@ -1225,7 +1371,7 @@ async function loadIssueReports(){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
       return;
     }
-    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th>Reply</th><th></th></tr>';
+    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th>Reply</th>' + (isAdmin() ? '<th></th>' : '') + '</tr>';
     reports.slice().reverse().forEach(r=>{
       const safeTimestamp = escapeHtml(r.submittedAt || '').replace(/'/g, "\\'");
       const replyVal = escapeHtml(r.reply || '');
@@ -1238,7 +1384,7 @@ async function loadIssueReports(){
           <input type="text" value="${replyVal}" id="reply_${safeTimestamp}" placeholder="Type a reply for the student..." style="width:160px;padding:6px 8px;font-size:0.78rem;">
           <button style="padding:5px 8px;font-size:0.7rem;margin-top:4px;" onclick="saveReportReply('${safeTimestamp}')">Save</button>
         </td>
-        <td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td>
+        ${isAdmin() ? `<td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td>` : ''}
       </tr>`;
     });
     html += '</table>';
@@ -1267,6 +1413,7 @@ async function saveReportReply(submittedAt){
 }
 
 async function deleteReport(submittedAt){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete reports.'); return; }
   if(!confirm('Delete this issue report? This cannot be undone.')) return;
   try{
     const bin = await fetchBin();
@@ -1279,6 +1426,7 @@ async function deleteReport(submittedAt){
 }
 
 async function clearAllReports(){
+  if(!isAdmin()){ alert('Only the Main Instructor can clear all reports.'); return; }
   if(!confirm('Delete ALL issue reports? This cannot be undone.')) return;
   try{
     const bin = await fetchBin();
@@ -1323,10 +1471,18 @@ function checkAttendancePasscode(){
   const val = document.getElementById('attendancePasscodeInput').value;
   const msg = document.getElementById('attendanceLoginMsg');
   if(isValidPasscode(val)){
+    const role = getPasscodeRole(val);
+    if(role !== 'admin' && role !== 'lecturer'){
+      msg.innerHTML = '<div class="msg err">Only the Main Instructor or a Lecturer can manage rosters. Teaching Assistants can mark attendance directly from the Attendance tab.</div>';
+      return;
+    }
+    currentUserRole = role;
     document.getElementById('attendanceLoginCard').classList.add('hidden');
     document.getElementById('rosterUploadCard').classList.remove('hidden');
-    document.getElementById('attendanceCleanupCard').classList.remove('hidden');
-    loadCleanupCourseOptions();
+    if(isAdmin()){
+      document.getElementById('attendanceCleanupCard').classList.remove('hidden');
+      loadCleanupCourseOptions();
+    }
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
   }
@@ -1389,6 +1545,7 @@ function checkTakeAttendancePasscode(){
   const val = document.getElementById('takeAttendancePasscodeInput').value;
   const msg = document.getElementById('takeAttendanceLoginMsg');
   if(isValidPasscode(val)){
+    currentUserRole = getPasscodeRole(val);
     document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
     document.getElementById('takeAttendanceCard').classList.remove('hidden');
     loadAttendanceCourseOptions();
@@ -1424,6 +1581,7 @@ async function loadAttendanceSummaryCourseOptions(){
 }
 
 async function uploadRoster(){
+  if(!canManageRosters()){ document.getElementById('rosterUploadMsg').innerHTML = '<div class="msg err">You do not have permission to manage rosters.</div>'; return; }
   const course = document.getElementById('rosterCourseInput').value.trim();
   const raw = document.getElementById('rosterInput').value.trim();
   const msg = document.getElementById('rosterUploadMsg');
@@ -1503,6 +1661,7 @@ function extractRosterFromRows(rows){
 }
 
 async function uploadRosterFromFile(){
+  if(!canManageRosters()){ document.getElementById('rosterFileUploadMsg').innerHTML = '<div class="msg err">You do not have permission to manage rosters.</div>'; return; }
   const course = document.getElementById('rosterCourseInput').value.trim();
   const fileInput = document.getElementById('rosterFileInput');
   const msg = document.getElementById('rosterFileUploadMsg');
@@ -1817,6 +1976,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
+  loadTeamMembers();
   const lockedIndex = localStorage.getItem(LOCK_KEY);
   if(lockedIndex){
     const idxInput = document.getElementById('indexLookup');

@@ -313,8 +313,55 @@
     </div>
   </div>
 
-  <!-- ATTENDANCE VIEW (teacher-only, passcode protected) -->
+  <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" class="hidden">
+
+    <div class="card" id="takeAttendanceCard">
+      <label>Take Attendance</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="flex:1;min-width:160px;">
+          <label>Course</label>
+          <select id="attendanceCourseSelect" onchange="loadAttendanceForDate()">
+            <option value="">Select course...</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label>Date</label>
+          <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
+        </div>
+      </div>
+      <label>Search Index Number</label>
+      <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
+
+      <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
+      <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
+      <div id="saveAttendanceMsg"></div>
+    </div>
+
+    <div class="card" id="attendanceSummaryCard">
+      <label>Attendance Summary</label>
+      <select id="attendanceSummaryCourseSelect" onchange="loadAttendanceSummary()" style="margin-bottom:14px;">
+        <option value="">Select course...</option>
+      </select>
+
+      <div style="display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line);">
+        <div class="tab active" id="summaryTabByStudent" onclick="switchSummaryView('student')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">By Student</div>
+        <div class="tab" id="summaryTabBySession" onclick="switchSummaryView('session')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">By Session</div>
+      </div>
+
+      <div id="attendanceSummaryByStudent"><div class="empty">Select a course to view attendance.</div></div>
+      <div id="attendanceSummaryBySession" class="hidden"><div class="empty">Select a course to view attendance.</div></div>
+    </div>
+
+    <div style="text-align:center;margin-top:8px;">
+      <button onclick="switchTab('roster')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Upload / Manage Roster (passcode required)</button>
+    </div>
+  </div>
+
+  <!-- ROSTER UPLOAD (passcode protected) -->
+  <div id="rosterView" class="hidden">
+    <span class="back-to-list" onclick="switchTab('attendance')" style="display:block;margin-bottom:14px;cursor:pointer;color:var(--accent);font-size:0.85rem;">&larr; Back to Attendance</span>
+
     <div class="card" id="attendanceLoginCard">
       <label>Teacher Passcode</label>
       <input type="password" id="attendancePasscodeInput" placeholder="Enter passcode">
@@ -340,33 +387,6 @@
       <textarea id="rosterInput" placeholder="UEB0700123, ANSU-GYEABOUR Pious&#10;UEB0700223, MOHAMMED AWAL Anaaha"></textarea>
       <button id="rosterUploadBtn" onclick="uploadRoster()">Save Pasted Roster</button>
       <div id="rosterUploadMsg"></div>
-    </div>
-
-    <div class="card hidden" id="takeAttendanceCard">
-      <label>Take Attendance</label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-        <div style="flex:1;min-width:160px;">
-          <label>Course</label>
-          <select id="attendanceCourseSelect" onchange="loadAttendanceForDate()">
-            <option value="">Select course...</option>
-          </select>
-        </div>
-        <div style="flex:1;min-width:160px;">
-          <label>Date</label>
-          <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
-        </div>
-      </div>
-      <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
-      <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
-      <div id="saveAttendanceMsg"></div>
-    </div>
-
-    <div class="card hidden" id="attendanceSummaryCard">
-      <label>Attendance History</label>
-      <select id="attendanceSummaryCourseSelect" onchange="loadAttendanceSummary()" style="margin-bottom:14px;">
-        <option value="">Select course...</option>
-      </select>
-      <div id="attendanceSummaryList"><div class="empty">Select a course to view session history.</div></div>
     </div>
   </div>
 </div>
@@ -436,13 +456,23 @@ function switchTab(tab){
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('studentView').classList.toggle('hidden', tab!=='student');
   document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
-  document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
+  document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance' && tab!=='roster');
+  document.getElementById('rosterView').classList.toggle('hidden', tab!=='roster');
+  document.getElementById('takeAttendanceCard').classList.toggle('hidden', tab==='roster');
+  document.getElementById('attendanceSummaryCard').classList.toggle('hidden', tab==='roster');
   document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
   document.getElementById('tabStudent').classList.toggle('active', tab==='student');
   document.getElementById('tabReport').classList.toggle('active', tab==='report');
   document.getElementById('navPortal').classList.toggle('active', tab==='teacher' || tab==='student' || tab==='report');
-  document.getElementById('navAttendance').classList.toggle('active', tab==='attendance');
+  document.getElementById('navAttendance').classList.toggle('active', tab==='attendance' || tab==='roster');
   if(tab === 'report') loadCourseOptionsForStudents();
+  if(tab === 'attendance'){
+    loadAttendanceCourseOptions();
+    const dateInput = document.getElementById('attendanceDateInput');
+    if(dateInput && !dateInput.value){
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+  }
 }
 
 function toggleResultsVisibility(){
@@ -1096,13 +1126,6 @@ function checkAttendancePasscode(){
   if(val === ATTENDANCE_PASSCODE){
     document.getElementById('attendanceLoginCard').classList.add('hidden');
     document.getElementById('rosterUploadCard').classList.remove('hidden');
-    document.getElementById('takeAttendanceCard').classList.remove('hidden');
-    document.getElementById('attendanceSummaryCard').classList.remove('hidden');
-    loadAttendanceCourseOptions();
-    const dateInput = document.getElementById('attendanceDateInput');
-    if(dateInput && !dateInput.value){
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
   }
@@ -1255,6 +1278,8 @@ async function loadAttendanceForDate(){
   const course = document.getElementById('attendanceCourseSelect').value;
   const date = document.getElementById('attendanceDateInput').value;
   const container = document.getElementById('attendanceChecklist');
+  const searchInput = document.getElementById('attendanceSearchInput');
+  if(searchInput) searchInput.value = '';
 
   if(!course || !date){
     container.innerHTML = '<div class="empty">Select a course and date to begin.</div>';
@@ -1309,6 +1334,17 @@ function toggleAttendanceRow(row){
   }
 }
 
+function filterAttendanceChecklist(){
+  const query = document.getElementById('attendanceSearchInput').value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#attendanceChecklist .attendance-row');
+  rows.forEach(row => {
+    const index = (row.getAttribute('data-index') || '').toLowerCase();
+    const nameText = row.textContent.toLowerCase();
+    const matches = !query || index.includes(query) || nameText.includes(query);
+    row.style.display = matches ? 'flex' : 'none';
+  });
+}
+
 async function saveAttendance(){
   const course = document.getElementById('attendanceCourseSelect').value;
   const date = document.getElementById('attendanceDateInput').value;
@@ -1358,32 +1394,60 @@ async function saveAttendance(){
   }
 }
 
+function switchSummaryView(view){
+  document.getElementById('attendanceSummaryByStudent').classList.toggle('hidden', view!=='student');
+  document.getElementById('attendanceSummaryBySession').classList.toggle('hidden', view!=='session');
+  document.getElementById('summaryTabByStudent').classList.toggle('active', view==='student');
+  document.getElementById('summaryTabBySession').classList.toggle('active', view==='session');
+}
+
 async function loadAttendanceSummary(){
   const course = document.getElementById('attendanceSummaryCourseSelect').value;
-  const container = document.getElementById('attendanceSummaryList');
+  const byStudentContainer = document.getElementById('attendanceSummaryByStudent');
+  const bySessionContainer = document.getElementById('attendanceSummaryBySession');
+
   if(!course){
-    container.innerHTML = '<div class="empty">Select a course to view session history.</div>';
+    byStudentContainer.innerHTML = '<div class="empty">Select a course to view attendance.</div>';
+    bySessionContainer.innerHTML = '<div class="empty">Select a course to view attendance.</div>';
     return;
   }
-  container.innerHTML = '<div class="empty">Loading...</div>';
+  byStudentContainer.innerHTML = '<div class="empty">Loading...</div>';
+  bySessionContainer.innerHTML = '<div class="empty">Loading...</div>';
+
   try{
     const data = await fetchSupabaseData();
     const roster = (data.rosters && data.rosters[course]) || [];
     const attendanceRecords = (data.attendance || []).filter(a => a.course === course).sort((a,b) => new Date(b.date) - new Date(a.date));
 
     if(attendanceRecords.length === 0){
-      container.innerHTML = '<div class="empty">No attendance sessions recorded for this course yet.</div>';
+      byStudentContainer.innerHTML = '<div class="empty">No attendance sessions recorded for this course yet.</div>';
+      bySessionContainer.innerHTML = '<div class="empty">No attendance sessions recorded for this course yet.</div>';
       return;
     }
 
-    let html = '<table><tr><th>Date</th><th>Present</th><th>Total</th></tr>';
-    attendanceRecords.forEach(a => {
-      html += `<tr><td>${escapeHtml(a.date)}</td><td>${a.present.length}</td><td>${roster.length}</td></tr>`;
+    const totalSessions = attendanceRecords.length;
+
+    // By Student
+    let studentHtml = '<table><tr><th>Index #</th><th>Name</th><th>Present</th><th>Total</th><th>%</th></tr>';
+    roster.forEach(s => {
+      const presentCount = attendanceRecords.filter(a => a.present.includes(s.indexNumber)).length;
+      const pct = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
+      const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
+      studentHtml += `<tr><td>${escapeHtml(s.indexNumber)}</td><td>${escapeHtml(s.name||'')}</td><td>${presentCount}</td><td>${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
     });
-    html += '</table>';
-    container.innerHTML = html;
+    studentHtml += '</table>';
+    byStudentContainer.innerHTML = studentHtml;
+
+    // By Session
+    let sessionHtml = '<table><tr><th>Date</th><th>Present</th><th>Total</th></tr>';
+    attendanceRecords.forEach(a => {
+      sessionHtml += `<tr><td>${escapeHtml(a.date)}</td><td>${a.present.length}</td><td>${roster.length}</td></tr>`;
+    });
+    sessionHtml += '</table>';
+    bySessionContainer.innerHTML = sessionHtml;
   }catch(e){
-    container.innerHTML = '<div class="empty">Could not load attendance history.</div>';
+    byStudentContainer.innerHTML = '<div class="empty">Could not load attendance summary.</div>';
+    bySessionContainer.innerHTML = '<div class="empty">Could not load attendance summary.</div>';
   }
 }
 

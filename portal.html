@@ -324,12 +324,21 @@
 
     <div class="card hidden" id="rosterUploadCard">
       <label>Upload Class Roster (once per course)</label>
-      <div class="hint">Paste one student per line: Index Number, Name. Uploading again for the same course replaces its roster.</div>
+      <div class="hint">Uploading again for the same course replaces its roster.</div>
       <label>Course</label>
       <input type="text" id="rosterCourseInput" placeholder="e.g. CIVL 368">
-      <label>Roster</label>
+
+      <label>Upload From Excel/CSV File</label>
+      <div class="hint">Reads a file with IndexNumber and Name columns (works with the same official class list format used for assessment uploads).</div>
+      <input type="file" id="rosterFileInput" accept=".csv,.xlsx,.xls">
+      <button id="rosterFileUploadBtn" onclick="uploadRosterFromFile()">Upload From File</button>
+      <div id="rosterFileUploadMsg"></div>
+
+      <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
+
+      <label>Or Paste Manually — one per line: Index Number, Name</label>
       <textarea id="rosterInput" placeholder="UEB0700123, ANSU-GYEABOUR Pious&#10;UEB0700223, MOHAMMED AWAL Anaaha"></textarea>
-      <button id="rosterUploadBtn" onclick="uploadRoster()">Save Roster</button>
+      <button id="rosterUploadBtn" onclick="uploadRoster()">Save Pasted Roster</button>
       <div id="rosterUploadMsg"></div>
     </div>
 
@@ -363,6 +372,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 
 // ===== JSONBin.io configuration (records, courses, reports, settings) =====
@@ -1144,6 +1154,98 @@ async function uploadRoster(){
     loadAttendanceCourseOptions();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not save roster: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function saveRosterData(course, roster, msgEl){
+  const data = await fetchSupabaseData();
+  data.rosters = data.rosters || {};
+  data.rosters[course] = roster;
+  await saveSupabaseData(data);
+  msgEl.innerHTML = `<div class="msg ok">Saved roster for "${escapeHtml(course)}" — ${roster.length} student(s).</div>`;
+  loadAttendanceCourseOptions();
+}
+
+function extractRosterFromRows(rows){
+  // rows: array of arrays (first row = headers) OR array of objects
+  const roster = [];
+  if(rows.length === 0) return roster;
+
+  if(Array.isArray(rows[0])){
+    // array-of-arrays format
+    const headers = rows[0].map(h => String(h||'').trim().toLowerCase());
+    const idxCol = headers.findIndex(h => h.includes('index'));
+    const nameCol = headers.findIndex(h => h.includes('name'));
+    for(let i=1;i<rows.length;i++){
+      const row = rows[i];
+      const indexNumber = idxCol >= 0 ? String(row[idxCol]||'').trim() : String(row[0]||'').trim();
+      const name = nameCol >= 0 ? String(row[nameCol]||'').trim() : String(row[1]||'').trim();
+      if(indexNumber) roster.push({ indexNumber, name });
+    }
+  } else {
+    // array-of-objects format (from XLSX sheet_to_json)
+    for(const row of rows){
+      const keys = Object.keys(row);
+      const idxKey = keys.find(k => k.toLowerCase().includes('index'));
+      const nameKey = keys.find(k => k.toLowerCase().includes('name'));
+      const indexNumber = idxKey ? String(row[idxKey]||'').trim() : '';
+      const name = nameKey ? String(row[nameKey]||'').trim() : '';
+      if(indexNumber) roster.push({ indexNumber, name });
+    }
+  }
+  return roster;
+}
+
+async function uploadRosterFromFile(){
+  const course = document.getElementById('rosterCourseInput').value.trim();
+  const fileInput = document.getElementById('rosterFileInput');
+  const msg = document.getElementById('rosterFileUploadMsg');
+  const btn = document.getElementById('rosterFileUploadBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please enter a course name first.</div>';
+    return;
+  }
+  if(!fileInput.files || fileInput.files.length === 0){
+    msg.innerHTML = '<div class="msg err">Please choose a file first.</div>';
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Reading file...</div>';
+
+  try{
+    let roster = [];
+
+    if(isExcel){
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      roster = extractRosterFromRows(rows);
+    } else {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      const rows = lines.map(line => parseCsvLine(line));
+      roster = extractRosterFromRows(rows);
+    }
+
+    if(roster.length === 0){
+      msg.innerHTML = '<div class="msg err">Could not find any rows with an Index Number column in this file.</div>';
+      return;
+    }
+
+    msg.innerHTML = '<div class="msg ok">Saving roster...</div>';
+    await saveRosterData(course, roster, msg);
+    fileInput.value = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not read file: ${escapeHtml(e.message)}</div>`;
   }finally{
     btn.disabled = false;
   }

@@ -261,10 +261,33 @@
     .hero h1{ font-size:1.3rem; }
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
+
+  [data-theme="dark"]{
+    --bg:#0f172a;
+    --card:#1a2740;
+    --ink:#e8edf5;
+    --muted:#9aabc4;
+    --line:#2c3d5c;
+    --paper:#0f172a;
+  }
+  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
+    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
+  }
+  .theme-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:48px;height:48px;border-radius:50%;
+    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
+    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 
 </head>
 <body>
+<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+
 <div class="hero">
   <div class="datetime-display" id="liveDateTime">Loading...</div>
   <div class="stamp">Verified Faculty Profile</div><br>
@@ -318,6 +341,7 @@
       <div class="tab active" id="subTabAbout" onclick="switchSubTab('about')">About</div>
       <div class="tab" id="subTabContact" onclick="switchSubTab('contact')">Contact</div>
       <div class="tab" id="subTabPubs" onclick="switchSubTab('pubs')">Publications</div>
+      <div class="tab" id="subTabFaq" onclick="switchSubTab('faq')">FAQ</div>
       <div class="tab" id="subTabPosts" onclick="switchSubTab('posts')">Latest Posts</div>
     </div>
 
@@ -329,11 +353,20 @@
     <div class="card sub-section hidden" id="subContact">
       <h2>Contact</h2>
       <div id="contactDisplay">Loading...</div>
+      <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Scan to Visit This Site</div>
+        <img id="siteQrCode" src="" alt="QR code" style="width:150px;height:150px;border-radius:8px;border:1px solid var(--line);">
+      </div>
     </div>
 
     <div class="card sub-section hidden" id="subPubs">
       <h2>Publications &amp; Research</h2>
       <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
+    </div>
+
+    <div class="card sub-section hidden" id="subFaq">
+      <h2>Frequently Asked Questions</h2>
+      <div id="faqDisplay"><div class="empty">Loading...</div></div>
     </div>
 
     <div class="card sub-section hidden" id="subPosts">
@@ -383,6 +416,9 @@
 
       <label>Publications / Research (one per line)</label>
       <textarea id="pubInput" placeholder="Title of paper, Journal, Year&#10;Another publication title..."></textarea>
+
+      <label>FAQ (one per line: Question | Answer)</label>
+      <textarea id="faqInput" placeholder="What is the grading policy? | Grades are based on 40% coursework, 60% final exam.&#10;How do I contact you? | Use the Report Issue tab in the Assessment Portal."></textarea>
 
       <button id="saveBtn" onclick="saveProfile()">Save Changes</button>
       <div id="saveMsg"></div>
@@ -452,11 +488,19 @@ function switchTab(tab){
   document.getElementById('tabView').classList.toggle('active', tab==='view');
 }
 
+function toggleFaqAnswer(i){
+  const answer = document.getElementById('faqAnswer' + i);
+  const arrow = document.getElementById('faqArrow' + i);
+  const isHidden = answer.classList.contains('hidden');
+  answer.classList.toggle('hidden', !isHidden);
+  arrow.textContent = isHidden ? '−' : '+';
+}
+
 function switchSubTab(sub){
-  const subs = ['about','contact','pubs','posts'];
+  const subs = ['about','contact','pubs','faq','posts'];
   subs.forEach(s => {
     document.getElementById('sub' + s.charAt(0).toUpperCase() + s.slice(1)).classList.toggle('hidden', s!==sub);
-    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
+    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s==='faq'?'Faq':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
   });
   if(sub === 'posts') loadLatestPosts();
 }
@@ -541,6 +585,28 @@ async function loadProfile(){
       ? pubLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')
       : "<li>No publications added yet.</li>";
 
+    // FAQ accordion
+    const faqLines = (profile.faq || "").split('\n').filter(l => l.trim());
+    const faqContainer = document.getElementById('faqDisplay');
+    if(faqLines.length === 0){
+      faqContainer.innerHTML = '<div class="empty">No FAQs added yet.</div>';
+    } else {
+      faqContainer.innerHTML = faqLines.map((line, i) => {
+        const parts = line.split('|').map(p => p.trim());
+        const question = parts[0] || '';
+        const answer = parts[1] || '';
+        return `
+          <div class="faq-item" style="border-bottom:1px solid var(--line);padding:12px 0;">
+            <div class="faq-question" onclick="toggleFaqAnswer(${i})" style="cursor:pointer;font-weight:600;font-size:0.92rem;display:flex;justify-content:space-between;align-items:center;">
+              <span>${escapeHtml(question)}</span>
+              <span id="faqArrow${i}" style="color:var(--gold);">+</span>
+            </div>
+            <div id="faqAnswer${i}" class="hidden" style="font-size:0.88rem;color:var(--muted);margin-top:8px;line-height:1.5;">${escapeHtml(answer)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
     // profile photo (stored as base64 image data, uploaded from device)
     const photoData = profile.photoData || "";
     const picImg = document.getElementById('profilePic');
@@ -582,6 +648,7 @@ async function loadProfile(){
     document.getElementById('contactInput').value = profile.contact || "";
     document.getElementById('socialInput').value = profile.social || "";
     document.getElementById('pubInput').value = profile.publications || "";
+    document.getElementById('faqInput').value = profile.faq || "";
   }catch(e){
     document.getElementById('bioDisplay').textContent = "Could not load profile info.";
   }
@@ -652,6 +719,7 @@ async function saveProfile(){
   const contact = document.getElementById('contactInput').value.trim();
   const social = document.getElementById('socialInput').value.trim();
   const publications = document.getElementById('pubInput').value.trim();
+  const faq = document.getElementById('faqInput').value.trim();
   const msg = document.getElementById('saveMsg');
   const btn = document.getElementById('saveBtn');
 
@@ -660,7 +728,7 @@ async function saveProfile(){
 
   try{
     const data = await fetchSupabaseData();
-    data.profile = { name, title, photoData, bio, contact, social, publications };
+    data.profile = { name, title, photoData, bio, contact, social, publications, faq };
     await saveSupabaseData(data);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
     loadProfile();
@@ -936,11 +1004,39 @@ function updateLiveDateTime(){
 }
 setInterval(updateLiveDateTime, 1000 * 30);
 
+
+function initDarkMode(){
+  const saved = localStorage.getItem('site_theme');
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('site_theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('site_theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
   updateLiveDateTime();
   loadProfile();
   loadFactOfDay();
   loadHistoryOfDay();
+  const qrImg = document.getElementById('siteQrCode');
+  if(qrImg){
+    const siteUrl = window.location.origin + window.location.pathname;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(siteUrl)}`;
+  }
 });
 </script>
 <!-- Floating Calculator Widget -->

@@ -151,9 +151,32 @@
     .hero h1{ font-size:1.3rem; }
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
+
+  [data-theme="dark"]{
+    --bg:#0f172a;
+    --card:#1a2740;
+    --ink:#e8edf5;
+    --muted:#9aabc4;
+    --line:#2c3d5c;
+    --paper:#0f172a;
+  }
+  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
+    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
+  }
+  .theme-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:48px;height:48px;border-radius:50%;
+    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
+    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+
 <div class="hero">
   <div class="datetime-display" id="liveDateTime">Loading...</div>
   <div class="stamp">Verified Faculty Profile</div>
@@ -167,6 +190,7 @@
   <a href="index.html">Home</a>
   <div class="tab-static" id="navBlog" onclick="switchTab('posts')">Blog</div>
   <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
+  <div class="tab-static" id="navAnnouncements" onclick="switchTab('announcements')">Announcements</div>
   <a href="portal.html">Assessment Portal</a>
   <a href="portal.html?view=attendance">Attendance</a>
   <a href="dashboard.html">My Dashboard</a>
@@ -174,6 +198,12 @@
 
 <div class="wrap">
   <p class="sub" id="pageSubtitle">Short articles and explainers to help students understand key engineering concepts.</p>
+
+  <!-- SITE SEARCH -->
+  <div class="card" id="searchCard" style="padding:16px 20px;">
+    <input type="text" id="siteSearchInput" placeholder="Search posts, lecture notes, and announcements..." oninput="performSiteSearch()" style="margin-bottom:0;">
+    <div id="siteSearchResults" class="hidden" style="margin-top:14px;"></div>
+  </div>
 
   <!-- POSTS LIST -->
   <div id="postsView">
@@ -189,6 +219,15 @@
   <!-- RESOURCES / LECTURE NOTES -->
   <div id="resourcesView" class="hidden">
     <div id="resourcesList"><div class="empty">Loading resources...</div></div>
+  </div>
+
+  <!-- ANNOUNCEMENTS -->
+  <div id="announcementsView" class="hidden">
+    <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Filter by Course</label>
+    <select id="announcementCourseFilter" onchange="loadAnnouncementsList()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
+      <option value="">All Courses</option>
+    </select>
+    <div id="announcementsList"><div class="empty">Loading announcements...</div></div>
   </div>
 
   <div style="text-align:center;margin-top:8px;">
@@ -229,6 +268,21 @@
     <div class="card hidden" id="manageResourcesCard">
       <label>Manage Resources</label>
       <div id="manageResourcesList"><div class="empty">Loading...</div></div>
+    </div>
+
+    <div class="card hidden" id="postAnnouncementCard">
+      <label>Post Announcement</label>
+      <label>Course</label>
+      <input type="text" id="announcementCourseInput" placeholder="e.g. CIVL 368">
+      <label>Announcement</label>
+      <textarea id="announcementTextInput" placeholder="e.g. Class moved to Room 12 tomorrow." style="min-height:80px;"></textarea>
+      <button id="postAnnouncementBtn" onclick="postAnnouncement()">Post Announcement</button>
+      <div id="postAnnouncementMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageAnnouncementsCard">
+      <label>Manage Announcements</label>
+      <div id="manageAnnouncementsList"><div class="empty">Loading...</div></div>
     </div>
 
     <div class="card hidden" id="manageCard">
@@ -303,20 +357,23 @@ function formatDate(iso){
 function switchTab(tab){
   document.getElementById('postsView').classList.toggle('hidden', tab!=='posts');
   document.getElementById('resourcesView').classList.toggle('hidden', tab!=='resources');
+  document.getElementById('announcementsView').classList.toggle('hidden', tab!=='announcements');
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
   document.getElementById('navBlog').classList.toggle('active', tab==='posts' || tab==='write');
   document.getElementById('navResources').classList.toggle('active', tab==='resources');
+  document.getElementById('navAnnouncements').classList.toggle('active', tab==='announcements');
 
   const subtitle = document.getElementById('pageSubtitle');
   if(subtitle){
-    subtitle.textContent = tab === 'resources'
-      ? "Download lecture notes and course materials."
-      : "Short articles and explainers to help students understand key engineering concepts.";
+    if(tab === 'resources') subtitle.textContent = "Download lecture notes and course materials.";
+    else if(tab === 'announcements') subtitle.textContent = "Course-specific announcements and updates.";
+    else subtitle.textContent = "Short articles and explainers to help students understand key engineering concepts.";
   }
 
-  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); }
+  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); loadManageAnnouncementsList(); }
   if(tab === 'resources') loadResourcesList();
+  if(tab === 'announcements') loadAnnouncementsList();
 }
 
 async function loadPosts(){
@@ -521,8 +578,11 @@ function checkPasscode(){
     document.getElementById('manageCard').classList.remove('hidden');
     document.getElementById('uploadResourceCard').classList.remove('hidden');
     document.getElementById('manageResourcesCard').classList.remove('hidden');
+    document.getElementById('postAnnouncementCard').classList.remove('hidden');
+    document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
     loadManageList();
     loadManageResourcesList();
+    loadManageAnnouncementsList();
   } else {
     msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
   }
@@ -733,6 +793,169 @@ async function deleteResource(id){
   }
 }
 
+// ===== Announcements =====
+
+async function postAnnouncement(){
+  const course = document.getElementById('announcementCourseInput').value.trim();
+  const text = document.getElementById('announcementTextInput').value.trim();
+  const msg = document.getElementById('postAnnouncementMsg');
+  const btn = document.getElementById('postAnnouncementBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please enter a course.</div>';
+    return;
+  }
+  if(!text){
+    msg.innerHTML = '<div class="msg err">Please write an announcement.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Posting...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const announcements = data.announcements || [];
+    announcements.push({
+      id: 'ann_' + Date.now(),
+      course, text,
+      date: new Date().toISOString()
+    });
+    data.announcements = announcements;
+    await saveSupabaseData(data);
+    msg.innerHTML = '<div class="msg ok">Announcement posted.</div>';
+    document.getElementById('announcementCourseInput').value = '';
+    document.getElementById('announcementTextInput').value = '';
+    loadManageAnnouncementsList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not post: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadAnnouncementsList(){
+  const container = document.getElementById('announcementsList');
+  const filterSelect = document.getElementById('announcementCourseFilter');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    const courses = [...new Set(announcements.map(a => a.course))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+
+    const filtered = currentFilter ? announcements.filter(a => a.course === currentFilter) : announcements;
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No announcements yet.</div>';
+      return;
+    }
+    container.innerHTML = filtered.map(a => `
+      <div class="card">
+        <div style="font-weight:700;color:var(--gold-dark);font-size:0.78rem;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(a.course)}</div>
+        <div style="font-size:0.92rem;line-height:1.5;">${escapeHtml(a.text)}</div>
+        <div class="post-date" style="margin-top:8px;margin-bottom:0;">${formatDate(a.date)}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load announcements.</div>';
+  }
+}
+
+async function loadManageAnnouncementsList(){
+  const container = document.getElementById('manageAnnouncementsList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(announcements.length === 0){
+      container.innerHTML = '<div class="empty">No announcements yet.</div>';
+      return;
+    }
+    container.innerHTML = announcements.map(a => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Poppins',sans-serif;font-size:0.85rem;">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,60))}${a.text.length>60?'...':''}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatDate(a.date)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteAnnouncement('${a.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load announcements.</div>';
+  }
+}
+
+async function deleteAnnouncement(id){
+  if(!confirm('Delete this announcement?')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.announcements = (data.announcements || []).filter(a => a.id !== id);
+    await saveSupabaseData(data);
+    loadManageAnnouncementsList();
+  }catch(e){
+    alert('Could not delete announcement.');
+  }
+}
+
+// ===== Site-wide search =====
+
+async function performSiteSearch(){
+  const query = document.getElementById('siteSearchInput').value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('siteSearchResults');
+
+  if(!query){
+    resultsContainer.classList.add('hidden');
+    resultsContainer.innerHTML = '';
+    return;
+  }
+
+  resultsContainer.classList.remove('hidden');
+  resultsContainer.innerHTML = '<div class="empty">Searching...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const posts = data.blogPosts || [];
+    const resources = data.resources || [];
+    const announcements = data.announcements || [];
+
+    const matchedPosts = posts.filter(p => (p.title+' '+p.body).toLowerCase().includes(query));
+    const matchedResources = resources.filter(r => r.title.toLowerCase().includes(query));
+    const matchedAnnouncements = announcements.filter(a => (a.course+' '+a.text).toLowerCase().includes(query));
+
+    if(matchedPosts.length === 0 && matchedResources.length === 0 && matchedAnnouncements.length === 0){
+      resultsContainer.innerHTML = '<div class="empty">No results found.</div>';
+      return;
+    }
+
+    let html = '';
+    if(matchedPosts.length){
+      html += '<div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:10px 0 6px;">Posts</div>';
+      matchedPosts.forEach(p => {
+        html += `<div style="padding:6px 0;cursor:pointer;color:var(--navy);font-weight:600;" onclick="switchTab('posts');showPost('${p.id}');document.getElementById('siteSearchResults').classList.add('hidden');document.getElementById('siteSearchInput').value='';">${escapeHtml(p.title)}</div>`;
+      });
+    }
+    if(matchedResources.length){
+      html += '<div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:10px 0 6px;">Lecture Notes</div>';
+      matchedResources.forEach(r => {
+        html += `<div style="padding:6px 0;"><a href="${r.url}" target="_blank" style="color:var(--navy);font-weight:600;text-decoration:none;">${escapeHtml(r.title)}</a></div>`;
+      });
+    }
+    if(matchedAnnouncements.length){
+      html += '<div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:10px 0 6px;">Announcements</div>';
+      matchedAnnouncements.forEach(a => {
+        html += `<div style="padding:6px 0;cursor:pointer;color:var(--navy);font-weight:600;" onclick="switchTab('announcements');document.getElementById('siteSearchResults').classList.add('hidden');document.getElementById('siteSearchInput').value='';">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,50))}</div>`;
+      });
+    }
+    resultsContainer.innerHTML = html;
+  }catch(e){
+    resultsContainer.innerHTML = '<div class="empty">Search failed.</div>';
+  }
+}
+
 async function loadHeroProfile(){
   try{
     const data = await fetchSupabaseData();
@@ -760,7 +983,30 @@ function updateLiveDateTime(){
 }
 setInterval(updateLiveDateTime, 1000 * 30);
 
+
+function initDarkMode(){
+  const saved = localStorage.getItem('site_theme');
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('site_theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('site_theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
   const params = new URLSearchParams(window.location.search);

@@ -80,9 +80,32 @@
   .report-issue{font-size:0.88rem;margin:4px 0;}
   .report-reply{background:rgba(31,138,76,0.06);border-left:3px solid var(--ok);padding:8px 10px;border-radius:6px;font-size:0.85rem;margin-top:6px;}
   .report-pending{color:var(--muted);font-size:0.8rem;font-style:italic;margin-top:6px;}
+
+  [data-theme="dark"]{
+    --bg:#0f172a;
+    --card:#1a2740;
+    --ink:#e8edf5;
+    --muted:#9aabc4;
+    --line:#2c3d5c;
+    --paper:#0f172a;
+  }
+  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
+    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
+  }
+  .theme-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:48px;height:48px;border-radius:50%;
+    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
+    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+
 <div class="hero">
   <h1>Student Dashboard</h1>
   <p>See your scores, attendance, and report replies all in one place.</p>
@@ -280,7 +303,30 @@ async function loadDashboard(){
   }
 }
 
+
+function initDarkMode(){
+  const saved = localStorage.getItem('site_theme');
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('site_theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('site_theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
   const lockedIndex = localStorage.getItem(LOCK_KEY);
   if(lockedIndex){
     document.getElementById('dashIndexInput').value = lockedIndex;

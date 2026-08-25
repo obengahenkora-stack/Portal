@@ -178,10 +178,33 @@
     .hero h1{ font-size:1.3rem; }
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
+
+  [data-theme="dark"]{
+    --bg:#0f172a;
+    --card:#1a2740;
+    --ink:#e8edf5;
+    --muted:#9aabc4;
+    --line:#2c3d5c;
+    --paper:#0f172a;
+  }
+  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
+    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
+  }
+  .theme-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:48px;height:48px;border-radius:50%;
+    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
+    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 
 </head>
 <body>
+<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+
 <div class="hero">
   <div class="datetime-display" id="liveDateTime">Loading...</div>
   <div class="stamp">Verified Faculty Profile</div>
@@ -266,6 +289,15 @@
       <div class="hint">Downloads everything — scores, courses, reports, settings, blog posts, profile, attendance, and rosters — as one JSON file you can keep safe.</div>
       <button onclick="downloadBackup()">Download Full Backup</button>
       <div id="backupMsg"></div>
+    </div>
+
+    <div class="card hidden" id="digestCard">
+      <label>Weekly Digest Email</label>
+      <div class="hint">Sends a summary of new issue reports, new blog comments, and at-risk attendance (below 75%) from the last 7 days to your email. This is sent on demand — there's no way for a static site to send this automatically on a schedule, so click it whenever you'd like an update.</div>
+      <label>Your Email</label>
+      <input type="text" id="digestEmailInput" placeholder="you@school.edu">
+      <button onclick="sendWeeklyDigest()">Send Digest Now</button>
+      <div id="digestMsg"></div>
     </div>
 
     <div class="card hidden" id="dataCard">
@@ -531,6 +563,7 @@ function checkPasscode(){
     document.getElementById('dataCard').classList.remove('hidden');
     document.getElementById('deleteCourseCard').classList.remove('hidden');
     document.getElementById('backupCard').classList.remove('hidden');
+    document.getElementById('digestCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
     document.getElementById('settingsCard').classList.remove('hidden');
     loadDeviceLockSetting();
@@ -793,6 +826,67 @@ async function downloadBackup(){
     msg.innerHTML = '<div class="msg ok">Backup downloaded.</div>';
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not create backup: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function sendWeeklyDigest(){
+  const email = document.getElementById('digestEmailInput').value.trim();
+  const msg = document.getElementById('digestMsg');
+
+  if(!email || !email.includes('@')){
+    msg.innerHTML = '<div class="msg err">Please enter a valid email.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Compiling digest...</div>';
+
+  try{
+    const [jsonBinData, supabaseData] = await Promise.all([
+      fetchBin().catch(() => ({})),
+      fetchSupabaseData().catch(() => ({}))
+    ]);
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const newReports = (jsonBinData.reports || []).filter(r => new Date(r.submittedAt) >= oneWeekAgo);
+    const newComments = (supabaseData.comments || []).filter(c => new Date(c.createdAt) >= oneWeekAgo);
+
+    // At-risk students: below 75%, across all courses with rosters
+    const rosters = supabaseData.rosters || {};
+    const attendanceRecords = supabaseData.attendance || [];
+    const atRisk = [];
+    Object.keys(rosters).forEach(course => {
+      const courseSessions = attendanceRecords.filter(a => a.course === course);
+      if(courseSessions.length < 3) return;
+      (rosters[course] || []).forEach(s => {
+        const attended = courseSessions.filter(a => (a.present||[]).includes(s.indexNumber)).length;
+        const pct = Math.round((attended / courseSessions.length) * 100);
+        if(pct < 75) atRisk.push(`${s.name || s.indexNumber} (${course}, ${pct}%)`);
+      });
+    });
+
+    let digestText = `WEEKLY DIGEST — ${new Date().toLocaleDateString()}\n\n`;
+    digestText += `New Issue Reports (${newReports.length}):\n`;
+    digestText += newReports.length ? newReports.map(r => `- [${r.course}] ${r.indexNumber}: ${r.issue}`).join('\n') : '- None';
+    digestText += `\n\nNew Blog Comments (${newComments.length}):\n`;
+    digestText += newComments.length ? newComments.map(c => `- ${c.name}: ${c.text}`).join('\n') : '- None';
+    digestText += `\n\nAt-Risk Attendance (<75%, ${atRisk.length}):\n`;
+    digestText += atRisk.length ? atRisk.join('\n') : '- None';
+
+    if(window.emailjs){
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        course: "Weekly Digest",
+        issue: digestText,
+        student_email: email,
+        student_index: "N/A"
+      });
+      msg.innerHTML = '<div class="msg ok">Digest sent to your email.</div>';
+    } else {
+      msg.innerHTML = '<div class="msg err">Email service not loaded. Try reloading the page.</div>';
+    }
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not send digest: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1645,6 +1739,8 @@ async function loadAttendanceSummary(){
 
     const totalSessions = attendanceRecords.length;
     const sortedByDateAsc = attendanceRecords.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+    const ATTENDANCE_ALERT_THRESHOLD = 75;
+    const atRiskStudents = [];
 
     // By Student — matrix with one column per date
     let studentHtml = '<div style="overflow-x:auto;"><table><tr><th style="position:sticky;left:0;background:var(--card);">Index #</th><th style="position:sticky;left:0;background:var(--card);">Name</th>';
@@ -1657,7 +1753,10 @@ async function loadAttendanceSummary(){
       const presentCount = attendanceRecords.filter(a => a.present.includes(s.indexNumber)).length;
       const pct = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
       const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
-      studentHtml += `<tr><td style="position:sticky;left:0;background:var(--card);">${escapeHtml(s.indexNumber)}</td><td style="position:sticky;left:0;background:var(--card);">${escapeHtml(s.name||'')}</td>`;
+      const isAtRisk = totalSessions >= 3 && pct < ATTENDANCE_ALERT_THRESHOLD;
+      if(isAtRisk) atRiskStudents.push({ ...s, pct });
+      const rowStyle = isAtRisk ? 'background:rgba(192,57,43,0.06);' : '';
+      studentHtml += `<tr style="${rowStyle}"><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.indexNumber)}${isAtRisk ? ' ⚠️' : ''}</td><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.name||'')}</td>`;
       sortedByDateAsc.forEach(a => {
         const wasPresent = a.present.includes(s.indexNumber);
         studentHtml += `<td style="text-align:center;color:${wasPresent ? 'var(--ok)' : 'var(--danger)'};font-weight:700;">${wasPresent ? '✓' : '✗'}</td>`;
@@ -1665,6 +1764,13 @@ async function loadAttendanceSummary(){
       studentHtml += `<td>${presentCount}/${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
     });
     studentHtml += '</table></div>';
+
+    if(atRiskStudents.length > 0){
+      let alertHtml = `<div class="msg err" style="margin-bottom:14px;"><strong>⚠️ ${atRiskStudents.length} student(s) below ${ATTENDANCE_ALERT_THRESHOLD}% attendance:</strong> ` +
+        atRiskStudents.map(s => `${escapeHtml(s.name || s.indexNumber)} (${s.pct}%)`).join(', ') + '</div>';
+      studentHtml = alertHtml + studentHtml;
+    }
+
     byStudentContainer.innerHTML = studentHtml;
 
     // By Session
@@ -1680,7 +1786,30 @@ async function loadAttendanceSummary(){
   }
 }
 
+
+function initDarkMode(){
+  const saved = localStorage.getItem('site_theme');
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('site_theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('site_theme', 'dark');
+  }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
   const lockedIndex = localStorage.getItem(LOCK_KEY);

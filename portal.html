@@ -267,6 +267,57 @@
       <div id="uploadMsg"></div>
     </div>
 
+    <div class="card hidden" id="exportScoresCard">
+      <label>Download Scores as Excel</label>
+      <div class="hint">Exports currently uploaded scores as a .xlsx file.</div>
+      <label>Course (optional — leave blank for all courses)</label>
+      <select id="exportCourseSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+        <option value="">All Courses</option>
+      </select>
+      <button onclick="downloadScoresExcel()">Download Excel</button>
+      <div id="exportScoresMsg"></div>
+    </div>
+
+    <div class="card hidden" id="fillSheetCard">
+      <label>Fill Official University Sheet</label>
+      <div class="hint">Upload the university's blank/partial final sheet (IndexNumber, Name, Level, CourseCode, ClassScore columns). The system fills in ClassScore for any student already scored in the portal, and gives you back a completed file to download — leaving everything else in the sheet untouched.</div>
+      <label>Course</label>
+      <select id="fillCourseSelect" onchange="loadFillAssessmentOptions()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+        <option value="">Select course...</option>
+      </select>
+      <label>Assessment to fill from</label>
+      <select id="fillAssessmentSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+        <option value="">Select course first...</option>
+      </select>
+      <label>University's Official Sheet</label>
+      <input type="file" id="officialSheetInput" accept=".csv,.xlsx,.xls" style="margin-bottom:14px;">
+      <button id="fillSheetBtn" onclick="fillOfficialSheet()">Fill &amp; Download Completed Sheet</button>
+      <div id="fillSheetMsg"></div>
+    </div>
+
+    <div class="card hidden" id="transferScoresCard">
+      <label>Transfer Scores Between Two Excel Files</label>
+      <div class="hint">Works with any two files, regardless of column names, order, or count — you match index numbers, then choose which source column fills each target column. Only blank cells in the target file get filled; anything already filled is left untouched.</div>
+
+      <label>Source File (already has the data)</label>
+      <input type="file" id="transferSourceFile" accept=".csv,.xlsx,.xls" onchange="handleTransferFileSelect('source')" style="margin-bottom:10px;">
+      <label>Source Index Column</label>
+      <select id="transferSourceIndexCol" onchange="renderColumnMapping()" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Upload file first...</option></select>
+
+      <label>Target File (this is the one that gets filled in and downloaded)</label>
+      <input type="file" id="transferTargetFile" accept=".csv,.xlsx,.xls" onchange="handleTransferFileSelect('target')" style="margin-bottom:10px;">
+      <label>Target Index Column</label>
+      <select id="transferTargetIndexCol" onchange="renderColumnMapping()" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Upload file first...</option></select>
+
+      <div id="columnMappingWrap" class="hidden">
+        <label>Column Mapping — every column from the Source file is listed. Choose an existing Target column to fill it into, or add it as a new column.</label>
+        <div id="columnMappingList" style="margin-bottom:14px;"></div>
+      </div>
+
+      <button id="transferBtn" onclick="transferScores()">Fill Target &amp; Download</button>
+      <div id="transferMsg"></div>
+    </div>
+
     <div class="card hidden" id="settingsCard">
       <label>Device Lock (Student Lookup)</label>
       <div class="hint">When ON, once a student looks up their index number on a device, that device can only ever check that same index number again. When OFF, students can search any index number freely.</div>
@@ -691,7 +742,12 @@ function checkPasscode(){
     if(canUploadScores()){
       document.getElementById('uploadCard').classList.remove('hidden');
       document.getElementById('manageCoursesCard').classList.remove('hidden');
+      document.getElementById('exportScoresCard').classList.remove('hidden');
+      document.getElementById('fillSheetCard').classList.remove('hidden');
+      document.getElementById('transferScoresCard').classList.remove('hidden');
       loadCourseManageList();
+      loadExportCourseOptions();
+      loadFillCourseOptions();
     }
 
     if(isAdmin()){
@@ -827,6 +883,381 @@ function parseCsvLine(line){
   }
   result.push(cur.trim());
   return result;
+}
+
+// ===== Export scores to Excel =====
+
+async function loadExportCourseOptions(){
+  try{
+    const records = await fetchAllRecords();
+    const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
+    const select = document.getElementById('exportCourseSelect');
+    if(select){
+      select.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    }
+  }catch(e){}
+}
+
+async function downloadScoresExcel(){
+  const msg = document.getElementById('exportScoresMsg');
+  const courseFilter = document.getElementById('exportCourseSelect').value;
+  msg.innerHTML = '<div class="msg ok">Preparing file...</div>';
+  try{
+    const records = await fetchAllRecords();
+    const filtered = courseFilter ? records.filter(r => r.course === courseFilter) : records;
+    if(filtered.length === 0){
+      msg.innerHTML = '<div class="msg err">No records to export.</div>';
+      return;
+    }
+    const aoa = [['IndexNumber', 'Course', 'Level', 'Assessment', 'Score']];
+    filtered.forEach(r => {
+      aoa.push([r.indexNumber || '', r.course || '', r.level || '', r.assessmentName || '', r.score || '']);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Scores');
+    const fileName = `${courseFilter || 'all-courses'}-scores-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    msg.innerHTML = '<div class="msg ok">Downloaded.</div>';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not export: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+// ===== Fill official university sheet =====
+
+async function loadFillAssessmentOptions(){
+  const course = document.getElementById('fillCourseSelect').value;
+  const select = document.getElementById('fillAssessmentSelect');
+  if(!course){
+    select.innerHTML = '<option value="">Select course first...</option>';
+    return;
+  }
+  try{
+    const records = await fetchAllRecords();
+    const assessments = [...new Set(records.filter(r => r.course === course).map(r => r.assessmentName).filter(Boolean))].sort();
+    select.innerHTML = assessments.length
+      ? assessments.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('')
+      : '<option value="">No assessments found for this course</option>';
+  }catch(e){
+    select.innerHTML = '<option value="">Could not load assessments</option>';
+  }
+}
+
+// Populate the course dropdown for the Fill Sheet card whenever courses are loaded elsewhere too
+async function loadFillCourseOptions(){
+  try{
+    const records = await fetchAllRecords();
+    const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
+    const select = document.getElementById('fillCourseSelect');
+    if(select){
+      select.innerHTML = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    }
+  }catch(e){}
+}
+
+async function fillOfficialSheet(){
+  if(!canUploadScores()){
+    document.getElementById('fillSheetMsg').innerHTML = '<div class="msg err">You do not have permission to do this.</div>';
+    return;
+  }
+  const course = document.getElementById('fillCourseSelect').value;
+  const assessmentName = document.getElementById('fillAssessmentSelect').value;
+  const fileInput = document.getElementById('officialSheetInput');
+  const msg = document.getElementById('fillSheetMsg');
+  const btn = document.getElementById('fillSheetBtn');
+
+  if(!course || !assessmentName){
+    msg.innerHTML = '<div class="msg err">Please select a course and an assessment.</div>';
+    return;
+  }
+  if(!fileInput.files || fileInput.files.length === 0){
+    msg.innerHTML = '<div class="msg err">Please choose the official sheet file.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Reading file...</div>';
+
+  try{
+    const records = await fetchAllRecords();
+    const scoreMap = {};
+    records
+      .filter(r => r.course === course && r.assessmentName === assessmentName)
+      .forEach(r => { scoreMap[(r.indexNumber || '').toLowerCase()] = r.score; });
+
+    const file = fileInput.files[0];
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    let aoa;
+    let workbook, sheetName;
+
+    if(isExcel){
+      const arrayBuffer = await file.arrayBuffer();
+      workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      sheetName = workbook.SheetNames[0];
+      aoa = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' });
+    } else {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      aoa = lines.map(line => parseCsvLine(line));
+    }
+
+    if(aoa.length < 2){
+      msg.innerHTML = '<div class="msg err">File looks empty or missing data rows.</div>';
+      btn.disabled = false;
+      return;
+    }
+
+    const headers = aoa[0].map(h => String(h||'').trim().toLowerCase());
+    const idxCol = headers.findIndex(h => h.includes('index'));
+    let scoreCol = headers.findIndex(h => h.includes('classscore'));
+    if(scoreCol === -1) scoreCol = headers.findIndex(h => h.includes('score'));
+
+    if(idxCol === -1 || scoreCol === -1){
+      msg.innerHTML = '<div class="msg err">Could not find IndexNumber or ClassScore/Score columns in this file.</div>';
+      btn.disabled = false;
+      return;
+    }
+
+    let filledCount = 0;
+    for(let i=1;i<aoa.length;i++){
+      const row = aoa[i];
+      const idxVal = String(row[idxCol] || '').trim().toLowerCase();
+      if(idxVal && scoreMap.hasOwnProperty(idxVal)){
+        row[scoreCol] = scoreMap[idxVal];
+        filledCount++;
+      }
+    }
+
+    const newWs = XLSX.utils.aoa_to_sheet(aoa);
+    const newWb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(newWb, newWs, sheetName || 'Sheet1');
+    const outName = file.name.replace(/\.(xlsx|xls|csv)$/i, '') + '_filled.xlsx';
+    XLSX.writeFile(newWb, outName);
+
+    msg.innerHTML = `<div class="msg ok">Filled ${filledCount} score(s) and downloaded "${escapeHtml(outName)}".</div>`;
+    fileInput.value = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not process file: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+// ===== Transfer scores between two arbitrary Excel/CSV files (no fixed headers) =====
+
+let transferFilesData = { source: null, target: null };
+
+async function readSheetAsAoa(file){
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+  if(isExcel){
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const aoa = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' });
+    return { aoa, sheetName };
+  } else {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    const aoa = lines.map(line => parseCsvLine(line));
+    return { aoa, sheetName: 'Sheet1' };
+  }
+}
+
+async function handleTransferFileSelect(which){
+  const fileInput = document.getElementById(which === 'source' ? 'transferSourceFile' : 'transferTargetFile');
+  const indexSelect = document.getElementById(which === 'source' ? 'transferSourceIndexCol' : 'transferTargetIndexCol');
+
+  if(!fileInput.files || fileInput.files.length === 0) return;
+  const file = fileInput.files[0];
+
+  try{
+    const { aoa, sheetName } = await readSheetAsAoa(file);
+    if(aoa.length === 0){
+      alert('That file appears to be empty.');
+      return;
+    }
+    const headers = aoa[0].map((h,i) => String(h || ('Column ' + (i+1))).trim());
+    transferFilesData[which] = { aoa, headers, sheetName, fileName: file.name };
+
+    const optionsHtml = headers.map((h,i) => `<option value="${i}">${escapeHtml(h)}</option>`).join('');
+    indexSelect.innerHTML = optionsHtml;
+
+    const idxGuess = headers.findIndex(h => h.toLowerCase().includes('index'));
+    if(idxGuess >= 0) indexSelect.value = idxGuess;
+
+    renderColumnMapping();
+  }catch(e){
+    alert('Could not read that file: ' + e.message);
+  }
+}
+
+function renderColumnMapping(){
+  const wrap = document.getElementById('columnMappingWrap');
+  const container = document.getElementById('columnMappingList');
+
+  if(!transferFilesData.source || !transferFilesData.target){
+    wrap.classList.add('hidden');
+    return;
+  }
+
+  const srcIdxCol = parseInt(document.getElementById('transferSourceIndexCol').value);
+  const tgtIdxCol = parseInt(document.getElementById('transferTargetIndexCol').value);
+  if(isNaN(srcIdxCol) || isNaN(tgtIdxCol)){
+    wrap.classList.add('hidden');
+    return;
+  }
+
+  const sourceHeaders = transferFilesData.source.headers;
+  const targetHeaders = transferFilesData.target.headers;
+
+  const targetOptionsHtml = targetHeaders
+    .map((h,i) => i === tgtIdxCol ? '' : `<option value="${i}">${escapeHtml(h)}</option>`)
+    .join('') + '<option value="new">+ Add as new column</option>';
+
+  let html = '';
+  sourceHeaders.forEach((sHeader, sIdx) => {
+    if(sIdx === srcIdxCol) return; // skip the source index column itself, it's only used for matching
+    html += `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="flex:1;font-size:0.85rem;font-weight:600;">${escapeHtml(sHeader)}</div>
+        <div style="color:var(--muted);">&rarr;</div>
+        <select data-source-col="${sIdx}" class="mapping-select" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:0.85rem;background:rgba(0,0,0,0.2);color:var(--ink);">
+          ${targetOptionsHtml}
+        </select>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html || '<div class="empty">No columns found in the source file to copy.</div>';
+  wrap.classList.remove('hidden');
+
+  // apply best-effort guesses: match by header name, else default to "add as new column"
+  sourceHeaders.forEach((sHeader, sIdx) => {
+    if(sIdx === srcIdxCol) return;
+    const sLower = sHeader.toLowerCase();
+    let guessIdx = targetHeaders.findIndex((h,i) => i !== tgtIdxCol && h.toLowerCase() === sLower);
+    if(guessIdx === -1){
+      guessIdx = targetHeaders.findIndex((h,i) => i !== tgtIdxCol && (h.toLowerCase().includes(sLower) || sLower.includes(h.toLowerCase())));
+    }
+    const sel = container.querySelector(`select[data-source-col="${sIdx}"]`);
+    if(sel) sel.value = guessIdx >= 0 ? guessIdx : 'new';
+  });
+}
+
+async function transferScores(){
+  if(!canUploadScores()){
+    document.getElementById('transferMsg').innerHTML = '<div class="msg err">You do not have permission to do this.</div>';
+    return;
+  }
+  const msg = document.getElementById('transferMsg');
+  const btn = document.getElementById('transferBtn');
+
+  if(!transferFilesData.source || !transferFilesData.target){
+    msg.innerHTML = '<div class="msg err">Please upload both a source and a target file first.</div>';
+    return;
+  }
+
+  const srcIdxCol = parseInt(document.getElementById('transferSourceIndexCol').value);
+  const tgtIdxCol = parseInt(document.getElementById('transferTargetIndexCol').value);
+
+  if(isNaN(srcIdxCol) || isNaN(tgtIdxCol)){
+    msg.innerHTML = '<div class="msg err">Please select the index column for both files.</div>';
+    return;
+  }
+
+  const mappingSelects = document.querySelectorAll('#columnMappingList .mapping-select');
+  const mappings = []; // { sourceCol, sourceHeader, target: 'existing'|'new', targetCol? }
+  const sourceHeaders = transferFilesData.source.headers;
+  mappingSelects.forEach(sel => {
+    const sourceCol = parseInt(sel.getAttribute('data-source-col'));
+    const val = sel.value;
+    if(val === 'new'){
+      mappings.push({ sourceCol, sourceHeader: sourceHeaders[sourceCol], target: 'new' });
+    } else if(val !== ''){
+      mappings.push({ sourceCol, sourceHeader: sourceHeaders[sourceCol], target: 'existing', targetCol: parseInt(val) });
+    }
+  });
+
+  if(mappings.length === 0){
+    msg.innerHTML = '<div class="msg err">Please map at least one column to transfer.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Transferring data...</div>';
+
+  try{
+    const sourceAoa = transferFilesData.source.aoa;
+    const sourceRowMap = {};
+    for(let i=1;i<sourceAoa.length;i++){
+      const row = sourceAoa[i];
+      const idxVal = String(row[srcIdxCol] || '').trim().toLowerCase();
+      if(idxVal) sourceRowMap[idxVal] = row;
+    }
+
+    // Clone target rows and extend each with blank cells for any "new column" mappings
+    const targetAoa = transferFilesData.target.aoa.map(r => r.slice());
+    const newColumnMappings = mappings.filter(m => m.target === 'new');
+    newColumnMappings.forEach(m => {
+      // record where this new column will live once appended
+      m.newColIndex = targetAoa[0].length + newColumnMappings.indexOf(m);
+    });
+
+    if(newColumnMappings.length > 0){
+      // append headers
+      newColumnMappings.forEach(m => { targetAoa[0].push(m.sourceHeader); });
+      // append blank cells to every data row so row lengths stay consistent
+      for(let i=1;i<targetAoa.length;i++){
+        newColumnMappings.forEach(() => { targetAoa[i].push(''); });
+      }
+    }
+
+    let rowsUpdated = 0, cellsFilled = 0, cellsAlreadyFilled = 0, rowsNotFound = 0;
+
+    for(let i=1;i<targetAoa.length;i++){
+      const row = targetAoa[i];
+      const idxVal = String(row[tgtIdxCol] || '').trim().toLowerCase();
+      if(!idxVal) continue;
+
+      const sourceRow = sourceRowMap[idxVal];
+      if(!sourceRow){ rowsNotFound++; continue; }
+
+      let rowChanged = false;
+      mappings.forEach(m => {
+        const targetColIndex = m.target === 'new' ? m.newColIndex : m.targetCol;
+        const existing = row[targetColIndex];
+        const isBlank = existing === '' || existing === undefined || existing === null;
+        const sourceVal = sourceRow[m.sourceCol];
+        const sourceHasValue = sourceVal !== '' && sourceVal !== undefined && sourceVal !== null;
+
+        if(isBlank){
+          if(sourceHasValue){
+            row[targetColIndex] = sourceVal;
+            cellsFilled++;
+            rowChanged = true;
+          }
+        } else {
+          cellsAlreadyFilled++;
+        }
+      });
+      if(rowChanged) rowsUpdated++;
+    }
+
+    const newWs = XLSX.utils.aoa_to_sheet(targetAoa);
+    const newWb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(newWb, newWs, transferFilesData.target.sheetName || 'Sheet1');
+    const outName = transferFilesData.target.fileName.replace(/\.(xlsx|xls|csv)$/i, '') + '_filled.xlsx';
+    XLSX.writeFile(newWb, outName);
+
+    const newColCount = newColumnMappings.length;
+    const existingColCount = mappings.length - newColCount;
+    msg.innerHTML = `<div class="msg ok">Updated ${rowsUpdated} row(s), filled ${cellsFilled} cell(s) — ${existingColCount} column(s) matched into existing columns, ${newColCount} column(s) added as new. ${cellsAlreadyFilled} cell(s) already had data (left untouched). ${rowsNotFound} row(s) had no matching index number in the source file. Downloaded "${escapeHtml(outName)}".</div>`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not transfer data: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 async function uploadScoresFromFile(){

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b2545">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  html{ font-size:17px; }
+  :root{
+    --navy:#0b2545; --navy-dark:#071a33; --gold:#d4a017; --gold-dark:#b5860e;
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1a2433; --muted:#64748b;
+    --line:#e3e8ef; --danger:#c0392b; --ok:#1f8a4c;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff; padding:40px 24px 56px; text-align:center; position:relative;
+  }
+  .hero::after{ content:""; position:absolute; bottom:-1px; left:0; width:100%; height:6px; background:linear-gradient(90deg, var(--gold), #fff2, var(--gold)); }
+  .hero h1{ color:#fff; font-family:'Poppins',sans-serif; margin-bottom:4px; }
+  .hero p{ color:rgba(255,255,255,0.75); font-size:0.9rem; margin:0; }
+  .hero-tabs{
+    display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);position:relative;z-index:2;
+  }
+  .hero-tabs a{
+    flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'Inter',sans-serif;text-decoration:none;
+  }
+  .wrap{ max-width:760px; margin:0 auto; padding:0 24px 40px; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:24px; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,30,60,0.05);
+  }
+  h2{ font-family:'Poppins',sans-serif; font-size:1rem; color:var(--navy); margin:0 0 14px 0; display:flex; align-items:center; gap:8px; }
+  h2::before{ content:""; width:5px; height:20px; background:var(--gold); border-radius:2px; display:inline-block; }
+  label{display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+  input[type=text], input[type=password], textarea{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);
+  }
+  textarea{ min-height:160px; }
+  input:focus, textarea:focus{outline:2px solid var(--gold);outline-offset:1px;background:#fff;}
+  button{
+    background:var(--navy);color:#fff;border:none;padding:11px 24px;border-radius:8px;
+    font-weight:600;cursor:pointer;font-size:0.88rem;font-family:'Inter',sans-serif;
+  }
+  button:hover{background:var(--navy-dark);}
+  button.secondary{ background:transparent; color:var(--danger); border:1px solid var(--danger); }
+  button.secondary:hover{ background:var(--danger); color:#fff; }
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .msg{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(31,138,76,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(192,57,43,0.08);color:var(--danger);border-left-color:var(--danger);}
+  .hidden{display:none;}
+  .empty{color:var(--muted);font-size:0.88rem;padding:6px 0;}
+  .syllabus-text{ white-space:pre-wrap; line-height:1.7; font-size:0.95rem; }
+  .announcement-item{ padding:14px 0; border-bottom:1px dashed var(--line); }
+  .announcement-item:last-child{ border-bottom:none; }
+  .announcement-date{ font-size:0.75rem; color:var(--muted); margin-top:4px; }
+  .resource-item{
+    display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .resource-item:last-child{ border-bottom:none; }
+  .resource-title{ font-weight:600; font-size:0.9rem; }
+  .resource-date{ font-size:0.75rem; color:var(--muted); }
+  .theme-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50; width:48px;height:48px;border-radius:50%;
+    background:#fff;color:#0b2545;border:1px solid #e3e8ef;font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  [data-theme="dark"]{ --bg:#0f172a; --card:#1a2740; --ink:#e8edf5; --muted:#9aabc4; --line:#2c3d5c; }
+  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+  [data-theme="dark"] input, [data-theme="dark"] textarea{ background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important; }
+  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
+
+<div class="hero">
+  <h1 id="courseTitle">Loading...</h1>
+  <p>Syllabus, announcements, and lecture notes for this course.</p>
+</div>
+
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="courses.html">&larr; All Courses</a>
+  <a href="blog.html">Blog</a>
+  <a href="portal.html">Assessment Portal</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Syllabus</h2>
+    <div id="syllabusDisplay"><div class="empty">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Announcements</h2>
+    <div id="courseAnnouncements"><div class="empty">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Lecture Notes</h2>
+    <div id="courseResources"><div class="empty">Loading...</div></div>
+  </div>
+
+  <div style="text-align:center;margin-top:8px;">
+    <button onclick="showEditPanel()" id="editToggleBtn" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Edit Syllabus (Instructor)</button>
+  </div>
+
+  <div class="card hidden" id="editPanel" style="margin-top:16px;">
+    <div id="editLoginArea">
+      <label>Email</label>
+      <input type="text" id="authEmailInput" placeholder="you@school.edu">
+      <label>Password</label>
+      <input type="password" id="authPasswordInput" placeholder="Your password">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="signInUser()">Sign In</button>
+        <button class="secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+      <div id="authMsg" style="margin-top:10px;"></div>
+    </div>
+    <div class="hidden" id="noRoleMsgArea">
+      <div class="msg err">Your account doesn't have permission to edit this. Teaching Assistants and unassigned accounts can't edit the syllabus.</div>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
+    </div>
+    <div class="hidden" id="editFormArea">
+      <label>Syllabus Content</label>
+      <textarea id="syllabusInput" placeholder="Course objectives, weekly schedule, grading breakdown..."></textarea>
+      <button onclick="saveSyllabus()">Save Syllabus</button>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
+      <div id="syllabusSaveMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+
+const OWNER_EMAIL = "obengahenkora@gmail.com";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUserRole = null;
+let currentUserEmail = null;
+function isOwner(){ return currentUserRole === 'owner'; }
+function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
+
+async function resolveCurrentUserRole(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ currentUserRole = null; currentUserEmail = null; return; }
+  const email = session.user.email.toLowerCase();
+  currentUserEmail = email;
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    currentUserRole = me ? me.role : null;
+  }catch(e){ currentUserRole = null; }
+}
+
+async function signUpUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ await onSyllabusAuthReady(); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+
+async function signInUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onSyllabusAuthReady();
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function onSyllabusAuthReady(){
+  await resolveCurrentUserRole();
+  const canEdit = isAdmin() || currentUserRole === 'lecturer';
+  if(!canEdit){
+    document.getElementById('editLoginArea').classList.add('hidden');
+    if(currentUserEmail){ document.getElementById('noRoleMsgArea').classList.remove('hidden'); }
+    return;
+  }
+  document.getElementById('editLoginArea').classList.add('hidden');
+  document.getElementById('noRoleMsgArea').classList.add('hidden');
+  document.getElementById('editFormArea').classList.remove('hidden');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+
+function formatDate(iso){
+  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); }
+  catch(e){ return ''; }
+}
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true",
+      "cache-control": "no-cache"
+    },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save");
+  return true;
+}
+
+function getCourseFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('course') || '';
+}
+
+function initDarkMode(){
+  const saved = localStorage.getItem('site_theme');
+  if(saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+}
+function toggleDarkMode(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if(isDark){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('site_theme', 'light'); }
+  else{ document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('site_theme', 'dark'); }
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = isDark ? '🌙' : '☀️';
+}
+
+async function loadCoursePage(){
+  const course = getCourseFromUrl();
+  document.getElementById('courseTitle').textContent = course || 'Unknown Course';
+
+  if(!course){
+    document.getElementById('syllabusDisplay').innerHTML = '<div class="empty">No course specified.</div>';
+    document.getElementById('courseAnnouncements').innerHTML = '<div class="empty">No course specified.</div>';
+    document.getElementById('courseResources').innerHTML = '<div class="empty">No course specified.</div>';
+    return;
+  }
+
+  try{
+    const data = await fetchSupabaseData();
+
+    // Syllabus
+    const syllabi = data.syllabi || {};
+    const syllabusText = syllabi[course];
+    document.getElementById('syllabusDisplay').innerHTML = syllabusText
+      ? `<div class="syllabus-text">${escapeHtml(syllabusText)}</div>`
+      : '<div class="empty">No syllabus added yet for this course.</div>';
+    const syllabusInput = document.getElementById('syllabusInput');
+    if(syllabusInput) syllabusInput.value = syllabusText || '';
+
+    // Announcements
+    const announcements = (data.announcements || []).filter(a => a.course === course).sort((a,b) => new Date(b.date) - new Date(a.date));
+    const annContainer = document.getElementById('courseAnnouncements');
+    annContainer.innerHTML = announcements.length
+      ? announcements.map(a => `
+          <div class="announcement-item">
+            <div>${escapeHtml(a.text)}</div>
+            <div class="announcement-date">${formatDate(a.date)}</div>
+          </div>
+        `).join('')
+      : '<div class="empty">No announcements for this course yet.</div>';
+
+    // Resources
+    const resources = (data.resources || []).filter(r => r.course === course).sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    const resContainer = document.getElementById('courseResources');
+    resContainer.innerHTML = resources.length
+      ? resources.map(r => `
+          <div class="resource-item">
+            <div>
+              <div class="resource-title">${escapeHtml(r.title)}</div>
+              <div class="resource-date">${formatDate(r.uploadedAt)}</div>
+            </div>
+            <a href="${r.url}" target="_blank" rel="noopener"><button style="white-space:nowrap;">Download</button></a>
+          </div>
+        `).join('')
+      : '<div class="empty">No lecture notes uploaded for this course yet.</div>';
+  }catch(e){
+    document.getElementById('syllabusDisplay').innerHTML = '<div class="empty">Could not load course info.</div>';
+  }
+}
+
+function showEditPanel(){
+  document.getElementById('editPanel').classList.toggle('hidden');
+  onSyllabusAuthReady();
+}
+
+// checkSyllabusPasscode removed — replaced by Supabase Auth (see onSyllabusAuthReady)
+
+async function saveSyllabus(){
+  const course = getCourseFromUrl();
+  const text = document.getElementById('syllabusInput').value.trim();
+  const msg = document.getElementById('syllabusSaveMsg');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">No course specified in the link.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    data.syllabi = data.syllabi || {};
+    data.syllabi[course] = text;
+    await saveSupabaseData(data);
+    msg.innerHTML = '<div class="msg ok">Syllabus saved.</div>';
+    loadCoursePage();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initDarkMode();
+  loadCoursePage();
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

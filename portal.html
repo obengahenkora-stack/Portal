@@ -2183,11 +2183,11 @@ async function loadAttendanceForDate(){
     const attendanceRecords = data.attendance || [];
     const sessionKey = `${course}__${date}`;
     const existingRecord = attendanceRecords.find(a => a.sessionKey === sessionKey);
-    const presentSet = new Set(existingRecord ? existingRecord.present : []);
+    const presentSet = new Set((existingRecord ? existingRecord.present : []).map(p => String(p).trim().toLowerCase()));
 
     let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
     roster.forEach(s => {
-      const isPresent = presentSet.has(s.indexNumber);
+      const isPresent = presentSet.has(String(s.indexNumber).trim().toLowerCase());
       html += `
         <div class="attendance-row" data-index="${escapeHtml(s.indexNumber)}" onclick="toggleAttendanceRow(this)" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:${isPresent ? 'rgba(31,138,76,0.08)' : '#fff'};">
           <div>
@@ -2359,16 +2359,18 @@ async function pollQrPresentCount(course, date){
     const data = await fetchSupabaseData();
     const sessionKey = `${course}__${date}`;
     const record = (data.attendance || []).find(a => a.sessionKey === sessionKey);
-    const freshPresentSet = new Set(record ? record.present : []);
+    const rawPresentList = record ? record.present : [];
+    const freshPresentSet = new Set(rawPresentList.map(p => String(p).trim().toLowerCase()));
 
     // Update the count text
     const countEl = document.getElementById('qrCheckinPresentCount');
-    if(countEl) countEl.textContent = `${freshPresentSet.size} student(s) checked in so far`;
+    if(countEl) countEl.textContent = `${rawPresentList.length} student(s) checked in so far`;
 
     // Live-update the checklist: only ever flip ABSENT -> PRESENT based on fresh QR check-ins.
     // Never downgrades a row, so any manual ticks you've made (not yet saved) are preserved.
+    // Matching is case-insensitive since students may type index numbers differently than the roster.
     document.querySelectorAll('#attendanceChecklist .attendance-row').forEach(row => {
-      const rowIndex = row.getAttribute('data-index');
+      const rowIndex = String(row.getAttribute('data-index') || '').trim().toLowerCase();
       const statusEl = row.querySelector('.attendance-status');
       if(statusEl && statusEl.textContent === 'ABSENT' && freshPresentSet.has(rowIndex)){
         statusEl.textContent = 'PRESENT';
@@ -2473,7 +2475,8 @@ async function loadAttendanceSummary(){
     studentHtml += '<th>Present</th><th>%</th></tr>';
 
     roster.forEach(s => {
-      const presentCount = attendanceRecords.filter(a => a.present.includes(s.indexNumber)).length;
+      const sIdxLower = String(s.indexNumber).trim().toLowerCase();
+      const presentCount = attendanceRecords.filter(a => a.present.some(p => String(p).trim().toLowerCase() === sIdxLower)).length;
       const pct = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
       const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
       const isAtRisk = totalSessions >= 3 && pct < ATTENDANCE_ALERT_THRESHOLD;
@@ -2481,7 +2484,7 @@ async function loadAttendanceSummary(){
       const rowStyle = isAtRisk ? 'background:rgba(192,57,43,0.06);' : '';
       studentHtml += `<tr style="${rowStyle}"><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.indexNumber)}${isAtRisk ? ' ⚠️' : ''}</td><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.name||'')}</td>`;
       sortedByDateAsc.forEach(a => {
-        const wasPresent = a.present.includes(s.indexNumber);
+        const wasPresent = a.present.some(p => String(p).trim().toLowerCase() === sIdxLower);
         studentHtml += `<td style="text-align:center;color:${wasPresent ? 'var(--ok)' : 'var(--danger)'};font-weight:700;">${wasPresent ? '✓' : '✗'}</td>`;
       });
       studentHtml += `<td>${presentCount}/${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;

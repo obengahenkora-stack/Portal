@@ -474,6 +474,19 @@
       <div id="saveAttendanceMsg"></div>
     </div>
 
+    <div class="card hidden" id="qrCheckinCard">
+      <label>QR Check-In</label>
+      <div class="hint">Uses the Course and Date selected above. Display this QR code in class — students scan it, allow location access, and mark themselves present. The code auto-refreshes every 90 seconds and only works within 100 meters of where you started the session, so it can't be shared with someone outside class.</div>
+      <button id="startQrBtn" onclick="startQrCheckin()">Start QR Check-In Session</button>
+      <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-left:8px;">Stop Session</button>
+      <div id="qrCheckinMsg"></div>
+      <div id="qrCheckinDisplay" class="hidden" style="text-align:center;margin-top:16px;">
+        <img id="qrCheckinImage" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--line);">
+        <div id="qrCheckinTimer" style="margin-top:10px;font-family:'Poppins',sans-serif;font-weight:700;color:var(--navy);"></div>
+        <div id="qrCheckinPresentCount" style="margin-top:6px;color:var(--muted);font-size:0.85rem;"></div>
+      </div>
+    </div>
+
     <div class="card" id="attendanceSummaryCard">
       <label>Attendance Summary</label>
       <select id="attendanceSummaryCourseSelect" onchange="loadAttendanceSummary()" style="margin-bottom:14px;">
@@ -1979,6 +1992,7 @@ function checkTakeAttendancePasscode(){
     currentUserRole = getPasscodeRole(val);
     document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
     document.getElementById('takeAttendanceCard').classList.remove('hidden');
+    document.getElementById('qrCheckinCard').classList.remove('hidden');
     loadAttendanceCourseOptions();
     const dateInput = document.getElementById('attendanceDateInput');
     if(dateInput && !dateInput.value){
@@ -2263,6 +2277,106 @@ async function saveAttendance(){
   }finally{
     btn.disabled = false;
   }
+}
+
+// ===== QR Check-In =====
+
+let qrRefreshInterval = null;
+let qrCountdownInterval = null;
+let qrSessionActive = false;
+
+function generateQrToken(){
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+async function startQrCheckin(){
+  const course = document.getElementById('attendanceCourseSelect').value;
+  const date = document.getElementById('attendanceDateInput').value;
+  const msg = document.getElementById('qrCheckinMsg');
+
+  if(!course || !date){
+    msg.innerHTML = '<div class="msg err">Select a course and date above first.</div>';
+    return;
+  }
+  if(!navigator.geolocation){
+    msg.innerHTML = '<div class="msg err">This device/browser does not support location — QR check-in needs it to verify students are in the classroom.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Getting your location...</div>';
+
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    await refreshQrSession(course, date, lat, lng);
+    qrSessionActive = true;
+    document.getElementById('startQrBtn').classList.add('hidden');
+    document.getElementById('stopQrBtn').classList.remove('hidden');
+    document.getElementById('qrCheckinDisplay').classList.remove('hidden');
+
+    qrRefreshInterval = setInterval(() => refreshQrSession(course, date, lat, lng), 90000);
+    startQrCountdown();
+    pollQrPresentCount(course, date);
+  }, (err) => {
+    msg.innerHTML = `<div class="msg err">Could not get your location: ${escapeHtml(err.message)}. Location access is required for QR check-in.</div>`;
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+async function refreshQrSession(course, date, lat, lng){
+  const token = generateQrToken();
+  const expiresAt = Date.now() + 90000;
+  const sessionKey = `${course}__${date}`;
+
+  try{
+    const data = await fetchSupabaseData();
+    data.qrSessions = data.qrSessions || {};
+    data.qrSessions[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date };
+    await saveSupabaseData(data);
+
+    const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;
+    const qrImg = document.getElementById('qrCheckinImage');
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(siteUrl)}`;
+
+    window.currentQrExpiresAt = expiresAt;
+    document.getElementById('qrCheckinMsg').innerHTML = '<div class="msg ok">Session active. Display this QR code for students to scan.</div>';
+  }catch(e){
+    document.getElementById('qrCheckinMsg').innerHTML = `<div class="msg err">Could not start session: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function startQrCountdown(){
+  if(qrCountdownInterval) clearInterval(qrCountdownInterval);
+  qrCountdownInterval = setInterval(() => {
+    const remaining = Math.max(0, Math.round((window.currentQrExpiresAt - Date.now()) / 1000));
+    const timerEl = document.getElementById('qrCheckinTimer');
+    if(timerEl) timerEl.textContent = `Refreshes in ${remaining}s`;
+  }, 1000);
+}
+
+async function pollQrPresentCount(course, date){
+  if(!qrSessionActive) return;
+  try{
+    const data = await fetchSupabaseData();
+    const sessionKey = `${course}__${date}`;
+    const record = (data.attendance || []).find(a => a.sessionKey === sessionKey);
+    const count = record ? record.present.length : 0;
+    const countEl = document.getElementById('qrCheckinPresentCount');
+    if(countEl) countEl.textContent = `${count} student(s) checked in so far`;
+  }catch(e){}
+  if(qrSessionActive){
+    setTimeout(() => pollQrPresentCount(course, date), 5000);
+  }
+}
+
+function stopQrCheckin(){
+  qrSessionActive = false;
+  if(qrRefreshInterval) clearInterval(qrRefreshInterval);
+  if(qrCountdownInterval) clearInterval(qrCountdownInterval);
+  document.getElementById('startQrBtn').classList.remove('hidden');
+  document.getElementById('stopQrBtn').classList.add('hidden');
+  document.getElementById('qrCheckinDisplay').classList.add('hidden');
+  document.getElementById('qrCheckinMsg').innerHTML = '<div class="msg ok">Session stopped.</div>';
+  loadAttendanceForDate(); // refresh checklist to reflect any QR check-ins
 }
 
 function switchSummaryView(view){

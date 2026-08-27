@@ -79,6 +79,7 @@ const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
 const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
 const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
+const SUPABASE_QR_FILE = "qr-sessions.json";
 const LOCK_KEY = "assessment_locked_index";
 
 function escapeHtml(str){
@@ -87,9 +88,17 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+async function fetchQrSessions(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_QR_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
 async function fetchSupabaseData(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
     return await res.json();
   }catch(e){ return {}; }
@@ -98,11 +107,13 @@ async function fetchSupabaseData(){
 async function saveSupabaseData(data){
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_KEY,
       "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "x-upsert": "true"
+      "x-upsert": "true",
+      "cache-control": "no-cache"
     },
     body: JSON.stringify(data)
   });
@@ -139,9 +150,9 @@ async function verifyAndShowForm(){
 
   navigator.geolocation.getCurrentPosition(async (position) => {
     try{
-      const data = await fetchSupabaseData();
+      const qrData = await fetchQrSessions();
       const sessionKey = `${course}__${date}`;
-      const session = (data.qrSessions || {})[sessionKey];
+      const session = qrData[sessionKey];
 
       if(!session || session.token !== token){
         document.getElementById('statusView').innerHTML = '<div class="icon">⚠️</div><h1>Code Expired</h1><p class="sub">This QR code is no longer active. Ask your lecturer to show the current one.</p>';
@@ -174,6 +185,32 @@ async function verifyAndShowForm(){
   }, { enableHighAccuracy: true, timeout: 10000 });
 }
 
+async function attemptCheckinWrite(idx){
+  const data = await fetchSupabaseData();
+  const attendanceRecords = data.attendance || [];
+  let record = attendanceRecords.find(a => a.sessionKey === verifiedSession.sessionKey);
+  if(!record){
+    record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [] };
+    attendanceRecords.push(record);
+  }
+  const alreadyIn = record.present.some(p => String(p).trim().toLowerCase() === idx.toLowerCase());
+  if(!alreadyIn){
+    record.present.push(idx);
+  }
+  data.attendance = attendanceRecords;
+  await saveSupabaseData(data);
+  return alreadyIn;
+}
+
+async function verifyCheckinSaved(idx){
+  // Re-fetch fresh data and confirm this student's index actually made it into storage,
+  // guarding against a near-simultaneous check-in from another student overwriting this one.
+  const data = await fetchSupabaseData();
+  const record = (data.attendance || []).find(a => a.sessionKey === verifiedSession.sessionKey);
+  if(!record) return false;
+  return record.present.some(p => String(p).trim().toLowerCase() === idx.toLowerCase());
+}
+
 async function submitCheckin(){
   const idx = document.getElementById('checkinIndexInput').value.trim();
   const msg = document.getElementById('checkinMsg');
@@ -192,19 +229,21 @@ async function submitCheckin(){
   msg.innerHTML = '<div class="msg ok">Checking in...</div>';
 
   try{
-    const data = await fetchSupabaseData();
-    const attendanceRecords = data.attendance || [];
-    let record = attendanceRecords.find(a => a.sessionKey === verifiedSession.sessionKey);
-    if(!record){
-      record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [] };
-      attendanceRecords.push(record);
+    let alreadyIn = await attemptCheckinWrite(idx);
+
+    // Verify the write actually stuck; if another student's simultaneous save overwrote it, retry once.
+    let confirmed = await verifyCheckinSaved(idx);
+    if(!confirmed){
+      await new Promise(r => setTimeout(r, 400 + Math.random() * 400)); // small random delay to reduce repeat collisions
+      alreadyIn = await attemptCheckinWrite(idx);
+      confirmed = await verifyCheckinSaved(idx);
     }
-    const alreadyIn = record.present.some(p => p.toLowerCase() === idx.toLowerCase());
-    if(!alreadyIn){
-      record.present.push(idx);
+
+    if(!confirmed){
+      msg.innerHTML = '<div class="msg err">Check-in did not save due to a lot of people checking in at once. Please tap Check In again.</div>';
+      btn.disabled = false;
+      return;
     }
-    data.attendance = attendanceRecords;
-    await saveSupabaseData(data);
 
     if(!localStorage.getItem(LOCK_KEY)){
       localStorage.setItem(LOCK_KEY, idx);

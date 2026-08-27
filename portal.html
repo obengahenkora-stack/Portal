@@ -2359,9 +2359,23 @@ async function pollQrPresentCount(course, date){
     const data = await fetchSupabaseData();
     const sessionKey = `${course}__${date}`;
     const record = (data.attendance || []).find(a => a.sessionKey === sessionKey);
-    const count = record ? record.present.length : 0;
+    const freshPresentSet = new Set(record ? record.present : []);
+
+    // Update the count text
     const countEl = document.getElementById('qrCheckinPresentCount');
-    if(countEl) countEl.textContent = `${count} student(s) checked in so far`;
+    if(countEl) countEl.textContent = `${freshPresentSet.size} student(s) checked in so far`;
+
+    // Live-update the checklist: only ever flip ABSENT -> PRESENT based on fresh QR check-ins.
+    // Never downgrades a row, so any manual ticks you've made (not yet saved) are preserved.
+    document.querySelectorAll('#attendanceChecklist .attendance-row').forEach(row => {
+      const rowIndex = row.getAttribute('data-index');
+      const statusEl = row.querySelector('.attendance-status');
+      if(statusEl && statusEl.textContent === 'ABSENT' && freshPresentSet.has(rowIndex)){
+        statusEl.textContent = 'PRESENT';
+        statusEl.style.color = 'var(--ok)';
+        row.style.background = 'rgba(31,138,76,0.08)';
+      }
+    });
   }catch(e){}
   if(qrSessionActive){
     setTimeout(() => pollQrPresentCount(course, date), 5000);

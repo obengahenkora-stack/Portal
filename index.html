@@ -12,6 +12,7 @@
 <title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#0b2545;
@@ -306,6 +307,7 @@
 <div class="tabs">
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
   <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
+  <a href="courses.html" class="tab" style="text-decoration:none;">Courses</a>
   <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
   <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
   <a href="portal.html?view=attendance" class="tab" style="text-decoration:none;">Attendance</a>
@@ -392,13 +394,29 @@
     <button onclick="switchTab('view')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:6px 12px;margin-bottom:14px;">&larr; Back to Home</button>
 
     <div class="card" id="loginCard">
-      <label>Passcode</label>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode">
-      <button onclick="checkPasscode()">Unlock</button>
-      <div id="loginMsg"></div>
+      <label>Email</label>
+      <input type="text" id="authEmailInput" placeholder="you@school.edu">
+      <label>Password</label>
+      <input type="password" id="authPasswordInput" placeholder="Your password">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="signInUser()">Sign In</button>
+        <button class="secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+      <div style="margin-top:10px;">
+        <span onclick="resetMyPassword()" style="font-size:0.8rem;color:var(--muted);text-decoration:underline;cursor:pointer;">Forgot password?</span>
+      </div>
+      <div id="authMsg" style="margin-top:10px;"></div>
+      <div class="hint" style="margin-top:10px;">Only the Owner can edit this page's info.</div>
+    </div>
+
+    <div class="card hidden" id="noRoleCard">
+      <div class="msg err">Your account is signed in, but editing this page requires the Owner account.</div>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
     </div>
 
     <div class="card hidden" id="editCard">
+      <button class="secondary" onclick="signOutUser()" style="margin-bottom:14px;">Sign Out</button>
+
       <label>Full Name / Title (shown as the main heading)</label>
       <input type="text" id="nameInput" placeholder="e.g. Engr. Nana Kwame Obeng-Ahenkora">
 
@@ -479,24 +497,75 @@ async function saveSupabaseData(data){
   return true;
 }
 
-const TEACHER_PASSCODES = {
-  "teacher123": { label: "Main Instructor", role: "admin" },
-  "assist456": { label: "Teaching Assistant", role: "ta" }
-  // Add more "passcode": { label: "Name", role: "admin" or "ta" } pairs here
-};
-function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
-async function loadTeamMembers(){
+const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUserRole = null;
+let currentUserEmail = null;
+function isOwner(){ return currentUserRole === 'owner'; }
+function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
+
+async function resolveCurrentUserRole(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ currentUserRole = null; currentUserEmail = null; return; }
+  const email = session.user.email.toLowerCase();
+  currentUserEmail = email;
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
   try{
     const data = await fetchSupabaseData();
     const members = data.teamMembers || [];
-    members.forEach(m => {
-      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
-    });
-  }catch(e){}
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    currentUserRole = me ? me.role : null;
+  }catch(e){ currentUserRole = null; }
 }
-function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
-let currentUserRole = null; // set after successful login: 'admin' or 'ta'
-function isAdmin(){ return currentUserRole === 'admin'; }
+
+async function signUpUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ await onEditAuthReady(); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+
+async function signInUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onEditAuthReady();
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function resetMyPassword(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const msg = document.getElementById('authMsg');
+  if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first.</div>'; return; }
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  msg.innerHTML = error ? `<div class="msg err">${escapeHtml(error.message)}</div>` : '<div class="msg ok">Password reset email sent.</div>';
+}
+
+async function onEditAuthReady(){
+  await resolveCurrentUserRole();
+  if(!isOwner()){
+    document.getElementById('loginCard').classList.add('hidden');
+    if(currentUserEmail){ document.getElementById('noRoleCard').classList.remove('hidden'); }
+    return;
+  }
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('noRoleCard').classList.add('hidden');
+  document.getElementById('editCard').classList.remove('hidden');
+}
 
 
 function switchTab(tab){
@@ -717,21 +786,7 @@ function handlePhotoSelect(event){
   reader.readAsDataURL(file);
 }
 
-function checkPasscode(){
-  const val = document.getElementById('passcodeInput').value;
-  const msg = document.getElementById('loginMsg');
-  if(isValidPasscode(val)){
-    if(getPasscodeRole(val) !== 'admin'){
-      msg.innerHTML = '<div class="msg err">Only the Main Instructor can edit site info.</div>';
-      return;
-    }
-    currentUserRole = 'admin';
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('editCard').classList.remove('hidden');
-  } else {
-    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
-  }
-}
+// checkPasscode removed — replaced by Supabase Auth sign in/up (see onEditAuthReady)
 
 async function saveProfile(){
   const name = document.getElementById('nameInput').value.trim();
@@ -1048,11 +1103,11 @@ function toggleDarkMode(){
   if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
   updateLiveDateTime();
   loadProfile();
-  loadTeamMembers();
+  await onEditAuthReady();
   loadFactOfDay();
   loadHistoryOfDay();
   const qrImg = document.getElementById('siteQrCode');

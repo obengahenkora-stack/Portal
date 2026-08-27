@@ -12,6 +12,7 @@
 <title>Engineering Notes — Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --paper:#f5f7fa;
@@ -194,6 +195,7 @@
 <div class="hero-tabs">
   <a href="index.html">Home</a>
   <div class="tab-static" id="navBlog" onclick="switchTab('posts')">Blog</div>
+  <a href="courses.html">Courses</a>
   <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
   <div class="tab-static" id="navAnnouncements" onclick="switchTab('announcements')">Announcements</div>
   <a href="portal.html">Assessment Portal</a>
@@ -244,11 +246,26 @@
     <span class="back-to-list" onclick="switchTab('posts')">&larr; Back to posts</span>
 
     <div class="card" id="loginCard">
-      <label>Passcode</label>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode">
-      <button onclick="checkPasscode()">Unlock</button>
-      <div id="loginMsg"></div>
+      <label>Email</label>
+      <input type="text" id="authEmailInput" placeholder="you@school.edu">
+      <label>Password</label>
+      <input type="password" id="authPasswordInput" placeholder="Your password">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="signInUser()">Sign In</button>
+        <button class="secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+      <div style="margin-top:10px;">
+        <span onclick="resetMyPassword()" style="font-size:0.8rem;color:var(--muted);text-decoration:underline;cursor:pointer;">Forgot password?</span>
+      </div>
+      <div id="authMsg" style="margin-top:10px;"></div>
     </div>
+
+    <div class="card hidden" id="noRoleCard">
+      <div class="msg err">Your account is signed in, but hasn't been given a role yet. Ask the Owner or an Admin to add your email under Team Access on the Assessment Portal.</div>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
+    </div>
+
+    <button id="logoutBtn" onclick="signOutUser()" class="secondary hidden" style="margin-bottom:16px;">Sign Out</button>
 
     <div class="card hidden" id="composeCard">
       <label>Post Title</label>
@@ -266,6 +283,8 @@
     <div class="card hidden" id="uploadResourceCard">
       <label>Upload Lecture Notes / Resource</label>
       <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, or any file up to 50MB.</div>
+      <label>Course</label>
+      <input type="text" id="resourceCourseInput" placeholder="e.g. CIVL 368">
       <label>Title</label>
       <input type="text" id="resourceTitleInput" placeholder="e.g. Week 3 - Structural Loads Notes">
       <label>File</label>
@@ -309,24 +328,93 @@ const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
 // ============================================================
 
-const TEACHER_PASSCODES = {
-  "teacher123": { label: "Main Instructor", role: "admin" },
-  "assist456": { label: "Teaching Assistant", role: "ta" }
-  // Add more "passcode": { label: "Name", role: "admin" or "ta" } pairs here
-};
-function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
-async function loadTeamMembers(){
+const OWNER_EMAIL = "obengahenkora@gmail.com";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUserRole = null;
+let currentUserEmail = null;
+function isOwner(){ return currentUserRole === 'owner'; }
+function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
+
+async function resolveCurrentUserRole(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ currentUserRole = null; currentUserEmail = null; return; }
+  const email = session.user.email.toLowerCase();
+  currentUserEmail = email;
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
   try{
     const data = await fetchSupabaseData();
     const members = data.teamMembers || [];
-    members.forEach(m => {
-      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
-    });
-  }catch(e){}
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    currentUserRole = me ? me.role : null;
+  }catch(e){ currentUserRole = null; }
 }
-function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
-let currentUserRole = null; // set after successful login: 'admin' or 'ta'
-function isAdmin(){ return currentUserRole === 'admin'; }
+
+async function signUpUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ await onAuthReady(); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+
+async function signInUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onAuthReady();
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function resetMyPassword(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const msg = document.getElementById('authMsg');
+  if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first.</div>'; return; }
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  msg.innerHTML = error ? `<div class="msg err">${escapeHtml(error.message)}</div>` : '<div class="msg ok">Password reset email sent.</div>';
+}
+
+async function onAuthReady(){
+  await resolveCurrentUserRole();
+
+  if(!currentUserRole){
+    if(currentUserEmail){
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('noRoleCard').classList.remove('hidden');
+    }
+    return;
+  }
+
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('noRoleCard').classList.add('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('composeCard').classList.remove('hidden');
+
+  if(isAdmin()){
+    document.getElementById('manageCard').classList.remove('hidden');
+    document.getElementById('uploadResourceCard').classList.remove('hidden');
+    document.getElementById('manageResourcesCard').classList.remove('hidden');
+    document.getElementById('postAnnouncementCard').classList.remove('hidden');
+    document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
+    loadManageList();
+    loadManageResourcesList();
+    loadManageAnnouncementsList();
+  } else {
+    document.getElementById('taWriteNotice').classList.remove('hidden');
+  }
+}
 
 
 function escapeHtml(str){
@@ -590,30 +678,7 @@ function showPostsList(){
   document.getElementById('postsView').classList.remove('hidden');
 }
 
-function checkPasscode(){
-  const val = document.getElementById('passcodeInput').value;
-  const msg = document.getElementById('loginMsg');
-  if(isValidPasscode(val)){
-    currentUserRole = getPasscodeRole(val);
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('composeCard').classList.remove('hidden');
-
-    if(isAdmin()){
-      document.getElementById('manageCard').classList.remove('hidden');
-      document.getElementById('uploadResourceCard').classList.remove('hidden');
-      document.getElementById('manageResourcesCard').classList.remove('hidden');
-      document.getElementById('postAnnouncementCard').classList.remove('hidden');
-      document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
-      loadManageList();
-      loadManageResourcesList();
-      loadManageAnnouncementsList();
-    } else {
-      document.getElementById('taWriteNotice').classList.remove('hidden');
-    }
-  } else {
-    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
-  }
-}
+// checkPasscode removed — replaced by Supabase Auth sign in/up (see onAuthReady)
 
 async function publishPost(){
   const title = document.getElementById('postTitleInput').value.trim();
@@ -691,11 +756,13 @@ async function deletePost(id){
 
 async function uploadResource(){
   if(!isAdmin()){ document.getElementById('uploadResourceMsg').innerHTML = '<div class="msg err">Only the Main Instructor can upload resources.</div>'; return; }
+  const courseInput = document.getElementById('resourceCourseInput');
   const titleInput = document.getElementById('resourceTitleInput');
   const fileInput = document.getElementById('resourceFileInput');
   const msg = document.getElementById('uploadResourceMsg');
   const btn = document.getElementById('uploadResourceBtn');
 
+  const course = courseInput.value.trim() || 'General';
   const title = titleInput.value.trim();
   const file = fileInput.files[0];
 
@@ -743,6 +810,7 @@ async function uploadResource(){
     const resources = data.resources || [];
     resources.push({
       id: 'res_' + Date.now(),
+      course,
       title,
       fileName: file.name,
       url: fileUrl,
@@ -752,6 +820,7 @@ async function uploadResource(){
     await saveSupabaseData(data);
 
     msg.innerHTML = '<div class="msg ok">Resource uploaded.</div>';
+    courseInput.value = '';
     titleInput.value = '';
     fileInput.value = '';
     loadManageResourcesList();
@@ -1037,11 +1106,11 @@ function toggleDarkMode(){
   if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
-  loadTeamMembers();
+  await onAuthReady();
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'resources'){
     switchTab('resources');

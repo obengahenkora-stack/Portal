@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Check-In</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b2545">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html{ font-size:17px; }
+  :root{
+    --navy:#0b2545; --navy-dark:#071a33; --gold:#d4a017; --gold-dark:#b5860e;
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1a2433; --muted:#64748b;
+    --line:#e3e8ef; --danger:#c0392b; --ok:#1f8a4c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:32px 24px; max-width:400px; width:100%; text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,0.08);
+  }
+  .icon{ font-size:2.6rem; margin-bottom:10px; }
+  h1{ font-family:'Poppins',sans-serif; font-size:1.3rem; color:var(--navy); margin:0 0 6px 0; }
+  p.sub{ color:var(--muted); font-size:0.9rem; margin-top:0; margin-bottom:20px; }
+  label{ display:block; font-size:0.78rem; font-weight:700; margin-bottom:7px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; text-align:left; }
+  input[type=text]{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:8px;
+    font-size:1rem; margin-bottom:14px; background:#f8fafc; color:var(--ink);
+  }
+  input:focus{ outline:2px solid var(--gold); outline-offset:1px; background:#fff; }
+  button{
+    background:var(--navy); color:#fff; border:none; padding:13px 24px; border-radius:8px;
+    font-weight:700; cursor:pointer; font-size:0.95rem; width:100%;
+  }
+  button:hover{ background:var(--navy-dark); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  .msg{ padding:12px 14px; border-radius:8px; margin-bottom:14px; font-size:0.88rem; text-align:left; }
+  .msg.ok{ background:rgba(31,138,76,0.08); color:var(--ok); }
+  .msg.err{ background:rgba(192,57,43,0.08); color:var(--danger); }
+  .success-icon{ font-size:3rem; margin-bottom:10px; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="statusView">
+    <div class="icon">📍</div>
+    <h1>Checking your location...</h1>
+    <p class="sub">Please allow location access when prompted. This confirms you're in class.</p>
+    <div id="statusMsg"></div>
+  </div>
+
+  <div id="formView" class="hidden">
+    <div class="icon">✅</div>
+    <h1>You're in class!</h1>
+    <p class="sub">Enter your index number to check in.</p>
+    <label>Your Index Number</label>
+    <input type="text" id="checkinIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') submitCheckin()">
+    <button id="checkinBtn" onclick="submitCheckin()">Check In</button>
+    <div id="checkinMsg"></div>
+  </div>
+
+  <div id="successView" class="hidden">
+    <div class="success-icon">🎉</div>
+    <h1>Checked In!</h1>
+    <p class="sub" id="successText">You've been marked present.</p>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+const LOCK_KEY = "assessment_locked_index";
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true"
+    },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save check-in");
+  return true;
+}
+
+function distanceMeters(lat1, lon1, lat2, lon2){
+  const R = 6371000;
+  const toRad = d => d * Math.PI/180;
+  const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let verifiedSession = null;
+
+async function verifyAndShowForm(){
+  const params = new URLSearchParams(window.location.search);
+  const course = params.get('course');
+  const date = params.get('date');
+  const token = params.get('token');
+  const statusMsg = document.getElementById('statusMsg');
+
+  if(!course || !date || !token){
+    document.getElementById('statusView').innerHTML = '<div class="icon">⚠️</div><h1>Invalid Link</h1><p class="sub">This check-in link is missing information. Ask your lecturer to show the QR code again.</p>';
+    return;
+  }
+
+  if(!navigator.geolocation){
+    document.getElementById('statusView').innerHTML = "<div class=\"icon\">⚠️</div><h1>Location Not Supported</h1><p class=\"sub\">Your browser doesn't support location, which is required for check-in.</p>";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    try{
+      const data = await fetchSupabaseData();
+      const sessionKey = `${course}__${date}`;
+      const session = (data.qrSessions || {})[sessionKey];
+
+      if(!session || session.token !== token){
+        document.getElementById('statusView').innerHTML = '<div class="icon">⚠️</div><h1>Code Expired</h1><p class="sub">This QR code is no longer active. Ask your lecturer to show the current one.</p>';
+        return;
+      }
+      if(Date.now() > session.expiresAt){
+        document.getElementById('statusView').innerHTML = '<div class="icon">⌛</div><h1>Code Expired</h1><p class="sub">This QR code has expired — it refreshes every 90 seconds. Scan the current one on screen.</p>';
+        return;
+      }
+
+      const dist = distanceMeters(position.coords.latitude, position.coords.longitude, session.lat, session.lng);
+      if(dist > (session.radius || 100)){
+        document.getElementById('statusView').innerHTML = '<div class="icon">📍</div><h1>Too Far From Class</h1><p class="sub">You need to be in the classroom to check in. Move closer and scan again.</p>';
+        return;
+      }
+
+      verifiedSession = { course, date, sessionKey };
+      document.getElementById('statusView').classList.add('hidden');
+      document.getElementById('formView').classList.remove('hidden');
+
+      const lockedIndex = localStorage.getItem(LOCK_KEY);
+      if(lockedIndex){
+        document.getElementById('checkinIndexInput').value = lockedIndex;
+      }
+    }catch(e){
+      document.getElementById('statusView').innerHTML = `<div class="icon">⚠️</div><h1>Something Went Wrong</h1><p class="sub">${escapeHtml(e.message)}</p>`;
+    }
+  }, (err) => {
+    document.getElementById('statusView').innerHTML = `<div class="icon">📍</div><h1>Location Needed</h1><p class="sub">Please allow location access to check in. (${escapeHtml(err.message)})</p>`;
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+async function submitCheckin(){
+  const idx = document.getElementById('checkinIndexInput').value.trim();
+  const msg = document.getElementById('checkinMsg');
+  const btn = document.getElementById('checkinBtn');
+
+  if(!idx){
+    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
+    return;
+  }
+  if(!verifiedSession){
+    msg.innerHTML = '<div class="msg err">Session not verified. Please rescan the QR code.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Checking in...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const attendanceRecords = data.attendance || [];
+    let record = attendanceRecords.find(a => a.sessionKey === verifiedSession.sessionKey);
+    if(!record){
+      record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [] };
+      attendanceRecords.push(record);
+    }
+    const alreadyIn = record.present.some(p => p.toLowerCase() === idx.toLowerCase());
+    if(!alreadyIn){
+      record.present.push(idx);
+    }
+    data.attendance = attendanceRecords;
+    await saveSupabaseData(data);
+
+    if(!localStorage.getItem(LOCK_KEY)){
+      localStorage.setItem(LOCK_KEY, idx);
+    }
+
+    document.getElementById('formView').classList.add('hidden');
+    document.getElementById('successView').classList.remove('hidden');
+    document.getElementById('successText').textContent = alreadyIn
+      ? "You were already checked in for this session."
+      : `You've been marked present for ${verifiedSession.course}.`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not check in: ${escapeHtml(e.message)}</div>`;
+    btn.disabled = false;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', verifyAndShowForm);
+</script>
+</body>
+</html>

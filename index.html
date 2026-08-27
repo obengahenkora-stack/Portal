@@ -557,16 +557,24 @@ async function resetMyPassword(){
 
 async function onEditAuthReady(){
   await resolveCurrentUserRole();
-  if(!isOwner()){
+
+  if(isOwner()){
     document.getElementById('loginCard').classList.add('hidden');
-    if(currentUserEmail){ document.getElementById('noRoleCard').classList.remove('hidden'); }
+    document.getElementById('noRoleCard').classList.add('hidden');
+    document.getElementById('editCard').classList.remove('hidden');
     return;
   }
-  document.getElementById('loginCard').classList.add('hidden');
-  document.getElementById('noRoleCard').classList.add('hidden');
-  document.getElementById('editCard').classList.remove('hidden');
-}
 
+  if(currentUserEmail){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('noRoleCard').classList.remove('hidden');
+    document.getElementById('editCard').classList.add('hidden');
+  } else {
+    document.getElementById('loginCard').classList.remove('hidden');
+    document.getElementById('noRoleCard').classList.add('hidden');
+    document.getElementById('editCard').classList.add('hidden');
+  }
+}
 
 function switchTab(tab){
   document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');

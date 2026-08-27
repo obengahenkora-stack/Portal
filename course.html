@@ -205,14 +205,25 @@ async function signOutUser(){
 async function onSyllabusAuthReady(){
   await resolveCurrentUserRole();
   const canEdit = isAdmin() || currentUserRole === 'lecturer';
-  if(!canEdit){
+
+  if(canEdit){
     document.getElementById('editLoginArea').classList.add('hidden');
-    if(currentUserEmail){ document.getElementById('noRoleMsgArea').classList.remove('hidden'); }
+    document.getElementById('noRoleMsgArea').classList.add('hidden');
+    document.getElementById('editFormArea').classList.remove('hidden');
     return;
   }
-  document.getElementById('editLoginArea').classList.add('hidden');
-  document.getElementById('noRoleMsgArea').classList.add('hidden');
-  document.getElementById('editFormArea').classList.remove('hidden');
+
+  if(currentUserEmail){
+    // signed in, but this account doesn't have permission to edit
+    document.getElementById('editLoginArea').classList.add('hidden');
+    document.getElementById('noRoleMsgArea').classList.remove('hidden');
+    document.getElementById('editFormArea').classList.add('hidden');
+  } else {
+    // not signed in at all — keep showing the sign-in form
+    document.getElementById('editLoginArea').classList.remove('hidden');
+    document.getElementById('noRoleMsgArea').classList.add('hidden');
+    document.getElementById('editFormArea').classList.add('hidden');
+  }
 }
 
 function escapeHtml(str){

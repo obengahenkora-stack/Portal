@@ -222,6 +222,7 @@
 <div class="hero-tabs">
   <a href="index.html">Home</a>
   <a href="blog.html">Blog</a>
+  <a href="courses.html">Courses</a>
   <a href="blog.html?view=resources">Lecture Notes</a>
   <div class="tab-static" id="navPortal" onclick="switchTab('teacher')">Assessment Portal</div>
   <div class="tab-static" id="navAttendance" onclick="switchTab('attendance')">Attendance</div>
@@ -240,10 +241,35 @@
   <!-- TEACHER VIEW -->
   <div id="teacherView">
     <div class="card" id="loginCard">
-      <label>Teacher Passcode</label>
-      <input type="password" id="passcodeInput" placeholder="Enter passcode">
-      <button onclick="checkPasscode()">Unlock</button>
-      <div id="loginMsg"></div>
+      <label>Email</label>
+      <input type="text" id="authEmailInput" placeholder="you@school.edu">
+      <label>Password</label>
+      <input type="password" id="authPasswordInput" placeholder="Your password">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="signInUser()">Sign In</button>
+        <button class="secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+      <div style="margin-top:10px;">
+        <span onclick="resetMyPassword()" style="font-size:0.8rem;color:var(--muted);text-decoration:underline;cursor:pointer;">Forgot password?</span>
+      </div>
+      <div id="authMsg" style="margin-top:10px;"></div>
+      <div class="hint" style="margin-top:10px;">New here? Create an account with the email your Owner/Admin added you with — your role (Admin, Lecturer, or TA) is assigned automatically once your email matches.</div>
+    </div>
+
+    <div class="card hidden" id="noRoleCard">
+      <div class="msg err">Your account is signed in, but hasn't been given a role yet. Ask the Owner or an Admin to add your email under Team Access.</div>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
+    </div>
+
+    <button id="logoutBtn" onclick="signOutUser()" class="secondary hidden" style="margin-bottom:16px;">Sign Out</button>
+
+    <div class="card hidden" id="changePasscodeCard">
+      <label>Change My Password</label>
+      <div class="hint">Sets a new password for your account.</div>
+      <label>New Password (at least 6 characters)</label>
+      <input type="password" id="newOwnPasscodeInput" placeholder="Enter a new password">
+      <button onclick="changeMyPasscode()">Update My Password</button>
+      <div id="changePasscodeMsg"></div>
     </div>
 
     <div class="card hidden" id="uploadCard">
@@ -333,11 +359,11 @@
 
     <div class="card hidden" id="teamAccessCard">
       <label>Team Access</label>
-      <div class="hint">Add lecturers or teaching assistants. They'll be able to log in with the passcode you set here, site-wide, once saved.</div>
+      <div class="hint">Add lecturers or teaching assistants by email. Tell them to create an account (or sign in) using this exact email — their role is applied automatically the moment it matches.</div>
       <label>Name</label>
       <input type="text" id="teamMemberNameInput" placeholder="e.g. Dr. Ama Owusu">
-      <label>Passcode (they'll use this to log in)</label>
-      <input type="text" id="teamMemberPasscodeInput" placeholder="e.g. amaowusu2026">
+      <label>Email</label>
+      <input type="text" id="teamMemberEmailInput" placeholder="e.g. amaowusu@school.edu">
       <label>Role</label>
       <select id="teamMemberRoleSelect" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
         <option value="lecturer">Lecturer — upload scores, manage attendance/rosters</option>
@@ -446,10 +472,7 @@
   <div id="attendanceView" class="hidden">
 
     <div class="card" id="takeAttendanceLoginCard">
-      <label>Teacher Passcode (required to mark attendance)</label>
-      <input type="password" id="takeAttendancePasscodeInput" placeholder="Enter passcode">
-      <button onclick="checkTakeAttendancePasscode()">Unlock</button>
-      <div id="takeAttendanceLoginMsg"></div>
+      <div class="msg err">Please sign in from the Teacher tab first to mark attendance.</div>
     </div>
 
     <div class="card hidden" id="takeAttendanceCard">
@@ -514,10 +537,7 @@
     <span class="back-to-list" onclick="switchTab('attendance')" style="display:block;margin-bottom:14px;cursor:pointer;color:var(--accent);font-size:0.85rem;">&larr; Back to Attendance</span>
 
     <div class="card" id="attendanceLoginCard">
-      <label>Teacher Passcode</label>
-      <input type="password" id="attendancePasscodeInput" placeholder="Enter passcode">
-      <button onclick="checkAttendancePasscode()">Unlock</button>
-      <div id="attendanceLoginMsg"></div>
+      <div class="msg err">Please sign in from the Teacher tab first to manage rosters.</div>
     </div>
 
     <div class="card hidden" id="rosterUploadCard">
@@ -558,6 +578,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
 // ===== JSONBin.io configuration (records, courses, reports, settings) =====
@@ -637,46 +658,101 @@ async function saveQrSessions(qrData){
 }
 // =================================================================
 
-const TEACHER_PASSCODES = {
-  "teacher123": { label: "Main Instructor", role: "admin" },
-  "assist456": { label: "Teaching Assistant", role: "ta" },
-  "lecturer789": { label: "Co-Lecturer", role: "lecturer" }
-  // Add more "passcode": { label: "Name", role: "admin", "lecturer", or "ta" } pairs here
-};
-function isValidPasscode(val){ return Object.prototype.hasOwnProperty.call(TEACHER_PASSCODES, val); }
-function getPasscodeRole(val){ return TEACHER_PASSCODES[val] ? TEACHER_PASSCODES[val].role : null; }
-let currentUserRole = null; // set after successful login: 'admin' or 'ta'
-function isAdmin(){ return currentUserRole === 'admin'; }
-function canUploadScores(){ return currentUserRole === 'admin' || currentUserRole === 'lecturer'; }
-function canManageRosters(){ return currentUserRole === 'admin' || currentUserRole === 'lecturer'; }
+// ===== Real Email/Password Authentication (Supabase Auth) =====
+const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner — cannot be changed or removed via the UI
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function loadTeamMembers(){
-  // Merges admin-added team members (stored in Supabase) into the in-memory passcode list.
+let currentUserRole = null;   // 'owner' | 'admin' | 'lecturer' | 'ta' | null
+let currentUserEmail = null;
+
+function isOwner(){ return currentUserRole === 'owner'; }
+function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
+function canUploadScores(){ return isAdmin() || currentUserRole === 'lecturer'; }
+function canManageRosters(){ return isAdmin() || currentUserRole === 'lecturer'; }
+
+async function resolveCurrentUserRole(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ currentUserRole = null; currentUserEmail = null; return; }
+  const email = session.user.email.toLowerCase();
+  currentUserEmail = email;
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
   try{
     const data = await fetchSupabaseData();
     const members = data.teamMembers || [];
-    members.forEach(m => {
-      TEACHER_PASSCODES[m.passcode] = { label: m.name, role: m.role };
-    });
-  }catch(e){ /* if this fails, only the built-in passcodes work until reload */ }
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    currentUserRole = me ? me.role : null;
+  }catch(e){ currentUserRole = null; }
+}
+
+async function signUpUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){
+    await onAuthReady();
+  } else {
+    msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>';
+  }
+}
+
+async function signInUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onAuthReady();
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function resetMyPassword(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const msg = document.getElementById('authMsg');
+  if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first, then click Forgot Password.</div>'; return; }
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  msg.innerHTML = error
+    ? `<div class="msg err">${escapeHtml(error.message)}</div>`
+    : '<div class="msg ok">Password reset email sent — check your inbox.</div>';
+}
+
+async function changeMyPasscode(){
+  const newPassword = document.getElementById('newOwnPasscodeInput').value.trim();
+  const msg = document.getElementById('changePasscodeMsg');
+  if(newPassword.length < 6){ msg.innerHTML = '<div class="msg err">Use a password of at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Updating...</div>';
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  msg.innerHTML = '<div class="msg ok">Password updated.</div>';
+  document.getElementById('newOwnPasscodeInput').value = '';
 }
 
 async function addTeamMember(){
   const name = document.getElementById('teamMemberNameInput').value.trim();
-  const passcode = document.getElementById('teamMemberPasscodeInput').value.trim();
+  const email = document.getElementById('teamMemberEmailInput').value.trim().toLowerCase();
   const role = document.getElementById('teamMemberRoleSelect').value;
   const msg = document.getElementById('teamMemberMsg');
 
-  if(!name || !passcode){
-    msg.innerHTML = '<div class="msg err">Please enter both a name and a passcode.</div>';
+  if(!name || !email){
+    msg.innerHTML = '<div class="msg err">Please enter both a name and an email.</div>';
     return;
   }
-  if(passcode.length < 6){
-    msg.innerHTML = '<div class="msg err">Use a passcode of at least 6 characters.</div>';
+  if(!email.includes('@')){
+    msg.innerHTML = '<div class="msg err">Enter a valid email address.</div>';
     return;
   }
-  if(TEACHER_PASSCODES[passcode]){
-    msg.innerHTML = '<div class="msg err">That passcode is already in use. Choose a different one.</div>';
+  if(email === OWNER_EMAIL.toLowerCase()){
+    msg.innerHTML = '<div class="msg err">That email is already the permanent Owner.</div>';
     return;
   }
 
@@ -684,14 +760,18 @@ async function addTeamMember(){
   try{
     const data = await fetchSupabaseData();
     const members = data.teamMembers || [];
-    members.push({ passcode, name, role });
+    const existingIndex = members.findIndex(m => (m.email || '').toLowerCase() === email);
+    if(existingIndex >= 0){
+      members[existingIndex] = { email, name, role };
+    } else {
+      members.push({ email, name, role });
+    }
     data.teamMembers = members;
     await saveSupabaseData(data);
 
-    TEACHER_PASSCODES[passcode] = { label: name, role };
-    msg.innerHTML = `<div class="msg ok">Added ${escapeHtml(name)}. Share their passcode with them directly.</div>`;
+    msg.innerHTML = `<div class="msg ok">Added ${escapeHtml(name)}. Tell them to create an account (or sign in) on this site using ${escapeHtml(email)}.</div>`;
     document.getElementById('teamMemberNameInput').value = '';
-    document.getElementById('teamMemberPasscodeInput').value = '';
+    document.getElementById('teamMemberEmailInput').value = '';
     loadTeamMemberList();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
@@ -713,9 +793,9 @@ async function loadTeamMemberList(){
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
         <div>
           <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(m.name)}</div>
-          <div style="font-size:0.75rem;color:var(--muted);">${roleLabels[m.role] || m.role}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">${escapeHtml(m.email)} — ${roleLabels[m.role] || m.role}</div>
         </div>
-        <button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.passcode).replace(/'/g,"\\'")}')">Remove</button>
+        <button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.email).replace(/'/g,"\\'")}')">Remove</button>
       </div>
     `).join('');
   }catch(e){
@@ -723,13 +803,12 @@ async function loadTeamMemberList(){
   }
 }
 
-async function removeTeamMember(passcode){
-  if(!confirm('Remove this team member? Their passcode will stop working immediately.')) return;
+async function removeTeamMember(email){
+  if(!confirm('Remove this team member? Their access will stop working immediately.')) return;
   try{
     const data = await fetchSupabaseData();
-    data.teamMembers = (data.teamMembers || []).filter(m => m.passcode !== passcode);
+    data.teamMembers = (data.teamMembers || []).filter(m => (m.email || '').toLowerCase() !== email.toLowerCase());
     await saveSupabaseData(data);
-    delete TEACHER_PASSCODES[passcode];
     loadTeamMemberList();
   }catch(e){
     alert('Could not remove team member: ' + e.message);
@@ -752,7 +831,6 @@ function switchTab(tab){
   document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance' && tab!=='roster');
   document.getElementById('rosterView').classList.toggle('hidden', tab!=='roster');
-  document.getElementById('takeAttendanceLoginCard').classList.toggle('hidden', tab==='roster');
   document.getElementById('attendanceSummaryCard').classList.toggle('hidden', tab==='roster');
   document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
   document.getElementById('tabStudent').classList.toggle('active', tab==='student');
@@ -773,48 +851,69 @@ function toggleResultsVisibility(){
   btn.textContent = isHidden ? 'Hide Results' : 'Show Results';
 }
 
-function checkPasscode(){
-  const val = document.getElementById('passcodeInput').value;
-  const msg = document.getElementById('loginMsg');
-  if(isValidPasscode(val)){
-    currentUserRole = getPasscodeRole(val);
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('dataCard').classList.remove('hidden');
-    document.getElementById('reportsCard').classList.remove('hidden');
+async function onAuthReady(){
+  await resolveCurrentUserRole();
 
-    if(canUploadScores()){
-      document.getElementById('uploadCard').classList.remove('hidden');
-      document.getElementById('manageCoursesCard').classList.remove('hidden');
-      document.getElementById('exportScoresCard').classList.remove('hidden');
-      document.getElementById('fillSheetCard').classList.remove('hidden');
-      document.getElementById('transferScoresCard').classList.remove('hidden');
-      loadCourseManageList();
-      loadExportCourseOptions();
-      loadFillCourseOptions();
+  if(!currentUserRole){
+    if(currentUserEmail){
+      // signed in via Supabase Auth, but no role assigned yet
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('noRoleCard').classList.remove('hidden');
     }
-
-    if(isAdmin()){
-      document.getElementById('deleteCourseCard').classList.remove('hidden');
-      document.getElementById('backupCard').classList.remove('hidden');
-      document.getElementById('digestCard').classList.remove('hidden');
-      document.getElementById('settingsCard').classList.remove('hidden');
-      document.getElementById('teamAccessCard').classList.remove('hidden');
-      loadDeviceLockSetting();
-      loadTeamMemberList();
-    }
-
-    if(!isAdmin() && !canUploadScores()){
-      document.getElementById('taNoticeCard').classList.remove('hidden');
-    } else if(!isAdmin()){
-      document.getElementById('lecturerNoticeCard').classList.remove('hidden');
-    }
-
-    loadRecords();
-    loadIssueReports();
-  } else {
-    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
+    return;
   }
+
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('noRoleCard').classList.add('hidden');
+  document.getElementById('dataCard').classList.remove('hidden');
+  document.getElementById('reportsCard').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('changePasscodeCard').classList.remove('hidden');
+
+  document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
+  document.getElementById('takeAttendanceCard').classList.remove('hidden');
+  document.getElementById('qrCheckinCard').classList.remove('hidden');
+  loadAttendanceCourseOptions();
+  const dateInput = document.getElementById('attendanceDateInput');
+  if(dateInput && !dateInput.value){ dateInput.value = new Date().toISOString().split('T')[0]; }
+
+  if(canUploadScores()){
+    document.getElementById('uploadCard').classList.remove('hidden');
+    document.getElementById('manageCoursesCard').classList.remove('hidden');
+    document.getElementById('exportScoresCard').classList.remove('hidden');
+    document.getElementById('fillSheetCard').classList.remove('hidden');
+    document.getElementById('transferScoresCard').classList.remove('hidden');
+    loadCourseManageList();
+    loadExportCourseOptions();
+    loadFillCourseOptions();
+
+    document.getElementById('attendanceLoginCard').classList.add('hidden');
+    document.getElementById('rosterUploadCard').classList.remove('hidden');
+  }
+
+  if(isAdmin()){
+    document.getElementById('deleteCourseCard').classList.remove('hidden');
+    document.getElementById('backupCard').classList.remove('hidden');
+    document.getElementById('digestCard').classList.remove('hidden');
+    document.getElementById('settingsCard').classList.remove('hidden');
+    document.getElementById('teamAccessCard').classList.remove('hidden');
+    document.getElementById('attendanceCleanupCard').classList.remove('hidden');
+    loadDeviceLockSetting();
+    loadTeamMemberList();
+    loadCleanupCourseOptions();
+  }
+
+  if(!isAdmin() && !canUploadScores()){
+    document.getElementById('taNoticeCard').classList.remove('hidden');
+  } else if(!isAdmin()){
+    document.getElementById('lecturerNoticeCard').classList.remove('hidden');
+  }
+
+  loadRecords();
+  loadIssueReports();
 }
+
+// (old passcode-based changeMyPasscode removed — replaced by the Supabase Auth version above)
 
 async function fetchAllRecords(){
   const bin = await fetchBin();
@@ -1941,26 +2040,7 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 // ===== Attendance Tracker =====
 
-function checkAttendancePasscode(){
-  const val = document.getElementById('attendancePasscodeInput').value;
-  const msg = document.getElementById('attendanceLoginMsg');
-  if(isValidPasscode(val)){
-    const role = getPasscodeRole(val);
-    if(role !== 'admin' && role !== 'lecturer'){
-      msg.innerHTML = '<div class="msg err">Only the Main Instructor or a Lecturer can manage rosters. Teaching Assistants can mark attendance directly from the Attendance tab.</div>';
-      return;
-    }
-    currentUserRole = role;
-    document.getElementById('attendanceLoginCard').classList.add('hidden');
-    document.getElementById('rosterUploadCard').classList.remove('hidden');
-    if(isAdmin()){
-      document.getElementById('attendanceCleanupCard').classList.remove('hidden');
-      loadCleanupCourseOptions();
-    }
-  } else {
-    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
-  }
-}
+// checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
 async function loadCleanupCourseOptions(){
   try{
@@ -2015,23 +2095,7 @@ async function clearRosterAndAttendance(){
   }
 }
 
-function checkTakeAttendancePasscode(){
-  const val = document.getElementById('takeAttendancePasscodeInput').value;
-  const msg = document.getElementById('takeAttendanceLoginMsg');
-  if(isValidPasscode(val)){
-    currentUserRole = getPasscodeRole(val);
-    document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
-    document.getElementById('takeAttendanceCard').classList.remove('hidden');
-    document.getElementById('qrCheckinCard').classList.remove('hidden');
-    loadAttendanceCourseOptions();
-    const dateInput = document.getElementById('attendanceDateInput');
-    if(dateInput && !dateInput.value){
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
-  } else {
-    msg.innerHTML = '<div class="msg err">Incorrect passcode.</div>';
-  }
-}
+// checkTakeAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
 async function loadAttendanceCourseOptions(){
   try{
@@ -2563,11 +2627,11 @@ function toggleDarkMode(){
   if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
-  loadTeamMembers();
+  await onAuthReady(); // checks for an existing Supabase Auth session and renders accordingly
   const lockedIndex = localStorage.getItem(LOCK_KEY);
   if(lockedIndex){
     const idxInput = document.getElementById('indexLookup');

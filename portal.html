@@ -521,10 +521,12 @@
         <div class="tab" id="summaryTabBySession" onclick="switchSummaryView('session')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">By Session</div>
       </div>
 
+      <div id="atRiskBannerDisplay"></div>
       <div id="attendanceSummaryByStudent"><div class="empty">Select a course to view attendance.</div></div>
       <div id="attendanceSummaryBySession" class="hidden"><div class="empty">Select a course to view attendance.</div></div>
 
       <button onclick="printAttendanceSummary()" style="margin-top:14px;">Print / Export as PDF</button>
+      <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
     </div>
 
     <div style="text-align:center;margin-top:8px;">
@@ -2531,6 +2533,49 @@ function printAttendanceSummary(){
   setTimeout(() => { printWindow.print(); }, 300);
 }
 
+function printAtRiskStudents(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  if(!course){
+    alert('Select a course first.');
+    return;
+  }
+  const atRisk = window.lastAtRiskStudents || [];
+  if(atRisk.length === 0){
+    alert('No students are currently below the attendance threshold for this course, or you need to select the course again to load the data.');
+    return;
+  }
+
+  let rowsHtml = atRisk.map(s => `<tr><td>${escapeHtml(s.indexNumber)}</td><td>${escapeHtml(s.name||'')}</td><td>${s.pct}%</td></tr>`).join('');
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>At-Risk Attendance - ${escapeHtml(course)}</title>
+      <style>
+        body{ font-family: Arial, sans-serif; padding: 24px; color:#1a2433; }
+        h1{ font-size: 1.2rem; margin-bottom:4px; color:#c0392b; }
+        p{ color:#64748b; font-size:0.85rem; margin-top:0; }
+        table{ width:100%; border-collapse: collapse; margin-top:16px; font-size:0.85rem; }
+        th, td{ border: 1px solid #ccc; padding: 8px 10px; text-align: left; }
+        th{ background:#fdf0ee; color:#c0392b; }
+      </style>
+    </head>
+    <body>
+      <h1>⚠️ Students Below 75% Attendance — ${escapeHtml(course)}</h1>
+      <p>Printed on ${new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})} — ${atRisk.length} student(s) flagged</p>
+      <table>
+        <tr><th>Index #</th><th>Name</th><th>Attendance</th></tr>
+        ${rowsHtml}
+      </table>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); }, 300);
+}
+
 async function loadAttendanceSummary(){
   const course = document.getElementById('attendanceSummaryCourseSelect').value;
   const byStudentContainer = document.getElementById('attendanceSummaryByStudent');
@@ -2584,10 +2629,16 @@ async function loadAttendanceSummary(){
     });
     studentHtml += '</table></div>';
 
+    // Store at-risk data globally so both print buttons can use it
+    window.lastAtRiskStudents = atRiskStudents;
+    window.lastAttendanceCourse = course;
+
+    const bannerContainer = document.getElementById('atRiskBannerDisplay');
     if(atRiskStudents.length > 0){
-      let alertHtml = `<div class="msg err" style="margin-bottom:14px;"><strong>⚠️ ${atRiskStudents.length} student(s) below ${ATTENDANCE_ALERT_THRESHOLD}% attendance:</strong> ` +
+      bannerContainer.innerHTML = `<div class="msg err" style="margin-bottom:14px;"><strong>⚠️ ${atRiskStudents.length} student(s) below ${ATTENDANCE_ALERT_THRESHOLD}% attendance:</strong> ` +
         atRiskStudents.map(s => `${escapeHtml(s.name || s.indexNumber)} (${s.pct}%)`).join(', ') + '</div>';
-      studentHtml = alertHtml + studentHtml;
+    } else {
+      bannerContainer.innerHTML = '';
     }
 
     byStudentContainer.innerHTML = studentHtml;

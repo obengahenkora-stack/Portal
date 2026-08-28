@@ -74,6 +74,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
 const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
@@ -81,6 +82,22 @@ const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
 const SUPABASE_QR_FILE = "qr-sessions.json";
 const LOCK_KEY = "assessment_locked_index";
+const OWNER_EMAIL = "obengahenkora@gmail.com";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let isStaffDevice = false; // true if this browser is signed in as Owner/Admin/Lecturer/TA — exempt from the one-student-per-device lock
+
+async function checkIfStaffDevice(){
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){ isStaffDevice = false; return; }
+    const email = session.user.email.toLowerCase();
+    if(email === OWNER_EMAIL.toLowerCase()){ isStaffDevice = true; return; }
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    isStaffDevice = !!(me && me.role); // any assigned role counts as staff
+  }catch(e){ isStaffDevice = false; }
+}
 
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -150,6 +167,8 @@ async function verifyAndShowForm(){
 
   navigator.geolocation.getCurrentPosition(async (position) => {
     try{
+      await checkIfStaffDevice();
+
       const qrData = await fetchQrSessions();
       const sessionKey = `${course}__${date}`;
       const session = qrData[sessionKey];
@@ -173,9 +192,19 @@ async function verifyAndShowForm(){
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
-      const lockedIndex = localStorage.getItem(LOCK_KEY);
-      if(lockedIndex){
-        document.getElementById('checkinIndexInput').value = lockedIndex;
+      if(isStaffDevice){
+        // Staff can check in multiple different students from the same device.
+        document.getElementById('checkinIndexInput').value = '';
+        document.getElementById('checkinIndexInput').disabled = false;
+      } else {
+        const lockedIndex = localStorage.getItem(LOCK_KEY);
+        if(lockedIndex){
+          // This device already checked someone in — lock it to that same person only.
+          document.getElementById('checkinIndexInput').value = lockedIndex;
+          document.getElementById('checkinIndexInput').disabled = true;
+          document.getElementById('checkinMsg').innerHTML = "<div class=\"msg err\">This device already checked in a student and can't be used to check in someone else.</div>";
+          document.getElementById('checkinBtn').disabled = true;
+        }
       }
     }catch(e){
       document.getElementById('statusView').innerHTML = `<div class="icon">⚠️</div><h1>Something Went Wrong</h1><p class="sub">${escapeHtml(e.message)}</p>`;
@@ -225,6 +254,14 @@ async function submitCheckin(){
     return;
   }
 
+  if(!isStaffDevice){
+    const lockedIndex = localStorage.getItem(LOCK_KEY);
+    if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
+      msg.innerHTML = "<div class=\"msg err\">This device already checked in a different student and can't be used to check in someone else.</div>";
+      return;
+    }
+  }
+
   btn.disabled = true;
   msg.innerHTML = '<div class="msg ok">Checking in...</div>';
 
@@ -245,8 +282,17 @@ async function submitCheckin(){
       return;
     }
 
-    if(!localStorage.getItem(LOCK_KEY)){
+    if(!isStaffDevice && !localStorage.getItem(LOCK_KEY)){
       localStorage.setItem(LOCK_KEY, idx);
+    }
+
+    if(isStaffDevice){
+      // Staff: show success briefly, then return to the form ready for the next student.
+      msg.innerHTML = `<div class="msg ok">${alreadyIn ? 'Already checked in.' : 'Checked in.'} Ready for the next student.</div>`;
+      document.getElementById('checkinIndexInput').value = '';
+      document.getElementById('checkinIndexInput').focus();
+      btn.disabled = false;
+      return;
     }
 
     document.getElementById('formView').classList.add('hidden');

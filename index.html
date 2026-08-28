@@ -241,6 +241,16 @@
     width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
     font-size:0.9rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#f8fafc;color:var(--ink);
   }
+  .calc-tool-tab{
+    flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.6);
+    cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;min-width:60px;
+  }
+  .calc-tool-tab.active{ color:#fff; border-bottom-color:var(--gold); }
+  .grade-row{ display:flex; gap:6px; margin-bottom:8px; }
+  .grade-row input{
+    padding:8px 8px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;
+    background:#f8fafc;color:var(--ink);margin-bottom:0;
+  }
 
   .datetime-display{
     font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
@@ -1041,6 +1051,257 @@ function toggleCalcWidget(show){
   document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
 }
 
+function switchCalcTool(tool){
+  ['concrete','units','grade','soil','slope','flow'].forEach(t => {
+    document.getElementById('calcTool' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tool);
+    document.getElementById('calcTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tool);
+  });
+}
+
+// ===== Unit Converter =====
+const UNIT_CONVERSIONS = {
+  kn_lbf:  { factor: 224.809,   label: 'lbf' },
+  lbf_kn:  { factor: 0.0044482, label: 'kN' },
+  mpa_psi: { factor: 145.038,   label: 'psi' },
+  psi_mpa: { factor: 0.00689476,label: 'MPa' },
+  m_ft:    { factor: 3.28084,   label: 'ft' },
+  ft_m:    { factor: 0.3048,    label: 'm' },
+  kg_lb:   { factor: 2.20462,   label: 'lb' },
+  lb_kg:   { factor: 0.453592,  label: 'kg' },
+  m2_ft2:  { factor: 10.7639,   label: 'ft\u00b2' },
+  ft2_m2:  { factor: 0.092903,  label: 'm\u00b2' }
+};
+
+function calculateUnitConversion(){
+  const value = parseFloat(document.getElementById('unitValueInput').value);
+  const type = document.getElementById('unitTypeSelect').value;
+  const resultDiv = document.getElementById('unitResult');
+
+  if(isNaN(value)){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid number.</div>';
+    return;
+  }
+  const conv = UNIT_CONVERSIONS[type];
+  const converted = value * conv.factor;
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid" style="grid-template-columns:1fr;">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${converted.toFixed(4)} ${conv.label}</div>
+        <div class="calc-result-label">Converted Value</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Grade Calculator =====
+function addGradeRow(){
+  const container = document.getElementById('gradeRows');
+  const row = document.createElement('div');
+  row.className = 'grade-row';
+  row.innerHTML = `
+    <input type="text" placeholder="e.g. Assignment 2" class="grade-name" style="flex:1.4;">
+    <input type="text" placeholder="Score" class="grade-score" style="flex:0.8;">
+    <input type="text" placeholder="Max" class="grade-max" style="flex:0.8;">
+    <input type="text" placeholder="Weight %" class="grade-weight" style="flex:0.8;">
+  `;
+  container.appendChild(row);
+}
+
+function calculateGrade(){
+  const rows = document.querySelectorAll('#gradeRows .grade-row');
+  const resultDiv = document.getElementById('gradeResult');
+
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+  let hasValidRow = false;
+
+  rows.forEach(row => {
+    const score = parseFloat(row.querySelector('.grade-score').value);
+    const max = parseFloat(row.querySelector('.grade-max').value);
+    const weight = parseFloat(row.querySelector('.grade-weight').value);
+    if(!isNaN(score) && !isNaN(max) && max > 0 && !isNaN(weight)){
+      const pct = (score / max) * 100;
+      totalWeightedScore += pct * (weight / 100);
+      totalWeight += weight;
+      hasValidRow = true;
+    }
+  });
+
+  if(!hasValidRow){
+    resultDiv.innerHTML = '<div class="msg err">Enter at least one complete row (score, max, and weight).</div>';
+    return;
+  }
+
+  const weightNote = Math.abs(totalWeight - 100) > 0.5
+    ? `<p style="color:var(--muted);font-size:0.75rem;margin-top:8px;">Note: weights add up to ${totalWeight}%, not 100% — result is scaled proportionally.</p>`
+    : '';
+  const finalGrade = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+  const gradeColor = finalGrade >= 70 ? 'var(--ok)' : (finalGrade >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid" style="grid-template-columns:1fr;">
+      <div class="calc-result-item">
+        <div class="calc-result-num" style="color:${gradeColor};">${finalGrade.toFixed(1)}%</div>
+        <div class="calc-result-label">Overall Grade</div>
+      </div>
+    </div>
+    ${weightNote}
+  `;
+}
+
+// ===== Soil Bearing Capacity (Terzaghi General Shear) =====
+const TERZAGHI_FACTORS = {
+  0:  { Nc: 5.7,  Nq: 1.0,  Ng: 0.0 },
+  10: { Nc: 9.6,  Nq: 2.7,  Ng: 1.2 },
+  20: { Nc: 17.7, Nq: 7.4,  Ng: 5.0 },
+  25: { Nc: 25.1, Nq: 12.7, Ng: 9.7 },
+  30: { Nc: 37.2, Nq: 22.5, Ng: 19.7 },
+  35: { Nc: 57.8, Nq: 41.4, Ng: 42.4 },
+  40: { Nc: 95.7, Nq: 81.3, Ng: 100.4 }
+};
+
+function calculateSoilBearing(){
+  const c = parseFloat(document.getElementById('soilCohesion').value) || 0;
+  const gamma = parseFloat(document.getElementById('soilUnitWeight').value) || 0;
+  const B = parseFloat(document.getElementById('soilWidth').value) || 0;
+  const Df = parseFloat(document.getElementById('soilDepth').value) || 0;
+  const phi = document.getElementById('soilFrictionAngle').value;
+  const FOS = parseFloat(document.getElementById('soilFOS').value) || 3;
+  const resultDiv = document.getElementById('soilResult');
+
+  if(B <= 0 || gamma <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter valid footing width and unit weight.</div>';
+    return;
+  }
+
+  const factors = TERZAGHI_FACTORS[phi];
+  const qu = (c * factors.Nc) + (gamma * Df * factors.Nq) + (0.5 * gamma * B * factors.Ng);
+  const qa = qu / FOS;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${qu.toFixed(1)}</div>
+        <div class="calc-result-label">q<sub>u</sub> (kPa) Ultimate</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${qa.toFixed(1)}</div>
+        <div class="calc-result-label">q<sub>a</sub> (kPa) Allowable</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">Based on Terzaghi's general shear failure equation for a strip footing: q<sub>u</sub> = cN<sub>c</sub> + &gamma;D<sub>f</sub>N<sub>q</sub> + 0.5&gamma;BN<sub>&gamma;</sub>. For estimation only — verify against site-specific geotechnical data.</p>
+  `;
+}
+
+// ===== Slope / Grade Converter =====
+function updateSlopePlaceholder(){
+  const type = document.getElementById('slopeInputType').value;
+  const label = document.getElementById('slopeInputLabel');
+  const input = document.getElementById('slopeValueInput');
+  if(type === 'percent'){ label.textContent = 'Value (%)'; input.placeholder = 'e.g. 5'; input.value = '5'; }
+  else if(type === 'degrees'){ label.textContent = 'Value (degrees)'; input.placeholder = 'e.g. 2.86'; input.value = '2.86'; }
+  else { label.textContent = 'X (as in 1 : X)'; input.placeholder = 'e.g. 20'; input.value = '20'; }
+}
+
+function calculateSlope(){
+  const type = document.getElementById('slopeInputType').value;
+  const value = parseFloat(document.getElementById('slopeValueInput').value);
+  const resultDiv = document.getElementById('slopeResult');
+
+  if(isNaN(value) || value <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid positive number.</div>';
+    return;
+  }
+
+  let percent, degrees, ratioX;
+  if(type === 'percent'){
+    percent = value;
+    degrees = Math.atan(value / 100) * (180 / Math.PI);
+    ratioX = 100 / value;
+  } else if(type === 'degrees'){
+    degrees = value;
+    percent = Math.tan(value * Math.PI / 180) * 100;
+    ratioX = 100 / percent;
+  } else {
+    ratioX = value;
+    percent = 100 / value;
+    degrees = Math.atan(percent / 100) * (180 / Math.PI);
+  }
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${percent.toFixed(2)}%</div>
+        <div class="calc-result-label">Percent Grade</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${degrees.toFixed(2)}&deg;</div>
+        <div class="calc-result-label">Angle</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">1:${ratioX.toFixed(1)}</div>
+        <div class="calc-result-label">Ratio</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Water / Hydraulic Flow Calculator =====
+function updateFlowInputMode(){
+  const mode = document.getElementById('flowInputMode').value;
+  const label = document.getElementById('flowInputLabel');
+  const input = document.getElementById('flowInputValue');
+  if(mode === 'velocity'){ label.textContent = 'Velocity (m/s)'; input.placeholder = 'e.g. 2'; input.value = '2'; }
+  else { label.textContent = 'Pressure Difference (kPa)'; input.placeholder = 'e.g. 50'; input.value = '50'; }
+}
+
+function calculateFlow(){
+  const diameterMm = parseFloat(document.getElementById('flowDiameter').value);
+  const mode = document.getElementById('flowInputMode').value;
+  const inputValue = parseFloat(document.getElementById('flowInputValue').value);
+  const resultDiv = document.getElementById('flowResult');
+
+  if(isNaN(diameterMm) || diameterMm <= 0 || isNaN(inputValue) || inputValue <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter valid positive numbers.</div>';
+    return;
+  }
+
+  const diameterM = diameterMm / 1000;
+  const area = Math.PI * Math.pow(diameterM, 2) / 4; // m²
+
+  let velocity, note;
+  if(mode === 'velocity'){
+    velocity = inputValue;
+    note = 'Flow rate calculated using the continuity equation: Q = A &times; V.';
+  } else {
+    // Simplified Torricelli/Bernoulli-based estimate: V = sqrt(2 * ΔP / ρ), water density ρ = 1000 kg/m³
+    const deltaP_Pa = inputValue * 1000;
+    velocity = Math.sqrt((2 * deltaP_Pa) / 1000);
+    note = 'Velocity estimated from pressure difference using V = &radic;(2&Delta;P/&rho;), assuming water (&rho; = 1000 kg/m&sup3;), then Q = A &times; V. This is a simplified estimate — real pipe flow also depends on friction losses.';
+  }
+
+  const flowRateM3s = area * velocity;
+  const flowRateLs = flowRateM3s * 1000;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${velocity.toFixed(2)}</div>
+        <div class="calc-result-label">Velocity (m/s)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${flowRateLs.toFixed(2)}</div>
+        <div class="calc-result-label">Flow Rate (L/s)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${flowRateM3s.toFixed(4)}</div>
+        <div class="calc-result-label">Flow Rate (m&sup3;/s)</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">${note}</p>
+  `;
+}
+
 function calculateMix(){
   const volume = parseFloat(document.getElementById('calcVolume').value) || 0;
   const resultDiv = document.getElementById('calcResult');
@@ -1129,10 +1390,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 <div id="calcWidgetOverlay" class="calc-widget-overlay hidden" onclick="toggleCalcWidget(false)"></div>
 <div id="calcWidgetPanel" class="calc-widget-panel hidden">
   <div class="calc-widget-header">
-    <span>Concrete Mix Calculator</span>
+    <span>Student Toolkit</span>
     <button onclick="toggleCalcWidget(false)" class="calc-widget-close">&times;</button>
   </div>
-  <div class="calc-widget-body">
+  <div style="display:flex;gap:2px;padding:10px 14px 0;background:var(--navy);overflow-x:auto;">
+    <div class="calc-tool-tab active" id="calcTabConcrete" onclick="switchCalcTool('concrete')">Concrete</div>
+    <div class="calc-tool-tab" id="calcTabUnits" onclick="switchCalcTool('units')">Units</div>
+    <div class="calc-tool-tab" id="calcTabGrade" onclick="switchCalcTool('grade')">Grade</div>
+    <div class="calc-tool-tab" id="calcTabSoil" onclick="switchCalcTool('soil')">Soil</div>
+    <div class="calc-tool-tab" id="calcTabSlope" onclick="switchCalcTool('slope')">Slope</div>
+    <div class="calc-tool-tab" id="calcTabFlow" onclick="switchCalcTool('flow')">Flow</div>
+  </div>
+
+  <div class="calc-widget-body" id="calcToolConcrete">
     <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate cement, sand, and aggregate quantities for a given concrete volume and mix ratio.</p>
     <label>Volume (m&sup3;)</label>
     <input type="text" id="calcVolume" placeholder="e.g. 1" value="1">
@@ -1146,8 +1416,99 @@ window.addEventListener('DOMContentLoaded', async () => {
     <button onclick="calculateMix()" style="width:100%;">Calculate</button>
     <div id="calcResult"></div>
   </div>
+
+  <div class="calc-widget-body hidden" id="calcToolUnits">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Convert between common engineering units.</p>
+    <label>Value</label>
+    <input type="text" id="unitValueInput" placeholder="e.g. 100" value="100">
+    <label>Convert</label>
+    <select id="unitTypeSelect">
+      <option value="kn_lbf">kN &rarr; lbf (force)</option>
+      <option value="lbf_kn">lbf &rarr; kN (force)</option>
+      <option value="mpa_psi">MPa &rarr; psi (pressure)</option>
+      <option value="psi_mpa">psi &rarr; MPa (pressure)</option>
+      <option value="m_ft">m &rarr; ft (length)</option>
+      <option value="ft_m">ft &rarr; m (length)</option>
+      <option value="kg_lb">kg &rarr; lb (mass)</option>
+      <option value="lb_kg">lb &rarr; kg (mass)</option>
+      <option value="m2_ft2">m&sup2; &rarr; ft&sup2; (area)</option>
+      <option value="ft2_m2">ft&sup2; &rarr; m&sup2; (area)</option>
+    </select>
+    <button onclick="calculateUnitConversion()" style="width:100%;">Convert</button>
+    <div id="unitResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolGrade">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Enter each assessment's score, max score, and weight to calculate your overall grade.</p>
+    <div id="gradeRows">
+      <div class="grade-row">
+        <input type="text" placeholder="e.g. Midterm" class="grade-name" style="flex:1.4;">
+        <input type="text" placeholder="Score" class="grade-score" style="flex:0.8;">
+        <input type="text" placeholder="Max" class="grade-max" style="flex:0.8;">
+        <input type="text" placeholder="Weight %" class="grade-weight" style="flex:0.8;">
+      </div>
+    </div>
+    <button class="secondary" onclick="addGradeRow()" style="width:100%;margin-bottom:10px;">+ Add Another Assessment</button>
+    <button onclick="calculateGrade()" style="width:100%;">Calculate Grade</button>
+    <div id="gradeResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolSoil">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate ultimate and allowable bearing capacity for a shallow strip footing (Terzaghi general shear equation).</p>
+    <label>Cohesion, c (kPa)</label>
+    <input type="text" id="soilCohesion" placeholder="e.g. 10" value="10">
+    <label>Soil Unit Weight, &gamma; (kN/m&sup3;)</label>
+    <input type="text" id="soilUnitWeight" placeholder="e.g. 18" value="18">
+    <label>Footing Width, B (m)</label>
+    <input type="text" id="soilWidth" placeholder="e.g. 1.5" value="1.5">
+    <label>Depth of Footing, D<sub>f</sub> (m)</label>
+    <input type="text" id="soilDepth" placeholder="e.g. 1.2" value="1.2">
+    <label>Angle of Internal Friction, &phi;</label>
+    <select id="soilFrictionAngle">
+      <option value="0">0&deg; (pure clay)</option>
+      <option value="10">10&deg;</option>
+      <option value="20">20&deg;</option>
+      <option value="25">25&deg;</option>
+      <option value="30" selected>30&deg;</option>
+      <option value="35">35&deg;</option>
+      <option value="40">40&deg; (dense sand)</option>
+    </select>
+    <label>Factor of Safety</label>
+    <input type="text" id="soilFOS" placeholder="e.g. 3" value="3">
+    <button onclick="calculateSoilBearing()" style="width:100%;">Calculate</button>
+    <div id="soilResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolSlope">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Convert between percentage grade, degrees, and ratio (1:X) — common in road and site design.</p>
+    <label>I have a...</label>
+    <select id="slopeInputType" onchange="updateSlopePlaceholder()">
+      <option value="percent">Percentage Grade (%)</option>
+      <option value="degrees">Angle (degrees)</option>
+      <option value="ratio">Ratio 1 : X (rise:run)</option>
+    </select>
+    <label id="slopeInputLabel">Value (%)</label>
+    <input type="text" id="slopeValueInput" placeholder="e.g. 5" value="5">
+    <button onclick="calculateSlope()" style="width:100%;">Convert</button>
+    <div id="slopeResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolFlow">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate pipe flow rate from diameter, using either a known velocity or a pressure difference.</p>
+    <label>Pipe Diameter (mm)</label>
+    <input type="text" id="flowDiameter" placeholder="e.g. 150" value="150">
+    <label>I know the...</label>
+    <select id="flowInputMode" onchange="updateFlowInputMode()">
+      <option value="velocity">Flow Velocity (m/s)</option>
+      <option value="pressure">Pressure Difference (kPa)</option>
+    </select>
+    <label id="flowInputLabel">Velocity (m/s)</label>
+    <input type="text" id="flowInputValue" placeholder="e.g. 2" value="2">
+    <button onclick="calculateFlow()" style="width:100%;">Calculate</button>
+    <div id="flowResult"></div>
+  </div>
 </div>
-<button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Concrete Mix Calculator">
+<button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Student Toolkit">
   🧮
 </button>
 

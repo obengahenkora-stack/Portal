@@ -519,11 +519,21 @@
       <div style="display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line);">
         <div class="tab active" id="summaryTabByStudent" onclick="switchSummaryView('student')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">By Student</div>
         <div class="tab" id="summaryTabBySession" onclick="switchSummaryView('session')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">By Session</div>
+        <div class="tab" id="summaryTabTimes" onclick="switchSummaryView('times')" style="flex:1;text-align:center;padding:8px;cursor:pointer;font-size:0.85rem;">Check-In Times</div>
       </div>
 
       <div id="atRiskBannerDisplay"></div>
       <div id="attendanceSummaryByStudent"><div class="empty">Select a course to view attendance.</div></div>
       <div id="attendanceSummaryBySession" class="hidden"><div class="empty">Select a course to view attendance.</div></div>
+      <div id="attendanceSummaryTimes" class="hidden">
+        <label>Session Date</label>
+        <select id="timesSessionSelect" onchange="loadCheckInTimes()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+          <option value="">Select a session...</option>
+        </select>
+        <label>Late Threshold (minutes after session start)</label>
+        <input type="text" id="lateThresholdInput" value="15" style="width:100px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:0.9rem;margin-bottom:14px;" onchange="loadCheckInTimes()">
+        <div id="checkInTimesList"><div class="empty">Select a session to view check-in times.</div></div>
+      </div>
 
       <button onclick="printAttendanceSummary()" style="margin-top:14px;">Print / Export as PDF</button>
       <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
@@ -2359,7 +2369,17 @@ async function saveAttendance(){
     const attendanceRecords = data.attendance || [];
     const sessionKey = `${course}__${date}`;
     const idx = attendanceRecords.findIndex(a => a.sessionKey === sessionKey);
-    const record = { sessionKey, course, date, present };
+    // Preserve any real QR check-in timestamps already recorded — manual saves shouldn't erase them.
+    const existingCheckInTimes = (idx >= 0 && attendanceRecords[idx].checkInTimes) ? attendanceRecords[idx].checkInTimes : {};
+    const nowIso = new Date().toISOString();
+    const checkInTimes = { ...existingCheckInTimes };
+    present.forEach(studentIndex => {
+      // Only assign a timestamp if this student doesn't already have one (e.g. from a QR scan).
+      if(!checkInTimes[studentIndex]){
+        checkInTimes[studentIndex] = nowIso;
+      }
+    });
+    const record = { sessionKey, course, date, present, checkInTimes };
     if(idx >= 0){
       attendanceRecords[idx] = record;
     } else {
@@ -2425,7 +2445,9 @@ async function refreshQrSession(course, date, lat, lng){
 
   try{
     const qrData = await fetchQrSessions();
-    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date };
+    const existing = qrData[sessionKey];
+    const sessionStartTime = (existing && existing.sessionStartTime) ? existing.sessionStartTime : new Date().toISOString();
+    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date, sessionStartTime };
     await saveQrSessions(qrData);
 
     const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;
@@ -2493,8 +2515,90 @@ function stopQrCheckin(){
 function switchSummaryView(view){
   document.getElementById('attendanceSummaryByStudent').classList.toggle('hidden', view!=='student');
   document.getElementById('attendanceSummaryBySession').classList.toggle('hidden', view!=='session');
+  document.getElementById('attendanceSummaryTimes').classList.toggle('hidden', view!=='times');
   document.getElementById('summaryTabByStudent').classList.toggle('active', view==='student');
   document.getElementById('summaryTabBySession').classList.toggle('active', view==='session');
+  document.getElementById('summaryTabTimes').classList.toggle('active', view==='times');
+  if(view === 'times') populateTimesSessionOptions();
+}
+
+async function populateTimesSessionOptions(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  const select = document.getElementById('timesSessionSelect');
+  if(!course){
+    select.innerHTML = '<option value="">Select a course first...</option>';
+    return;
+  }
+  try{
+    const data = await fetchSupabaseData();
+    const sessions = (data.attendance || []).filter(a => a.course === course).sort((a,b) => new Date(b.date) - new Date(a.date));
+    select.innerHTML = '<option value="">Select a session...</option>' +
+      sessions.map(a => `<option value="${escapeHtml(a.date)}">${escapeHtml(a.date)}</option>`).join('');
+  }catch(e){
+    select.innerHTML = '<option value="">Could not load sessions</option>';
+  }
+}
+
+async function loadCheckInTimes(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  const date = document.getElementById('timesSessionSelect').value;
+  const lateThresholdMin = parseInt(document.getElementById('lateThresholdInput').value) || 15;
+  const container = document.getElementById('checkInTimesList');
+
+  if(!course || !date){
+    container.innerHTML = '<div class="empty">Select a session to view check-in times.</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const [data, qrData] = await Promise.all([fetchSupabaseData(), fetchQrSessions()]);
+    const sessionKey = `${course}__${date}`;
+    const record = (data.attendance || []).find(a => a.sessionKey === sessionKey);
+    const roster = (data.rosters && data.rosters[course]) || [];
+    const qrSession = qrData[sessionKey];
+    const sessionStartTime = qrSession && qrSession.sessionStartTime ? new Date(qrSession.sessionStartTime) : null;
+
+    if(!record || record.present.length === 0){
+      container.innerHTML = '<div class="empty">No students checked in for this session.</div>';
+      return;
+    }
+
+    const checkInTimes = record.checkInTimes || {};
+    const rows = record.present.map(idx => {
+      const student = roster.find(s => String(s.indexNumber).trim().toLowerCase() === String(idx).trim().toLowerCase());
+      const name = student ? student.name : '';
+      const timeIso = checkInTimes[idx];
+      let timeDisplay = '—';
+      let lateTag = '';
+      if(timeIso){
+        const t = new Date(timeIso);
+        timeDisplay = t.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        if(sessionStartTime){
+          const minutesLate = Math.round((t - sessionStartTime) / 60000);
+          if(minutesLate > lateThresholdMin){
+            lateTag = ` <span style="color:var(--danger);font-weight:700;">LATE (+${minutesLate}min)</span>`;
+          }
+        }
+      }
+      return { idx, name, timeIso, timeDisplay, lateTag, sortKey: timeIso || '' };
+    }).sort((a,b) => a.sortKey.localeCompare(b.sortKey));
+
+    let html = '';
+    if(sessionStartTime){
+      html += `<div class="hint" style="margin-bottom:12px;">Session started at ${sessionStartTime.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}. Students checking in more than ${lateThresholdMin} minutes after that are flagged late. Note: for students marked present manually (not via QR scan), the time shown is when the attendance was saved, not their actual arrival time — treat "late" flags on manual entries with that in mind.</div>`;
+    } else {
+      html += `<div class="hint" style="margin-bottom:12px;">No QR session start time recorded for this date, so late flagging isn't available — times shown reflect when attendance was saved.</div>`;
+    }
+    html += '<table><tr><th>Index #</th><th>Name</th><th>Check-In Time</th></tr>';
+    rows.forEach(r => {
+      html += `<tr><td>${escapeHtml(r.idx)}</td><td>${escapeHtml(r.name)}</td><td>${r.timeDisplay}${r.lateTag}</td></tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load check-in times.</div>';
+  }
 }
 
 function printAttendanceSummary(){

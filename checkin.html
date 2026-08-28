@@ -219,12 +219,14 @@ async function attemptCheckinWrite(idx){
   const attendanceRecords = data.attendance || [];
   let record = attendanceRecords.find(a => a.sessionKey === verifiedSession.sessionKey);
   if(!record){
-    record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [] };
+    record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [], checkInTimes: {} };
     attendanceRecords.push(record);
   }
+  record.checkInTimes = record.checkInTimes || {};
   const alreadyIn = record.present.some(p => String(p).trim().toLowerCase() === idx.toLowerCase());
   if(!alreadyIn){
     record.present.push(idx);
+    record.checkInTimes[idx] = new Date().toISOString();
   }
   data.attendance = attendanceRecords;
   await saveSupabaseData(data);

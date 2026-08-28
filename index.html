@@ -516,16 +516,63 @@ function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'a
 
 async function resolveCurrentUserRole(){
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if(!session){ currentUserRole = null; currentUserEmail = null; return; }
+  if(!session){ currentUserRole = null; currentUserEmail = null; currentUserName = null; return; }
   const email = session.user.email.toLowerCase();
   currentUserEmail = email;
-  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; currentUserName = 'Owner'; return; }
   try{
     const data = await fetchSupabaseData();
     const members = data.teamMembers || [];
     const me = members.find(m => (m.email || '').toLowerCase() === email);
     currentUserRole = me ? me.role : null;
-  }catch(e){ currentUserRole = null; }
+    currentUserName = me ? me.name : null;
+  }catch(e){ currentUserRole = null; currentUserName = null; }
+}
+let currentUserName = null;
+
+// ===== Welcome toast =====
+function showWelcomeToast(name){
+  const existing = document.getElementById('welcomeToast');
+  if(existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'welcomeToast';
+  toast.textContent = `Welcome back, ${name}!`;
+  toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:30px;font-weight:600;font-size:0.9rem;box-shadow:0 6px 20px rgba(0,0,0,0.2);z-index:9999;border:1px solid var(--gold);opacity:0;transition:opacity 0.3s ease;';
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// ===== 30-minute session timeout =====
+const SESSION_DURATION_MS = 30 * 60 * 1000;
+function markSessionStart(){
+  localStorage.setItem('session_login_time', Date.now().toString());
+}
+async function checkSessionTimeout(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  const loginTime = localStorage.getItem('session_login_time');
+  if(!loginTime){
+    markSessionStart();
+    return;
+  }
+  if(Date.now() - parseInt(loginTime) > SESSION_DURATION_MS){
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem('session_login_time');
+    location.reload();
+  }
+}
+setInterval(checkSessionTimeout, 60000);
+
+// ===== Header name swap for lecturers =====
+function applyLecturerHeaderName(){
+  if(currentUserRole === 'lecturer' && currentUserName){
+    const nameEl = document.getElementById('heroName');
+    if(nameEl) nameEl.textContent = currentUserName;
+  }
 }
 
 async function signUpUser(){
@@ -537,7 +584,7 @@ async function signUpUser(){
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
-  if(data.session){ await onEditAuthReady(); }
+  if(data.session){ markSessionStart(); await onEditAuthReady(true); }
   else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
 }
 
@@ -549,11 +596,13 @@ async function signInUser(){
   msg.innerHTML = '<div class="msg ok">Signing in...</div>';
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
-  await onEditAuthReady();
+  markSessionStart();
+  await onEditAuthReady(true);
 }
 
 async function signOutUser(){
   await supabaseClient.auth.signOut();
+  localStorage.removeItem('session_login_time');
   location.reload();
 }
 
@@ -565,13 +614,15 @@ async function resetMyPassword(){
   msg.innerHTML = error ? `<div class="msg err">${escapeHtml(error.message)}</div>` : '<div class="msg ok">Password reset email sent.</div>';
 }
 
-async function onEditAuthReady(){
+async function onEditAuthReady(showToast){
   await resolveCurrentUserRole();
 
   if(isOwner()){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('noRoleCard').classList.add('hidden');
     document.getElementById('editCard').classList.remove('hidden');
+    if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
+    applyLecturerHeaderName();
     return;
   }
 
@@ -579,6 +630,8 @@ async function onEditAuthReady(){
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('noRoleCard').classList.remove('hidden');
     document.getElementById('editCard').classList.add('hidden');
+    if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
+    applyLecturerHeaderName();
   } else {
     document.getElementById('loginCard').classList.remove('hidden');
     document.getElementById('noRoleCard').classList.add('hidden');
@@ -1376,7 +1429,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   initDarkMode();
   updateLiveDateTime();
   loadProfile();
-  await onEditAuthReady();
+  await onEditAuthReady(false);
   loadFactOfDay();
   loadHistoryOfDay();
   const qrImg = document.getElementById('siteQrCode');

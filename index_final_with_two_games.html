@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#0d0d0b;
+    --navy-dark:#000000;
+    --gold:#3f7a32;
+    --gold-dark:#2f5f26;
+    --bg:#ffffff;
+    --card:#faf8f3;
+    --ink:#181816;
+    --muted:#726b5c;
+    --accent:#3f7a32;
+    --accent-dark:#2f5f26;
+    --line:#e2ded2;
+    --contrast:#f2ece0;
+    --contrast-ink:#181816;
+    --red:#b3261e;
+    --red-dark:#8f1e18;
+    --danger:#b3261e;
+    --ok:#3f7a32;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  html{ font-size:17px; }
+  body{
+    margin:0;
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .hero{
+    background:var(--navy-dark);
+    color:#fff;
+    padding:0;
+    text-align:left;
+    position:relative;
+    min-height:38vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    overflow:hidden;
+  }
+  .hero::after{ content:none; }
+  .hero #profilePic{
+    position:absolute; inset:0; width:100%; height:100%;
+    border-radius:0; border:none; margin:0;
+    object-fit:cover; object-position:center 15%;
+    filter:grayscale(1) contrast(1.08) brightness(0.85);
+    box-shadow:none;
+    z-index:0;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0; z-index:1;
+    background:linear-gradient(180deg, rgba(17,19,21,0.15) 0%, rgba(17,19,21,0.55) 55%, rgba(17,19,21,0.97) 92%);
+  }
+  .hero-inner{ max-width:820px; margin:0 auto; position:relative; z-index:2; padding:0 24px 32px; width:100%; }
+  .hero-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:0.72rem; letter-spacing:0.12em;
+    color:rgba(255,255,255,0.7); text-transform:uppercase; margin-bottom:18px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; row-gap:8px;
+  }
+  .hero-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; }
+  .live-dot{
+    width:8px; height:8px; border-radius:50%; background:var(--red); display:inline-block;
+    box-shadow:0 0 0 0 rgba(179,38,30,0.6); animation:live-pulse 2s infinite;
+  }
+  @keyframes live-pulse{
+    0%{ box-shadow:0 0 0 0 rgba(179,38,30,0.6); }
+    70%{ box-shadow:0 0 0 8px rgba(179,38,30,0); }
+    100%{ box-shadow:0 0 0 0 rgba(179,38,30,0); }
+  }
+  @media (prefers-reduced-motion: reduce){ .live-dot{ animation:none; } }
+  .hero-eyebrow-coords{ color:rgba(255,255,255,0.4); margin-left:auto; }
+  @media (max-width:640px){ .hero-eyebrow-coords{ margin-left:0; width:100%; } }
+  .section-index{
+    display:flex; align-items:center; gap:14px; max-width:760px; margin:0 auto; padding:0 24px;
+  }
+  .section-index .num{ font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:0.05em; white-space:nowrap; }
+  .section-index .rule{ flex:1; height:1px; background:var(--line); }
+  .pull-quote{
+    max-width:700px; margin:40px auto; padding:64px 40px; text-align:center;
+    background:var(--contrast); border:none; border-top:6px solid var(--red);
+  }
+  .pull-quote p{
+    font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-style:italic; font-weight:400;
+    font-size:clamp(1.5rem, 4vw, 2.1rem); line-height:1.3; color:var(--contrast-ink); margin:0;
+  }
+  .closing-cta{ background:transparent; color:var(--ink); padding:64px 24px; border-top:1px solid var(--line); }
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1); }
+  .reveal.revealed{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
+  .closing-cta h2{ color:var(--ink); }
+  .closing-cta h2::before{ background:var(--red); width:32px; height:3px; }
+  .cta-row{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
+  .cta-link{
+    font-family:'IBM Plex Sans',sans-serif; font-size:0.85rem; font-weight:500; color:var(--ink);
+    text-decoration:none; border:1px solid var(--red); padding:12px 22px;
+    transition:background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .cta-link:hover{ background:var(--red); border-color:var(--red); color:#fff; }
+  .site-footer{ background:var(--navy-dark); color:rgba(255,255,255,0.75); padding:64px 24px 32px; }
+  .footer-brand{
+    font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-size:clamp(1.6rem,5vw,2.6rem);
+    font-weight:500; letter-spacing:-0.01em; color:#fff; margin-bottom:40px;
+  }
+  .footer-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-bottom:48px; }
+  @media (max-width:640px){ .footer-row{ grid-template-columns:1fr; gap:28px; } }
+  .footer-col-label{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.4); margin-bottom:10px; }
+  .footer-col-content{ font-size:0.88rem; line-height:1.8; }
+  .footer-col-content a{ color:rgba(255,255,255,0.85); text-decoration:none; border-bottom:1px solid rgba(255,255,255,0.2); }
+  .footer-col-content a:hover{ color:var(--red); border-color:var(--red); }
+  .footer-bottom{ font-size:0.75rem; color:rgba(255,255,255,0.35); border-top:1px solid rgba(255,255,255,0.1); padding-top:24px; }
+  .marquee{
+    width:100%; overflow:hidden; background:var(--navy-dark); border-top:1px solid rgba(255,255,255,0.1);
+    border-bottom:1px solid rgba(255,255,255,0.1); padding:14px 0; position:relative; z-index:3;
+  }
+  .marquee-track{
+    display:flex; white-space:nowrap; width:max-content;
+    animation:marquee-scroll 28s linear infinite;
+  }
+  .marquee-track span{
+    font-family:'IBM Plex Mono',monospace; font-size:0.82rem; font-weight:500;
+    letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.85);
+    padding:0 28px; display:inline-flex; align-items:center; gap:28px;
+  }
+  .marquee-track span:nth-child(even){ color:var(--red); }
+  .marquee-track span::after{ content:"\2014"; color:var(--red); font-weight:700; }
+  @keyframes marquee-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce){ .marquee-track{ animation:none; } }
+  .wrap{max-width:760px;margin:0 auto;position:relative;padding:0 24px 40px;}
+  .hero .wrap{padding:0;}
+  h1{
+    font-family:'Fraunces',sans-serif;
+    font-optical-sizing:auto;
+    font-size:clamp(1.9rem, 5vw, 3.2rem);
+    font-weight:500;
+    margin:0 0 12px 0;
+    letter-spacing:-0.02em;
+    line-height:0.98;
+    color:#fff;
+  }
+  .title{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:1.05rem;
+    color:rgba(255,255,255,0.75);
+    font-weight:400;
+    margin-top:0;
+    margin-bottom:0;
+    letter-spacing:0;
+  }
+  .hero #profilePicPlaceholder{
+    position:absolute; inset:0; width:100%; height:100%;
+    border-radius:0; border:none; margin:0;
+    background:radial-gradient(circle at 30% 20%, #2a2e33, var(--navy-dark) 70%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',sans-serif; font-size:11rem; font-weight:500;
+    color:rgba(255,255,255,0.07);
+    z-index:0;
+  }
+  .social-links{display:flex;gap:18px;flex-wrap:wrap;margin-top:24px;justify-content:flex-start;}
+  .social-links a{
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;font-weight:500;color:#fff;
+    text-decoration:none;background:none;border:none;border-bottom:1px solid rgba(255,255,255,0.3);
+    padding:0 0 2px;border-radius:0;
+    transition:border-color 0.15s ease, color 0.15s ease;
+  }
+  .social-links a:hover{border-color:var(--red);color:var(--red);}
+  .truss-signature{ width:100%; height:36px; margin:0; display:block; overflow:hidden; position:relative; z-index:3; background:var(--bg); }
+  .truss-signature path{
+    stroke:var(--accent); stroke-width:1.4; fill:none;
+    stroke-dasharray:3200; stroke-dashoffset:3200;
+    animation:truss-draw 2.2s cubic-bezier(0.65,0,0.35,1) forwards;
+  }
+  .truss-signature circle{
+    fill:var(--accent); opacity:0;
+    animation:truss-fade 0.4s ease forwards;
+    animation-delay:1.7s;
+  }
+  @keyframes truss-draw{ to{ stroke-dashoffset:0; } }
+  @keyframes truss-fade{ to{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){
+    .truss-signature path{ animation:none; stroke-dashoffset:0; }
+    .truss-signature circle{ animation:none; opacity:1; }
+  }
+  .full-bleed{
+    width:100vw; position:relative; left:50%; right:50%; margin-left:-50vw; margin-right:-50vw;
+  }
+  h2{
+    font-family:'Fraunces',sans-serif;
+    font-optical-sizing:auto;
+    font-size:1.3rem;
+    font-weight:500;
+    color:var(--ink);
+    letter-spacing:0;
+    margin-bottom:18px;margin-top:0;
+    display:flex;align-items:center;gap:10px;
+  }
+  h2::before{
+    content:"";
+    width:20px;height:2px;background:var(--accent);display:inline-block;
+  }
+  .tabs{
+    display:flex;flex-wrap:wrap;gap:20px;row-gap:8px;margin:0 auto 0;max-width:760px;
+    border-bottom:1px solid var(--line);
+    position:relative;z-index:2;
+    padding:0 24px;
+  }
+  .tab{
+    padding:14px 0;text-align:center;background:transparent;border:none;
+    border-bottom:2px solid transparent;
+    cursor:pointer;font-weight:500;color:var(--muted);font-size:0.85rem;letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;
+    transition:color 0.15s ease, border-color 0.15s ease;
+    flex:none;
+  }
+  .tab.active{color:var(--ink);border-bottom:3px solid var(--red);font-weight:600;}
+  .tab:hover:not(.active){color:var(--ink);}
+  .card{
+    background:transparent;
+    border:none;
+    border-top:1px solid var(--line);
+    border-radius:0;
+    padding:32px 0;
+    margin-bottom:0;
+    box-shadow:none;
+    transition:none;
+  }
+  .card p{line-height:1.7;color:var(--ink);white-space:pre-wrap;}
+  label{display:block;font-size:0.72rem;font-weight:600;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;}
+  input[type=text], input[type=password], textarea{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;
+    background:#f8f6f0;color:var(--ink);
+  }
+  textarea{min-height:120px;resize:vertical;}
+  input:focus, textarea:focus{outline:2px solid var(--gold);outline-offset:1px;background:#fff;}
+  button{background:var(--accent);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;letter-spacing:0.01em;font-family:'IBM Plex Sans',sans-serif;transition:background 0.15s ease, transform 0.1s ease;}
+  button:hover{background:var(--accent-dark);}
+  button:active{ transform:translateY(1px); }
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  a.portal-btn{display:inline-block;text-decoration:none;}
+  .msg{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;border-left:3px solid transparent;}
+  .msg.ok{background:rgba(31,138,76,0.08);color:var(--ok);border-left-color:var(--ok);}
+  .msg.err{background:rgba(192,57,43,0.08);color:var(--danger);border-left-color:var(--danger);}
+  .hidden{display:none;}
+  .pub-list{padding-left:0;list-style:none;}
+  .pub-list li{padding:12px 0;border-bottom:1px solid var(--line);font-size:0.94rem;color:var(--ink);padding-left:18px;position:relative;}
+  .pub-list li:last-child{border-bottom:none;}
+  .pub-list li::before{ content:"▸"; color:var(--gold); position:absolute; left:0; font-weight:700; }
+  .contact-line{font-size:0.92rem;color:var(--ink);margin:6px 0;padding-left:0;}
+  .divider{
+    display:flex; align-items:center; gap:10px;
+    margin:22px 0; color:var(--muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.1em;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px; background:var(--line);
+  }
+  .stats-strip{
+    max-width:760px;margin:-28px auto 24px;position:relative;z-index:2;
+    background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+    display:flex;flex-wrap:wrap;
+  }
+  .stat-item{flex:1;min-width:120px;text-align:center;padding:18px 10px;border-right:1px solid var(--line);}
+  .stat-item:last-child{border-right:none;}
+  .stat-num{font-family:'Fraunces',sans-serif;font-size:1.7rem;font-weight:800;color:var(--navy);}
+  .stat-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+  .fact-banner{
+    display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:flex-start;
+    background:transparent;
+    border:none;border-left:2px solid var(--accent);
+    padding:4px 0 4px 22px;margin-bottom:0;
+  }
+  .fact-icon{font-size:1.6rem;line-height:1;filter:grayscale(1);opacity:0.65;}
+  .fact-label{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+  .fact-text{font-family:'Fraunces',sans-serif;font-size:1.15rem;font-weight:500;color:var(--ink);line-height:1.4;}
+  .facts-grid{ display:grid; grid-template-columns:1fr 1fr; gap:32px; padding:32px 0; border-top:1px solid var(--line); }
+  @media (max-width:640px){ .facts-grid{ grid-template-columns:1fr; gap:28px; } }
+  .history-banner{
+    border-left-color:var(--ink);
+  }
+  .history-banner .fact-label{ color:var(--muted); }
+  .newsletter-card{
+    background:var(--navy-dark);
+    color:#fff;
+    padding:56px 24px;
+  }
+  .newsletter-card h2{ color:#fff; font-size:1.8rem; }
+  .newsletter-card h2::before{ background:var(--accent); }
+  .newsletter-card #newsletterEmail{ background:transparent; color:#fff; border:none;border-bottom:1px solid rgba(255,255,255,0.3);border-radius:0; }
+  .newsletter-card #newsletterEmail::placeholder{ color:rgba(255,255,255,0.4); }
+  .newsletter-card button{ background:var(--gold); color:var(--navy-dark); }
+  .newsletter-card button:hover{ background:var(--gold-dark); color:#fff; }
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:520px){ .calc-grid{grid-template-columns:1fr;} }
+  .calc-card select{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:#f8fafc;color:var(--ink);
+  }
+  .calc-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+  @media (max-width:520px){ .calc-result-grid{grid-template-columns:1fr;} }
+  .calc-result-item{background:var(--bg);border-radius:4px;padding:14px;text-align:center;border:1px solid var(--line);}
+  .calc-result-num{font-family:'Fraunces',sans-serif;font-size:1.3rem;font-weight:800;color:var(--navy);}
+  .calc-result-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
+
+  .calc-widget-toggle{
+    position:fixed; bottom:24px; right:24px; z-index:50;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--navy);color:#fff;border:none;
+    font-size:1.5rem;box-shadow:0 6px 20px rgba(11,37,69,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .calc-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
+  .game-widget-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--red);color:#fff;border:none;
+    font-size:1.5rem;box-shadow:0 6px 20px rgba(179,38,30,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
+  .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .game-widget-panel{
+    position:fixed; bottom:0; left:0; z-index:70;
+    width:360px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){ .game-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  .game-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--red); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:0 16px 0 0;
+  }
+  @media (min-width:640px){ .game-widget-header{ border-radius:16px 16px 0 0; } }
+  .game-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .game-widget-body{ padding:20px; }
+  .game-tab-row{ display:flex; gap:2px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+  .game-tab{ flex:1; text-align:center; padding:8px 4px; font-size:0.78rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .game-tab.active{ color:var(--ink); border-bottom-color:var(--red); }
+  .game-progress-bar{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:14px; }
+  .game-progress-fill{ height:100%; background:var(--red); transition:width 1s linear; }
+  .game-option{
+    display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
+    border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif; font-size:0.88rem; color:var(--ink); transition:background 0.15s ease, border-color 0.15s ease;
+  }
+  .game-option:hover{ border-color:var(--red); }
+  .game-option.correct{ background:rgba(63,122,50,0.12); border-color:var(--ok); }
+  .game-option.wrong{ background:rgba(179,38,30,0.12); border-color:var(--danger); }
+  .leaderboard-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); font-size:0.85rem; }
+  .leaderboard-rank{ font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--red); width:24px; }
+  .leaderboard-name{ flex:1; font-weight:600; }
+  .leaderboard-score{ font-family:'IBM Plex Mono',monospace; color:var(--muted); }
+  .calc-widget-overlay{
+    position:fixed; inset:0; background:rgba(11,37,69,0.35); z-index:60;
+  }
+  .calc-widget-panel{
+    position:fixed; bottom:0; right:0; z-index:70;
+    width:340px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){
+    .calc-widget-panel{ bottom:24px; right:24px; border-radius:16px; }
+  }
+  .calc-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy-dark); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:16px 0 0 0;
+  }
+  @media (min-width:640px){ .calc-widget-header{ border-radius:16px 16px 0 0; } }
+  .calc-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .calc-widget-close:hover{ background:none; color:var(--gold); }
+  .calc-widget-body{ padding:20px; }
+  .calc-widget-body select{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:#f8f6f0;color:var(--ink);
+  }
+  .calc-tool-tab{
+    flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.6);
+    cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;min-width:60px;
+  }
+  .calc-tool-tab.active{ color:#fff; border-bottom-color:var(--gold); }
+  .grade-row{ display:flex; gap:6px; margin-bottom:8px; }
+  .grade-row input{
+    padding:8px 8px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;
+    background:#f8f6f0;color:var(--ink);margin-bottom:0;
+  }
+
+  .datetime-display{
+    font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
+  }
+  @media (max-width:640px){
+    .hero{ margin-left:-16px; margin-right:-16px; min-height:32vh; }
+    .hero .hero-sub, .title{ font-size:0.9rem; }
+    .wrap{ padding:0 16px 32px; }
+    .card{ padding:24px 0; }
+    .tabs, .hero-tabs{ flex-wrap:wrap; gap:18px; }
+    .tab, .hero-tabs a, .hero-tabs .tab-static{ font-size:0.9rem; padding:12px 0; }
+    h2{ font-size:1.15rem; }
+    body{ padding-left:0; padding-right:0; font-size:1rem; }
+    .calc-widget-panel{ width:100%; max-width:100%; }
+    table{ font-size:0.88rem; }
+    th, td{ padding:9px 8px; }
+    label{ font-size:0.85rem; }
+    input, textarea, select, button{ font-size:1rem !important; }
+    p{ font-size:1rem; }
+  }
+  @media (max-width:400px){
+    .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
+  }
+
+
+</style>
+
+</head>
+<body>
+
+<div class="hero">
+  <img class="profile-pic" id="profilePic" src="" alt="Profile photo" style="display:none;">
+  <div class="profile-pic" id="profilePicPlaceholder">NO</div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="live-dot"></span>
+      <span>/ <span id="liveDateTime">Loading...</span></span>
+      <span>&middot;</span>
+      <span id="heroBadgeDisplay">Verified Faculty Profile</span>
+      <span class="hero-eyebrow-coords">7.3349&deg;N, 2.3268&deg;W &nbsp;&mdash;&nbsp; UENR</span>
+    </div>
+    <h1 id="nameDisplay">Engr. Nana Kwame Obeng-Ahenkora</h1>
+    <p class="title" id="titleDisplay">Ph.D &nbsp;|&nbsp; Dept. of Civil &amp; Environmental Engineering</p>
+    <div class="social-links" id="socialLinksDisplay"></div>
+  </div>
+</div>
+<svg class="truss-signature" viewBox="0 0 1520 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M0,50 L76,10 L152,50 L228,10 L304,50 L380,10 L456,50 L532,10 L608,50 L684,10 L760,50 L836,10 L912,50 L988,10 L1064,50 L1140,10 L1216,50 L1292,10 L1368,50 L1444,10 L1520,50 M76,10 L1444,10 M0,50 L1520,50"/>
+  <circle cx="0" cy="50" r="2.5"/><circle cx="76" cy="10" r="2.5"/><circle cx="152" cy="50" r="2.5"/>
+  <circle cx="228" cy="10" r="2.5"/><circle cx="304" cy="50" r="2.5"/><circle cx="380" cy="10" r="2.5"/>
+  <circle cx="456" cy="50" r="2.5"/><circle cx="532" cy="10" r="2.5"/><circle cx="608" cy="50" r="2.5"/>
+  <circle cx="684" cy="10" r="2.5"/><circle cx="760" cy="50" r="2.5"/><circle cx="836" cy="10" r="2.5"/>
+  <circle cx="912" cy="50" r="2.5"/><circle cx="988" cy="10" r="2.5"/><circle cx="1064" cy="50" r="2.5"/>
+  <circle cx="1140" cy="10" r="2.5"/><circle cx="1216" cy="50" r="2.5"/><circle cx="1292" cy="10" r="2.5"/>
+  <circle cx="1368" cy="50" r="2.5"/><circle cx="1444" cy="10" r="2.5"/><circle cx="1520" cy="50" r="2.5"/>
+</svg>
+
+<div class="marquee">
+  <div class="marquee-track" id="marqueeTrack1">
+    <span>Structural Analysis</span><span>Quantity Surveying</span><span>Research Methods</span><span>Civil &amp; Environmental Engineering</span>
+    <span>Structural Analysis</span><span>Quantity Surveying</span><span>Research Methods</span><span>Civil &amp; Environmental Engineering</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
+  <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
+  <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
+  <a href="courses.html" class="tab" style="text-decoration:none;">Courses</a>
+  <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
+  <a href="announcements.html" class="tab" style="text-decoration:none;">Announcements</a>
+  <a href="videos.html" class="tab" style="text-decoration:none;">Videos</a>
+  <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
+  <a href="portal.html?view=attendance" class="tab" style="text-decoration:none;">Attendance</a>
+  <a href="dashboard.html" class="tab" style="text-decoration:none;">My Dashboard</a>
+</div>
+
+<div class="wrap">
+  <div class="section-index" style="margin-bottom:20px;">
+    <span class="num">02 &mdash; Field Notes</span>
+    <span class="rule"></span>
+  </div>
+  <div class="facts-grid reveal">
+    <div class="fact-banner">
+      <span class="fact-icon">💡</span>
+      <div>
+        <div class="fact-label">Engineering Fact</div>
+        <div class="fact-text" id="factOfDay">Loading...</div>
+      </div>
+    </div>
+
+    <div class="fact-banner history-banner">
+      <span class="fact-icon">📅</span>
+      <div>
+        <div class="fact-label">On This Day in Engineering History</div>
+        <div class="fact-text" id="historyOfDay">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pull-quote reveal">
+  <p id="pullQuoteDisplay">&ldquo;Every structure begins as an idea tested against gravity &mdash; teaching is no different.&rdquo;</p>
+</div>
+
+<div class="wrap">
+  <div class="section-index" style="margin:44px auto 20px;">
+    <span class="num">03 &mdash; Profile</span>
+    <span class="rule"></span>
+  </div>
+  <!-- VIEW MODE -->
+
+  <div id="viewMode">
+    <div class="tabs" style="margin:0 0 32px 0;padding:0;max-width:none;justify-content:flex-start;">
+      <div class="tab active" id="subTabAbout" onclick="switchSubTab('about')">About</div>
+      <div class="tab" id="subTabContact" onclick="switchSubTab('contact')">Contact</div>
+      <div class="tab" id="subTabPubs" onclick="switchSubTab('pubs')">Publications</div>
+      <div class="tab" id="subTabFaq" onclick="switchSubTab('faq')">FAQ</div>
+      <div class="tab" id="subTabPosts" onclick="switchSubTab('posts')">Latest Posts</div>
+    </div>
+
+    <div class="card sub-section" id="subAbout">
+      <h2>About</h2>
+      <p id="bioDisplay">Loading...</p>
+    </div>
+
+    <div class="card sub-section hidden" id="subContact">
+      <h2>Contact</h2>
+      <div id="contactDisplay">Loading...</div>
+      <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Scan to Visit This Site</div>
+        <img id="siteQrCode" src="" alt="QR code" style="width:150px;height:150px;border-radius:8px;border:1px solid var(--line);">
+      </div>
+    </div>
+
+    <div class="card sub-section hidden" id="subPubs">
+      <h2>Publications &amp; Research</h2>
+      <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
+    </div>
+
+    <div class="card sub-section hidden" id="subFaq">
+      <h2>Frequently Asked Questions</h2>
+      <div id="faqDisplay"><div class="empty">Loading...</div></div>
+    </div>
+
+    <div class="card sub-section hidden" id="subPosts">
+      <h2>Latest Posts</h2>
+      <div id="latestPostsDisplay"><div class="empty" style="color:var(--muted);font-size:0.9rem;">Loading...</div></div>
+      <div style="text-align:center;margin-top:16px;">
+        <a href="blog.html" style="color:var(--navy);font-weight:600;font-size:0.85rem;text-decoration:none;">View all posts &rarr;</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DEPARTMENT MODE -->
+  <div id="departmentMode" class="hidden">
+    <div class="card">
+      <h2 id="deptNameDisplay">Department</h2>
+      <div id="deptLinksRow" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;"></div>
+      <div id="deptEmbeds"></div>
+    </div>
+
+    <div class="card">
+      <h2>Departmental Notices</h2>
+      <div id="deptNoticesList"><div class="empty">Loading...</div></div>
+    </div>
+
+    <div class="card hidden" id="postNoticeCard">
+      <h2>Post a Notice</h2>
+      <label>Title</label>
+      <input type="text" id="noticeTitleInput" placeholder="e.g. Mid-Semester Exam Schedule Released">
+      <label>Content</label>
+      <textarea id="noticeContentInput" placeholder="Write the notice here..." style="min-height:100px;"></textarea>
+      <button id="postNoticeBtn" onclick="postDeptNotice()">Post Notice</button>
+      <div id="postNoticeMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageNoticesCard">
+      <h2>Manage Notices</h2>
+      <div id="manageNoticesList"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- EDIT MODE -->
+  <div id="editMode" class="hidden">
+    <button onclick="switchTab('view')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:6px 12px;margin-bottom:14px;">&larr; Back to Home</button>
+
+    <div class="card" id="loginCard">
+      <label>Email</label>
+      <input type="text" id="authEmailInput" placeholder="you@school.edu">
+      <label>Password</label>
+      <input type="password" id="authPasswordInput" placeholder="Your password">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="signInUser()">Sign In</button>
+        <button class="secondary" onclick="signUpUser()">Create Account</button>
+      </div>
+      <div style="margin-top:10px;">
+        <span onclick="resetMyPassword()" style="font-size:0.8rem;color:var(--muted);text-decoration:underline;cursor:pointer;">Forgot password?</span>
+      </div>
+      <div id="authMsg" style="margin-top:10px;"></div>
+      <div class="hint" style="margin-top:10px;">Only the Owner can edit this page's info.</div>
+    </div>
+
+    <div class="card hidden" id="noRoleCard">
+      <div class="msg err">Your account is signed in, but editing this page requires the Owner account.</div>
+      <button class="secondary" onclick="signOutUser()">Sign Out</button>
+    </div>
+
+    <div class="card hidden" id="editCard">
+      <button class="secondary" onclick="signOutUser()" style="margin-bottom:14px;">Sign Out</button>
+
+      <label>Full Name / Title (shown as the main heading)</label>
+      <input type="text" id="nameInput" placeholder="e.g. Engr. Nana Kwame Obeng-Ahenkora">
+
+      <label>Credentials / Position (shown under your name)</label>
+      <input type="text" id="titleInput" placeholder="e.g. Ph.D | Dept. of Civil & Environmental Engineering">
+
+      <label>Profile Photo</label>
+      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">Choose an image from your device. It will be resized automatically to keep things fast.</div>
+      <input type="file" id="photoFileInput" accept="image/*" onchange="handlePhotoSelect(event)">
+      <div id="photoPreviewWrap" style="margin-bottom:14px;"></div>
+
+      <label>Bio</label>
+      <textarea id="bioInput" placeholder="Write a few sentences about yourself..."></textarea>
+
+      <label>Contact (one item per line, e.g. "Email: name@school.edu")</label>
+      <textarea id="contactInput" placeholder="Email: name@school.edu&#10;Office: Dept of Civil &amp; Env. Engineering, Room 12&#10;Phone: +233..."></textarea>
+
+      <label>Social Links (one per line: Label, URL)</label>
+      <textarea id="socialInput" placeholder="LinkedIn, https://linkedin.com/in/yourname&#10;ResearchGate, https://researchgate.net/profile/yourname"></textarea>
+
+      <label>Publications / Research (one per line)</label>
+      <textarea id="pubInput" placeholder="Title of paper, Journal, Year&#10;Another publication title..."></textarea>
+
+      <label>FAQ (one per line: Question | Answer)</label>
+      <textarea id="faqInput" placeholder="What is the grading policy? | Grades are based on 40% coursework, 60% final exam.&#10;How do I contact you? | Use the Report Issue tab in the Assessment Portal."></textarea>
+
+      <label>Verified Badge Text (top of hero)</label>
+      <input type="text" id="heroBadgeInput" placeholder="Verified Faculty Profile">
+
+      <label>Scrolling Ticker Text (one phrase per line)</label>
+      <textarea id="marqueeInput" placeholder="Structural Analysis&#10;Quantity Surveying&#10;Research Methods&#10;Civil & Environmental Engineering"></textarea>
+
+      <label>Pull-Quote (the large italic quote on the homepage)</label>
+      <div class="hint">Leave this blank and a different quote will show automatically on every visit, picked randomly from a built-in set of 100. Fill this in to lock the homepage to one fixed quote instead.</div>
+      <textarea id="pullQuoteInput" placeholder="Leave blank for random quotes, or type your own fixed quote here."></textarea>
+
+      <label>Newsletter Section Heading</label>
+      <input type="text" id="newsletterHeadingInput" placeholder="Stay Updated">
+
+      <label>Newsletter Section Text</label>
+      <textarea id="newsletterTextInput" placeholder="Enter your email to be notified whenever a new post is published on Engineering Notes."></textarea>
+
+      <label>Closing Section Heading</label>
+      <input type="text" id="closingHeadingInput" placeholder="Let's build what's next.">
+
+      <label>Closing Section Text</label>
+      <textarea id="closingTextInput" placeholder="For students, colleagues, and collaborators working across civil engineering teaching and research."></textarea>
+
+      <label>Department Name</label>
+      <input type="text" id="deptNameInput" placeholder="e.g. Dept. of Civil &amp; Environmental Engineering, UENR">
+
+      <label>Department Facebook Page URL</label>
+      <input type="text" id="deptFacebookInput" placeholder="https://www.facebook.com/YourDeptPage">
+
+      <label>Department X (Twitter) URL</label>
+      <input type="text" id="deptXInput" placeholder="https://x.com/YourDeptHandle">
+
+      <label>Department TikTok URL</label>
+      <input type="text" id="deptTiktokInput" placeholder="https://www.tiktok.com/@YourDeptHandle">
+
+      <div class="hint">Leave any of these blank to hide that link/embed. Facebook and X show a live feed that updates automatically when new posts go up. TikTok shows a follow link only (TikTok doesn't support live feed embeds without their developer API).</div>
+
+      <button id="saveBtn" onclick="saveProfile()">Save Changes</button>
+      <div id="saveMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div class="closing-cta full-bleed reveal">
+  <div class="wrap" style="padding:0 24px;">
+    <div class="section-index" style="margin:0 0 20px;padding:0;max-width:none;">
+      <span class="num">04 &mdash; Connect</span>
+      <span class="rule"></span>
+    </div>
+    <h2 id="closingHeadingDisplay" style="font-size:2rem;">Let's build what's next.</h2>
+    <p id="closingTextDisplay" style="color:var(--muted);font-size:0.95rem;margin-top:-8px;margin-bottom:28px;max-width:480px;">For students, colleagues, and collaborators working across civil engineering teaching and research.</p>
+    <div class="cta-row">
+      <a href="portal.html" class="cta-link">Check Assessment Results</a>
+      <a href="blog.html" class="cta-link">Read Engineering Notes</a>
+      <a href="courses.html" class="cta-link">Browse Courses</a>
+    </div>
+  </div>
+</div>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>Stay Updated</span><span>Read The Latest Post</span><span>Stay Updated</span><span>Read The Latest Post</span>
+    <span>Stay Updated</span><span>Read The Latest Post</span><span>Stay Updated</span><span>Read The Latest Post</span>
+  </div>
+</div>
+
+<div class="newsletter-card full-bleed reveal">
+  <div class="wrap" style="padding:0 24px;">
+    <div class="section-index" style="margin:0 0 20px;padding:0;max-width:none;">
+      <span class="num" style="color:var(--accent);">05 &mdash; Stay In The Loop</span>
+      <span class="rule" style="background:rgba(255,255,255,0.15);"></span>
+    </div>
+    <h2 id="newsletterHeadingDisplay">Stay Updated</h2>
+    <p id="newsletterTextDisplay" style="color:rgba(255,255,255,0.6);font-size:0.92rem;margin-top:-8px;margin-bottom:20px;">Enter your email to be notified whenever a new post is published on Engineering Notes.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+      <input type="text" id="newsletterEmail" placeholder="your.email@school.edu" style="flex:1;min-width:200px;margin-bottom:0;">
+      <button onclick="subscribeNewsletter()" style="white-space:nowrap;">Subscribe</button>
+    </div>
+    <div id="newsletterMsg"></div>
+  </div>
+</div>
+
+<footer class="site-footer reveal">
+  <div class="wrap" style="padding:0 24px;">
+    <div class="footer-brand">ENGR. OBENG-AHENKORA</div>
+    <div class="footer-row">
+      <div class="footer-col">
+        <div class="footer-col-label">Contact</div>
+        <div id="footerContact" class="footer-col-content">&mdash;</div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-label">Social</div>
+        <div id="footerSocial" class="footer-col-content">&mdash;</div>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-label">Site</div>
+        <div class="footer-col-content">
+          <a href="portal.html">Assessment Portal</a><br>
+          <a href="blog.html">Blog</a><br>
+          <a href="courses.html">Courses</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+// ===== JSONBin.io configuration (small, frequently-updated data: settings, subscribers) =====
+const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
+const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+// ===============================================================================
+
+// ===== Supabase configuration (larger data: profile/photo, blog posts) =====
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+// =============================================================================
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){
+    return {};
+  }
+}
+
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true"
+    },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to Supabase (${detail})`);
+  }
+  return true;
+}
+
+const PULL_QUOTE_POOL = [
+  "Every structure begins as an idea tested against gravity — teaching is no different.",
+  "A beam doesn't fail because it's weak; it fails because someone didn't ask the right question first.",
+  "Concrete remembers every shortcut taken before it cured.",
+  "The best foundations are the ones nobody ever sees.",
+  "Engineering is the art of making decisions before all the facts are in.",
+  "A blueprint is just a promise drawn to scale.",
+  "Every load has to go somewhere — so does every excuse.",
+  "Design for the worst day, not the average one.",
+  "Students, like structures, need both support and room to move.",
+  "Safety factors exist because certainty rarely does.",
+  "A crack ignored today is a collapse rehearsed for tomorrow.",
+  "Good engineering is invisible; you only notice when it's missing.",
+  "The strongest material is patience, poured slowly.",
+  "Every exam is a stress test — some students just need better reinforcement.",
+  "Gravity never negotiates, but geometry always finds a way.",
+  "A well-taught lesson is a truss: every part carries its share.",
+  "The site you build on matters more than the building itself.",
+  "Precision is a habit before it's a skill.",
+  "Cement sets once; understanding should never stop setting in.",
+  "The bridge that lasts is the one that was never rushed.",
+  "Structures fail in silence long before they fail out loud.",
+  "Every course has a factor of safety — attendance is one of them.",
+  "You cannot pour a solid future on a cracked foundation.",
+  "Measure twice, mentor once.",
+  "Engineering is applied humility.",
+  "The soil never lies about what it can carry.",
+  "A well-drawn plan saves a thousand arguments on site.",
+  "Every deadline is a load case — plan the deflection.",
+  "Students settle differently than soil, but both need time to compact properly.",
+  "The straightest line on a drawing is rarely the shortest path to understanding.",
+  "A tower is only as honest as its foundation.",
+  "Learning, like construction, is built one layer at a time.",
+  "Every great engineer was once confused by the same formula you are now.",
+  "The strongest joints are the ones tested before they're trusted.",
+  "Water always finds the weakest point — so does doubt.",
+  "A classroom, like a site, needs clear supervision and clearer instructions.",
+  "Structural integrity begins with intellectual honesty.",
+  "The formwork comes off eventually — make sure what's inside can stand alone.",
+  "Every question a student asks is a load the lesson wasn't carrying yet.",
+  "Good design anticipates failure; great teaching prevents it.",
+  "A site visit teaches more than a hundred lecture slides.",
+  "The rebar you can't see is often the reason the structure still stands.",
+  "Every calculation you skip becomes someone else's emergency.",
+  "Understanding, like curing concrete, cannot be rushed without consequence.",
+  "The best students ask why the formula works, not just how.",
+  "A stable structure starts with an unstable amount of questions.",
+  "Every professional you'll become is under construction right now.",
+  "The site is the truth; the drawing is only a guess at it.",
+  "Discipline is the scaffolding that holds ambition upright.",
+  "A well-compacted foundation and a well-revised topic behave the same way — reliably.",
+  "The load doesn't care about your excuses; neither does the deadline.",
+  "Every engineer was once a student who refused to accept 'because that's how it's done.'",
+  "The site never forgives what the design ignored.",
+  "A single unchecked assumption can bring down an entire calculation.",
+  "Great structures, like great habits, are built long before anyone notices them.",
+  "The exam room and the construction site share one rule: preparation shows.",
+  "Reinforcement isn't weakness — it's foresight.",
+  "The strongest column still needs a good foundation beneath it.",
+  "Understanding settles in slowly, then all at once.",
+  "A good lecturer, like a good beam, distributes the weight evenly.",
+  "The most dangerous phrase in engineering is 'it should be fine.'",
+  "Every span has a limit; every student has a breakthrough waiting past theirs.",
+  "The drawing board doesn't lie, but it does forget details worth remembering.",
+  "A well-built career, like a well-built wall, is laid one course at a time.",
+  "Structures don't fail from one mistake — they fail from many small ones ignored.",
+  "The classroom is the formwork; the student is what takes shape inside it.",
+  "Every measurement matters more than the confidence behind it.",
+  "The ground tells you what it will allow, if you bother to test it.",
+  "A well-asked question is worth more than a memorized answer.",
+  "Engineering rewards those who double-check what confidence assumed.",
+  "The best foundations are poured with more patience than pressure.",
+  "A structure under stress reveals its true design, just like a student under exam pressure.",
+  "The site doesn't care about theory it never tested.",
+  "Every deadline met honestly is a small structure of its own.",
+  "The strongest students, like the strongest steel, are the ones tested the most.",
+  "A blueprint without a site visit is just an opinion.",
+  "The load path always exists — the job is finding it before it finds you.",
+  "Good habits, like good curing, need consistent conditions to set properly.",
+  "Every lecture is scaffolding; the understanding is what remains after it's removed.",
+  "The failure point is rarely where you expect it — that's why you check everywhere.",
+  "A solid education, like a solid slab, needs time under load to prove itself.",
+  "The most reliable structures are the ones built by people who doubted themselves enough to check twice.",
+  "Every course outline is a structural drawing for the semester ahead.",
+  "The soil report and the diagnostic quiz serve the same purpose: know what you're building on.",
+  "A well-reinforced argument holds up the same way a well-reinforced beam does.",
+  "The site teaches humility faster than any textbook.",
+  "Every strong bridge began as someone's uncertain sketch.",
+  "The classroom, like the construction site, rewards those who show up ready to learn from mistakes.",
+  "A structure's honesty is tested the first time it's truly loaded.",
+  "Every span of knowledge needs proper support at both ends.",
+  "The best engineers remain students of gravity for their entire careers.",
+  "A well-taught principle outlasts a thousand memorized formulas.",
+  "The ground settles; so does understanding — give both time.",
+  "Every crack tells a story someone should have listened to earlier.",
+  "The strongest teams, like the strongest trusses, distribute the weight fairly.",
+  "A career built on shortcuts collapses the same way a structure does.",
+  "The best lesson plans, like the best designs, always account for the unexpected.",
+  "Every site has a story the soil test will eventually tell.",
+  "The classroom is where tomorrow's load-bearing decisions are quietly being formed.",
+  "A structure stands because someone respected the numbers more than the deadline."
+];
+
+const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUserRole = null;
+let currentUserEmail = null;
+function isOwner(){ return currentUserRole === 'owner'; }
+function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
+
+async function resolveCurrentUserRole(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ currentUserRole = null; currentUserEmail = null; currentUserName = null; return; }
+  const email = session.user.email.toLowerCase();
+  currentUserEmail = email;
+  if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; currentUserName = 'Owner'; return; }
+  try{
+    const data = await fetchSupabaseData();
+    const members = data.teamMembers || [];
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    currentUserRole = me ? me.role : null;
+    currentUserName = me ? me.name : null;
+  }catch(e){ currentUserRole = null; currentUserName = null; }
+}
+let currentUserName = null;
+
+// ===== Welcome toast =====
+function showWelcomeToast(name){
+  const existing = document.getElementById('welcomeToast');
+  if(existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'welcomeToast';
+  toast.textContent = `Welcome back, ${name}!`;
+  toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 22px;border-radius:30px;font-weight:600;font-size:0.9rem;box-shadow:0 6px 20px rgba(0,0,0,0.2);z-index:9999;border:1px solid var(--gold);opacity:0;transition:opacity 0.3s ease;';
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// ===== 30-minute session timeout =====
+const SESSION_DURATION_MS = 30 * 60 * 1000;
+function markSessionStart(){
+  localStorage.setItem('session_login_time', Date.now().toString());
+}
+async function checkSessionTimeout(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  const loginTime = localStorage.getItem('session_login_time');
+  if(!loginTime){
+    markSessionStart();
+    return;
+  }
+  if(Date.now() - parseInt(loginTime) > SESSION_DURATION_MS){
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem('session_login_time');
+    location.reload();
+  }
+}
+setInterval(checkSessionTimeout, 60000);
+
+// ===== Header name swap for lecturers =====
+function applyLecturerHeaderName(){
+  if(currentUserRole === 'lecturer' && currentUserName){
+    const nameEl = document.getElementById('heroName');
+    if(nameEl) nameEl.textContent = currentUserName;
+  }
+}
+
+async function signUpUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ markSessionStart(); await onEditAuthReady(true); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+
+async function signInUser(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const password = document.getElementById('authPasswordInput').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  markSessionStart();
+  await onEditAuthReady(true);
+}
+
+async function signOutUser(){
+  await supabaseClient.auth.signOut();
+  localStorage.removeItem('session_login_time');
+  location.reload();
+}
+
+async function resetMyPassword(){
+  const email = document.getElementById('authEmailInput').value.trim();
+  const msg = document.getElementById('authMsg');
+  if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first.</div>'; return; }
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  msg.innerHTML = error ? `<div class="msg err">${escapeHtml(error.message)}</div>` : '<div class="msg ok">Password reset email sent.</div>';
+}
+
+async function onEditAuthReady(showToast){
+  await resolveCurrentUserRole();
+
+  if(isOwner()){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('noRoleCard').classList.add('hidden');
+    document.getElementById('editCard').classList.remove('hidden');
+    if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
+    applyLecturerHeaderName();
+    return;
+  }
+
+  if(currentUserEmail){
+    document.getElementById('loginCard').classList.add('hidden');
+    document.getElementById('noRoleCard').classList.remove('hidden');
+    document.getElementById('editCard').classList.add('hidden');
+    if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
+    applyLecturerHeaderName();
+  } else {
+    document.getElementById('loginCard').classList.remove('hidden');
+    document.getElementById('noRoleCard').classList.add('hidden');
+    document.getElementById('editCard').classList.add('hidden');
+  }
+}
+
+function switchTab(tab){
+  document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');
+  document.getElementById('editMode').classList.toggle('hidden', tab!=='edit');
+  document.getElementById('departmentMode').classList.toggle('hidden', tab!=='department');
+  document.getElementById('tabView').classList.toggle('active', tab==='view');
+  document.getElementById('tabDepartment').classList.toggle('active', tab==='department');
+  if(tab === 'department'){
+    refreshDeptEmbeds();
+    loadDeptNotices();
+    if(isAdmin()){
+      document.getElementById('postNoticeCard').classList.remove('hidden');
+      document.getElementById('manageNoticesCard').classList.remove('hidden');
+      loadManageNoticesList();
+    }
+  }
+}
+
+function toggleFaqAnswer(i){
+  const answer = document.getElementById('faqAnswer' + i);
+  const arrow = document.getElementById('faqArrow' + i);
+  const isHidden = answer.classList.contains('hidden');
+  answer.classList.toggle('hidden', !isHidden);
+  arrow.textContent = isHidden ? '−' : '+';
+}
+
+function renderDeptLinks(){
+  const d = window.deptData || {};
+  const container = document.getElementById('deptLinksRow');
+  if(!container) return;
+  let html = '';
+  if(d.facebook) html += `<a href="${escapeHtml(d.facebook)}" target="_blank" rel="noopener" class="cta-link">Facebook</a>`;
+  if(d.x) html += `<a href="${escapeHtml(d.x)}" target="_blank" rel="noopener" class="cta-link">X (Twitter)</a>`;
+  if(d.tiktok) html += `<a href="${escapeHtml(d.tiktok)}" target="_blank" rel="noopener" class="cta-link">TikTok</a>`;
+  container.innerHTML = html || '';
+}
+
+function refreshDeptEmbeds(){
+  const d = window.deptData || {};
+  const container = document.getElementById('deptEmbeds');
+  if(!container) return;
+  let html = '';
+
+  if(d.facebook){
+    html += `
+      <div style="margin-bottom:28px;">
+        <div class="fact-label" style="margin-bottom:10px;">Facebook Feed</div>
+        <div id="fb-root"></div>
+        <div class="fb-page" data-href="${escapeHtml(d.facebook)}" data-tabs="timeline" data-width="500" data-height="500" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"></div>
+      </div>
+    `;
+  }
+  if(d.x){
+    html += `
+      <div style="margin-bottom:28px;">
+        <div class="fact-label" style="margin-bottom:10px;">X (Twitter) Feed</div>
+        <a class="twitter-timeline" data-height="500" href="${escapeHtml(d.x)}">Loading tweets...</a>
+      </div>
+    `;
+  }
+  if(d.tiktok){
+    html += `
+      <div style="margin-bottom:8px;">
+        <div class="fact-label" style="margin-bottom:10px;">TikTok</div>
+        <p style="color:var(--muted);font-size:0.85rem;">A live feed isn't available for TikTok without their developer API — tap below to visit the page directly.</p>
+        <a href="${escapeHtml(d.tiktok)}" target="_blank" rel="noopener" class="cta-link">Follow us on TikTok &rarr;</a>
+      </div>
+    `;
+  }
+  if(!d.facebook && !d.x && !d.tiktok){
+    html = '<div class="empty">No department social links added yet. Add them via Edit Info.</div>';
+  }
+
+  container.innerHTML = html;
+
+  if(d.facebook){
+    if(window.FB){
+      window.FB.XFBML.parse(container);
+    } else if(!document.getElementById('fb-sdk-script')){
+      const fbScript = document.createElement('script');
+      fbScript.id = 'fb-sdk-script';
+      fbScript.async = true; fbScript.defer = true; fbScript.crossOrigin = 'anonymous';
+      fbScript.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
+      document.body.appendChild(fbScript);
+    }
+  }
+
+  if(d.x){
+    if(window.twttr && window.twttr.widgets){
+      window.twttr.widgets.load(container);
+    } else if(!document.getElementById('twitter-widget-script')){
+      const twScript = document.createElement('script');
+      twScript.id = 'twitter-widget-script';
+      twScript.async = true;
+      twScript.src = 'https://platform.twitter.com/widgets.js';
+      document.body.appendChild(twScript);
+    }
+  }
+}
+
+// ===== Departmental Notices =====
+
+async function postDeptNotice(){
+  if(!isAdmin()){ document.getElementById('postNoticeMsg').innerHTML = '<div class="msg err">Only the Owner or an Admin can post notices.</div>'; return; }
+  const titleInput = document.getElementById('noticeTitleInput');
+  const contentInput = document.getElementById('noticeContentInput');
+  const msg = document.getElementById('postNoticeMsg');
+  const btn = document.getElementById('postNoticeBtn');
+
+  const title = titleInput.value.trim();
+  const content = contentInput.value.trim();
+
+  if(!title || !content){
+    msg.innerHTML = '<div class="msg err">Please fill in both a title and the notice content.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Posting...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const notices = data.deptNotices || [];
+    notices.push({
+      id: 'notice_' + Date.now(),
+      title, content,
+      postedAt: new Date().toISOString()
+    });
+    data.deptNotices = notices;
+    await saveSupabaseData(data);
+
+    msg.innerHTML = '<div class="msg ok">Notice posted.</div>';
+    titleInput.value = '';
+    contentInput.value = '';
+    loadDeptNotices();
+    loadManageNoticesList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not post: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadDeptNotices(){
+  const container = document.getElementById('deptNoticesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const notices = (data.deptNotices || []).slice().sort((a,b) => new Date(b.postedAt) - new Date(a.postedAt));
+    window.deptNoticesCache = notices;
+
+    if(notices.length === 0){
+      container.innerHTML = '<div class="empty">No notices posted yet.</div>';
+      return;
+    }
+
+    container.innerHTML = notices.map(n => `
+      <div style="padding:18px 0;border-bottom:1px dashed var(--line);">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">${escapeHtml(n.title)}</div>
+        <div style="font-size:0.9rem;color:var(--ink);line-height:1.6;white-space:pre-wrap;margin-bottom:10px;">${escapeHtml(n.content)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="post-date" style="margin-bottom:0;">${formatNoticeDate(n.postedAt)}</span>
+          <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="shareNotice('${n.id}')">Share</button>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load notices.</div>';
+  }
+}
+
+async function loadManageNoticesList(){
+  const container = document.getElementById('manageNoticesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const notices = (data.deptNotices || []).slice().sort((a,b) => new Date(b.postedAt) - new Date(a.postedAt));
+    if(notices.length === 0){
+      container.innerHTML = '<div class="empty">No notices posted yet.</div>';
+      return;
+    }
+    container.innerHTML = notices.map(n => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">${escapeHtml(n.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatNoticeDate(n.postedAt)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteDeptNotice('${n.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load notices.</div>';
+  }
+}
+
+async function deleteDeptNotice(id){
+  if(!isAdmin()){ alert('Only the Owner or an Admin can delete notices.'); return; }
+  if(!confirm('Delete this notice?')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.deptNotices = (data.deptNotices || []).filter(n => n.id !== id);
+    await saveSupabaseData(data);
+    loadDeptNotices();
+    loadManageNoticesList();
+  }catch(e){
+    alert('Could not delete notice.');
+  }
+}
+
+function formatNoticeDate(iso){
+  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); }
+  catch(e){ return ''; }
+}
+
+async function shareNotice(id){
+  const notice = (window.deptNoticesCache || []).find(n => n.id === id);
+  if(!notice) return;
+
+  const shareUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `index.html?notice=${encodeURIComponent(id)}`;
+  const shareData = {
+    title: notice.title,
+    text: notice.content.slice(0, 200),
+    url: shareUrl
+  };
+
+  if(navigator.share){
+    try{
+      await navigator.share(shareData);
+    }catch(e){ /* user cancelled share — no action needed */ }
+  } else {
+    try{
+      await navigator.clipboard.writeText(`${notice.title}\n\n${notice.content}\n\n${shareUrl}`);
+      alert('Notice copied to clipboard — you can now paste and share it.');
+    }catch(e){
+      alert('Could not copy to clipboard. Please copy the notice manually.');
+    }
+  }
+}
+
+function switchSubTab(sub){
+  const subs = ['about','contact','pubs','faq','posts'];
+  subs.forEach(s => {
+    document.getElementById('sub' + s.charAt(0).toUpperCase() + s.slice(1)).classList.toggle('hidden', s!==sub);
+    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s==='faq'?'Faq':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
+  });
+  if(sub === 'posts') loadLatestPosts();
+}
+
+async function loadLatestPosts(){
+  const container = document.getElementById('latestPostsDisplay');
+  container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const posts = (data.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,3);
+    if(posts.length === 0){
+      container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">No posts yet.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(p => `
+      <div style="padding:12px 0;border-bottom:1px solid var(--line);">
+        <a href="blog.html" style="text-decoration:none;color:var(--navy);font-weight:600;font-size:0.95rem;">${escapeHtml(p.title)}</a>
+        <div style="color:var(--muted);font-size:0.78rem;margin-top:2px;">${new Date(p.date).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty" style="color:var(--muted);font-size:0.9rem;">Could not load posts.</div>';
+  }
+}
+
+async function fetchBin(){
+  const res = await fetch(`${JSONBIN_URL}/latest`, {
+    headers: { "X-Master-Key": JSONBIN_API_KEY }
+  });
+  if(!res.ok) throw new Error("Could not reach storage");
+  const data = await res.json();
+  return data.record || {};
+}
+
+async function saveBin(binData){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
+    body: JSON.stringify(binData)
+  });
+  if(!res.ok){
+    let detail = "";
+    try{
+      const errBody = await res.json();
+      detail = errBody.message || JSON.stringify(errBody);
+    }catch(e){
+      detail = `HTTP ${res.status}`;
+    }
+    throw new Error(`Could not save to storage (${detail})`);
+  }
+  return res.json();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadProfile(){
+  try{
+    const data = await fetchSupabaseData();
+    const profile = data.profile || {};
+
+    // name and title (header)
+    const defaultName = "Engr. Nana Kwame Obeng-Ahenkora";
+    const defaultTitle = "Ph.D | Dept. of Civil & Environmental Engineering";
+    document.getElementById('nameDisplay').textContent = profile.name || defaultName;
+    document.getElementById('titleDisplay').textContent = profile.title || defaultTitle;
+    document.getElementById('nameInput').value = profile.name || defaultName;
+    document.getElementById('titleInput').value = profile.title || defaultTitle;
+
+    document.getElementById('bioDisplay').textContent = profile.bio || "No bio added yet.";
+
+    const contactLines = (profile.contact || "").split('\n').filter(l => l.trim());
+    document.getElementById('contactDisplay').innerHTML = contactLines.length
+      ? contactLines.map(l => `<div class="contact-line">${escapeHtml(l)}</div>`).join('')
+      : "No contact info added yet.";
+
+    const pubLines = (profile.publications || "").split('\n').filter(l => l.trim());
+    document.getElementById('pubDisplay').innerHTML = pubLines.length
+      ? pubLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')
+      : "<li>No publications added yet.</li>";
+
+    // FAQ accordion
+    const faqLines = (profile.faq || "").split('\n').filter(l => l.trim());
+    const faqContainer = document.getElementById('faqDisplay');
+    if(faqLines.length === 0){
+      faqContainer.innerHTML = '<div class="empty">No FAQs added yet.</div>';
+    } else {
+      faqContainer.innerHTML = faqLines.map((line, i) => {
+        const parts = line.split('|').map(p => p.trim());
+        const question = parts[0] || '';
+        const answer = parts[1] || '';
+        return `
+          <div class="faq-item" style="border-bottom:1px solid var(--line);padding:12px 0;">
+            <div class="faq-question" onclick="toggleFaqAnswer(${i})" style="cursor:pointer;font-weight:600;font-size:0.92rem;display:flex;justify-content:space-between;align-items:center;">
+              <span>${escapeHtml(question)}</span>
+              <span id="faqArrow${i}" style="color:var(--gold);">+</span>
+            </div>
+            <div id="faqAnswer${i}" class="hidden" style="font-size:0.88rem;color:var(--muted);margin-top:8px;line-height:1.5;">${escapeHtml(answer)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // profile photo (stored as base64 image data, uploaded from device)
+
+    // Hero badge, marquee, pull-quote, newsletter, and closing CTA text — all editable, with sensible defaults
+    const heroBadgeText = profile.heroBadge || "Verified Faculty Profile";
+    document.getElementById('heroBadgeDisplay').textContent = heroBadgeText;
+    document.getElementById('heroBadgeInput').value = profile.heroBadge || "";
+
+    const marqueeLines = (profile.marqueeText || "Structural Analysis\nQuantity Surveying\nResearch Methods\nCivil & Environmental Engineering").split('\n').filter(l => l.trim());
+    const marqueeSpans = marqueeLines.map(l => `<span>${escapeHtml(l)}</span>`).join('');
+    const marqueeTrack1 = document.getElementById('marqueeTrack1');
+    if(marqueeTrack1) marqueeTrack1.innerHTML = marqueeSpans + marqueeSpans;
+    document.getElementById('marqueeInput').value = profile.marqueeText || "";
+
+    const pullQuoteText = profile.pullQuote || PULL_QUOTE_POOL[Math.floor(Math.random() * PULL_QUOTE_POOL.length)];
+    document.getElementById('pullQuoteDisplay').innerHTML = `&ldquo;${escapeHtml(pullQuoteText)}&rdquo;`;
+    document.getElementById('pullQuoteInput').value = profile.pullQuote || "";
+
+    document.getElementById('newsletterHeadingDisplay').textContent = profile.newsletterHeading || "Stay Updated";
+    document.getElementById('newsletterHeadingInput').value = profile.newsletterHeading || "";
+    document.getElementById('newsletterTextDisplay').textContent = profile.newsletterText || "Enter your email to be notified whenever a new post is published on Engineering Notes.";
+    document.getElementById('newsletterTextInput').value = profile.newsletterText || "";
+
+    document.getElementById('closingHeadingDisplay').textContent = profile.closingHeading || "Let's build what's next.";
+    document.getElementById('closingHeadingInput').value = profile.closingHeading || "";
+    document.getElementById('closingTextDisplay').textContent = profile.closingText || "For students, colleagues, and collaborators working across civil engineering teaching and research.";
+    document.getElementById('closingTextInput').value = profile.closingText || "";
+
+    // Department section
+    window.deptData = {
+      name: profile.deptName || "Department",
+      facebook: profile.deptFacebook || "",
+      x: profile.deptX || "",
+      tiktok: profile.deptTiktok || ""
+    };
+    document.getElementById('deptNameDisplay').textContent = window.deptData.name;
+    document.getElementById('deptNameInput').value = profile.deptName || "";
+    document.getElementById('deptFacebookInput').value = profile.deptFacebook || "";
+    document.getElementById('deptXInput').value = profile.deptX || "";
+    document.getElementById('deptTiktokInput').value = profile.deptTiktok || "";
+    renderDeptLinks();
+
+    const photoData = profile.photoData || "";
+    const picImg = document.getElementById('profilePic');
+    const picPlaceholder = document.getElementById('profilePicPlaceholder');
+    if(photoData){
+      picImg.src = photoData;
+      picImg.style.display = 'block';
+      picPlaceholder.style.display = 'none';
+    } else {
+      picImg.style.display = 'none';
+      picPlaceholder.style.display = 'flex';
+    }
+    const previewWrap = document.getElementById('photoPreviewWrap');
+    if(previewWrap){
+      previewWrap.innerHTML = photoData
+        ? `<img src="${photoData}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);">`
+        : '';
+    }
+
+    // social links, format: "Label, URL" per line
+    const socialLines = (profile.social || "").split('\n').filter(l => l.trim());
+    const socialContainer = document.getElementById('socialLinksDisplay');
+    if(socialLines.length){
+      socialContainer.innerHTML = socialLines.map(line => {
+        const parts = line.split(',').map(p => p.trim());
+        const label = parts[0] || 'Link';
+        const url = parts[1] || '#';
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+      }).join('');
+    } else {
+      socialContainer.innerHTML = '';
+    }
+
+    // Footer: mirror contact + social into the footer columns
+    const footerContact = document.getElementById('footerContact');
+    if(footerContact){
+      footerContact.innerHTML = contactLines.length
+        ? contactLines.map(l => `<div>${escapeHtml(l)}</div>`).join('')
+        : '&mdash;';
+    }
+    const footerSocial = document.getElementById('footerSocial');
+    if(footerSocial){
+      footerSocial.innerHTML = socialLines.length
+        ? socialLines.map(line => {
+            const parts = line.split(',').map(p => p.trim());
+            const label = parts[0] || 'Link';
+            const url = parts[1] || '#';
+            return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`;
+          }).join('<br>')
+        : '&mdash;';
+    }
+
+    // store current photo data so save doesn't lose it if the user didn't pick a new file
+    window.currentPhotoData = photoData;
+
+    // pre-fill edit fields too
+    document.getElementById('bioInput').value = profile.bio || "";
+    document.getElementById('contactInput').value = profile.contact || "";
+    document.getElementById('socialInput').value = profile.social || "";
+    document.getElementById('pubInput').value = profile.publications || "";
+    document.getElementById('faqInput').value = profile.faq || "";
+  }catch(e){
+    document.getElementById('bioDisplay').textContent = "Could not load profile info.";
+  }
+}
+
+function handlePhotoSelect(event){
+  const file = event.target.files[0];
+  const previewWrap = document.getElementById('photoPreviewWrap');
+  if(!file) return;
+
+  if(!file.type.startsWith('image/')){
+    previewWrap.innerHTML = '<div class="msg err">Please choose an image file (JPG, PNG, etc.).</div>';
+    return;
+  }
+
+  previewWrap.innerHTML = '<div class="msg ok">Processing image...</div>';
+
+  const reader = new FileReader();
+  reader.onerror = function(){
+    previewWrap.innerHTML = '<div class="msg err">Could not read that file. Try a different image.</div>';
+  };
+  reader.onload = function(e){
+    const img = new Image();
+    img.onerror = function(){
+      previewWrap.innerHTML = '<div class="msg err">Could not process that image. Try a different file.</div>';
+    };
+    img.onload = function(){
+      try{
+        // Resize to max 260px on the longest side, compress to JPEG to keep storage small
+        const maxSize = 260;
+        let w = img.width, h = img.height;
+        if(w > h && w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
+        else if(h > maxSize){ w = Math.round(w * (maxSize / h)); h = maxSize; }
+        else if(w > maxSize){ h = Math.round(h * (maxSize / w)); w = maxSize; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+        window.currentPhotoData = dataUrl;
+        previewWrap.innerHTML =
+          `<img src="${dataUrl}" style="width:80px;height:80px;border-radius:6px;object-fit:cover;border:1px solid var(--line);"> <div class="msg ok" style="display:inline-block;margin-left:10px;vertical-align:middle;">Ready — click Save Changes below to apply.</div>`;
+      }catch(err){
+        previewWrap.innerHTML = `<div class="msg err">Error processing image: ${escapeHtml(err.message)}</div>`;
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// checkPasscode removed — replaced by Supabase Auth sign in/up (see onEditAuthReady)
+
+async function saveProfile(){
+  const name = document.getElementById('nameInput').value.trim();
+  const title = document.getElementById('titleInput').value.trim();
+  const photoData = window.currentPhotoData || "";
+  const bio = document.getElementById('bioInput').value.trim();
+  const contact = document.getElementById('contactInput').value.trim();
+  const social = document.getElementById('socialInput').value.trim();
+  const publications = document.getElementById('pubInput').value.trim();
+  const faq = document.getElementById('faqInput').value.trim();
+  const heroBadge = document.getElementById('heroBadgeInput').value.trim();
+  const marqueeText = document.getElementById('marqueeInput').value.trim();
+  const pullQuote = document.getElementById('pullQuoteInput').value.trim();
+  const newsletterHeading = document.getElementById('newsletterHeadingInput').value.trim();
+  const newsletterText = document.getElementById('newsletterTextInput').value.trim();
+  const closingHeading = document.getElementById('closingHeadingInput').value.trim();
+  const closingText = document.getElementById('closingTextInput').value.trim();
+  const deptName = document.getElementById('deptNameInput').value.trim();
+  const deptFacebook = document.getElementById('deptFacebookInput').value.trim();
+  const deptX = document.getElementById('deptXInput').value.trim();
+  const deptTiktok = document.getElementById('deptTiktokInput').value.trim();
+  const msg = document.getElementById('saveMsg');
+  const btn = document.getElementById('saveBtn');
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    data.profile = {
+      name, title, photoData, bio, contact, social, publications, faq,
+      heroBadge, marqueeText, pullQuote, newsletterHeading, newsletterText, closingHeading, closingText,
+      deptName, deptFacebook, deptX, deptTiktok
+    };
+    await saveSupabaseData(data);
+    msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
+    loadProfile();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+const ENGINEERING_FACTS = [
+  "The Burj Khalifa's foundation uses over 45,000 cubic meters of concrete and 192 piles driven more than 50 meters deep.",
+  "Concrete actually gets stronger over time — it can continue curing and gaining strength for years after being poured.",
+  "The Golden Gate Bridge was designed to sway up to 27 feet sideways to withstand strong winds.",
+  "Roman concrete structures like the Pantheon have survived nearly 2,000 years, partly due to a self-healing lime reaction.",
+  "Steel expands about 1.2mm per meter for every 10°C rise in temperature — a key factor in bridge and rail design.",
+  "The tallest structures sway slightly in the wind by design — the Empire State Building can move up to 1.5 feet.",
+  "Reinforced concrete works because steel and concrete expand and contract at almost the same rate when heated.",
+  "The Hoover Dam used enough concrete to pave a two-lane highway from San Francisco to New York.",
+  "Soil compaction testing (Proctor test) remains a cornerstone of geotechnical engineering, developed in the 1930s.",
+  "The world's first iron bridge, built in 1779 in England, is still standing today as a UNESCO World Heritage Site.",
+  "Suspension bridges distribute load through tension in the cables rather than compression, unlike arch bridges.",
+  "Modern skyscrapers use tuned mass dampers — giant pendulums — to counteract building sway during earthquakes and wind.",
+  "The Panama Canal's lock system relies entirely on gravity to move over 200 million liters of water per transit.",
+  "Portland cement gets its name from its resemblance to Portland stone, a limestone quarried in England.",
+  "The Eiffel Tower can grow taller by up to 15cm in summer due to thermal expansion of its iron structure.",
+  "A well-designed truss converts bending forces into pure tension and compression, making it highly material-efficient.",
+  "The Three Gorges Dam in China is so massive it has measurably slowed the Earth's rotation by a fraction of a second.",
+  "Asphalt pavement is almost 100% recyclable, making it one of the most recycled materials in construction.",
+  "The Leaning Tower of Pisa's tilt was caused by soft, unstable soil on one side of its foundation.",
+  "Fiber-reinforced concrete can resist cracking far better than plain concrete by distributing stress across fibers.",
+  "The Millau Viaduct in France is taller than the Eiffel Tower at its highest pier, standing 343 meters tall.",
+  "Earthquake-resistant buildings often use base isolators — flexible supports that let the ground move without shaking the structure above.",
+  "The world's longest suspension bridge, the Çanakkale 1915 Bridge in Turkey, spans over 2,000 meters.",
+  "Timber structures can actually perform well in fires because char forms an insulating layer that slows burning.",
+  "The Sydney Opera House's shell roof required the invention of new construction techniques never used before.",
+  "Water pressure increases by roughly 1 atmosphere for every 10 meters of depth — critical for dam and pipeline design.",
+  "The world's first skyscraper, the Home Insurance Building in Chicago (1885), was only 10 stories tall.",
+  "Geosynthetics — engineered fabrics — are used to reinforce soil and prevent erosion in modern earthworks.",
+  "The Channel Tunnel between England and France runs up to 75 meters below the seabed.",
+  "Cantilever bridges, like the Forth Bridge in Scotland, balance loads without needing support in the middle span.",
+  "The compressive strength of concrete is typically tested using cube or cylinder samples crushed after 28 days of curing.",
+  "The world's tallest structure, the Burj Khalifa, uses a 'buttressed core' design inspired by a desert flower.",
+  "Bamboo has a higher tensile strength-to-weight ratio than steel, making it popular in sustainable construction.",
+  "The Netherlands' Delta Works is one of the largest flood protection systems ever engineered, built after the 1953 flood disaster.",
+  "Prestressed concrete uses tensioned steel cables to counteract tension forces before loads are even applied.",
+  "The Akashi Kaikyō Bridge in Japan grew 1 meter longer during construction due to an earthquake shifting its towers.",
+  "Recycled crushed concrete can be reused as aggregate in new construction, reducing landfill waste significantly.",
+  "The load-bearing capacity of soil is a key factor engineers test before designing any foundation.",
+  "The world's first reinforced concrete bridge was built in 1875 in France by Joseph Monier.",
+  "Wind tunnels are used to test how tall buildings and bridges respond to aerodynamic forces before construction.",
+  "The Hagia Sophia's massive dome, built in 537 AD, was an engineering marvel that influenced architecture for centuries.",
+  "Seismic retrofitting can add flexible joints or dampers to older buildings to help them survive earthquakes.",
+  "The world's deepest foundation piles can extend over 100 meters underground for supertall skyscrapers.",
+  "Green roofs can reduce a building's stormwater runoff by up to 50% while also improving insulation.",
+  "The Brooklyn Bridge, completed in 1883, was the first steel-wire suspension bridge in the world.",
+  "Self-healing concrete uses embedded bacteria that produce limestone to seal cracks automatically.",
+  "The Tacoma Narrows Bridge collapse in 1940 fundamentally changed how engineers study wind-induced vibration.",
+  "3D-printed concrete structures are now being used to build entire houses in under 24 hours.",
+  "The world's largest telescope dome, in Hawaii, had to be engineered to withstand hurricane-force winds at high altitude."
+];
+
+// month is 1-12, day is 1-31
+const ENGINEERING_HISTORY = [
+  { month: 1, day: 8, text: "1867 — Alfred Nobel patented dynamite, revolutionizing construction and mining excavation." },
+  { month: 1, day: 28, text: "1887 — The Eiffel Tower's construction officially began in Paris." },
+  { month: 2, day: 20, text: "1962 — John Glenn became the first American to orbit Earth, relying on precision aerospace engineering." },
+  { month: 3, day: 13, text: "1781 — William Herschel discovered Uranus, later aiding advances in optical engineering." },
+  { month: 3, day: 24, text: "1882 — Robert Koch announced the discovery of the tuberculosis bacterium, later influencing sanitary/water engineering standards." },
+  { month: 4, day: 15, text: "1912 — The RMS Titanic sank, leading to major reforms in maritime and structural safety engineering." },
+  { month: 5, day: 6, text: "1937 — The Hindenburg disaster reshaped engineering safety standards for hydrogen-based structures." },
+  { month: 5, day: 24, text: "1883 — The Brooklyn Bridge officially opened, the first steel-wire suspension bridge in the world." },
+  { month: 5, day: 27, text: "1937 — The Golden Gate Bridge opened to pedestrians in San Francisco." },
+  { month: 6, day: 6, text: "1933 — The first drive-in movie theater opened, an early example of large-scale outdoor structural planning." },
+  { month: 6, day: 15, text: "1215 — The Magna Carta was sealed, later influencing legal frameworks around land and property engineering rights." },
+  { month: 7, day: 4, text: "1928 — The Peace Bridge between the US and Canada officially opened." },
+  { month: 7, day: 20, text: "1969 — Apollo 11 landed on the Moon, one of history's greatest feats of systems engineering." },
+  { month: 8, day: 13, text: "1961 — Construction began on the Berlin Wall, a massive (and controversial) engineering and logistics undertaking." },
+  { month: 9, day: 3, text: "1967 — Sweden switched from driving on the left to the right side of the road overnight — a massive traffic engineering operation known as 'Dagen H'." },
+  { month: 9, day: 24, text: "1852 — Henri Giffard flew the first powered airship, an early triumph of aeronautical engineering." },
+  { month: 10, day: 21, text: "1879 — Thomas Edison successfully tested a long-lasting incandescent light bulb." },
+  { month: 10, day: 24, text: "1901 — Annie Edson Taylor became the first person to survive going over Niagara Falls in a barrel, testing structural design under extreme force." },
+  { month: 11, day: 7, text: "1940 — The Tacoma Narrows Bridge collapsed due to wind-induced resonance, forever changing bridge aerodynamics engineering." },
+  { month: 11, day: 21, text: "1877 — Thomas Edison announced the invention of the phonograph." },
+  { month: 12, day: 10, text: "1901 — The first Nobel Prizes were awarded, later recognizing many engineering and scientific breakthroughs." },
+  { month: 12, day: 17, text: "1903 — The Wright Brothers achieved the first powered flight at Kitty Hawk, North Carolina." },
+  { month: 1, day: 1, text: "1804 — Haiti became the first nation founded by a successful slave revolt, later undertaking major post-independence infrastructure rebuilding." },
+  { month: 1, day: 4, text: "1948 — Burma gained independence, launching major national infrastructure development programs." },
+  { month: 1, day: 7, text: "1610 — Galileo Galilei observed the moons of Jupiter, advancing the optical engineering behind telescopes." },
+  { month: 1, day: 9, text: "1839 — Louis Daguerre announced the daguerreotype photographic process, a landmark in optical and chemical engineering." },
+  { month: 1, day: 17, text: "1706 — Benjamin Franklin was born; his lightning rod invention remains foundational to electrical safety engineering." },
+  { month: 1, day: 19, text: "1839 — Charles Darwin was elected to the Royal Society, an institution central to engineering and scientific advancement." },
+  { month: 1, day: 23, text: "1849 — Elizabeth Blackwell became the first woman to earn a medical degree in the US, paralleling women's slower entry into engineering fields." },
+  { month: 1, day: 27, text: "1880 — Thomas Edison received a patent for the incandescent electric lamp." },
+  { month: 1, day: 31, text: "1958 — The United States launched Explorer 1, its first satellite, developed with pioneering aerospace engineering." },
+  { month: 2, day: 3, text: "1959 — Structural fatigue investigations advanced significantly following the 'Day the Music Died' plane crash, improving aviation safety engineering." },
+  { month: 2, day: 5, text: "1919 — United Artists was founded; unrelated to engineering, but the era saw major advances in industrial film and sound engineering." },
+  { month: 2, day: 7, text: "1964 — The Beatles arrived in the US, an era that also saw major advances in audio and broadcast engineering." },
+  { month: 2, day: 11, text: "1979 — The Ayatollah Khomeini took power in Iran, an era marked by significant national infrastructure shifts." },
+  { month: 2, day: 14, text: "1876 — Alexander Graham Bell filed his patent for the telephone, a landmark in electrical engineering." },
+  { month: 2, day: 15, text: "1564 — Galileo Galilei was born, laying groundwork for modern physics and mechanical engineering." },
+  { month: 2, day: 18, text: "1930 — Pluto was discovered, a milestone made possible by precision optical engineering." },
+  { month: 2, day: 19, text: "1878 — Thomas Edison patented the phonograph." },
+  { month: 2, day: 23, text: "1455 — The Gutenberg Bible was completed, powered by the mechanical engineering of the printing press." },
+  { month: 2, day: 27, text: "1827 — The first Mardi Gras celebration in New Orleans took place in a city later known for major flood-control engineering works." },
+  { month: 3, day: 1, text: "1932 — Construction was completed on Boulder City, built to house workers for the Hoover Dam project." },
+  { month: 3, day: 3, text: "1969 — Apollo 9 tested the lunar module in Earth orbit, a critical engineering milestone for Moon landings." },
+  { month: 3, day: 4, text: "1791 — Vermont joined the Union; the state later became known for its granite quarrying engineering industry." },
+  { month: 3, day: 7, text: "1876 — Alexander Graham Bell was granted the patent for the telephone." },
+  { month: 3, day: 10, text: "1876 — Bell made the first successful telephone call to his assistant, Watson." },
+  { month: 3, day: 14, text: "1879 — Albert Einstein was born, whose physics underpins much of modern structural and material engineering." },
+  { month: 3, day: 17, text: "1959 — The Dalai Lama fled Tibet, an era of significant Himalayan road and infrastructure engineering by multiple nations." },
+  { month: 3, day: 20, text: "1852 — Harriet Beecher Stowe published Uncle Tom's Cabin; the era saw rapid growth of American railway engineering." },
+  { month: 3, day: 21, text: "1965 — The Selma to Montgomery marches began on a route later reinforced with modern road engineering." },
+  { month: 3, day: 25, text: "1955 — Disneyland's construction employed innovative civil and structural engineering for its unique attractions." },
+  { month: 3, day: 26, text: "1979 — The Egypt-Israel peace treaty was signed, later enabling major joint infrastructure projects." },
+  { month: 3, day: 30, text: "1867 — The US purchased Alaska, later requiring extensive engineering to address its extreme climate infrastructure needs." },
+  { month: 4, day: 1, text: "1976 — Apple Computer was founded, eventually transforming engineering design software and CAD tools." },
+  { month: 4, day: 4, text: "1968 — Dr. Martin Luther King Jr. was assassinated in Memphis, a city later revitalized through major urban engineering." },
+  { month: 4, day: 6, text: "1830 — The Book of Mormon was published; unrelated to engineering, but the era saw rapid canal and railway construction in the US." },
+  { month: 4, day: 9, text: "1865 — The American Civil War effectively ended, followed by massive railroad and infrastructure reconstruction." },
+  { month: 4, day: 12, text: "1961 — Yuri Gagarin became the first human in space, a landmark in aerospace engineering." },
+  { month: 4, day: 14, text: "1912 — The RMS Titanic struck an iceberg, prompting major reforms in maritime structural engineering." },
+  { month: 4, day: 18, text: "1906 — The San Francisco earthquake struck, transforming seismic engineering standards worldwide." },
+  { month: 4, day: 22, text: "1970 — The first Earth Day was held, later influencing sustainable and environmental engineering practices." },
+  { month: 4, day: 24, text: "1990 — The Hubble Space Telescope was launched, an extraordinary feat of precision optical engineering." },
+  { month: 4, day: 28, text: "1789 — The mutiny on the HMS Bounty occurred, a ship representing advanced 18th-century naval engineering." },
+  { month: 5, day: 1, text: "1931 — The Empire State Building officially opened after just over a year of construction." },
+  { month: 5, day: 4, text: "1979 — Margaret Thatcher became UK Prime Minister during an era of major infrastructure privatization." },
+  { month: 5, day: 7, text: "1945 — Germany surrendered in WWII, leading to massive European reconstruction and engineering efforts." },
+  { month: 5, day: 10, text: "1869 — The First Transcontinental Railroad was completed at Promontory Summit, Utah." },
+  { month: 5, day: 14, text: "1948 — Israel declared independence, launching decades of major national infrastructure development." },
+  { month: 5, day: 18, text: "1980 — Mount St. Helens erupted, prompting new research into structural resilience against natural disasters." },
+  { month: 5, day: 20, text: "1927 — Charles Lindbergh began his solo transatlantic flight, showcasing aeronautical engineering advances." },
+  { month: 5, day: 21, text: "1881 — The American Red Cross was founded by Clara Barton." },
+  { month: 5, day: 25, text: "1961 — President Kennedy announced the goal of landing a man on the Moon, launching a decade of aerospace engineering innovation." },
+  { month: 5, day: 29, text: "1953 — Edmund Hillary and Tenzing Norgay became the first to summit Mount Everest, aided by advances in climbing equipment engineering." },
+  { month: 6, day: 1, text: "1980 — CNN launched, an early example of large-scale live broadcast engineering." },
+  { month: 6, day: 4, text: "1919 — The US Congress passed the 19th Amendment; the era also saw rapid growth of hydroelectric engineering." },
+  { month: 6, day: 5, text: "1981 — The first cases of what became known as AIDS were reported, spurring advances in biomedical engineering." },
+  { month: 6, day: 6, text: "1944 — D-Day landings in Normandy relied on Mulberry harbours — extraordinary temporary engineering structures." },
+  { month: 6, day: 9, text: "1732 — James Oglethorpe received a charter to found Georgia; the colony later became known for shipbuilding engineering." },
+  { month: 6, day: 12, text: "1987 — President Reagan's Berlin speech came amid rapid advances in East-West infrastructure engineering." },
+  { month: 6, day: 16, text: "1963 — Valentina Tereshkova became the first woman in space, a major aerospace engineering milestone." },
+  { month: 6, day: 18, text: "1178 — Canterbury monks reported a lunar impact event, later studied through modern astronomical engineering methods." },
+  { month: 6, day: 20, text: "1837 — Queen Victoria ascended the throne, overseeing Britain's Industrial Revolution engineering boom." },
+  { month: 6, day: 25, text: "1876 — The Battle of Little Bighorn took place; the era saw rapid US railway expansion engineering." },
+  { month: 6, day: 28, text: "1914 — Archduke Franz Ferdinand's assassination triggered WWI, spurring massive military engineering advances." },
+  { month: 7, day: 1, text: "1867 — Canada became a self-governing dominion, launching major transcontinental railway engineering projects." },
+  { month: 7, day: 2, text: "1937 — Amelia Earhart disappeared during her flight, an event that spurred advances in aviation tracking engineering." },
+  { month: 7, day: 3, text: "1938 — The steam locomotive Mallard set a world speed record for steam trains, reaching 126 mph." },
+  { month: 7, day: 5, text: "1946 — The bikini swimsuit was introduced; unrelated to engineering but named after Bikini Atoll nuclear tests." },
+  { month: 7, day: 7, text: "1930 — Construction began on the Hoover Dam, one of the largest civil engineering projects of its era." },
+  { month: 7, day: 9, text: "1877 — The first Wimbledon tennis championship was held, on courts requiring precise turf engineering." },
+  { month: 7, day: 11, text: "1804 — The Hamilton-Burr duel took place; the era saw the birth of American civil engineering societies." },
+  { month: 7, day: 14, text: "1789 — The storming of the Bastille began the French Revolution, later leading to Haussmann's famous Paris urban engineering." },
+  { month: 7, day: 16, text: "1969 — Apollo 11 launched from Kennedy Space Center toward the first Moon landing." },
+  { month: 7, day: 18, text: "64 AD — The Great Fire of Rome led to new building codes, an early form of fire-safety engineering regulation." },
+  { month: 7, day: 21, text: "1969 — Neil Armstrong became the first human to walk on the Moon." },
+  { month: 7, day: 24, text: "1911 — Machu Picchu was rediscovered, showcasing remarkable pre-Columbian civil engineering." },
+  { month: 7, day: 26, text: "1908 — The FBI was founded; unrelated to engineering, but the era saw rapid growth of American skyscraper construction." },
+  { month: 7, day: 28, text: "1914 — World War I began, driving rapid advances in industrial and military engineering." },
+  { month: 8, day: 1, text: "1774 — Joseph Priestley discovered oxygen, foundational to combustion and materials engineering." },
+  { month: 8, day: 2, text: "1990 — Iraq invaded Kuwait, later prompting major oil infrastructure reconstruction engineering." }
+];
+
+function loadHistoryOfDay(){
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const el = document.getElementById('historyOfDay');
+  if(!el) return;
+  const todayMatch = ENGINEERING_HISTORY.find(h => h.month === month && h.day === day);
+  if(todayMatch){
+    el.textContent = todayMatch.text;
+  } else {
+    const randomEvent = ENGINEERING_HISTORY[Math.floor(Math.random() * ENGINEERING_HISTORY.length)];
+    el.textContent = randomEvent.text;
+  }
+}
+
+async function subscribeNewsletter(){
+  const emailInput = document.getElementById('newsletterEmail');
+  const email = emailInput.value.trim();
+  const msg = document.getElementById('newsletterMsg');
+
+  if(!email || !email.includes('@')){
+    msg.innerHTML = '<div class="msg err" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Please enter a valid email address.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Subscribing...</div>';
+
+  try{
+    const bin = await fetchBin();
+    const subscribers = bin.newsletterSubscribers || [];
+    if(subscribers.some(s => s.toLowerCase() === email.toLowerCase())){
+      msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">You're already subscribed.</div>";
+      return;
+    }
+    subscribers.push(email);
+    bin.newsletterSubscribers = subscribers;
+    await saveBin(bin);
+    msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">Subscribed! You'll hear about new posts.</div>";
+    emailInput.value = '';
+  }catch(e){
+    msg.innerHTML = '<div class="msg err" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Could not subscribe. Try again.</div>';
+  }
+}
+
+const factHistory = [];
+function loadFactOfDay(){
+  let index;
+  // avoid repeating the same fact twice in a row within a session
+  do{
+    index = Math.floor(Math.random() * ENGINEERING_FACTS.length);
+  } while(ENGINEERING_FACTS.length > 1 && index === factHistory[factHistory.length - 1]);
+  factHistory.push(index);
+  const el = document.getElementById('factOfDay');
+  if(el) el.textContent = ENGINEERING_FACTS[index];
+}
+
+function toggleCalcWidget(show){
+  document.getElementById('calcWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
+}
+
+// ===== Engineering Quiz Game =====
+
+const GAME_QUESTIONS = [
+  { q: "What does the acronym 'CAD' stand for in engineering?", options: ["Computer-Aided Design", "Civil Analysis Data", "Construction Applied Drawing", "Concrete Aggregate Density"], correct: 0 },
+  { q: "Which material is most commonly used for reinforcing concrete?", options: ["Aluminum", "Steel", "Copper", "Titanium"], correct: 1 },
+  { q: "What is the SI unit of force?", options: ["Joule", "Watt", "Newton", "Pascal"], correct: 2 },
+  { q: "Which famous bridge collapsed in 1940 due to wind-induced oscillation?", options: ["Golden Gate Bridge", "Tacoma Narrows Bridge", "Brooklyn Bridge", "Sydney Harbour Bridge"], correct: 1 },
+  { q: "What does 'W/C ratio' refer to in concrete mixing?", options: ["Weight/Cost ratio", "Water/Cement ratio", "Width/Curve ratio", "Weld/Column ratio"], correct: 1 },
+  { q: "Which shape is inherently the most structurally stable?", options: ["Square", "Circle", "Triangle", "Pentagon"], correct: 2 },
+  { q: "What is the standard unit for measuring pressure?", options: ["Newton", "Pascal", "Joule", "Watt"], correct: 1 },
+  { q: "What does 'RCC' stand for in construction?", options: ["Rapid Concrete Curing", "Reinforced Cement Concrete", "Road Construction Code", "Resistant Column Cross-section"], correct: 1 },
+  { q: "Which of these is NOT a type of foundation?", options: ["Pile Foundation", "Raft Foundation", "Truss Foundation", "Strip Foundation"], correct: 2 },
+  { q: "What is the primary purpose of a surveyor's theodolite?", options: ["Measuring temperature", "Measuring angles", "Measuring weight", "Measuring water flow"], correct: 1 },
+  { q: "Who is often called the 'father of modern structural engineering'?", options: ["Isambard Kingdom Brunel", "Gustave Eiffel", "Leonardo da Vinci", "Thomas Telford"], correct: 1 },
+  { q: "What does 'BOQ' stand for in Quantity Surveying?", options: ["Basis of Quotation", "Bill of Quantities", "Building Ownership Query", "Base of Quarry"], correct: 1 },
+  { q: "Which test measures the compressive strength of concrete?", options: ["Slump Test", "Cube Test", "Sieve Test", "Litmus Test"], correct: 1 },
+  { q: "What is the term for the sideways force exerted by soil against a wall?", options: ["Shear Force", "Lateral Earth Pressure", "Torque", "Tensile Load"], correct: 1 },
+  { q: "Which of these is a non-renewable energy source?", options: ["Solar", "Wind", "Coal", "Hydropower"], correct: 2 },
+  { q: "What does 'GPS' stand for?", options: ["Global Positioning System", "Geographic Placement Survey", "Ground Penetrating Sonar", "General Project Schedule"], correct: 0 },
+  { q: "What is the main gas responsible for the greenhouse effect?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], correct: 2 },
+  { q: "Which continent is the Great Wall of China located on?", options: ["Europe", "Africa", "Asia", "South America"], correct: 2 },
+  { q: "What does 'HVAC' stand for?", options: ["Heating, Ventilation, and Air Conditioning", "High Voltage Alternating Current", "Hydraulic Valve and Component", "Horizontal Vertical Alignment Chart"], correct: 0 },
+  { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], correct: 1 },
+  { q: "What is the tallest mountain in the world?", options: ["K2", "Mount Kilimanjaro", "Mount Everest", "Denali"], correct: 2 },
+  { q: "In engineering drawings, what does a dashed line typically represent?", options: ["Visible edge", "Hidden edge", "Centerline", "Dimension line"], correct: 1 },
+  { q: "What does 'MEP' stand for in construction?", options: ["Mechanical, Electrical, Plumbing", "Materials Engineering Plan", "Multiple Entry Point", "Maximum Effort Project"], correct: 0 },
+  { q: "Which of these bridges is a cable-stayed bridge design?", options: ["Beam Bridge", "Arch Bridge", "Cable-Stayed Bridge", "Truss Bridge"], correct: 2 },
+  { q: "What is the currency of Ghana?", options: ["Naira", "Cedi", "Rand", "Shilling"], correct: 1 },
+  { q: "Which river is the longest in the world?", options: ["Amazon River", "Nile River", "Yangtze River", "Mississippi River"], correct: 1 },
+  { q: "What does 'PPE' stand for on a construction site?", options: ["Personal Protective Equipment", "Project Planning Estimate", "Public Property Easement", "Pre-Poured Element"], correct: 0 },
+  { q: "Which of these best describes 'tensile strength'?", options: ["Resistance to being pulled apart", "Resistance to compression", "Resistance to bending", "Resistance to twisting"], correct: 0 },
+  { q: "What is the boiling point of water at sea level in Celsius?", options: ["90°C", "100°C", "110°C", "120°C"], correct: 1 },
+  { q: "Which country has the most UNESCO World Heritage Sites?", options: ["China", "Italy", "France", "Spain"], correct: 1 }
+];
+
+let gameState = { questions: [], currentIndex: 0, score: 0, timer: null, timeLeft: 15 };
+
+function toggleGameWidget(show){
+  document.getElementById('gameWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('gameWidgetPanel').classList.toggle('hidden', !show);
+  if(show){
+    switchGameTab('play');
+  } else if(gameState.timer){
+    clearInterval(gameState.timer);
+  }
+}
+
+function switchGameTab(tab){
+  document.getElementById('gameTabContentPlay').classList.toggle('hidden', tab !== 'play');
+  document.getElementById('gameTabContentLeaderboard').classList.toggle('hidden', tab !== 'leaderboard');
+  document.getElementById('gameTabPlay').classList.toggle('active', tab === 'play');
+  document.getElementById('gameTabLeaderboard').classList.toggle('active', tab === 'leaderboard');
+  if(tab === 'leaderboard') loadLeaderboard();
+}
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  gameState.questions = shuffleArray(GAME_QUESTIONS).slice(0, 10);
+  gameState.currentIndex = 0;
+  gameState.score = 0;
+  document.getElementById('gameIntroView').classList.add('hidden');
+  document.getElementById('gameEndView').classList.add('hidden');
+  document.getElementById('gamePlayView').classList.remove('hidden');
+  showGameQuestion();
+}
+
+function showGameQuestion(){
+  if(gameState.timer) clearInterval(gameState.timer);
+  const q = gameState.questions[gameState.currentIndex];
+  document.getElementById('gameQuestionCounter').textContent = `Question ${gameState.currentIndex + 1}/10`;
+  document.getElementById('gameScoreCounter').textContent = `Score: ${gameState.score}`;
+  document.getElementById('gameQuestionText').textContent = q.q;
+
+  const shuffledOptions = q.options.map((opt, i) => ({ opt, isCorrect: i === q.correct }));
+  const shuffled = shuffleArray(shuffledOptions);
+  const container = document.getElementById('gameOptionsContainer');
+  container.innerHTML = shuffled.map((o, i) => `<button class="game-option" data-correct="${o.isCorrect}" onclick="selectGameAnswer(this)">${escapeHtml(o.opt)}</button>`).join('');
+
+  gameState.timeLeft = 15;
+  const bar = document.getElementById('gameTimerBar');
+  bar.style.width = '100%';
+  gameState.timer = setInterval(() => {
+    gameState.timeLeft--;
+    bar.style.width = `${(gameState.timeLeft / 15) * 100}%`;
+    if(gameState.timeLeft <= 0){
+      clearInterval(gameState.timer);
+      revealGameAnswer(null);
+    }
+  }, 1000);
+}
+
+function selectGameAnswer(btn){
+  if(gameState.timer) clearInterval(gameState.timer);
+  revealGameAnswer(btn);
+}
+
+function revealGameAnswer(selectedBtn){
+  const buttons = document.querySelectorAll('#gameOptionsContainer .game-option');
+  buttons.forEach(b => {
+    b.disabled = true;
+    if(b.getAttribute('data-correct') === 'true'){
+      b.classList.add('correct');
+    } else if(b === selectedBtn){
+      b.classList.add('wrong');
+    }
+  });
+  if(selectedBtn && selectedBtn.getAttribute('data-correct') === 'true'){
+    gameState.score++;
+  }
+  setTimeout(() => {
+    gameState.currentIndex++;
+    if(gameState.currentIndex < gameState.questions.length){
+      showGameQuestion();
+    } else {
+      endGame();
+    }
+  }, 900);
+}
+
+function endGame(){
+  document.getElementById('gamePlayView').classList.add('hidden');
+  document.getElementById('gameEndView').classList.remove('hidden');
+  document.getElementById('gameFinalScore').textContent = `${gameState.score}/10`;
+}
+
+function resetGameWidget(){
+  document.getElementById('gameEndView').classList.add('hidden');
+  document.getElementById('gameIntroView').classList.remove('hidden');
+  document.getElementById('gamePlayerName').value = '';
+  document.getElementById('gamePlayerIndex').value = '';
+  document.getElementById('gameSubmitMsg').innerHTML = '';
+}
+
+async function submitGameScore(){
+  const name = document.getElementById('gamePlayerName').value.trim();
+  const indexNum = document.getElementById('gamePlayerIndex').value.trim();
+  const msg = document.getElementById('gameSubmitMsg');
+
+  if(!name || !indexNum){
+    msg.innerHTML = '<div class="msg err">Please enter both your name and index number.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Submitting...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const scores = data.gameScores || [];
+    scores.push({
+      name, indexNumber: indexNum,
+      score: gameState.score,
+      playedAt: new Date().toISOString()
+    });
+    data.gameScores = scores;
+    await saveSupabaseData(data);
+    msg.innerHTML = '<div class="msg ok">Score submitted! Check the Leaderboard tab.</div>';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not submit: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadLeaderboard(){
+  const container = document.getElementById('leaderboardList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const scores = (data.gameScores || []).slice().sort((a, b) => b.score - a.score || new Date(a.playedAt) - new Date(b.playedAt));
+    window.leaderboardCache = scores;
+
+    if(scores.length === 0){
+      container.innerHTML = '<div class="empty">No scores yet — be the first to play!</div>';
+    } else {
+      container.innerHTML = scores.slice(0, 20).map((s, i) => `
+        <div class="leaderboard-row">
+          <span class="leaderboard-rank">#${i + 1}</span>
+          <span class="leaderboard-name">${escapeHtml(s.name)}</span>
+          <span class="leaderboard-score">${s.score}/10</span>
+        </div>
+      `).join('');
+    }
+
+    const winnerCard = document.getElementById('randomWinnerCard');
+    if(isAdmin && isAdmin() && scores.length > 0){
+      winnerCard.classList.remove('hidden');
+    } else {
+      winnerCard.classList.add('hidden');
+    }
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load leaderboard.</div>';
+  }
+}
+
+function pickRandomWinner(){
+  const scores = window.leaderboardCache || [];
+  if(scores.length === 0) return;
+  const winner = scores[Math.floor(Math.random() * scores.length)];
+  document.getElementById('randomWinnerResult').innerHTML = `
+    <div class="msg ok" style="text-align:center;font-size:0.95rem;">
+      🎉 <strong>${escapeHtml(winner.name)}</strong><br>
+      Index: ${escapeHtml(winner.indexNumber)} &middot; Score: ${winner.score}/10
+    </div>
+  `;
+}
+
+function switchCalcTool(tool){
+  ['concrete','units','grade','soil','slope','flow'].forEach(t => {
+    document.getElementById('calcTool' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tool);
+    document.getElementById('calcTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === tool);
+  });
+}
+
+// ===== Unit Converter =====
+const UNIT_CONVERSIONS = {
+  kn_lbf:  { factor: 224.809,   label: 'lbf' },
+  lbf_kn:  { factor: 0.0044482, label: 'kN' },
+  mpa_psi: { factor: 145.038,   label: 'psi' },
+  psi_mpa: { factor: 0.00689476,label: 'MPa' },
+  m_ft:    { factor: 3.28084,   label: 'ft' },
+  ft_m:    { factor: 0.3048,    label: 'm' },
+  kg_lb:   { factor: 2.20462,   label: 'lb' },
+  lb_kg:   { factor: 0.453592,  label: 'kg' },
+  m2_ft2:  { factor: 10.7639,   label: 'ft\u00b2' },
+  ft2_m2:  { factor: 0.092903,  label: 'm\u00b2' }
+};
+
+function calculateUnitConversion(){
+  const value = parseFloat(document.getElementById('unitValueInput').value);
+  const type = document.getElementById('unitTypeSelect').value;
+  const resultDiv = document.getElementById('unitResult');
+
+  if(isNaN(value)){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid number.</div>';
+    return;
+  }
+  const conv = UNIT_CONVERSIONS[type];
+  const converted = value * conv.factor;
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid" style="grid-template-columns:1fr;">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${converted.toFixed(4)} ${conv.label}</div>
+        <div class="calc-result-label">Converted Value</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Grade Calculator =====
+function addGradeRow(){
+  const container = document.getElementById('gradeRows');
+  const row = document.createElement('div');
+  row.className = 'grade-row';
+  row.innerHTML = `
+    <input type="text" placeholder="e.g. Assignment 2" class="grade-name" style="flex:1.4;">
+    <input type="text" placeholder="Score" class="grade-score" style="flex:0.8;">
+    <input type="text" placeholder="Max" class="grade-max" style="flex:0.8;">
+    <input type="text" placeholder="Weight %" class="grade-weight" style="flex:0.8;">
+  `;
+  container.appendChild(row);
+}
+
+function calculateGrade(){
+  const rows = document.querySelectorAll('#gradeRows .grade-row');
+  const resultDiv = document.getElementById('gradeResult');
+
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+  let hasValidRow = false;
+
+  rows.forEach(row => {
+    const score = parseFloat(row.querySelector('.grade-score').value);
+    const max = parseFloat(row.querySelector('.grade-max').value);
+    const weight = parseFloat(row.querySelector('.grade-weight').value);
+    if(!isNaN(score) && !isNaN(max) && max > 0 && !isNaN(weight)){
+      const pct = (score / max) * 100;
+      totalWeightedScore += pct * (weight / 100);
+      totalWeight += weight;
+      hasValidRow = true;
+    }
+  });
+
+  if(!hasValidRow){
+    resultDiv.innerHTML = '<div class="msg err">Enter at least one complete row (score, max, and weight).</div>';
+    return;
+  }
+
+  const weightNote = Math.abs(totalWeight - 100) > 0.5
+    ? `<p style="color:var(--muted);font-size:0.75rem;margin-top:8px;">Note: weights add up to ${totalWeight}%, not 100% — result is scaled proportionally.</p>`
+    : '';
+  const finalGrade = totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : 0;
+  const gradeColor = finalGrade >= 70 ? 'var(--ok)' : (finalGrade >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid" style="grid-template-columns:1fr;">
+      <div class="calc-result-item">
+        <div class="calc-result-num" style="color:${gradeColor};">${finalGrade.toFixed(1)}%</div>
+        <div class="calc-result-label">Overall Grade</div>
+      </div>
+    </div>
+    ${weightNote}
+  `;
+}
+
+// ===== Soil Bearing Capacity (Terzaghi General Shear) =====
+const TERZAGHI_FACTORS = {
+  0:  { Nc: 5.7,  Nq: 1.0,  Ng: 0.0 },
+  10: { Nc: 9.6,  Nq: 2.7,  Ng: 1.2 },
+  20: { Nc: 17.7, Nq: 7.4,  Ng: 5.0 },
+  25: { Nc: 25.1, Nq: 12.7, Ng: 9.7 },
+  30: { Nc: 37.2, Nq: 22.5, Ng: 19.7 },
+  35: { Nc: 57.8, Nq: 41.4, Ng: 42.4 },
+  40: { Nc: 95.7, Nq: 81.3, Ng: 100.4 }
+};
+
+function calculateSoilBearing(){
+  const c = parseFloat(document.getElementById('soilCohesion').value) || 0;
+  const gamma = parseFloat(document.getElementById('soilUnitWeight').value) || 0;
+  const B = parseFloat(document.getElementById('soilWidth').value) || 0;
+  const Df = parseFloat(document.getElementById('soilDepth').value) || 0;
+  const phi = document.getElementById('soilFrictionAngle').value;
+  const FOS = parseFloat(document.getElementById('soilFOS').value) || 3;
+  const resultDiv = document.getElementById('soilResult');
+
+  if(B <= 0 || gamma <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter valid footing width and unit weight.</div>';
+    return;
+  }
+
+  const factors = TERZAGHI_FACTORS[phi];
+  const qu = (c * factors.Nc) + (gamma * Df * factors.Nq) + (0.5 * gamma * B * factors.Ng);
+  const qa = qu / FOS;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${qu.toFixed(1)}</div>
+        <div class="calc-result-label">q<sub>u</sub> (kPa) Ultimate</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${qa.toFixed(1)}</div>
+        <div class="calc-result-label">q<sub>a</sub> (kPa) Allowable</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">Based on Terzaghi's general shear failure equation for a strip footing: q<sub>u</sub> = cN<sub>c</sub> + &gamma;D<sub>f</sub>N<sub>q</sub> + 0.5&gamma;BN<sub>&gamma;</sub>. For estimation only — verify against site-specific geotechnical data.</p>
+  `;
+}
+
+// ===== Slope / Grade Converter =====
+function updateSlopePlaceholder(){
+  const type = document.getElementById('slopeInputType').value;
+  const label = document.getElementById('slopeInputLabel');
+  const input = document.getElementById('slopeValueInput');
+  if(type === 'percent'){ label.textContent = 'Value (%)'; input.placeholder = 'e.g. 5'; input.value = '5'; }
+  else if(type === 'degrees'){ label.textContent = 'Value (degrees)'; input.placeholder = 'e.g. 2.86'; input.value = '2.86'; }
+  else { label.textContent = 'X (as in 1 : X)'; input.placeholder = 'e.g. 20'; input.value = '20'; }
+}
+
+function calculateSlope(){
+  const type = document.getElementById('slopeInputType').value;
+  const value = parseFloat(document.getElementById('slopeValueInput').value);
+  const resultDiv = document.getElementById('slopeResult');
+
+  if(isNaN(value) || value <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid positive number.</div>';
+    return;
+  }
+
+  let percent, degrees, ratioX;
+  if(type === 'percent'){
+    percent = value;
+    degrees = Math.atan(value / 100) * (180 / Math.PI);
+    ratioX = 100 / value;
+  } else if(type === 'degrees'){
+    degrees = value;
+    percent = Math.tan(value * Math.PI / 180) * 100;
+    ratioX = 100 / percent;
+  } else {
+    ratioX = value;
+    percent = 100 / value;
+    degrees = Math.atan(percent / 100) * (180 / Math.PI);
+  }
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${percent.toFixed(2)}%</div>
+        <div class="calc-result-label">Percent Grade</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${degrees.toFixed(2)}&deg;</div>
+        <div class="calc-result-label">Angle</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">1:${ratioX.toFixed(1)}</div>
+        <div class="calc-result-label">Ratio</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== Water / Hydraulic Flow Calculator =====
+function updateFlowInputMode(){
+  const mode = document.getElementById('flowInputMode').value;
+  const label = document.getElementById('flowInputLabel');
+  const input = document.getElementById('flowInputValue');
+  if(mode === 'velocity'){ label.textContent = 'Velocity (m/s)'; input.placeholder = 'e.g. 2'; input.value = '2'; }
+  else { label.textContent = 'Pressure Difference (kPa)'; input.placeholder = 'e.g. 50'; input.value = '50'; }
+}
+
+function calculateFlow(){
+  const diameterMm = parseFloat(document.getElementById('flowDiameter').value);
+  const mode = document.getElementById('flowInputMode').value;
+  const inputValue = parseFloat(document.getElementById('flowInputValue').value);
+  const resultDiv = document.getElementById('flowResult');
+
+  if(isNaN(diameterMm) || diameterMm <= 0 || isNaN(inputValue) || inputValue <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter valid positive numbers.</div>';
+    return;
+  }
+
+  const diameterM = diameterMm / 1000;
+  const area = Math.PI * Math.pow(diameterM, 2) / 4; // m²
+
+  let velocity, note;
+  if(mode === 'velocity'){
+    velocity = inputValue;
+    note = 'Flow rate calculated using the continuity equation: Q = A &times; V.';
+  } else {
+    // Simplified Torricelli/Bernoulli-based estimate: V = sqrt(2 * ΔP / ρ), water density ρ = 1000 kg/m³
+    const deltaP_Pa = inputValue * 1000;
+    velocity = Math.sqrt((2 * deltaP_Pa) / 1000);
+    note = 'Velocity estimated from pressure difference using V = &radic;(2&Delta;P/&rho;), assuming water (&rho; = 1000 kg/m&sup3;), then Q = A &times; V. This is a simplified estimate — real pipe flow also depends on friction losses.';
+  }
+
+  const flowRateM3s = area * velocity;
+  const flowRateLs = flowRateM3s * 1000;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${velocity.toFixed(2)}</div>
+        <div class="calc-result-label">Velocity (m/s)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${flowRateLs.toFixed(2)}</div>
+        <div class="calc-result-label">Flow Rate (L/s)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${flowRateM3s.toFixed(4)}</div>
+        <div class="calc-result-label">Flow Rate (m&sup3;/s)</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">${note}</p>
+  `;
+}
+
+function calculateMix(){
+  const volume = parseFloat(document.getElementById('calcVolume').value) || 0;
+  const resultDiv = document.getElementById('calcResult');
+  if(volume <= 0){
+    resultDiv.innerHTML = '<div class="msg err">Enter a valid volume greater than 0.</div>';
+    return;
+  }
+  const ratioParts = document.getElementById('calcRatio').value.split(',').map(Number);
+  const [c, s, a] = ratioParts;
+  const totalParts = c + s + a;
+  // Dry volume factor (~1.54x wet volume, standard rule of thumb) and cement density (~1440 kg/m3, 50kg per bag)
+  const dryVolume = volume * 1.54;
+  const cementVol = (dryVolume * c) / totalParts;
+  const sandVol = (dryVolume * s) / totalParts;
+  const aggVol = (dryVolume * a) / totalParts;
+  const cementWeightKg = cementVol * 1440;
+  const cementBags = cementWeightKg / 50;
+
+  resultDiv.innerHTML = `
+    <div class="calc-result-grid">
+      <div class="calc-result-item">
+        <div class="calc-result-num">${cementBags.toFixed(1)}</div>
+        <div class="calc-result-label">Cement Bags (50kg)</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${sandVol.toFixed(2)} m&sup3;</div>
+        <div class="calc-result-label">Sand</div>
+      </div>
+      <div class="calc-result-item">
+        <div class="calc-result-num">${aggVol.toFixed(2)} m&sup3;</div>
+        <div class="calc-result-label">Coarse Aggregate</div>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.75rem;margin-top:12px;margin-bottom:0;">Based on the standard dry-volume factor (1.54×) and cement density of 1440 kg/m³. For estimation purposes — always verify against project specifications.</p>
+  `;
+}
+
+
+function updateLiveDateTime(){
+  const el = document.getElementById('liveDateTime');
+  if(!el) return;
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  el.textContent = `Sunyani, Ghana \u2014 ${timeStr}`;
+}
+setInterval(updateLiveDateTime, 1000 * 30);
+
+
+window.addEventListener('DOMContentLoaded', async () => {
+  updateLiveDateTime();
+  loadProfile();
+  await onEditAuthReady(false);
+  loadFactOfDay();
+  loadHistoryOfDay();
+  const footerYearEl = document.getElementById('footerYear');
+  if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('edit') === '1'){
+    switchTab('edit');
+  }
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('revealed');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  const qrImg = document.getElementById('siteQrCode');
+  if(qrImg){
+    const siteUrl = window.location.origin + window.location.pathname;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(siteUrl)}`;
+  }
+});
+</script>
+<!-- Floating Calculator Widget -->
+<div id="calcWidgetOverlay" class="calc-widget-overlay hidden" onclick="toggleCalcWidget(false)"></div>
+<div id="calcWidgetPanel" class="calc-widget-panel hidden">
+  <div class="calc-widget-header">
+    <span>Student Toolkit</span>
+    <button onclick="toggleCalcWidget(false)" class="calc-widget-close">&times;</button>
+  </div>
+  <div style="display:flex;gap:2px;padding:10px 14px 0;background:var(--navy);overflow-x:auto;">
+    <div class="calc-tool-tab active" id="calcTabConcrete" onclick="switchCalcTool('concrete')">Concrete</div>
+    <div class="calc-tool-tab" id="calcTabUnits" onclick="switchCalcTool('units')">Units</div>
+    <div class="calc-tool-tab" id="calcTabGrade" onclick="switchCalcTool('grade')">Grade</div>
+    <div class="calc-tool-tab" id="calcTabSoil" onclick="switchCalcTool('soil')">Soil</div>
+    <div class="calc-tool-tab" id="calcTabSlope" onclick="switchCalcTool('slope')">Slope</div>
+    <div class="calc-tool-tab" id="calcTabFlow" onclick="switchCalcTool('flow')">Flow</div>
+  </div>
+
+  <div class="calc-widget-body" id="calcToolConcrete">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate cement, sand, and aggregate quantities for a given concrete volume and mix ratio.</p>
+    <label>Volume (m&sup3;)</label>
+    <input type="text" id="calcVolume" placeholder="e.g. 1" value="1">
+    <label>Mix Ratio (Cement:Sand:Aggregate)</label>
+    <select id="calcRatio">
+      <option value="1,2,4">1 : 2 : 4 (M15, general use)</option>
+      <option value="1,1.5,3">1 : 1.5 : 3 (M20, structural)</option>
+      <option value="1,1,2">1 : 1 : 2 (M25, high strength)</option>
+      <option value="1,3,6">1 : 3 : 6 (M10, mass concrete)</option>
+    </select>
+    <button onclick="calculateMix()" style="width:100%;">Calculate</button>
+    <div id="calcResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolUnits">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Convert between common engineering units.</p>
+    <label>Value</label>
+    <input type="text" id="unitValueInput" placeholder="e.g. 100" value="100">
+    <label>Convert</label>
+    <select id="unitTypeSelect">
+      <option value="kn_lbf">kN &rarr; lbf (force)</option>
+      <option value="lbf_kn">lbf &rarr; kN (force)</option>
+      <option value="mpa_psi">MPa &rarr; psi (pressure)</option>
+      <option value="psi_mpa">psi &rarr; MPa (pressure)</option>
+      <option value="m_ft">m &rarr; ft (length)</option>
+      <option value="ft_m">ft &rarr; m (length)</option>
+      <option value="kg_lb">kg &rarr; lb (mass)</option>
+      <option value="lb_kg">lb &rarr; kg (mass)</option>
+      <option value="m2_ft2">m&sup2; &rarr; ft&sup2; (area)</option>
+      <option value="ft2_m2">ft&sup2; &rarr; m&sup2; (area)</option>
+    </select>
+    <button onclick="calculateUnitConversion()" style="width:100%;">Convert</button>
+    <div id="unitResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolGrade">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Enter each assessment's score, max score, and weight to calculate your overall grade.</p>
+    <div id="gradeRows">
+      <div class="grade-row">
+        <input type="text" placeholder="e.g. Midterm" class="grade-name" style="flex:1.4;">
+        <input type="text" placeholder="Score" class="grade-score" style="flex:0.8;">
+        <input type="text" placeholder="Max" class="grade-max" style="flex:0.8;">
+        <input type="text" placeholder="Weight %" class="grade-weight" style="flex:0.8;">
+      </div>
+    </div>
+    <button class="secondary" onclick="addGradeRow()" style="width:100%;margin-bottom:10px;">+ Add Another Assessment</button>
+    <button onclick="calculateGrade()" style="width:100%;">Calculate Grade</button>
+    <div id="gradeResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolSoil">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate ultimate and allowable bearing capacity for a shallow strip footing (Terzaghi general shear equation).</p>
+    <label>Cohesion, c (kPa)</label>
+    <input type="text" id="soilCohesion" placeholder="e.g. 10" value="10">
+    <label>Soil Unit Weight, &gamma; (kN/m&sup3;)</label>
+    <input type="text" id="soilUnitWeight" placeholder="e.g. 18" value="18">
+    <label>Footing Width, B (m)</label>
+    <input type="text" id="soilWidth" placeholder="e.g. 1.5" value="1.5">
+    <label>Depth of Footing, D<sub>f</sub> (m)</label>
+    <input type="text" id="soilDepth" placeholder="e.g. 1.2" value="1.2">
+    <label>Angle of Internal Friction, &phi;</label>
+    <select id="soilFrictionAngle">
+      <option value="0">0&deg; (pure clay)</option>
+      <option value="10">10&deg;</option>
+      <option value="20">20&deg;</option>
+      <option value="25">25&deg;</option>
+      <option value="30" selected>30&deg;</option>
+      <option value="35">35&deg;</option>
+      <option value="40">40&deg; (dense sand)</option>
+    </select>
+    <label>Factor of Safety</label>
+    <input type="text" id="soilFOS" placeholder="e.g. 3" value="3">
+    <button onclick="calculateSoilBearing()" style="width:100%;">Calculate</button>
+    <div id="soilResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolSlope">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Convert between percentage grade, degrees, and ratio (1:X) — common in road and site design.</p>
+    <label>I have a...</label>
+    <select id="slopeInputType" onchange="updateSlopePlaceholder()">
+      <option value="percent">Percentage Grade (%)</option>
+      <option value="degrees">Angle (degrees)</option>
+      <option value="ratio">Ratio 1 : X (rise:run)</option>
+    </select>
+    <label id="slopeInputLabel">Value (%)</label>
+    <input type="text" id="slopeValueInput" placeholder="e.g. 5" value="5">
+    <button onclick="calculateSlope()" style="width:100%;">Convert</button>
+    <div id="slopeResult"></div>
+  </div>
+
+  <div class="calc-widget-body hidden" id="calcToolFlow">
+    <p style="color:var(--muted);font-size:0.83rem;margin-top:0;margin-bottom:16px;">Estimate pipe flow rate from diameter, using either a known velocity or a pressure difference.</p>
+    <label>Pipe Diameter (mm)</label>
+    <input type="text" id="flowDiameter" placeholder="e.g. 150" value="150">
+    <label>I know the...</label>
+    <select id="flowInputMode" onchange="updateFlowInputMode()">
+      <option value="velocity">Flow Velocity (m/s)</option>
+      <option value="pressure">Pressure Difference (kPa)</option>
+    </select>
+    <label id="flowInputLabel">Velocity (m/s)</label>
+    <input type="text" id="flowInputValue" placeholder="e.g. 2" value="2">
+    <button onclick="calculateFlow()" style="width:100%;">Calculate</button>
+    <div id="flowResult"></div>
+  </div>
+</div>
+<button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Student Toolkit">
+  🧮
+</button>
+
+<!-- Game Widget -->
+<div id="gameWidgetOverlay" class="game-widget-overlay hidden" onclick="toggleGameWidget(false)"></div>
+<div id="gameWidgetPanel" class="game-widget-panel hidden">
+  <div class="game-widget-header">
+    <span>Engineering Quiz</span>
+    <button onclick="toggleGameWidget(false)" class="game-widget-close">&times;</button>
+  </div>
+  <div style="display:flex;gap:2px;padding:10px 14px 0;background:var(--red);">
+    <div class="game-tab active" id="gameTabPlay" onclick="switchGameTab('play')" style="flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;border-bottom:2px solid transparent;">Play</div>
+    <div class="game-tab" id="gameTabLeaderboard" onclick="switchGameTab('leaderboard')" style="flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;border-bottom:2px solid transparent;">Leaderboard</div>
+  </div>
+
+  <div class="game-widget-body" id="gameTabContentPlay">
+    <div id="gameIntroView">
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;">10 quick questions, 15 seconds each. Answer as many correctly as you can and see how you rank!</p>
+      <button onclick="startGame()" style="width:100%;">Start Quiz</button>
+    </div>
+
+    <div id="gamePlayView" class="hidden">
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;">
+        <span id="gameQuestionCounter">Question 1/10</span>
+        <span id="gameScoreCounter">Score: 0</span>
+      </div>
+      <div class="game-progress-bar"><div class="game-progress-fill" id="gameTimerBar" style="width:100%;"></div></div>
+      <div id="gameQuestionText" style="font-size:0.95rem;font-weight:600;margin-bottom:14px;"></div>
+      <div id="gameOptionsContainer"></div>
+    </div>
+
+    <div id="gameEndView" class="hidden">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-family:'Fraunces',sans-serif;font-size:2.2rem;font-weight:700;color:var(--red);" id="gameFinalScore">0/10</div>
+        <div style="color:var(--muted);font-size:0.85rem;">Final Score</div>
+      </div>
+      <label>Your Name</label>
+      <input type="text" id="gamePlayerName" placeholder="e.g. Kwame Mensah">
+      <label>Your Index Number</label>
+      <input type="text" id="gamePlayerIndex" placeholder="e.g. UEB0700123">
+      <button onclick="submitGameScore()" style="width:100%;">Submit Score</button>
+      <div id="gameSubmitMsg"></div>
+      <button class="secondary" onclick="resetGameWidget()" style="width:100%;margin-top:8px;">Play Again</button>
+    </div>
+  </div>
+
+  <div class="game-widget-body hidden" id="gameTabContentLeaderboard">
+    <div id="leaderboardList"><div class="empty">Loading...</div></div>
+    <div id="randomWinnerCard" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
+      <button onclick="pickRandomWinner()" style="width:100%;">🎲 Pick Random Winner</button>
+      <div id="randomWinnerResult" style="margin-top:12px;"></div>
+    </div>
+  </div>
+</div>
+<button id="gameWidgetToggle" class="game-widget-toggle" onclick="toggleGameWidget(true)" title="Play & Win">
+  🎮
+</button>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+
+<!-- Additional Games -->
+<style>
+  .extra-games-toggle{position:fixed;bottom:24px;left:94px;z-index:50;width:58px;height:58px;border-radius:50%;background:#174a7e;color:#fff;border:none;font-size:1.35rem;box-shadow:0 6px 20px rgba(23,74,126,.35);cursor:pointer}
+  .extra-games-panel{position:fixed;bottom:24px;left:24px;z-index:80;width:360px;max-width:92vw;max-height:85vh;overflow:auto;background:#fff;border:1px solid #ddd;border-radius:16px;box-shadow:6px -4px 30px rgba(0,0,0,.15);display:none}
+  .extra-games-panel.open{display:block}
+  .extra-games-head{background:#174a7e;color:#fff;padding:16px 20px;font-weight:700;display:flex;justify-content:space-between}
+  .extra-games-body{padding:20px}
+  .extra-game-card{border:1px solid #ddd;border-radius:10px;padding:16px;margin-bottom:12px}
+  .extra-game-card h3{margin:0 0 7px}
+  .extra-game-card p{font-size:.9rem;line-height:1.45}
+  .extra-game-card button{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 16px;cursor:pointer}
+  .game-q{font-size:1rem;font-weight:700;margin:12px 0}
+  .game-input{width:100%;padding:10px;border:1px solid #ccc;border-radius:7px;box-sizing:border-box}
+  .game-options button{display:block;width:100%;margin:7px 0;text-align:left}
+  .game-score{font-weight:700;margin-top:12px}
+</style>
+
+<button class="extra-games-toggle" onclick="toggleExtraGames()" aria-label="Open additional games">🎮</button>
+
+<div id="extraGamesPanel" class="extra-games-panel">
+  <div class="extra-games-head">
+    <span>Engineering Games</span>
+    <button onclick="toggleExtraGames()" style="background:none;border:0;color:#fff;font-size:1.3rem;cursor:pointer">×</button>
+  </div>
+  <div class="extra-games-body">
+    <div id="gameMenu">
+      <div class="extra-game-card">
+        <h3>🔤 Engineering Word Scramble</h3>
+        <p>Unscramble engineering and construction terms against the clock.</p>
+        <button onclick="startWordScramble()">Play</button>
+      </div>
+      <div class="extra-game-card">
+        <h3>🧮 Civil Calculation Challenge</h3>
+        <p>Answer short civil-engineering calculation questions as quickly as possible.</p>
+        <button onclick="startCivilChallenge()">Play</button>
+      </div>
+    </div>
+    <div id="extraGameArea"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const scrambleWords = [
+    ['TNEOCERC','CONCRETE'],['EMNITC','CEMENT'],['RIEBAM','BEAM'],
+    ['MLOCUN','COLUMN'],['RDEGA','GRADE'],['LOSI','SOIL'],
+    ['RTAWRE','WATER'],['RUTUCSTRE','STRUCTURE'],['DONAUTFION','FOUNDATION'],
+    ['EGNINER','ENGINEER']
+  ];
+
+  const civilQuestions = [
+    {q:'A 4 m × 3 m slab has an area of:',o:['7 m²','12 m²','14 m²','24 m²'],a:1},
+    {q:'If concrete has a mass of 2400 kg and a volume of 1 m³, its density is:',o:['240 kg/m³','1200 kg/m³','2400 kg/m³','4800 kg/m³'],a:2},
+    {q:'A force of 20 kN acts over 2 m². The stress is:',o:['5 kPa','10 kPa','20 kPa','40 kPa'],a:1},
+    {q:'A 5 m beam carries a uniform load of 2 kN/m. Total load is:',o:['2 kN','5 kN','10 kN','20 kN'],a:2},
+    {q:'A 3 m × 4 m × 0.15 m slab has a volume of:',o:['0.45 m³','1.20 m³','1.80 m³','7.15 m³'],a:2},
+    {q:'If a 10 m wall rises 3 m, its face area is:',o:['13 m²','26 m²','30 m²','60 m²'],a:2},
+    {q:'A 50 kN load acts on an area of 5 m². Pressure is:',o:['5 kPa','10 kPa','25 kPa','250 kPa'],a:1},
+    {q:'A 6 m × 5 m floor has a perimeter of:',o:['11 m','22 m','30 m','60 m'],a:1}
+  ];
+
+  let timer, wordRound, wordScore, calcRound, calcScore;
+
+  window.toggleExtraGames = function(){
+    document.getElementById('extraGamesPanel').classList.toggle('open');
+  };
+
+  function menu(){
+    clearInterval(timer);
+    document.getElementById('gameMenu').style.display='block';
+    document.getElementById('extraGameArea').innerHTML='';
+  }
+
+  window.startWordScramble = function(){
+    wordRound=0; wordScore=0;
+    document.getElementById('gameMenu').style.display='none';
+    nextWord();
+  };
+
+  function nextWord(){
+    clearInterval(timer);
+    if(wordRound>=5){
+      document.getElementById('extraGameArea').innerHTML =
+        '<div class="extra-game-card"><h3>Finished!</h3><div class="game-score">Score: '+wordScore+'/5</div><button onclick="returnToGameMenu()">Play Again</button></div>';
+      return;
+    }
+    const item=scrambleWords[Math.floor(Math.random()*scrambleWords.length)];
+    let seconds=20;
+    document.getElementById('extraGameArea').innerHTML =
+      '<div class="extra-game-card"><h3>Round '+(wordRound+1)+' of 5</h3><div>Time: <strong id="wordTimer">'+seconds+'</strong>s</div><div class="game-q">'+item[0]+'</div><input id="wordAnswer" class="game-input" placeholder="Your answer" autocomplete="off"><button style="margin-top:8px" onclick="submitWord()">Submit</button><div id="wordMsg"></div></div>';
+    document.getElementById('wordAnswer').focus();
+    timer=setInterval(function(){
+      seconds--;
+      const el=document.getElementById('wordTimer');
+      if(el) el.textContent=seconds;
+      if(seconds<=0){
+        clearInterval(timer);
+        wordRound++;
+        document.getElementById('wordMsg').innerHTML='<p>Time is up. Answer: <strong>'+item[1]+'</strong></p>';
+        setTimeout(nextWord,900);
+      }
+    },1000);
+    window.currentWord=item[1];
+  }
+
+  window.submitWord = function(){
+    const input=document.getElementById('wordAnswer');
+    if(!input) return;
+    clearInterval(timer);
+    if(input.value.trim().toUpperCase()===window.currentWord){
+      wordScore++;
+      document.getElementById('wordMsg').innerHTML='<p>✓ Correct!</p>';
+    }else{
+      document.getElementById('wordMsg').innerHTML='<p>✗ Correct answer: <strong>'+window.currentWord+'</strong></p>';
+    }
+    wordRound++;
+    setTimeout(nextWord,700);
+  };
+
+  window.startCivilChallenge = function(){
+    calcRound=0; calcScore=0;
+    document.getElementById('gameMenu').style.display='none';
+    nextCalc();
+  };
+
+  function nextCalc(){
+    clearInterval(timer);
+    if(calcRound>=civilQuestions.length){
+      document.getElementById('extraGameArea').innerHTML =
+        '<div class="extra-game-card"><h3>Challenge Complete!</h3><div class="game-score">Score: '+calcScore+'/'+civilQuestions.length+'</div><button onclick="returnToGameMenu()">Back to Games</button></div>';
+      return;
+    }
+    const item=civilQuestions[calcRound];
+    let seconds=15;
+    document.getElementById('extraGameArea').innerHTML =
+      '<div class="extra-game-card"><h3>Question '+(calcRound+1)+' of '+civilQuestions.length+'</h3><div>Time: <strong id="calcTimer">'+seconds+'</strong>s</div><div class="game-q">'+item.q+'</div><div class="game-options">'+item.o.map((x,i)=>'<button onclick="answerCalc('+i+')">'+x+'</button>').join('')+'</div><div id="calcMsg"></div></div>';
+    timer=setInterval(function(){
+      seconds--;
+      const el=document.getElementById('calcTimer');
+      if(el) el.textContent=seconds;
+      if(seconds<=0){
+        clearInterval(timer);
+        document.getElementById('calcMsg').innerHTML='<p>Time is up.</p>';
+        calcRound++;
+        setTimeout(nextCalc,700);
+      }
+    },1000);
+    window.currentCalc=item;
+  }
+
+  window.answerCalc=function(choice){
+    clearInterval(timer);
+    if(choice===window.currentCalc.a){
+      calcScore++;
+      document.getElementById('calcMsg').innerHTML='<p>✓ Correct!</p>';
+    }else{
+      document.getElementById('calcMsg').innerHTML='<p>✗ Incorrect.</p>';
+    }
+    calcRound++;
+    setTimeout(nextCalc,600);
+  };
+
+  window.returnToGameMenu=function(){ menu(); };
+})();
+</script>
+
+</body>
+</html>

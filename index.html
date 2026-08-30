@@ -216,7 +216,7 @@
     width:20px;height:2px;background:var(--accent);display:inline-block;
   }
   .tabs{
-    display:flex;gap:28px;margin:0 auto 0;max-width:760px;
+    display:flex;flex-wrap:wrap;gap:20px;row-gap:8px;margin:0 auto 0;max-width:760px;
     border-bottom:1px solid var(--line);
     position:relative;z-index:2;
     padding:0 24px;
@@ -605,7 +605,8 @@
       <textarea id="marqueeInput" placeholder="Structural Analysis&#10;Quantity Surveying&#10;Research Methods&#10;Civil & Environmental Engineering"></textarea>
 
       <label>Pull-Quote (the large italic quote on the homepage)</label>
-      <textarea id="pullQuoteInput" placeholder="Every structure begins as an idea tested against gravity — teaching is no different."></textarea>
+      <div class="hint">Leave this blank and a different quote will show automatically on every visit, picked randomly from a built-in set of 100. Fill this in to lock the homepage to one fixed quote instead.</div>
+      <textarea id="pullQuoteInput" placeholder="Leave blank for random quotes, or type your own fixed quote here."></textarea>
 
       <label>Newsletter Section Heading</label>
       <input type="text" id="newsletterHeadingInput" placeholder="Stay Updated">
@@ -750,6 +751,109 @@ async function saveSupabaseData(data){
   }
   return true;
 }
+
+const PULL_QUOTE_POOL = [
+  "Every structure begins as an idea tested against gravity — teaching is no different.",
+  "A beam doesn't fail because it's weak; it fails because someone didn't ask the right question first.",
+  "Concrete remembers every shortcut taken before it cured.",
+  "The best foundations are the ones nobody ever sees.",
+  "Engineering is the art of making decisions before all the facts are in.",
+  "A blueprint is just a promise drawn to scale.",
+  "Every load has to go somewhere — so does every excuse.",
+  "Design for the worst day, not the average one.",
+  "Students, like structures, need both support and room to move.",
+  "Safety factors exist because certainty rarely does.",
+  "A crack ignored today is a collapse rehearsed for tomorrow.",
+  "Good engineering is invisible; you only notice when it's missing.",
+  "The strongest material is patience, poured slowly.",
+  "Every exam is a stress test — some students just need better reinforcement.",
+  "Gravity never negotiates, but geometry always finds a way.",
+  "A well-taught lesson is a truss: every part carries its share.",
+  "The site you build on matters more than the building itself.",
+  "Precision is a habit before it's a skill.",
+  "Cement sets once; understanding should never stop setting in.",
+  "The bridge that lasts is the one that was never rushed.",
+  "Structures fail in silence long before they fail out loud.",
+  "Every course has a factor of safety — attendance is one of them.",
+  "You cannot pour a solid future on a cracked foundation.",
+  "Measure twice, mentor once.",
+  "Engineering is applied humility.",
+  "The soil never lies about what it can carry.",
+  "A well-drawn plan saves a thousand arguments on site.",
+  "Every deadline is a load case — plan the deflection.",
+  "Students settle differently than soil, but both need time to compact properly.",
+  "The straightest line on a drawing is rarely the shortest path to understanding.",
+  "A tower is only as honest as its foundation.",
+  "Learning, like construction, is built one layer at a time.",
+  "Every great engineer was once confused by the same formula you are now.",
+  "The strongest joints are the ones tested before they're trusted.",
+  "Water always finds the weakest point — so does doubt.",
+  "A classroom, like a site, needs clear supervision and clearer instructions.",
+  "Structural integrity begins with intellectual honesty.",
+  "The formwork comes off eventually — make sure what's inside can stand alone.",
+  "Every question a student asks is a load the lesson wasn't carrying yet.",
+  "Good design anticipates failure; great teaching prevents it.",
+  "A site visit teaches more than a hundred lecture slides.",
+  "The rebar you can't see is often the reason the structure still stands.",
+  "Every calculation you skip becomes someone else's emergency.",
+  "Understanding, like curing concrete, cannot be rushed without consequence.",
+  "The best students ask why the formula works, not just how.",
+  "A stable structure starts with an unstable amount of questions.",
+  "Every professional you'll become is under construction right now.",
+  "The site is the truth; the drawing is only a guess at it.",
+  "Discipline is the scaffolding that holds ambition upright.",
+  "A well-compacted foundation and a well-revised topic behave the same way — reliably.",
+  "The load doesn't care about your excuses; neither does the deadline.",
+  "Every engineer was once a student who refused to accept 'because that's how it's done.'",
+  "The site never forgives what the design ignored.",
+  "A single unchecked assumption can bring down an entire calculation.",
+  "Great structures, like great habits, are built long before anyone notices them.",
+  "The exam room and the construction site share one rule: preparation shows.",
+  "Reinforcement isn't weakness — it's foresight.",
+  "The strongest column still needs a good foundation beneath it.",
+  "Understanding settles in slowly, then all at once.",
+  "A good lecturer, like a good beam, distributes the weight evenly.",
+  "The most dangerous phrase in engineering is 'it should be fine.'",
+  "Every span has a limit; every student has a breakthrough waiting past theirs.",
+  "The drawing board doesn't lie, but it does forget details worth remembering.",
+  "A well-built career, like a well-built wall, is laid one course at a time.",
+  "Structures don't fail from one mistake — they fail from many small ones ignored.",
+  "The classroom is the formwork; the student is what takes shape inside it.",
+  "Every measurement matters more than the confidence behind it.",
+  "The ground tells you what it will allow, if you bother to test it.",
+  "A well-asked question is worth more than a memorized answer.",
+  "Engineering rewards those who double-check what confidence assumed.",
+  "The best foundations are poured with more patience than pressure.",
+  "A structure under stress reveals its true design, just like a student under exam pressure.",
+  "The site doesn't care about theory it never tested.",
+  "Every deadline met honestly is a small structure of its own.",
+  "The strongest students, like the strongest steel, are the ones tested the most.",
+  "A blueprint without a site visit is just an opinion.",
+  "The load path always exists — the job is finding it before it finds you.",
+  "Good habits, like good curing, need consistent conditions to set properly.",
+  "Every lecture is scaffolding; the understanding is what remains after it's removed.",
+  "The failure point is rarely where you expect it — that's why you check everywhere.",
+  "A solid education, like a solid slab, needs time under load to prove itself.",
+  "The most reliable structures are the ones built by people who doubted themselves enough to check twice.",
+  "Every course outline is a structural drawing for the semester ahead.",
+  "The soil report and the diagnostic quiz serve the same purpose: know what you're building on.",
+  "A well-reinforced argument holds up the same way a well-reinforced beam does.",
+  "The site teaches humility faster than any textbook.",
+  "Every strong bridge began as someone's uncertain sketch.",
+  "The classroom, like the construction site, rewards those who show up ready to learn from mistakes.",
+  "A structure's honesty is tested the first time it's truly loaded.",
+  "Every span of knowledge needs proper support at both ends.",
+  "The best engineers remain students of gravity for their entire careers.",
+  "A well-taught principle outlasts a thousand memorized formulas.",
+  "The ground settles; so does understanding — give both time.",
+  "Every crack tells a story someone should have listened to earlier.",
+  "The strongest teams, like the strongest trusses, distribute the weight fairly.",
+  "A career built on shortcuts collapses the same way a structure does.",
+  "The best lesson plans, like the best designs, always account for the unexpected.",
+  "Every site has a story the soil test will eventually tell.",
+  "The classroom is where tomorrow's load-bearing decisions are quietly being formed.",
+  "A structure stands because someone respected the numbers more than the deadline."
+];
 
 const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1245,7 +1349,7 @@ async function loadProfile(){
     if(marqueeTrack1) marqueeTrack1.innerHTML = marqueeSpans + marqueeSpans;
     document.getElementById('marqueeInput').value = profile.marqueeText || "";
 
-    const pullQuoteText = profile.pullQuote || "Every structure begins as an idea tested against gravity — teaching is no different.";
+    const pullQuoteText = profile.pullQuote || PULL_QUOTE_POOL[Math.floor(Math.random() * PULL_QUOTE_POOL.length)];
     document.getElementById('pullQuoteDisplay').innerHTML = `&ldquo;${escapeHtml(pullQuoteText)}&rdquo;`;
     document.getElementById('pullQuoteInput').value = profile.pullQuote || "";
 

@@ -355,39 +355,6 @@
   .game-tab.active{ color:var(--ink); border-bottom-color:var(--red); }
   .game-progress-bar{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:14px; }
   .game-progress-fill{ height:100%; background:var(--red); transition:width 1s linear; }
-
-  /* Additional game widgets */
-  .mini-game-toggle{
-    position:fixed; z-index:50; width:58px;height:58px;border-radius:50%;
-    color:#fff;border:none;font-size:1.35rem;box-shadow:0 6px 20px rgba(0,0,0,0.22);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
-    transition:transform 0.2s ease, opacity 0.2s ease;
-  }
-  .mini-game-toggle:hover{transform:scale(1.06);opacity:0.92;}
-  #wordGameToggle{bottom:24px;left:92px;background:var(--accent);}
-  #mathGameToggle{bottom:24px;left:160px;background:var(--navy);}
-  .mini-game-panel{
-    position:fixed; z-index:70; bottom:24px; width:360px; max-width:92vw; max-height:85vh;
-    overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:16px;
-    box-shadow:6px -4px 30px rgba(0,0,0,0.15);
-  }
-  #wordGamePanel{left:92px;}
-  #mathGamePanel{left:160px;}
-  .mini-game-header{display:flex;justify-content:space-between;align-items:center;background:var(--accent);color:#fff;padding:16px 20px;font-weight:700;font-family:'Fraunces',sans-serif;}
-  #mathGamePanel .mini-game-header{background:var(--navy);}
-  .mini-game-close{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0;line-height:1;}
-  .mini-game-body{padding:20px;}
-  .mini-game-progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:12px 0 16px;}
-  .mini-game-progress-fill{height:100%;background:var(--accent);transition:width 0.25s linear;}
-  #mathGamePanel .mini-game-progress-fill{background:var(--red);}
-  .mini-game-option{width:100%;margin-bottom:8px;text-align:left;background:#fff;border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:8px;cursor:pointer;font-size:0.88rem;}
-  .mini-game-option:hover{border-color:var(--accent);background:#f7faf6;}
-  .mini-game-option.correct{background:rgba(63,122,50,0.12);border-color:var(--accent);}
-  .mini-game-option.wrong{background:rgba(179,38,30,0.1);border-color:var(--red);}
-  @media(max-width:640px){
-    #wordGameToggle{bottom:92px;left:24px;} #mathGameToggle{bottom:160px;left:24px;}
-    #wordGamePanel,#mathGamePanel{left:24px;bottom:24px;}
-  }
   .game-option{
     display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
     border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer;
@@ -506,7 +473,6 @@
   <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
   <a href="announcements.html" class="tab" style="text-decoration:none;">Announcements</a>
   <a href="videos.html" class="tab" style="text-decoration:none;">Videos</a>
-   <a href="ai-study-assistant.html" class="tab" style="text-decoration:none;">AI Study Assistant</a>
   <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
   <a href="portal.html?view=attendance" class="tab" style="text-decoration:none;">Attendance</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">My Dashboard</a>
@@ -2547,181 +2513,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   🎮
 </button>
 
-<!-- Additional Game 2: Word Scramble -->
-<div id="wordGameOverlay" class="game-widget-overlay hidden" onclick="toggleWordGame(false)"></div>
-<div id="wordGamePanel" class="mini-game-panel hidden">
-  <div class="mini-game-header"><span>Engineering Word Scramble</span><button onclick="toggleWordGame(false)" class="mini-game-close">&times;</button></div>
-  <div class="mini-game-body">
-    <div id="wordGameIntro">
-      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;line-height:1.5;">Unscramble 5 engineering and construction terms. You have 20 seconds per word.</p>
-      <button onclick="startWordGame()" style="width:100%;background:var(--accent);">Start Word Game</button>
-    </div>
-    <div id="wordGamePlay" class="hidden">
-      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;"><span id="wordGameRound">Round 1/5</span><span id="wordGameScore">Score: 0</span></div>
-      <div class="mini-game-progress"><div class="mini-game-progress-fill" id="wordGameTimer" style="width:100%;"></div></div>
-      <div id="wordGameHint" style="font-size:0.8rem;color:var(--muted);line-height:1.45;margin-bottom:12px;"></div>
-      <div id="wordGameScramble" style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:700;letter-spacing:0.12em;margin:18px 0;"></div>
-      <input type="text" id="wordGameAnswer" placeholder="Type the word" onkeydown="if(event.key==='Enter')submitWordAnswer()">
-      <button onclick="submitWordAnswer()" style="width:100%;background:var(--accent);">Submit Answer</button>
-      <div id="wordGameFeedback" style="text-align:center;font-weight:700;font-size:0.85rem;margin-top:10px;min-height:18px;"></div>
-    </div>
-    <div id="wordGameEnd" class="hidden" style="text-align:center;">
-      <div style="font-family:'Fraunces',sans-serif;font-size:2.2rem;font-weight:700;color:var(--accent);" id="wordGameFinal">0/5</div>
-      <div style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Final Score</div>
-      <button onclick="resetWordGame()" style="width:100%;background:var(--accent);">Play Again</button>
-    </div>
-  </div>
-</div>
-<button id="wordGameToggle" class="mini-game-toggle" onclick="toggleWordGame(true)" title="Engineering Word Scramble">🔤</button>
-
-<!-- Additional Game 3: Civil Calculation Challenge -->
-<div id="mathGameOverlay" class="game-widget-overlay hidden" onclick="toggleMathGame(false)"></div>
-<div id="mathGamePanel" class="mini-game-panel hidden">
-  <div class="mini-game-header"><span>Civil Calculation Challenge</span><button onclick="toggleMathGame(false)" class="mini-game-close">&times;</button></div>
-  <div class="mini-game-body">
-    <div id="mathGameIntro">
-      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;line-height:1.5;">Answer 8 quick civil engineering calculations. You have 15 seconds for each question.</p>
-      <button onclick="startMathGame()" style="width:100%;">Start Calculation Game</button>
-    </div>
-    <div id="mathGamePlay" class="hidden">
-      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;"><span id="mathGameCounter">Question 1/8</span><span id="mathGameScore">Score: 0</span></div>
-      <div class="mini-game-progress"><div class="mini-game-progress-fill" id="mathGameTimer" style="width:100%;"></div></div>
-      <div id="mathGameQuestion" style="font-size:0.95rem;font-weight:600;line-height:1.45;margin-bottom:14px;"></div>
-      <div id="mathGameOptions"></div>
-    </div>
-    <div id="mathGameEnd" class="hidden" style="text-align:center;">
-      <div style="font-family:'Fraunces',sans-serif;font-size:2.2rem;font-weight:700;color:var(--red);" id="mathGameFinal">0/8</div>
-      <div style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">Final Score</div>
-      <button onclick="resetMathGame()" style="width:100%;">Play Again</button>
-    </div>
-  </div>
-</div>
-<button id="mathGameToggle" class="mini-game-toggle" onclick="toggleMathGame(true)" title="Civil Calculation Challenge">🧮</button>
-
-
-
-
-/* ==================== GAME 2: ENGINEERING WORD SCRAMBLE ==================== */
-const WORD_GAME_WORDS = [
-  ['CONCRETE','A composite construction material made from cement, aggregates and water.'],
-  ['BEAM','A structural member primarily designed to resist bending.'],
-  ['COLUMN','A vertical structural member mainly carrying axial compression.'],
-  ['FOUNDATION','The part of a structure that transfers loads safely to the ground.'],
-  ['SURVEYING','The measurement and mapping of points on or near the earth surface.'],
-  ['DRAINAGE','The system for collecting and conveying excess surface or subsurface water.'],
-  ['MORTAR','A workable mixture commonly used to bond masonry units.'],
-  ['ASPHALT','A bituminous material widely used in flexible pavement construction.'],
-  ['REINFORCEMENT','Steel or another material provided to improve concrete tensile capacity.'],
-  ['CANTILEVER','A member fixed at one end and free at the other.']
-];
-let wordGameState = { item:null, score:0, round:0, timer:null, timeLeft:20 };
-function toggleWordGame(show){
-  document.getElementById('wordGameOverlay').classList.toggle('hidden', !show);
-  document.getElementById('wordGamePanel').classList.toggle('hidden', !show);
-  if(!show && wordGameState.timer) clearInterval(wordGameState.timer);
-}
-function scrambleWord(word){
-  let chars=word.split('');
-  for(let i=chars.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[chars[i],chars[j]]=[chars[j],chars[i]];}
-  const result=chars.join('');
-  return result===word && word.length>1 ? scrambleWord(word) : result;
-}
-function startWordGame(){
-  wordGameState={item:null,score:0,round:0,timer:null,timeLeft:20};
-  document.getElementById('wordGameIntro').classList.add('hidden');
-  document.getElementById('wordGameEnd').classList.add('hidden');
-  document.getElementById('wordGamePlay').classList.remove('hidden');
-  nextWordRound();
-}
-function nextWordRound(){
-  if(wordGameState.timer) clearInterval(wordGameState.timer);
-  if(wordGameState.round>=5){endWordGame();return;}
-  wordGameState.item=WORD_GAME_WORDS[Math.floor(Math.random()*WORD_GAME_WORDS.length)];
-  wordGameState.round++; wordGameState.timeLeft=20;
-  document.getElementById('wordGameRound').textContent=`Round ${wordGameState.round}/5`;
-  document.getElementById('wordGameScore').textContent=`Score: ${wordGameState.score}`;
-  document.getElementById('wordGameHint').textContent=wordGameState.item[1];
-  document.getElementById('wordGameScramble').textContent=scrambleWord(wordGameState.item[0]);
-  document.getElementById('wordGameAnswer').value='';
-  document.getElementById('wordGameAnswer').focus();
-  const bar=document.getElementById('wordGameTimer'); bar.style.width='100%';
-  wordGameState.timer=setInterval(()=>{
-    wordGameState.timeLeft--; bar.style.width=`${(wordGameState.timeLeft/20)*100}%`;
-    if(wordGameState.timeLeft<=0){clearInterval(wordGameState.timer); submitWordAnswer(true);}
-  },1000);
-}
-function submitWordAnswer(timedOut=false){
-  if(wordGameState.timer) clearInterval(wordGameState.timer);
-  const input=document.getElementById('wordGameAnswer');
-  const answer=input.value.trim().toUpperCase();
-  const feedback=document.getElementById('wordGameFeedback');
-  if(answer===wordGameState.item[0]){wordGameState.score++;feedback.textContent='Correct!';feedback.style.color='var(--accent)';}
-  else {feedback.textContent=timedOut?`Time up. Answer: ${wordGameState.item[0]}`:`Not quite. Answer: ${wordGameState.item[0]}`;feedback.style.color='var(--red)';}
-  document.getElementById('wordGameScore').textContent=`Score: ${wordGameState.score}`;
-  setTimeout(()=>{feedback.textContent='';nextWordRound();},900);
-}
-function endWordGame(){
-  document.getElementById('wordGamePlay').classList.add('hidden');
-  document.getElementById('wordGameEnd').classList.remove('hidden');
-  document.getElementById('wordGameFinal').textContent=`${wordGameState.score}/5`;
-}
-function resetWordGame(){
-  if(wordGameState.timer) clearInterval(wordGameState.timer);
-  document.getElementById('wordGameEnd').classList.add('hidden');
-  document.getElementById('wordGameIntro').classList.remove('hidden');
-}
-
-/* ==================== GAME 3: CIVIL CALCULATION CHALLENGE ==================== */
-const MATH_GAME_QUESTIONS = [
-  {q:'A rectangular slab is 5 m long and 4 m wide. What is its area?',options:['9 m²','18 m²','20 m²','25 m²'],correct:2},
-  {q:'A concrete cube has a side length of 0.2 m. What is its volume?',options:['0.008 m³','0.04 m³','0.08 m³','0.8 m³'],correct:0},
-  {q:'A road is 100 m long and 6 m wide. What is its plan area?',options:['106 m²','300 m²','600 m²','1,000 m²'],correct:2},
-  {q:'If a load of 40 kN acts over an area of 2 m², what is the average pressure?',options:['10 kPa','20 kPa','40 kPa','80 kPa'],correct:1},
-  {q:'A beam carries a 10 kN point load at midspan. For a simply supported beam, each reaction is:',options:['2.5 kN','5 kN','10 kN','20 kN'],correct:1},
-  {q:'How many cubic metres are in 2,500 litres?',options:['0.25 m³','2.5 m³','25 m³','250 m³'],correct:1},
-  {q:'A 10 m by 5 m floor needs tiles covering 0.5 m² each. Ignoring wastage, how many tiles are needed?',options:['50','75','100','125'],correct:2},
-  {q:'A slope rises 3 m over a horizontal distance of 12 m. What is the gradient as a percentage?',options:['12%','20%','25%','36%'],correct:2},
-  {q:'A concrete mix requires 350 kg of cement per m³. How much cement is needed for 4 m³?',options:['700 kg','1,050 kg','1,400 kg','1,750 kg'],correct:2},
-  {q:'A pipe carries water at 2 m/s through an area of 0.01 m². What is the discharge?',options:['0.005 m³/s','0.02 m³/s','0.2 m³/s','2 m³/s'],correct:1}
-];
-let mathGameState={questions:[],index:0,score:0,timer:null,timeLeft:15};
-function toggleMathGame(show){
-  document.getElementById('mathGameOverlay').classList.toggle('hidden', !show);
-  document.getElementById('mathGamePanel').classList.toggle('hidden', !show);
-  if(!show && mathGameState.timer) clearInterval(mathGameState.timer);
-}
-function startMathGame(){
-  mathGameState={questions:shuffleArray(MATH_GAME_QUESTIONS).slice(0,8),index:0,score:0,timer:null,timeLeft:15};
-  document.getElementById('mathGameIntro').classList.add('hidden');
-  document.getElementById('mathGameEnd').classList.add('hidden');
-  document.getElementById('mathGamePlay').classList.remove('hidden');
-  showMathQuestion();
-}
-function showMathQuestion(){
-  if(mathGameState.timer) clearInterval(mathGameState.timer);
-  const q=mathGameState.questions[mathGameState.index];
-  document.getElementById('mathGameCounter').textContent=`Question ${mathGameState.index+1}/8`;
-  document.getElementById('mathGameScore').textContent=`Score: ${mathGameState.score}`;
-  document.getElementById('mathGameQuestion').textContent=q.q;
-  const opts=q.options.map((opt,i)=>({opt,isCorrect:i===q.correct}));
-  const container=document.getElementById('mathGameOptions');
-  container.innerHTML=shuffleArray(opts).map(o=>`<button class="mini-game-option" data-correct="${o.isCorrect}" onclick="selectMathAnswer(this)">${escapeHtml(o.opt)}</button>`).join('');
-  mathGameState.timeLeft=15; const bar=document.getElementById('mathGameTimer'); bar.style.width='100%';
-  mathGameState.timer=setInterval(()=>{mathGameState.timeLeft--;bar.style.width=`${(mathGameState.timeLeft/15)*100}%`;if(mathGameState.timeLeft<=0){clearInterval(mathGameState.timer);revealMathAnswer(null);}},1000);
-}
-function selectMathAnswer(btn){if(mathGameState.timer)clearInterval(mathGameState.timer);revealMathAnswer(btn);}
-function revealMathAnswer(selected){
-  const buttons=document.querySelectorAll('#mathGameOptions .mini-game-option');
-  buttons.forEach(b=>{b.disabled=true;if(b.dataset.correct==='true')b.classList.add('correct');else if(b===selected)b.classList.add('wrong');});
-  if(selected&&selected.dataset.correct==='true')mathGameState.score++;
-  setTimeout(()=>{mathGameState.index++;if(mathGameState.index<mathGameState.questions.length)showMathQuestion();else endMathGame();},800);
-}
-function endMathGame(){
-  document.getElementById('mathGamePlay').classList.add('hidden');
-  document.getElementById('mathGameEnd').classList.remove('hidden');
-  document.getElementById('mathGameFinal').textContent=`${mathGameState.score}/8`;
-}
-function resetMathGame(){if(mathGameState.timer)clearInterval(mathGameState.timer);document.getElementById('mathGameEnd').classList.add('hidden');document.getElementById('mathGameIntro').classList.remove('hidden');}
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -2730,5 +2521,172 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- Additional Games -->
+<style>
+  .extra-games-toggle{position:fixed;bottom:24px;left:94px;z-index:50;width:58px;height:58px;border-radius:50%;background:#174a7e;color:#fff;border:none;font-size:1.35rem;box-shadow:0 6px 20px rgba(23,74,126,.35);cursor:pointer}
+  .extra-games-panel{position:fixed;bottom:24px;left:24px;z-index:80;width:360px;max-width:92vw;max-height:85vh;overflow:auto;background:#fff;border:1px solid #ddd;border-radius:16px;box-shadow:6px -4px 30px rgba(0,0,0,.15);display:none}
+  .extra-games-panel.open{display:block}
+  .extra-games-head{background:#174a7e;color:#fff;padding:16px 20px;font-weight:700;display:flex;justify-content:space-between}
+  .extra-games-body{padding:20px}
+  .extra-game-card{border:1px solid #ddd;border-radius:10px;padding:16px;margin-bottom:12px}
+  .extra-game-card h3{margin:0 0 7px}
+  .extra-game-card p{font-size:.9rem;line-height:1.45}
+  .extra-game-card button{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 16px;cursor:pointer}
+  .game-q{font-size:1rem;font-weight:700;margin:12px 0}
+  .game-input{width:100%;padding:10px;border:1px solid #ccc;border-radius:7px;box-sizing:border-box}
+  .game-options button{display:block;width:100%;margin:7px 0;text-align:left}
+  .game-score{font-weight:700;margin-top:12px}
+</style>
+
+<button class="extra-games-toggle" onclick="toggleExtraGames()" aria-label="Open additional games">🎮</button>
+
+<div id="extraGamesPanel" class="extra-games-panel">
+  <div class="extra-games-head">
+    <span>Engineering Games</span>
+    <button onclick="toggleExtraGames()" style="background:none;border:0;color:#fff;font-size:1.3rem;cursor:pointer">×</button>
+  </div>
+  <div class="extra-games-body">
+    <div id="gameMenu">
+      <div class="extra-game-card">
+        <h3>🔤 Engineering Word Scramble</h3>
+        <p>Unscramble engineering and construction terms against the clock.</p>
+        <button onclick="startWordScramble()">Play</button>
+      </div>
+      <div class="extra-game-card">
+        <h3>🧮 Civil Calculation Challenge</h3>
+        <p>Answer short civil-engineering calculation questions as quickly as possible.</p>
+        <button onclick="startCivilChallenge()">Play</button>
+      </div>
+    </div>
+    <div id="extraGameArea"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const scrambleWords = [
+    ['TNEOCERC','CONCRETE'],['EMNITC','CEMENT'],['RIEBAM','BEAM'],
+    ['MLOCUN','COLUMN'],['RDEGA','GRADE'],['LOSI','SOIL'],
+    ['RTAWRE','WATER'],['RUTUCSTRE','STRUCTURE'],['DONAUTFION','FOUNDATION'],
+    ['EGNINER','ENGINEER']
+  ];
+
+  const civilQuestions = [
+    {q:'A 4 m × 3 m slab has an area of:',o:['7 m²','12 m²','14 m²','24 m²'],a:1},
+    {q:'If concrete has a mass of 2400 kg and a volume of 1 m³, its density is:',o:['240 kg/m³','1200 kg/m³','2400 kg/m³','4800 kg/m³'],a:2},
+    {q:'A force of 20 kN acts over 2 m². The stress is:',o:['5 kPa','10 kPa','20 kPa','40 kPa'],a:1},
+    {q:'A 5 m beam carries a uniform load of 2 kN/m. Total load is:',o:['2 kN','5 kN','10 kN','20 kN'],a:2},
+    {q:'A 3 m × 4 m × 0.15 m slab has a volume of:',o:['0.45 m³','1.20 m³','1.80 m³','7.15 m³'],a:2},
+    {q:'If a 10 m wall rises 3 m, its face area is:',o:['13 m²','26 m²','30 m²','60 m²'],a:2},
+    {q:'A 50 kN load acts on an area of 5 m². Pressure is:',o:['5 kPa','10 kPa','25 kPa','250 kPa'],a:1},
+    {q:'A 6 m × 5 m floor has a perimeter of:',o:['11 m','22 m','30 m','60 m'],a:1}
+  ];
+
+  let timer, wordRound, wordScore, calcRound, calcScore;
+
+  window.toggleExtraGames = function(){
+    document.getElementById('extraGamesPanel').classList.toggle('open');
+  };
+
+  function menu(){
+    clearInterval(timer);
+    document.getElementById('gameMenu').style.display='block';
+    document.getElementById('extraGameArea').innerHTML='';
+  }
+
+  window.startWordScramble = function(){
+    wordRound=0; wordScore=0;
+    document.getElementById('gameMenu').style.display='none';
+    nextWord();
+  };
+
+  function nextWord(){
+    clearInterval(timer);
+    if(wordRound>=5){
+      document.getElementById('extraGameArea').innerHTML =
+        '<div class="extra-game-card"><h3>Finished!</h3><div class="game-score">Score: '+wordScore+'/5</div><button onclick="returnToGameMenu()">Play Again</button></div>';
+      return;
+    }
+    const item=scrambleWords[Math.floor(Math.random()*scrambleWords.length)];
+    let seconds=20;
+    document.getElementById('extraGameArea').innerHTML =
+      '<div class="extra-game-card"><h3>Round '+(wordRound+1)+' of 5</h3><div>Time: <strong id="wordTimer">'+seconds+'</strong>s</div><div class="game-q">'+item[0]+'</div><input id="wordAnswer" class="game-input" placeholder="Your answer" autocomplete="off"><button style="margin-top:8px" onclick="submitWord()">Submit</button><div id="wordMsg"></div></div>';
+    document.getElementById('wordAnswer').focus();
+    timer=setInterval(function(){
+      seconds--;
+      const el=document.getElementById('wordTimer');
+      if(el) el.textContent=seconds;
+      if(seconds<=0){
+        clearInterval(timer);
+        wordRound++;
+        document.getElementById('wordMsg').innerHTML='<p>Time is up. Answer: <strong>'+item[1]+'</strong></p>';
+        setTimeout(nextWord,900);
+      }
+    },1000);
+    window.currentWord=item[1];
+  }
+
+  window.submitWord = function(){
+    const input=document.getElementById('wordAnswer');
+    if(!input) return;
+    clearInterval(timer);
+    if(input.value.trim().toUpperCase()===window.currentWord){
+      wordScore++;
+      document.getElementById('wordMsg').innerHTML='<p>✓ Correct!</p>';
+    }else{
+      document.getElementById('wordMsg').innerHTML='<p>✗ Correct answer: <strong>'+window.currentWord+'</strong></p>';
+    }
+    wordRound++;
+    setTimeout(nextWord,700);
+  };
+
+  window.startCivilChallenge = function(){
+    calcRound=0; calcScore=0;
+    document.getElementById('gameMenu').style.display='none';
+    nextCalc();
+  };
+
+  function nextCalc(){
+    clearInterval(timer);
+    if(calcRound>=civilQuestions.length){
+      document.getElementById('extraGameArea').innerHTML =
+        '<div class="extra-game-card"><h3>Challenge Complete!</h3><div class="game-score">Score: '+calcScore+'/'+civilQuestions.length+'</div><button onclick="returnToGameMenu()">Back to Games</button></div>';
+      return;
+    }
+    const item=civilQuestions[calcRound];
+    let seconds=15;
+    document.getElementById('extraGameArea').innerHTML =
+      '<div class="extra-game-card"><h3>Question '+(calcRound+1)+' of '+civilQuestions.length+'</h3><div>Time: <strong id="calcTimer">'+seconds+'</strong>s</div><div class="game-q">'+item.q+'</div><div class="game-options">'+item.o.map((x,i)=>'<button onclick="answerCalc('+i+')">'+x+'</button>').join('')+'</div><div id="calcMsg"></div></div>';
+    timer=setInterval(function(){
+      seconds--;
+      const el=document.getElementById('calcTimer');
+      if(el) el.textContent=seconds;
+      if(seconds<=0){
+        clearInterval(timer);
+        document.getElementById('calcMsg').innerHTML='<p>Time is up.</p>';
+        calcRound++;
+        setTimeout(nextCalc,700);
+      }
+    },1000);
+    window.currentCalc=item;
+  }
+
+  window.answerCalc=function(choice){
+    clearInterval(timer);
+    if(choice===window.currentCalc.a){
+      calcScore++;
+      document.getElementById('calcMsg').innerHTML='<p>✓ Correct!</p>';
+    }else{
+      document.getElementById('calcMsg').innerHTML='<p>✗ Incorrect.</p>';
+    }
+    calcRound++;
+    setTimeout(nextCalc,600);
+  };
+
+  window.returnToGameMenu=function(){ menu(); };
+})();
+</script>
+
 </body>
 </html>

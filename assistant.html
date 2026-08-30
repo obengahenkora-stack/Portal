@@ -78,7 +78,7 @@
 
 <div class="wrap">
   <div class="card">
-    <div class="disclaimer">This searches your actual courses, lecture notes, and announcements on this site — it's not a general AI chatbot.</div>
+    <div class="disclaimer">This is a keyword search over your actual courses, lecture notes, and announcements — not a conversational AI. Each question is searched independently.</div>
     <div class="course-select-wrap">
       <label>Course</label>
       <select id="assistCourseSelect">
@@ -86,7 +86,7 @@
       </select>
     </div>
     <div class="chat-area" id="assistChatArea">
-      <div class="bubble bot">Hi! Pick a course above (or leave it on "All Courses"), then ask me about a lecture note, an announcement, or a topic — e.g. "What lecture notes do we have?" or "Any announcements about the exam?"</div>
+      <div class="bubble bot">Hi! I'm a search tool, not a conversational AI — each question is looked up fresh, with no memory of what you asked before. Pick a course above (or leave it on "All Courses"), then search for a specific topic — e.g. "beam deflection," "attendance policy," or "week 3 notes."</div>
     </div>
     <div class="input-row">
       <input type="text" id="assistInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendAssistMessage();">
@@ -150,9 +150,9 @@ function extractKeywords(text){
 }
 
 function scoreText(itemText, keywords){
-  const lower = itemText.toLowerCase();
+  const itemWords = new Set((itemText.toLowerCase().match(/[a-z0-9]+/g) || []));
   let score = 0;
-  keywords.forEach(k => { if(lower.includes(k)) score++; });
+  keywords.forEach(k => { if(itemWords.has(k)) score++; });
   return score;
 }
 
@@ -162,11 +162,17 @@ async function sendAssistMessage(){
   if(!query) return;
   appendBubble(escapeHtml(query), 'user');
   input.value = '';
+
+  const keywords = extractKeywords(query);
+  if(keywords.length === 0){
+    appendBubble(`That's too general for me to search on — I don't hold a conversation, I look up specific keywords each time. Try something like "beam deflection" or "attendance policy."`, 'bot');
+    return;
+  }
+
   appendBubble('Searching...', 'bot');
 
   try{
     const data = await fetchSupabaseData();
-    const keywords = extractKeywords(query);
     const selectedCourse = document.getElementById('assistCourseSelect').value;
 
     const candidates = [];

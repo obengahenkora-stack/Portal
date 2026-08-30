@@ -195,8 +195,8 @@
   <div class="tab-static" id="navBlog" onclick="switchTab('posts')">Blog</div>
   <a href="courses.html">Courses</a>
   <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
-  <div class="tab-static" id="navAnnouncements" onclick="switchTab('announcements')">Announcements</div>
-  <div class="tab-static" id="navVideos" onclick="switchTab('videos')">Videos</div>
+  <a href="announcements.html">Announcements</a>
+  <a href="videos.html">Videos</a>
   <a href="portal.html">Assessment Portal</a>
   <a href="portal.html?view=attendance">Attendance</a>
   <a href="dashboard.html">My Dashboard</a>
@@ -225,24 +225,6 @@
   <!-- RESOURCES / LECTURE NOTES -->
   <div id="resourcesView" class="hidden">
     <div id="resourcesList"><div class="empty">Loading resources...</div></div>
-  </div>
-
-  <!-- ANNOUNCEMENTS -->
-  <div id="announcementsView" class="hidden">
-    <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Filter by Course</label>
-    <select id="announcementCourseFilter" onchange="loadAnnouncementsList()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
-      <option value="">All Courses</option>
-    </select>
-    <div id="announcementsList"><div class="empty">Loading announcements...</div></div>
-  </div>
-
-  <!-- VIDEOS -->
-  <div id="videosView" class="hidden">
-    <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Filter by Course</label>
-    <select id="videoCourseFilter" onchange="loadVideosList()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
-      <option value="">All Courses</option>
-    </select>
-    <div id="videosList"><div class="empty">Loading videos...</div></div>
   </div>
 
   <div style="text-align:center;margin-top:8px;">
@@ -304,50 +286,6 @@
     <div class="card hidden" id="manageResourcesCard">
       <label>Manage Resources</label>
       <div id="manageResourcesList"><div class="empty">Loading...</div></div>
-    </div>
-
-    <div class="card hidden" id="postAnnouncementCard">
-      <label>Post Announcement</label>
-      <label>Course</label>
-      <input type="text" id="announcementCourseInput" placeholder="e.g. CIVL 368">
-      <label>Announcement</label>
-      <textarea id="announcementTextInput" placeholder="e.g. Class moved to Room 12 tomorrow." style="min-height:80px;"></textarea>
-      <button id="postAnnouncementBtn" onclick="postAnnouncement()">Post Announcement</button>
-      <div id="postAnnouncementMsg"></div>
-    </div>
-
-    <div class="card hidden" id="manageAnnouncementsCard">
-      <label>Manage Announcements</label>
-      <div id="manageAnnouncementsList"><div class="empty">Loading...</div></div>
-    </div>
-
-    <div class="card hidden" id="postVideoCard">
-      <label>Post Video</label>
-      <div class="hint">Share a link to an external video (YouTube, Vimeo, etc.) or upload a video file directly.</div>
-      <label>Course</label>
-      <input type="text" id="videoCourseInput" placeholder="e.g. CIVL 368">
-      <label>Title</label>
-      <input type="text" id="videoTitleInput" placeholder="e.g. Week 4 - Beam Deflection Explained">
-      <label>Add By</label>
-      <select id="videoInputMode" onchange="updateVideoInputMode()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
-        <option value="link">Paste a Link (YouTube, Vimeo, etc.)</option>
-        <option value="upload">Upload a Video File</option>
-      </select>
-      <div id="videoLinkInputWrap">
-        <label>Video URL</label>
-        <input type="text" id="videoLinkInput" placeholder="https://www.youtube.com/watch?v=...">
-      </div>
-      <div id="videoFileInputWrap" class="hidden">
-        <label>Video File</label>
-        <input type="file" id="videoFileInput" accept="video/*">
-      </div>
-      <button id="postVideoBtn" onclick="postVideo()">Add Video</button>
-      <div id="postVideoMsg"></div>
-    </div>
-
-    <div class="card hidden" id="manageVideosCard">
-      <label>Manage Videos</label>
-      <div id="manageVideosList"><div class="empty">Loading...</div></div>
     </div>
 
     <div class="card hidden" id="manageCard">
@@ -508,14 +446,8 @@ async function onAuthReady(showToast){
     document.getElementById('manageCard').classList.remove('hidden');
     document.getElementById('uploadResourceCard').classList.remove('hidden');
     document.getElementById('manageResourcesCard').classList.remove('hidden');
-    document.getElementById('postAnnouncementCard').classList.remove('hidden');
-    document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
-    document.getElementById('postVideoCard').classList.remove('hidden');
-    document.getElementById('manageVideosCard').classList.remove('hidden');
     loadManageList();
     loadManageResourcesList();
-    loadManageAnnouncementsList();
-    loadManageVideosList();
   } else {
     document.getElementById('taWriteNotice').classList.remove('hidden');
   }
@@ -571,27 +503,19 @@ function formatDate(iso){
 function switchTab(tab){
   document.getElementById('postsView').classList.toggle('hidden', tab!=='posts');
   document.getElementById('resourcesView').classList.toggle('hidden', tab!=='resources');
-  document.getElementById('announcementsView').classList.toggle('hidden', tab!=='announcements');
-  document.getElementById('videosView').classList.toggle('hidden', tab!=='videos');
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
   document.getElementById('navBlog').classList.toggle('active', tab==='posts' || tab==='write');
   document.getElementById('navResources').classList.toggle('active', tab==='resources');
-  document.getElementById('navAnnouncements').classList.toggle('active', tab==='announcements');
-  document.getElementById('navVideos').classList.toggle('active', tab==='videos');
 
   const subtitle = document.getElementById('pageSubtitle');
   if(subtitle){
     if(tab === 'resources') subtitle.textContent = "Download lecture notes and course materials.";
-    else if(tab === 'announcements') subtitle.textContent = "Course-specific announcements and updates.";
-    else if(tab === 'videos') subtitle.textContent = "Educational videos and recorded lectures.";
     else subtitle.textContent = "Short articles and explainers to help students understand key engineering concepts.";
   }
 
-  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); loadManageAnnouncementsList(); loadManageVideosList(); }
+  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); }
   if(tab === 'resources') loadResourcesList();
-  if(tab === 'announcements') loadAnnouncementsList();
-  if(tab === 'videos') loadVideosList();
 }
 
 async function loadPosts(){
@@ -997,295 +921,6 @@ async function deleteResource(id){
   }
 }
 
-// ===== Announcements =====
-
-async function postAnnouncement(){
-  if(!isAdmin()){ document.getElementById('postAnnouncementMsg').innerHTML = '<div class="msg err">Only the Main Instructor can post announcements.</div>'; return; }
-  const course = document.getElementById('announcementCourseInput').value.trim();
-  const text = document.getElementById('announcementTextInput').value.trim();
-  const msg = document.getElementById('postAnnouncementMsg');
-  const btn = document.getElementById('postAnnouncementBtn');
-
-  if(!course){
-    msg.innerHTML = '<div class="msg err">Please enter a course.</div>';
-    return;
-  }
-  if(!text){
-    msg.innerHTML = '<div class="msg err">Please write an announcement.</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  msg.innerHTML = '<div class="msg ok">Posting...</div>';
-
-  try{
-    const data = await fetchSupabaseData();
-    const announcements = data.announcements || [];
-    announcements.push({
-      id: 'ann_' + Date.now(),
-      course, text,
-      date: new Date().toISOString()
-    });
-    data.announcements = announcements;
-    await saveSupabaseData(data);
-    msg.innerHTML = '<div class="msg ok">Announcement posted.</div>';
-    document.getElementById('announcementCourseInput').value = '';
-    document.getElementById('announcementTextInput').value = '';
-    loadManageAnnouncementsList();
-  }catch(e){
-    msg.innerHTML = `<div class="msg err">Could not post: ${escapeHtml(e.message)}</div>`;
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-async function loadAnnouncementsList(){
-  const container = document.getElementById('announcementsList');
-  const filterSelect = document.getElementById('announcementCourseFilter');
-  container.innerHTML = '<div class="empty">Loading...</div>';
-  try{
-    const data = await fetchSupabaseData();
-    const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
-
-    const courses = [...new Set(announcements.map(a => a.course))].sort();
-    const currentFilter = filterSelect.value;
-    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    filterSelect.value = currentFilter;
-
-    const filtered = currentFilter ? announcements.filter(a => a.course === currentFilter) : announcements;
-
-    if(filtered.length === 0){
-      container.innerHTML = '<div class="empty">No announcements yet.</div>';
-      return;
-    }
-    container.innerHTML = filtered.map(a => `
-      <div class="card">
-        <div style="font-weight:700;color:var(--gold-dark);font-size:0.78rem;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(a.course)}</div>
-        <div style="font-size:0.92rem;line-height:1.5;">${escapeHtml(a.text)}</div>
-        <div class="post-date" style="margin-top:8px;margin-bottom:0;">${formatDate(a.date)}</div>
-      </div>
-    `).join('');
-  }catch(e){
-    container.innerHTML = '<div class="empty">Could not load announcements.</div>';
-  }
-}
-
-async function loadManageAnnouncementsList(){
-  const container = document.getElementById('manageAnnouncementsList');
-  container.innerHTML = '<div class="empty">Loading...</div>';
-  try{
-    const data = await fetchSupabaseData();
-    const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
-    if(announcements.length === 0){
-      container.innerHTML = '<div class="empty">No announcements yet.</div>';
-      return;
-    }
-    container.innerHTML = announcements.map(a => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
-        <div>
-          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,60))}${a.text.length>60?'...':''}</div>
-          <div class="post-date" style="margin-bottom:0;">${formatDate(a.date)}</div>
-        </div>
-        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteAnnouncement('${a.id}')">Delete</button>
-      </div>
-    `).join('');
-  }catch(e){
-    container.innerHTML = '<div class="empty">Could not load announcements.</div>';
-  }
-}
-
-async function deleteAnnouncement(id){
-  if(!isAdmin()){ alert('Only the Main Instructor can delete announcements.'); return; }
-  if(!confirm('Delete this announcement?')) return;
-  try{
-    const data = await fetchSupabaseData();
-    data.announcements = (data.announcements || []).filter(a => a.id !== id);
-    await saveSupabaseData(data);
-    loadManageAnnouncementsList();
-  }catch(e){
-    alert('Could not delete announcement.');
-  }
-}
-
-// ===== Videos =====
-
-function updateVideoInputMode(){
-  const mode = document.getElementById('videoInputMode').value;
-  document.getElementById('videoLinkInputWrap').classList.toggle('hidden', mode !== 'link');
-  document.getElementById('videoFileInputWrap').classList.toggle('hidden', mode !== 'upload');
-}
-
-function getVideoEmbedInfo(url){
-  // Returns { type: 'youtube'|'vimeo'|'file', embedUrl } for known providers, or null for a plain file/other link
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if(ytMatch){
-    return { type: 'youtube', embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}` };
-  }
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if(vimeoMatch){
-    return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}` };
-  }
-  return { type: 'file', embedUrl: url };
-}
-
-async function postVideo(){
-  if(!isAdmin()){ document.getElementById('postVideoMsg').innerHTML = '<div class="msg err">Only the Main Instructor can post videos.</div>'; return; }
-  const courseInput = document.getElementById('videoCourseInput');
-  const titleInput = document.getElementById('videoTitleInput');
-  const mode = document.getElementById('videoInputMode').value;
-  const msg = document.getElementById('postVideoMsg');
-  const btn = document.getElementById('postVideoBtn');
-
-  const course = courseInput.value.trim() || 'General';
-  const title = titleInput.value.trim();
-
-  if(!title){
-    msg.innerHTML = '<div class="msg err">Please enter a title.</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  msg.innerHTML = '<div class="msg ok">Adding video...</div>';
-
-  try{
-    let videoUrl, videoType;
-
-    if(mode === 'link'){
-      const linkInput = document.getElementById('videoLinkInput');
-      const url = linkInput.value.trim();
-      if(!url){
-        msg.innerHTML = '<div class="msg err">Please paste a video URL.</div>';
-        btn.disabled = false;
-        return;
-      }
-      const info = getVideoEmbedInfo(url);
-      videoUrl = info.embedUrl;
-      videoType = info.type;
-      linkInput.value = '';
-    } else {
-      const fileInput = document.getElementById('videoFileInput');
-      const file = fileInput.files[0];
-      if(!file){
-        msg.innerHTML = '<div class="msg err">Please choose a video file.</div>';
-        btn.disabled = false;
-        return;
-      }
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
-      if(!uploadRes.ok){
-        let detail = "";
-        try{
-          const errBody = await uploadRes.json();
-          detail = (errBody.error && errBody.error.message) || JSON.stringify(errBody);
-        }catch(e){ detail = `HTTP ${uploadRes.status}`; }
-        throw new Error(detail);
-      }
-      const uploadData = await uploadRes.json();
-      videoUrl = uploadData.secure_url;
-      videoType = 'file';
-      fileInput.value = '';
-    }
-
-    const data = await fetchSupabaseData();
-    const videos = data.videos || [];
-    videos.push({
-      id: 'vid_' + Date.now(),
-      course, title,
-      url: videoUrl,
-      type: videoType,
-      addedAt: new Date().toISOString()
-    });
-    data.videos = videos;
-    await saveSupabaseData(data);
-
-    msg.innerHTML = '<div class="msg ok">Video added.</div>';
-    courseInput.value = '';
-    titleInput.value = '';
-    loadManageVideosList();
-  }catch(e){
-    msg.innerHTML = `<div class="msg err">Could not add video: ${escapeHtml(e.message)}</div>`;
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-async function loadVideosList(){
-  const container = document.getElementById('videosList');
-  const filterSelect = document.getElementById('videoCourseFilter');
-  container.innerHTML = '<div class="empty">Loading...</div>';
-  try{
-    const data = await fetchSupabaseData();
-    const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
-
-    const courses = [...new Set(videos.map(v => v.course))].sort();
-    const currentFilter = filterSelect.value;
-    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    filterSelect.value = currentFilter;
-
-    const filtered = currentFilter ? videos.filter(v => v.course === currentFilter) : videos;
-
-    if(filtered.length === 0){
-      container.innerHTML = '<div class="empty">No videos yet.</div>';
-      return;
-    }
-
-    container.innerHTML = filtered.map(v => {
-      const player = (v.type === 'youtube' || v.type === 'vimeo')
-        ? `<iframe src="${v.url}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;" allowfullscreen loading="lazy"></iframe>`
-        : `<video src="${v.url}" controls style="width:100%;border-radius:8px;background:#000;"></video>`;
-      return `
-        <div class="card">
-          <div style="font-weight:700;color:var(--gold-dark);font-size:0.78rem;text-transform:uppercase;margin-bottom:8px;">${escapeHtml(v.course)}</div>
-          <div style="font-size:1rem;font-weight:600;margin-bottom:10px;">${escapeHtml(v.title)}</div>
-          ${player}
-          <div class="post-date" style="margin-top:8px;margin-bottom:0;">${formatDate(v.addedAt)}</div>
-        </div>
-      `;
-    }).join('');
-  }catch(e){
-    container.innerHTML = '<div class="empty">Could not load videos.</div>';
-  }
-}
-
-async function loadManageVideosList(){
-  const container = document.getElementById('manageVideosList');
-  container.innerHTML = '<div class="empty">Loading...</div>';
-  try{
-    const data = await fetchSupabaseData();
-    const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
-    if(videos.length === 0){
-      container.innerHTML = '<div class="empty">No videos yet.</div>';
-      return;
-    }
-    container.innerHTML = videos.map(v => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
-        <div>
-          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">[${escapeHtml(v.course)}] ${escapeHtml(v.title)}</div>
-          <div class="post-date" style="margin-bottom:0;">${v.type === 'file' ? 'Uploaded file' : (v.type === 'youtube' ? 'YouTube' : 'Vimeo')} &middot; ${formatDate(v.addedAt)}</div>
-        </div>
-        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteVideo('${v.id}')">Delete</button>
-      </div>
-    `).join('');
-  }catch(e){
-    container.innerHTML = '<div class="empty">Could not load videos.</div>';
-  }
-}
-
-async function deleteVideo(id){
-  if(!isAdmin()){ alert('Only the Main Instructor can delete videos.'); return; }
-  if(!confirm('Delete this video?')) return;
-  try{
-    const data = await fetchSupabaseData();
-    data.videos = (data.videos || []).filter(v => v.id !== id);
-    await saveSupabaseData(data);
-    loadManageVideosList();
-  }catch(e){
-    alert('Could not delete video.');
-  }
-}
-
 // ===== Site-wide search =====
 
 async function performSiteSearch(){
@@ -1332,7 +967,7 @@ async function performSiteSearch(){
     if(matchedAnnouncements.length){
       html += '<div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:10px 0 6px;">Announcements</div>';
       matchedAnnouncements.forEach(a => {
-        html += `<div style="padding:6px 0;cursor:pointer;color:var(--navy);font-weight:600;" onclick="switchTab('announcements');document.getElementById('siteSearchResults').classList.add('hidden');document.getElementById('siteSearchInput').value='';">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,50))}</div>`;
+        html += `<div style="padding:6px 0;"><a href="announcements.html" style="color:var(--navy);font-weight:600;text-decoration:none;">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,50))}</a></div>`;
       });
     }
     resultsContainer.innerHTML = html;

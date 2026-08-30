@@ -426,6 +426,7 @@
 
 <div class="tabs">
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
+  <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
   <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
   <a href="courses.html" class="tab" style="text-decoration:none;">Courses</a>
   <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
@@ -512,6 +513,35 @@
 
   </div>
 
+  <!-- DEPARTMENT MODE -->
+  <div id="departmentMode" class="hidden">
+    <div class="card">
+      <h2 id="deptNameDisplay">Department</h2>
+      <div id="deptLinksRow" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;"></div>
+      <div id="deptEmbeds"></div>
+    </div>
+
+    <div class="card">
+      <h2>Departmental Notices</h2>
+      <div id="deptNoticesList"><div class="empty">Loading...</div></div>
+    </div>
+
+    <div class="card hidden" id="postNoticeCard">
+      <h2>Post a Notice</h2>
+      <label>Title</label>
+      <input type="text" id="noticeTitleInput" placeholder="e.g. Mid-Semester Exam Schedule Released">
+      <label>Content</label>
+      <textarea id="noticeContentInput" placeholder="Write the notice here..." style="min-height:100px;"></textarea>
+      <button id="postNoticeBtn" onclick="postDeptNotice()">Post Notice</button>
+      <div id="postNoticeMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageNoticesCard">
+      <h2>Manage Notices</h2>
+      <div id="manageNoticesList"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
   <!-- EDIT MODE -->
   <div id="editMode" class="hidden">
     <button onclick="switchTab('view')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:6px 12px;margin-bottom:14px;">&larr; Back to Home</button>
@@ -586,6 +616,20 @@
 
       <label>Closing Section Text</label>
       <textarea id="closingTextInput" placeholder="For students, colleagues, and collaborators working across civil engineering teaching and research."></textarea>
+
+      <label>Department Name</label>
+      <input type="text" id="deptNameInput" placeholder="e.g. Dept. of Civil &amp; Environmental Engineering, UENR">
+
+      <label>Department Facebook Page URL</label>
+      <input type="text" id="deptFacebookInput" placeholder="https://www.facebook.com/YourDeptPage">
+
+      <label>Department X (Twitter) URL</label>
+      <input type="text" id="deptXInput" placeholder="https://x.com/YourDeptHandle">
+
+      <label>Department TikTok URL</label>
+      <input type="text" id="deptTiktokInput" placeholder="https://www.tiktok.com/@YourDeptHandle">
+
+      <div class="hint">Leave any of these blank to hide that link/embed. Facebook and X show a live feed that updates automatically when new posts go up. TikTok shows a follow link only (TikTok doesn't support live feed embeds without their developer API).</div>
 
       <button id="saveBtn" onclick="saveProfile()">Save Changes</button>
       <div id="saveMsg"></div>
@@ -840,7 +884,18 @@ async function onEditAuthReady(showToast){
 function switchTab(tab){
   document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');
   document.getElementById('editMode').classList.toggle('hidden', tab!=='edit');
+  document.getElementById('departmentMode').classList.toggle('hidden', tab!=='department');
   document.getElementById('tabView').classList.toggle('active', tab==='view');
+  document.getElementById('tabDepartment').classList.toggle('active', tab==='department');
+  if(tab === 'department'){
+    refreshDeptEmbeds();
+    loadDeptNotices();
+    if(isAdmin()){
+      document.getElementById('postNoticeCard').classList.remove('hidden');
+      document.getElementById('manageNoticesCard').classList.remove('hidden');
+      loadManageNoticesList();
+    }
+  }
 }
 
 function toggleFaqAnswer(i){
@@ -849,6 +904,219 @@ function toggleFaqAnswer(i){
   const isHidden = answer.classList.contains('hidden');
   answer.classList.toggle('hidden', !isHidden);
   arrow.textContent = isHidden ? '−' : '+';
+}
+
+function renderDeptLinks(){
+  const d = window.deptData || {};
+  const container = document.getElementById('deptLinksRow');
+  if(!container) return;
+  let html = '';
+  if(d.facebook) html += `<a href="${escapeHtml(d.facebook)}" target="_blank" rel="noopener" class="cta-link">Facebook</a>`;
+  if(d.x) html += `<a href="${escapeHtml(d.x)}" target="_blank" rel="noopener" class="cta-link">X (Twitter)</a>`;
+  if(d.tiktok) html += `<a href="${escapeHtml(d.tiktok)}" target="_blank" rel="noopener" class="cta-link">TikTok</a>`;
+  container.innerHTML = html || '';
+}
+
+function refreshDeptEmbeds(){
+  const d = window.deptData || {};
+  const container = document.getElementById('deptEmbeds');
+  if(!container) return;
+  let html = '';
+
+  if(d.facebook){
+    html += `
+      <div style="margin-bottom:28px;">
+        <div class="fact-label" style="margin-bottom:10px;">Facebook Feed</div>
+        <div id="fb-root"></div>
+        <div class="fb-page" data-href="${escapeHtml(d.facebook)}" data-tabs="timeline" data-width="500" data-height="500" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"></div>
+      </div>
+    `;
+  }
+  if(d.x){
+    html += `
+      <div style="margin-bottom:28px;">
+        <div class="fact-label" style="margin-bottom:10px;">X (Twitter) Feed</div>
+        <a class="twitter-timeline" data-height="500" href="${escapeHtml(d.x)}">Loading tweets...</a>
+      </div>
+    `;
+  }
+  if(d.tiktok){
+    html += `
+      <div style="margin-bottom:8px;">
+        <div class="fact-label" style="margin-bottom:10px;">TikTok</div>
+        <p style="color:var(--muted);font-size:0.85rem;">A live feed isn't available for TikTok without their developer API — tap below to visit the page directly.</p>
+        <a href="${escapeHtml(d.tiktok)}" target="_blank" rel="noopener" class="cta-link">Follow us on TikTok &rarr;</a>
+      </div>
+    `;
+  }
+  if(!d.facebook && !d.x && !d.tiktok){
+    html = '<div class="empty">No department social links added yet. Add them via Edit Info.</div>';
+  }
+
+  container.innerHTML = html;
+
+  if(d.facebook){
+    if(window.FB){
+      window.FB.XFBML.parse(container);
+    } else if(!document.getElementById('fb-sdk-script')){
+      const fbScript = document.createElement('script');
+      fbScript.id = 'fb-sdk-script';
+      fbScript.async = true; fbScript.defer = true; fbScript.crossOrigin = 'anonymous';
+      fbScript.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
+      document.body.appendChild(fbScript);
+    }
+  }
+
+  if(d.x){
+    if(window.twttr && window.twttr.widgets){
+      window.twttr.widgets.load(container);
+    } else if(!document.getElementById('twitter-widget-script')){
+      const twScript = document.createElement('script');
+      twScript.id = 'twitter-widget-script';
+      twScript.async = true;
+      twScript.src = 'https://platform.twitter.com/widgets.js';
+      document.body.appendChild(twScript);
+    }
+  }
+}
+
+// ===== Departmental Notices =====
+
+async function postDeptNotice(){
+  if(!isAdmin()){ document.getElementById('postNoticeMsg').innerHTML = '<div class="msg err">Only the Owner or an Admin can post notices.</div>'; return; }
+  const titleInput = document.getElementById('noticeTitleInput');
+  const contentInput = document.getElementById('noticeContentInput');
+  const msg = document.getElementById('postNoticeMsg');
+  const btn = document.getElementById('postNoticeBtn');
+
+  const title = titleInput.value.trim();
+  const content = contentInput.value.trim();
+
+  if(!title || !content){
+    msg.innerHTML = '<div class="msg err">Please fill in both a title and the notice content.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Posting...</div>';
+
+  try{
+    const data = await fetchSupabaseData();
+    const notices = data.deptNotices || [];
+    notices.push({
+      id: 'notice_' + Date.now(),
+      title, content,
+      postedAt: new Date().toISOString()
+    });
+    data.deptNotices = notices;
+    await saveSupabaseData(data);
+
+    msg.innerHTML = '<div class="msg ok">Notice posted.</div>';
+    titleInput.value = '';
+    contentInput.value = '';
+    loadDeptNotices();
+    loadManageNoticesList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not post: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadDeptNotices(){
+  const container = document.getElementById('deptNoticesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const notices = (data.deptNotices || []).slice().sort((a,b) => new Date(b.postedAt) - new Date(a.postedAt));
+    window.deptNoticesCache = notices;
+
+    if(notices.length === 0){
+      container.innerHTML = '<div class="empty">No notices posted yet.</div>';
+      return;
+    }
+
+    container.innerHTML = notices.map(n => `
+      <div style="padding:18px 0;border-bottom:1px dashed var(--line);">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">${escapeHtml(n.title)}</div>
+        <div style="font-size:0.9rem;color:var(--ink);line-height:1.6;white-space:pre-wrap;margin-bottom:10px;">${escapeHtml(n.content)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="post-date" style="margin-bottom:0;">${formatNoticeDate(n.postedAt)}</span>
+          <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="shareNotice('${n.id}')">Share</button>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load notices.</div>';
+  }
+}
+
+async function loadManageNoticesList(){
+  const container = document.getElementById('manageNoticesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const notices = (data.deptNotices || []).slice().sort((a,b) => new Date(b.postedAt) - new Date(a.postedAt));
+    if(notices.length === 0){
+      container.innerHTML = '<div class="empty">No notices posted yet.</div>';
+      return;
+    }
+    container.innerHTML = notices.map(n => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">${escapeHtml(n.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${formatNoticeDate(n.postedAt)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteDeptNotice('${n.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load notices.</div>';
+  }
+}
+
+async function deleteDeptNotice(id){
+  if(!isAdmin()){ alert('Only the Owner or an Admin can delete notices.'); return; }
+  if(!confirm('Delete this notice?')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.deptNotices = (data.deptNotices || []).filter(n => n.id !== id);
+    await saveSupabaseData(data);
+    loadDeptNotices();
+    loadManageNoticesList();
+  }catch(e){
+    alert('Could not delete notice.');
+  }
+}
+
+function formatNoticeDate(iso){
+  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); }
+  catch(e){ return ''; }
+}
+
+async function shareNotice(id){
+  const notice = (window.deptNoticesCache || []).find(n => n.id === id);
+  if(!notice) return;
+
+  const shareUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `index.html?notice=${encodeURIComponent(id)}`;
+  const shareData = {
+    title: notice.title,
+    text: notice.content.slice(0, 200),
+    url: shareUrl
+  };
+
+  if(navigator.share){
+    try{
+      await navigator.share(shareData);
+    }catch(e){ /* user cancelled share — no action needed */ }
+  } else {
+    try{
+      await navigator.clipboard.writeText(`${notice.title}\n\n${notice.content}\n\n${shareUrl}`);
+      alert('Notice copied to clipboard — you can now paste and share it.');
+    }catch(e){
+      alert('Could not copy to clipboard. Please copy the notice manually.');
+    }
+  }
 }
 
 function switchSubTab(sub){
@@ -989,6 +1257,20 @@ async function loadProfile(){
     document.getElementById('closingTextDisplay').textContent = profile.closingText || "For students, colleagues, and collaborators working across civil engineering teaching and research.";
     document.getElementById('closingTextInput').value = profile.closingText || "";
 
+    // Department section
+    window.deptData = {
+      name: profile.deptName || "Department",
+      facebook: profile.deptFacebook || "",
+      x: profile.deptX || "",
+      tiktok: profile.deptTiktok || ""
+    };
+    document.getElementById('deptNameDisplay').textContent = window.deptData.name;
+    document.getElementById('deptNameInput').value = profile.deptName || "";
+    document.getElementById('deptFacebookInput').value = profile.deptFacebook || "";
+    document.getElementById('deptXInput').value = profile.deptX || "";
+    document.getElementById('deptTiktokInput').value = profile.deptTiktok || "";
+    renderDeptLinks();
+
     const photoData = profile.photoData || "";
     const picImg = document.getElementById('profilePic');
     const picPlaceholder = document.getElementById('profilePicPlaceholder');
@@ -1118,6 +1400,10 @@ async function saveProfile(){
   const newsletterText = document.getElementById('newsletterTextInput').value.trim();
   const closingHeading = document.getElementById('closingHeadingInput').value.trim();
   const closingText = document.getElementById('closingTextInput').value.trim();
+  const deptName = document.getElementById('deptNameInput').value.trim();
+  const deptFacebook = document.getElementById('deptFacebookInput').value.trim();
+  const deptX = document.getElementById('deptXInput').value.trim();
+  const deptTiktok = document.getElementById('deptTiktokInput').value.trim();
   const msg = document.getElementById('saveMsg');
   const btn = document.getElementById('saveBtn');
 
@@ -1128,7 +1414,8 @@ async function saveProfile(){
     const data = await fetchSupabaseData();
     data.profile = {
       name, title, photoData, bio, contact, social, publications, faq,
-      heroBadge, marqueeText, pullQuote, newsletterHeading, newsletterText, closingHeading, closingText
+      heroBadge, marqueeText, pullQuote, newsletterHeading, newsletterText, closingHeading, closingText,
+      deptName, deptFacebook, deptX, deptTiktok
     };
     await saveSupabaseData(data);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';

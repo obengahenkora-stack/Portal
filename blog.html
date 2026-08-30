@@ -196,6 +196,7 @@
   <a href="courses.html">Courses</a>
   <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
   <div class="tab-static" id="navAnnouncements" onclick="switchTab('announcements')">Announcements</div>
+  <div class="tab-static" id="navVideos" onclick="switchTab('videos')">Videos</div>
   <a href="portal.html">Assessment Portal</a>
   <a href="portal.html?view=attendance">Attendance</a>
   <a href="dashboard.html">My Dashboard</a>
@@ -233,6 +234,15 @@
       <option value="">All Courses</option>
     </select>
     <div id="announcementsList"><div class="empty">Loading announcements...</div></div>
+  </div>
+
+  <!-- VIDEOS -->
+  <div id="videosView" class="hidden">
+    <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Filter by Course</label>
+    <select id="videoCourseFilter" onchange="loadVideosList()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
+      <option value="">All Courses</option>
+    </select>
+    <div id="videosList"><div class="empty">Loading videos...</div></div>
   </div>
 
   <div style="text-align:center;margin-top:8px;">
@@ -280,7 +290,7 @@
 
     <div class="card hidden" id="uploadResourceCard">
       <label>Upload Lecture Notes / Resource</label>
-      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, or any file up to 50MB.</div>
+      <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, video, or any file — larger files supported now.</div>
       <label>Course</label>
       <input type="text" id="resourceCourseInput" placeholder="e.g. CIVL 368">
       <label>Title</label>
@@ -311,6 +321,35 @@
       <div id="manageAnnouncementsList"><div class="empty">Loading...</div></div>
     </div>
 
+    <div class="card hidden" id="postVideoCard">
+      <label>Post Video</label>
+      <div class="hint">Share a link to an external video (YouTube, Vimeo, etc.) or upload a video file directly.</div>
+      <label>Course</label>
+      <input type="text" id="videoCourseInput" placeholder="e.g. CIVL 368">
+      <label>Title</label>
+      <input type="text" id="videoTitleInput" placeholder="e.g. Week 4 - Beam Deflection Explained">
+      <label>Add By</label>
+      <select id="videoInputMode" onchange="updateVideoInputMode()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.95rem;margin-bottom:14px;background:#f8fafc;color:var(--ink);">
+        <option value="link">Paste a Link (YouTube, Vimeo, etc.)</option>
+        <option value="upload">Upload a Video File</option>
+      </select>
+      <div id="videoLinkInputWrap">
+        <label>Video URL</label>
+        <input type="text" id="videoLinkInput" placeholder="https://www.youtube.com/watch?v=...">
+      </div>
+      <div id="videoFileInputWrap" class="hidden">
+        <label>Video File</label>
+        <input type="file" id="videoFileInput" accept="video/*">
+      </div>
+      <button id="postVideoBtn" onclick="postVideo()">Add Video</button>
+      <div id="postVideoMsg"></div>
+    </div>
+
+    <div class="card hidden" id="manageVideosCard">
+      <label>Manage Videos</label>
+      <div id="manageVideosList"><div class="empty">Loading...</div></div>
+    </div>
+
     <div class="card hidden" id="manageCard">
       <label>Your Posts (manage / delete)</label>
       <div id="manageList"><div class="empty">Loading...</div></div>
@@ -331,6 +370,12 @@ const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
 const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
 const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
+// ============================================================
+
+// ===== Cloudinary configuration (large lecture note / resource files) =====
+const CLOUDINARY_CLOUD_NAME = "v9y3judf";
+const CLOUDINARY_UPLOAD_PRESET = "portal_uploads";
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
 // ============================================================
 
 const OWNER_EMAIL = "obengahenkora@gmail.com";
@@ -465,9 +510,12 @@ async function onAuthReady(showToast){
     document.getElementById('manageResourcesCard').classList.remove('hidden');
     document.getElementById('postAnnouncementCard').classList.remove('hidden');
     document.getElementById('manageAnnouncementsCard').classList.remove('hidden');
+    document.getElementById('postVideoCard').classList.remove('hidden');
+    document.getElementById('manageVideosCard').classList.remove('hidden');
     loadManageList();
     loadManageResourcesList();
     loadManageAnnouncementsList();
+    loadManageVideosList();
   } else {
     document.getElementById('taWriteNotice').classList.remove('hidden');
   }
@@ -524,22 +572,26 @@ function switchTab(tab){
   document.getElementById('postsView').classList.toggle('hidden', tab!=='posts');
   document.getElementById('resourcesView').classList.toggle('hidden', tab!=='resources');
   document.getElementById('announcementsView').classList.toggle('hidden', tab!=='announcements');
+  document.getElementById('videosView').classList.toggle('hidden', tab!=='videos');
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
   document.getElementById('navBlog').classList.toggle('active', tab==='posts' || tab==='write');
   document.getElementById('navResources').classList.toggle('active', tab==='resources');
   document.getElementById('navAnnouncements').classList.toggle('active', tab==='announcements');
+  document.getElementById('navVideos').classList.toggle('active', tab==='videos');
 
   const subtitle = document.getElementById('pageSubtitle');
   if(subtitle){
     if(tab === 'resources') subtitle.textContent = "Download lecture notes and course materials.";
     else if(tab === 'announcements') subtitle.textContent = "Course-specific announcements and updates.";
+    else if(tab === 'videos') subtitle.textContent = "Educational videos and recorded lectures.";
     else subtitle.textContent = "Short articles and explainers to help students understand key engineering concepts.";
   }
 
-  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); loadManageAnnouncementsList(); }
+  if(tab === 'write'){ loadManageList(); loadManageResourcesList(); loadManageAnnouncementsList(); loadManageVideosList(); }
   if(tab === 'resources') loadResourcesList();
   if(tab === 'announcements') loadAnnouncementsList();
+  if(tab === 'videos') loadVideosList();
 }
 
 async function loadPosts(){
@@ -836,32 +888,28 @@ async function uploadResource(){
   msg.innerHTML = '<div class="msg ok">Uploading...</div>';
 
   try{
-    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `resources/${Date.now()}_${safeFileName}`;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${storagePath}`, {
+    const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, {
       method: "POST",
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": file.type || "application/octet-stream",
-        "x-upsert": "true"
-      },
-      body: file
+      body: formData
     });
 
     if(!uploadRes.ok){
       let detail = "";
       try{
         const errBody = await uploadRes.json();
-        detail = errBody.message || JSON.stringify(errBody);
+        detail = (errBody.error && errBody.error.message) || JSON.stringify(errBody);
       }catch(e){
         detail = `HTTP ${uploadRes.status}`;
       }
       throw new Error(detail);
     }
 
-    const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${storagePath}`;
+    const uploadData = await uploadRes.json();
+    const fileUrl = uploadData.secure_url;
 
     const data = await fetchSupabaseData();
     const resources = data.resources || [];
@@ -1056,6 +1104,185 @@ async function deleteAnnouncement(id){
     loadManageAnnouncementsList();
   }catch(e){
     alert('Could not delete announcement.');
+  }
+}
+
+// ===== Videos =====
+
+function updateVideoInputMode(){
+  const mode = document.getElementById('videoInputMode').value;
+  document.getElementById('videoLinkInputWrap').classList.toggle('hidden', mode !== 'link');
+  document.getElementById('videoFileInputWrap').classList.toggle('hidden', mode !== 'upload');
+}
+
+function getVideoEmbedInfo(url){
+  // Returns { type: 'youtube'|'vimeo'|'file', embedUrl } for known providers, or null for a plain file/other link
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if(ytMatch){
+    return { type: 'youtube', embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}` };
+  }
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if(vimeoMatch){
+    return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}` };
+  }
+  return { type: 'file', embedUrl: url };
+}
+
+async function postVideo(){
+  if(!isAdmin()){ document.getElementById('postVideoMsg').innerHTML = '<div class="msg err">Only the Main Instructor can post videos.</div>'; return; }
+  const courseInput = document.getElementById('videoCourseInput');
+  const titleInput = document.getElementById('videoTitleInput');
+  const mode = document.getElementById('videoInputMode').value;
+  const msg = document.getElementById('postVideoMsg');
+  const btn = document.getElementById('postVideoBtn');
+
+  const course = courseInput.value.trim() || 'General';
+  const title = titleInput.value.trim();
+
+  if(!title){
+    msg.innerHTML = '<div class="msg err">Please enter a title.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Adding video...</div>';
+
+  try{
+    let videoUrl, videoType;
+
+    if(mode === 'link'){
+      const linkInput = document.getElementById('videoLinkInput');
+      const url = linkInput.value.trim();
+      if(!url){
+        msg.innerHTML = '<div class="msg err">Please paste a video URL.</div>';
+        btn.disabled = false;
+        return;
+      }
+      const info = getVideoEmbedInfo(url);
+      videoUrl = info.embedUrl;
+      videoType = info.type;
+      linkInput.value = '';
+    } else {
+      const fileInput = document.getElementById('videoFileInput');
+      const file = fileInput.files[0];
+      if(!file){
+        msg.innerHTML = '<div class="msg err">Please choose a video file.</div>';
+        btn.disabled = false;
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: formData });
+      if(!uploadRes.ok){
+        let detail = "";
+        try{
+          const errBody = await uploadRes.json();
+          detail = (errBody.error && errBody.error.message) || JSON.stringify(errBody);
+        }catch(e){ detail = `HTTP ${uploadRes.status}`; }
+        throw new Error(detail);
+      }
+      const uploadData = await uploadRes.json();
+      videoUrl = uploadData.secure_url;
+      videoType = 'file';
+      fileInput.value = '';
+    }
+
+    const data = await fetchSupabaseData();
+    const videos = data.videos || [];
+    videos.push({
+      id: 'vid_' + Date.now(),
+      course, title,
+      url: videoUrl,
+      type: videoType,
+      addedAt: new Date().toISOString()
+    });
+    data.videos = videos;
+    await saveSupabaseData(data);
+
+    msg.innerHTML = '<div class="msg ok">Video added.</div>';
+    courseInput.value = '';
+    titleInput.value = '';
+    loadManageVideosList();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not add video: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function loadVideosList(){
+  const container = document.getElementById('videosList');
+  const filterSelect = document.getElementById('videoCourseFilter');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
+
+    const courses = [...new Set(videos.map(v => v.course))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+
+    const filtered = currentFilter ? videos.filter(v => v.course === currentFilter) : videos;
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No videos yet.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(v => {
+      const player = (v.type === 'youtube' || v.type === 'vimeo')
+        ? `<iframe src="${v.url}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;" allowfullscreen loading="lazy"></iframe>`
+        : `<video src="${v.url}" controls style="width:100%;border-radius:8px;background:#000;"></video>`;
+      return `
+        <div class="card">
+          <div style="font-weight:700;color:var(--gold-dark);font-size:0.78rem;text-transform:uppercase;margin-bottom:8px;">${escapeHtml(v.course)}</div>
+          <div style="font-size:1rem;font-weight:600;margin-bottom:10px;">${escapeHtml(v.title)}</div>
+          ${player}
+          <div class="post-date" style="margin-top:8px;margin-bottom:0;">${formatDate(v.addedAt)}</div>
+        </div>
+      `;
+    }).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load videos.</div>';
+  }
+}
+
+async function loadManageVideosList(){
+  const container = document.getElementById('manageVideosList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
+    if(videos.length === 0){
+      container.innerHTML = '<div class="empty">No videos yet.</div>';
+      return;
+    }
+    container.innerHTML = videos.map(v => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">[${escapeHtml(v.course)}] ${escapeHtml(v.title)}</div>
+          <div class="post-date" style="margin-bottom:0;">${v.type === 'file' ? 'Uploaded file' : (v.type === 'youtube' ? 'YouTube' : 'Vimeo')} &middot; ${formatDate(v.addedAt)}</div>
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteVideo('${v.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load videos.</div>';
+  }
+}
+
+async function deleteVideo(id){
+  if(!isAdmin()){ alert('Only the Main Instructor can delete videos.'); return; }
+  if(!confirm('Delete this video?')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.videos = (data.videos || []).filter(v => v.id !== id);
+    await saveSupabaseData(data);
+    loadManageVideosList();
+  }catch(e){
+    alert('Could not delete video.');
   }
 }
 

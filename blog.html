@@ -193,10 +193,7 @@
 <div class="hero-tabs">
   <a href="index.html">Home</a>
   <div class="tab-static" id="navBlog" onclick="switchTab('posts')">Blog</div>
-  <a href="courses.html">Courses</a>
-  <div class="tab-static" id="navResources" onclick="switchTab('resources')">Lecture Notes</div>
-  <a href="announcements.html">Announcements</a>
-  <a href="videos.html">Videos</a>
+  <a href="lecture-hall.html">Lecture Hall</a>
   <a href="portal.html">Assessment Portal</a>
   <a href="portal.html?view=attendance">Attendance</a>
   <a href="dashboard.html">My Dashboard</a>
@@ -506,7 +503,6 @@ function switchTab(tab){
   document.getElementById('singlePostView').classList.add('hidden');
   document.getElementById('writeView').classList.toggle('hidden', tab!=='write');
   document.getElementById('navBlog').classList.toggle('active', tab==='posts' || tab==='write');
-  document.getElementById('navResources').classList.toggle('active', tab==='resources');
 
   const subtitle = document.getElementById('pageSubtitle');
   if(subtitle){

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture Hall</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0d0d0b; --navy-dark:#000000; --gold:#3f7a32; --gold-dark:#2f5f26;
+    --bg:#ffffff; --card:#faf8f3; --ink:#181816; --muted:#726b5c;
+    --line:#e2ded2; --danger:#b3261e; --ok:#3f7a32; --red:#b3261e; --red-dark:#8f1e18;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff; padding:36px 24px 52px; text-align:center; position:relative;
+  }
+  .hero h1{ font-family:'Fraunces',sans-serif; font-size:1.8rem; margin:0 0 6px 0; }
+  .hero p{ color:rgba(255,255,255,0.7); font-size:0.9rem; margin:0; }
+  .hero-tabs{
+    display:flex;flex-wrap:wrap;gap:6px;row-gap:6px;margin:-28px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    position:relative;z-index:2;
+  }
+  .hero-tabs a, .hero-tabs .tab-static{
+    flex:1 1 auto;min-width:90px;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.85rem;font-family:'IBM Plex Sans',sans-serif;
+    text-decoration:none;
+  }
+  .hero-tabs .active{ background:var(--navy); color:#fff; border-bottom:2px solid var(--red); }
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px 40px;}
+  .sub-tabs{ display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--line); }
+  .sub-tab{ flex:1; text-align:center; padding:12px 4px; font-size:0.85rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .sub-tab.active{ color:var(--ink); border-bottom-color:var(--red); }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:22px; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,30,60,0.04);
+  }
+  h2{ font-family:'Fraunces',sans-serif; font-size:1rem; color:var(--navy); margin:0 0 14px 0; }
+  label{display:block;font-size:0.72rem;font-weight:600;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;}
+  select{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:#f8f6f0;color:var(--ink);
+  }
+  .hidden{display:none;}
+  .empty{color:var(--muted);font-size:0.9rem;padding:16px 0;text-align:center;}
+  .post-date{font-size:0.75rem;color:var(--muted);}
+  .manage-link{ display:inline-block; margin-top:10px; font-size:0.8rem; color:var(--red); text-decoration:none; border-bottom:1px solid var(--red); }
+  .course-item{ padding:14px 0; border-bottom:1px dashed var(--line); }
+  .course-item a{ color:var(--navy); font-weight:700; font-family:'Fraunces',sans-serif; text-decoration:none; font-size:1rem; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Lecture Hall</h1>
+  <p>Courses, lecture notes, announcements, and videos — all in one place.</p>
+</div>
+
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="blog.html">Blog</a>
+  <div class="tab-static active">Lecture Hall</div>
+  <a href="portal.html">Assessment Portal</a>
+  <a href="dashboard.html">My Dashboard</a>
+</div>
+
+<div class="wrap">
+  <div class="sub-tabs">
+    <div class="sub-tab active" id="subTabCourses" onclick="switchHallTab('courses')">Courses</div>
+    <div class="sub-tab" id="subTabNotes" onclick="switchHallTab('notes')">Lecture Notes</div>
+    <div class="sub-tab" id="subTabAnnouncements" onclick="switchHallTab('announcements')">Announcements</div>
+    <div class="sub-tab" id="subTabVideos" onclick="switchHallTab('videos')">Videos</div>
+  </div>
+
+  <div id="hallCourses" class="card">
+    <h2>Courses</h2>
+    <div id="coursesList"><div class="empty">Loading courses...</div></div>
+  </div>
+
+  <div id="hallNotes" class="card hidden">
+    <h2>Lecture Notes</h2>
+    <label>Filter by Course</label>
+    <select id="resourceCourseFilter" onchange="loadResourcesList()">
+      <option value="">All Courses</option>
+    </select>
+    <div id="resourcesList"><div class="empty">Loading...</div></div>
+    <a href="blog.html?view=resources" class="manage-link">Manage Lecture Notes &rarr;</a>
+  </div>
+
+  <div id="hallAnnouncements" class="card hidden">
+    <h2>Announcements</h2>
+    <label>Filter by Course</label>
+    <select id="announcementCourseFilter" onchange="loadAnnouncementsList()">
+      <option value="">All Courses</option>
+    </select>
+    <div id="announcementsList"><div class="empty">Loading...</div></div>
+    <a href="announcements.html" class="manage-link">Manage Announcements &rarr;</a>
+  </div>
+
+  <div id="hallVideos" class="card hidden">
+    <h2>Videos</h2>
+    <label>Filter by Course</label>
+    <select id="videoCourseFilter" onchange="loadVideosList()">
+      <option value="">All Courses</option>
+    </select>
+    <div id="videosList"><div class="empty">Loading...</div></div>
+    <a href="videos.html" class="manage-link">Manage Videos &rarr;</a>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+function formatDate(iso){
+  try{ return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); }
+  catch(e){ return ''; }
+}
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
+let hallDataCache = null;
+async function getData(){
+  if(!hallDataCache) hallDataCache = await fetchSupabaseData();
+  return hallDataCache;
+}
+
+function switchHallTab(tab){
+  ['courses','notes','announcements','videos'].forEach(t => {
+    document.getElementById('hall' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tab);
+    document.getElementById('subTab' + (t === 'notes' ? 'Notes' : t === 'courses' ? 'Courses' : t.charAt(0).toUpperCase() + t.slice(1))).classList.toggle('active', t === tab);
+  });
+  if(tab === 'courses') loadCourses();
+  if(tab === 'notes') loadResourcesList();
+  if(tab === 'announcements') loadAnnouncementsList();
+  if(tab === 'videos') loadVideosList();
+}
+
+async function loadCourses(){
+  const container = document.getElementById('coursesList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await getData();
+    const courseSet = new Set();
+    (data.rosters || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
+    (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
+    const courses = [...courseSet].sort();
+
+    if(courses.length === 0){
+      container.innerHTML = '<div class="empty">No courses listed yet.</div>';
+      return;
+    }
+    container.innerHTML = courses.map(c => `
+      <div class="course-item"><a href="course.html?course=${encodeURIComponent(c)}">${escapeHtml(c)}</a></div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load courses.</div>';
+  }
+}
+
+async function loadResourcesList(){
+  const container = document.getElementById('resourcesList');
+  const filterSelect = document.getElementById('resourceCourseFilter');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await getData();
+    const resources = (data.resources || []).slice().sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    const courses = [...new Set(resources.map(r => r.course))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+    const filtered = currentFilter ? resources.filter(r => r.course === currentFilter) : resources;
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No lecture notes yet.</div>';
+      return;
+    }
+    container.innerHTML = filtered.map(r => `
+      <div style="padding:12px 0;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div>
+          <div style="font-weight:700;color:var(--gold-dark);font-size:0.72rem;text-transform:uppercase;">${escapeHtml(r.course)}</div>
+          <div style="font-size:0.9rem;font-weight:600;">${escapeHtml(r.title)}</div>
+        </div>
+        <a href="${r.url}" target="_blank" style="white-space:nowrap;color:var(--red);font-weight:600;font-size:0.8rem;text-decoration:none;">Download</a>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load lecture notes.</div>';
+  }
+}
+
+async function loadAnnouncementsList(){
+  const container = document.getElementById('announcementsList');
+  const filterSelect = document.getElementById('announcementCourseFilter');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await getData();
+    const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    const courses = [...new Set(announcements.map(a => a.course))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+    const filtered = currentFilter ? announcements.filter(a => a.course === currentFilter) : announcements;
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No announcements yet.</div>';
+      return;
+    }
+    container.innerHTML = filtered.map(a => `
+      <div style="padding:14px 0;border-bottom:1px dashed var(--line);">
+        <div style="font-weight:700;color:var(--gold-dark);font-size:0.72rem;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(a.course)}</div>
+        <div style="font-size:0.9rem;line-height:1.5;">${escapeHtml(a.text)}</div>
+        <div class="post-date" style="margin-top:8px;">${formatDate(a.date)}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load announcements.</div>';
+  }
+}
+
+async function loadVideosList(){
+  const container = document.getElementById('videosList');
+  const filterSelect = document.getElementById('videoCourseFilter');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await getData();
+    const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
+    const courses = [...new Set(videos.map(v => v.course))].sort();
+    const currentFilter = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    filterSelect.value = currentFilter;
+    const filtered = currentFilter ? videos.filter(v => v.course === currentFilter) : videos;
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty">No videos yet.</div>';
+      return;
+    }
+    container.innerHTML = filtered.map(v => {
+      const player = (v.type === 'youtube' || v.type === 'vimeo')
+        ? `<iframe src="${v.url}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px;" allowfullscreen loading="lazy"></iframe>`
+        : `<video src="${v.url}" controls style="width:100%;border-radius:8px;background:#000;"></video>`;
+      return `
+        <div style="padding:16px 0;border-bottom:1px dashed var(--line);">
+          <div style="font-weight:700;color:var(--gold-dark);font-size:0.72rem;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(v.course)}</div>
+          <div style="font-size:0.92rem;font-weight:600;margin-bottom:8px;">${escapeHtml(v.title)}</div>
+          ${player}
+        </div>
+      `;
+    }).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load videos.</div>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadCourses();
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

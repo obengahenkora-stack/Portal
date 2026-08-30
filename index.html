@@ -335,6 +335,39 @@
     padding:0;transition:transform 0.2s ease, background 0.2s ease;
   }
   .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
+  .assist-widget-toggle{
+    position:fixed; top:20px; right:20px; z-index:50;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--gold);color:#fff;border:none;
+    font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .assist-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
+  .assist-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .assist-widget-panel{
+    position:fixed; top:0; right:0; z-index:70;
+    width:380px; max-width:94vw; height:100%; max-height:100vh;
+    background:var(--card); border-left:1px solid var(--line); box-shadow:-6px 0 30px rgba(0,0,0,0.15);
+    display:flex; flex-direction:column;
+  }
+  @media (min-width:640px){ .assist-widget-panel{ top:20px; right:20px; height:auto; max-height:85vh; border-radius:16px; border:1px solid var(--line); } }
+  .assist-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--gold); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    flex-shrink:0;
+  }
+  @media (min-width:640px){ .assist-widget-header{ border-radius:16px 16px 0 0; } }
+  .assist-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .assist-widget-disclaimer{ font-size:0.72rem; color:var(--muted); padding:10px 16px; border-bottom:1px solid var(--line); background:rgba(63,122,50,0.05); flex-shrink:0; }
+  .assist-chat-area{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .assist-bubble{ max-width:88%; padding:10px 14px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
+  .assist-bubble.user{ align-self:flex-end; background:var(--navy-dark); color:#fff; border-bottom-right-radius:2px; }
+  .assist-bubble.bot{ align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-bottom-left-radius:2px; }
+  .assist-bubble.bot a{ color:var(--gold-dark); font-weight:600; }
+  .assist-input-row{ display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); flex-shrink:0; }
+  .assist-input-row input{ margin-bottom:0; flex:1; }
+  .assist-input-row button{ padding:11px 18px; }
   .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .game-widget-panel{
     position:fixed; bottom:0; left:0; z-index:70;
@@ -469,10 +502,7 @@
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
   <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
   <a href="blog.html" class="tab" style="text-decoration:none;">Blog</a>
-  <a href="courses.html" class="tab" style="text-decoration:none;">Courses</a>
-  <a href="blog.html?view=resources" class="tab" style="text-decoration:none;">Lecture Notes</a>
-  <a href="announcements.html" class="tab" style="text-decoration:none;">Announcements</a>
-  <a href="videos.html" class="tab" style="text-decoration:none;">Videos</a>
+  <a href="lecture-hall.html" class="tab" style="text-decoration:none;">Lecture Hall</a>
   <a href="portal.html" class="tab" style="text-decoration:none;">Assessment Portal</a>
   <a href="portal.html?view=attendance" class="tab" style="text-decoration:none;">Attendance</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">My Dashboard</a>
@@ -692,7 +722,7 @@
     <div class="cta-row">
       <a href="portal.html" class="cta-link">Check Assessment Results</a>
       <a href="blog.html" class="cta-link">Read Engineering Notes</a>
-      <a href="courses.html" class="cta-link">Browse Courses</a>
+      <a href="lecture-hall.html" class="cta-link">Browse Lecture Hall</a>
     </div>
   </div>
 </div>
@@ -737,7 +767,7 @@
         <div class="footer-col-content">
           <a href="portal.html">Assessment Portal</a><br>
           <a href="blog.html">Blog</a><br>
-          <a href="courses.html">Courses</a>
+          <a href="lecture-hall.html">Lecture Hall</a>
         </div>
       </div>
     </div>
@@ -1791,7 +1821,7 @@ function toggleCalcWidget(show){
   document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
 }
 
-// ===== Engineering Quiz Game =====
+// ===== Games: Engineering Quiz, True/False Blitz, Term Scramble =====
 
 const GAME_QUESTIONS = [
   { q: "What does the acronym 'CAD' stand for in engineering?", options: ["Computer-Aided Design", "Civil Analysis Data", "Construction Applied Drawing", "Concrete Aggregate Density"], correct: 0 },
@@ -1826,7 +1856,39 @@ const GAME_QUESTIONS = [
   { q: "Which country has the most UNESCO World Heritage Sites?", options: ["China", "Italy", "France", "Spain"], correct: 1 }
 ];
 
-let gameState = { questions: [], currentIndex: 0, score: 0, timer: null, timeLeft: 15 };
+const TRUEFALSE_QUESTIONS = [
+  { s: "Concrete is strong in compression but weak in tension.", a: true },
+  { s: "Steel is added to concrete mainly to improve its tensile strength.", a: true },
+  { s: "A triangle is a structurally unstable shape compared to a square.", a: false },
+  { s: "The SI unit of pressure is the Newton.", a: false },
+  { s: "Increasing the water-cement ratio generally weakens concrete.", a: true },
+  { s: "A raft foundation is used when soil bearing capacity is very low.", a: true },
+  { s: "Surveying angles are typically measured with a theodolite or total station.", a: true },
+  { s: "Bitumen is commonly used in road surfacing (asphalt).", a: true },
+  { s: "A cantilever beam is supported at both ends.", a: false },
+  { s: "The slump test measures the workability of fresh concrete.", a: true },
+  { s: "Reinforced concrete uses steel bars mainly to resist compression.", a: false },
+  { s: "Gravity always acts vertically downward.", a: true },
+  { s: "A pile foundation transfers load to deeper, stronger soil or rock layers.", a: true },
+  { s: "The Tacoma Narrows Bridge collapsed due to an earthquake.", a: false },
+  { s: "Quantity Surveyors are primarily responsible for cost estimation and control on projects.", a: true },
+  { s: "Water always boils at exactly 100°C regardless of altitude.", a: false },
+  { s: "A truss is a structure made of members connected at joints, typically forming triangles.", a: true },
+  { s: "Aggregate in concrete refers only to sand.", a: false },
+  { s: "The factor of safety in engineering design accounts for uncertainties in loads and materials.", a: true },
+  { s: "PPE stands for 'Project Planning Estimate.'", a: false },
+  { s: "Lateral earth pressure acts horizontally against retaining structures.", a: true },
+  { s: "HVAC systems handle heating, ventilation, and air conditioning.", a: true }
+];
+
+const SCRAMBLE_WORDS = [
+  "CONCRETE", "CEMENT", "TRUSS", "FOUNDATION", "SURVEYING", "HYDRAULICS",
+  "ASPHALT", "STRUCTURAL", "DRAINAGE", "CANTILEVER", "MASONRY", "REBAR",
+  "GRADIENT", "IRRIGATION", "AGGREGATE", "GEOTECHNICAL", "RESERVOIR", "CULVERT",
+  "SCAFFOLDING", "EXCAVATION"
+];
+
+let gameState = { type: null, questions: [], currentIndex: 0, score: 0, timer: null, timeLeft: 0, log: [] };
 
 function toggleGameWidget(show){
   document.getElementById('gameWidgetOverlay').classList.toggle('hidden', !show);
@@ -1855,37 +1917,105 @@ function shuffleArray(arr){
   return a;
 }
 
+const GAME_META = {
+  quiz: { label: "Engineering Quiz", total: 10, timePerQ: 15, intro: "10 multiple-choice questions, 15 seconds each. Answer as many correctly as you can!" },
+  truefalse: { label: "True or False Blitz", total: 12, timePerQ: 8, intro: "12 rapid-fire true/false statements, 8 seconds each. Think fast!" },
+  scramble: { label: "Term Scramble", total: 8, timePerQ: 20, intro: "8 scrambled engineering terms, 20 seconds each. Type the correct word!" }
+};
+
+function backToGameSelector(){
+  if(gameState.timer) clearInterval(gameState.timer);
+  document.getElementById('gameSelectorView').classList.remove('hidden');
+  document.getElementById('gameIntroView').classList.add('hidden');
+  document.getElementById('gamePlayView').classList.add('hidden');
+  document.getElementById('gameEndView').classList.add('hidden');
+  document.getElementById('gameReviewView').classList.add('hidden');
+  document.getElementById('reviewToggleBtn').textContent = 'See Correct Answers';
+  document.getElementById('gamePlayerName').value = '';
+  document.getElementById('gamePlayerIndex').value = '';
+  document.getElementById('gameSubmitMsg').innerHTML = '';
+  document.getElementById('gameWidgetTitle').textContent = 'Play & Win';
+}
+
+function selectGame(type){
+  gameState.type = type;
+  const meta = GAME_META[type];
+  document.getElementById('gameWidgetTitle').textContent = meta.label;
+  document.getElementById('gameIntroText').textContent = meta.intro;
+  document.getElementById('gameSelectorView').classList.add('hidden');
+  document.getElementById('gameIntroView').classList.remove('hidden');
+}
+
 function startGame(){
-  gameState.questions = shuffleArray(GAME_QUESTIONS).slice(0, 10);
+  const type = gameState.type;
+  const meta = GAME_META[type];
   gameState.currentIndex = 0;
   gameState.score = 0;
+  gameState.log = [];
+
+  if(type === 'quiz'){
+    gameState.questions = shuffleArray(GAME_QUESTIONS).slice(0, meta.total);
+  } else if(type === 'truefalse'){
+    gameState.questions = shuffleArray(TRUEFALSE_QUESTIONS).slice(0, meta.total);
+  } else if(type === 'scramble'){
+    gameState.questions = shuffleArray(SCRAMBLE_WORDS).slice(0, meta.total).map(w => ({ word: w, scrambled: scrambleWord(w) }));
+  }
+
   document.getElementById('gameIntroView').classList.add('hidden');
   document.getElementById('gameEndView').classList.add('hidden');
   document.getElementById('gamePlayView').classList.remove('hidden');
+  document.getElementById('gameScrambleInputWrap').classList.toggle('hidden', type !== 'scramble');
+  document.getElementById('gameOptionsContainer').classList.toggle('hidden', type === 'scramble');
   showGameQuestion();
+}
+
+function scrambleWord(word){
+  let letters;
+  do{
+    letters = shuffleArray(word.split(''));
+  } while(letters.join('') === word);
+  return letters.join('');
 }
 
 function showGameQuestion(){
   if(gameState.timer) clearInterval(gameState.timer);
+  const type = gameState.type;
+  const meta = GAME_META[type];
   const q = gameState.questions[gameState.currentIndex];
-  document.getElementById('gameQuestionCounter').textContent = `Question ${gameState.currentIndex + 1}/10`;
+
+  document.getElementById('gameQuestionCounter').textContent = `Question ${gameState.currentIndex + 1}/${meta.total}`;
   document.getElementById('gameScoreCounter').textContent = `Score: ${gameState.score}`;
-  document.getElementById('gameQuestionText').textContent = q.q;
 
-  const shuffledOptions = q.options.map((opt, i) => ({ opt, isCorrect: i === q.correct }));
-  const shuffled = shuffleArray(shuffledOptions);
-  const container = document.getElementById('gameOptionsContainer');
-  container.innerHTML = shuffled.map((o, i) => `<button class="game-option" data-correct="${o.isCorrect}" onclick="selectGameAnswer(this)">${escapeHtml(o.opt)}</button>`).join('');
+  const optionsContainer = document.getElementById('gameOptionsContainer');
+  const scrambleWrap = document.getElementById('gameScrambleInputWrap');
 
-  gameState.timeLeft = 15;
+  if(type === 'quiz'){
+    document.getElementById('gameQuestionText').textContent = q.q;
+    const shuffledOptions = q.options.map((opt, i) => ({ opt, isCorrect: i === q.correct }));
+    const shuffled = shuffleArray(shuffledOptions);
+    optionsContainer.innerHTML = shuffled.map(o => `<button class="game-option" data-correct="${o.isCorrect}" data-text="${escapeHtml(o.opt)}" onclick="selectGameAnswer(this)">${escapeHtml(o.opt)}</button>`).join('');
+  } else if(type === 'truefalse'){
+    document.getElementById('gameQuestionText').textContent = q.s;
+    optionsContainer.innerHTML = `
+      <button class="game-option" data-correct="${q.a === true}" data-text="True" onclick="selectGameAnswer(this)">True</button>
+      <button class="game-option" data-correct="${q.a === false}" data-text="False" onclick="selectGameAnswer(this)">False</button>
+    `;
+  } else if(type === 'scramble'){
+    document.getElementById('gameQuestionText').textContent = `Unscramble: ${q.scrambled.split('').join(' ')}`;
+    document.getElementById('gameScrambleInput').value = '';
+    document.getElementById('gameScrambleInput').focus();
+  }
+
+  gameState.timeLeft = meta.timePerQ;
   const bar = document.getElementById('gameTimerBar');
   bar.style.width = '100%';
   gameState.timer = setInterval(() => {
     gameState.timeLeft--;
-    bar.style.width = `${(gameState.timeLeft / 15) * 100}%`;
+    bar.style.width = `${(gameState.timeLeft / meta.timePerQ) * 100}%`;
     if(gameState.timeLeft <= 0){
       clearInterval(gameState.timer);
-      revealGameAnswer(null);
+      if(type === 'scramble') recordScrambleResult(null);
+      else revealGameAnswer(null);
     }
   }, 1000);
 }
@@ -1897,17 +2027,51 @@ function selectGameAnswer(btn){
 
 function revealGameAnswer(selectedBtn){
   const buttons = document.querySelectorAll('#gameOptionsContainer .game-option');
+  let correctText = '';
   buttons.forEach(b => {
     b.disabled = true;
     if(b.getAttribute('data-correct') === 'true'){
       b.classList.add('correct');
+      correctText = b.getAttribute('data-text');
     } else if(b === selectedBtn){
       b.classList.add('wrong');
     }
   });
-  if(selectedBtn && selectedBtn.getAttribute('data-correct') === 'true'){
-    gameState.score++;
-  }
+  const isCorrect = !!(selectedBtn && selectedBtn.getAttribute('data-correct') === 'true');
+  if(isCorrect) gameState.score++;
+
+  const q = gameState.questions[gameState.currentIndex];
+  const questionLabel = gameState.type === 'quiz' ? q.q : q.s;
+  gameState.log.push({
+    question: questionLabel,
+    userAnswer: selectedBtn ? selectedBtn.getAttribute('data-text') : '(no answer — time ran out)',
+    correctAnswer: correctText,
+    isCorrect
+  });
+
+  advanceGame();
+}
+
+function submitScrambleAnswer(){
+  if(gameState.timer) clearInterval(gameState.timer);
+  const input = document.getElementById('gameScrambleInput').value.trim();
+  recordScrambleResult(input);
+}
+
+function recordScrambleResult(userInput){
+  const q = gameState.questions[gameState.currentIndex];
+  const isCorrect = (userInput || '').toUpperCase() === q.word;
+  if(isCorrect) gameState.score++;
+  gameState.log.push({
+    question: `Unscramble: ${q.scrambled}`,
+    userAnswer: userInput ? userInput.toUpperCase() : '(no answer — time ran out)',
+    correctAnswer: q.word,
+    isCorrect
+  });
+  advanceGame();
+}
+
+function advanceGame(){
   setTimeout(() => {
     gameState.currentIndex++;
     if(gameState.currentIndex < gameState.questions.length){
@@ -1915,21 +2079,30 @@ function revealGameAnswer(selectedBtn){
     } else {
       endGame();
     }
-  }, 900);
+  }, gameState.type === 'scramble' ? 300 : 900);
 }
 
 function endGame(){
   document.getElementById('gamePlayView').classList.add('hidden');
   document.getElementById('gameEndView').classList.remove('hidden');
-  document.getElementById('gameFinalScore').textContent = `${gameState.score}/10`;
+  document.getElementById('gameFinalScore').textContent = `${gameState.score}/${gameState.questions.length}`;
 }
 
-function resetGameWidget(){
-  document.getElementById('gameEndView').classList.add('hidden');
-  document.getElementById('gameIntroView').classList.remove('hidden');
-  document.getElementById('gamePlayerName').value = '';
-  document.getElementById('gamePlayerIndex').value = '';
-  document.getElementById('gameSubmitMsg').innerHTML = '';
+function toggleGameReview(){
+  const reviewEl = document.getElementById('gameReviewView');
+  const btn = document.getElementById('reviewToggleBtn');
+  const showing = reviewEl.classList.contains('hidden');
+  reviewEl.classList.toggle('hidden', !showing);
+  btn.textContent = showing ? 'Hide Correct Answers' : 'See Correct Answers';
+  if(showing){
+    reviewEl.innerHTML = gameState.log.map((item, i) => `
+      <div style="padding:10px 0;border-bottom:1px dashed var(--line);font-size:0.82rem;">
+        <div style="font-weight:600;margin-bottom:4px;">${i + 1}. ${escapeHtml(item.question)}</div>
+        <div style="color:${item.isCorrect ? 'var(--ok)' : 'var(--danger)'};">Your answer: ${escapeHtml(item.userAnswer)}</div>
+        ${!item.isCorrect ? `<div style="color:var(--ok);">Correct answer: ${escapeHtml(item.correctAnswer)}</div>` : ''}
+      </div>
+    `).join('');
+  }
 }
 
 async function submitGameScore(){
@@ -1949,6 +2122,8 @@ async function submitGameScore(){
     scores.push({
       name, indexNumber: indexNum,
       score: gameState.score,
+      total: gameState.questions.length,
+      gameType: gameState.type,
       playedAt: new Date().toISOString()
     });
     data.gameScores = scores;
@@ -1961,26 +2136,28 @@ async function submitGameScore(){
 
 async function loadLeaderboard(){
   const container = document.getElementById('leaderboardList');
+  const filter = document.getElementById('leaderboardGameFilter').value;
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
     const data = await fetchSupabaseData();
-    const scores = (data.gameScores || []).slice().sort((a, b) => b.score - a.score || new Date(a.playedAt) - new Date(b.playedAt));
+    const allScores = (data.gameScores || []).filter(s => (s.gameType || 'quiz') === filter);
+    const scores = allScores.slice().sort((a, b) => (b.score / (b.total || 10)) - (a.score / (a.total || 10)) || new Date(a.playedAt) - new Date(b.playedAt));
     window.leaderboardCache = scores;
 
     if(scores.length === 0){
-      container.innerHTML = '<div class="empty">No scores yet — be the first to play!</div>';
+      container.innerHTML = '<div class="empty">No scores yet for this game — be the first to play!</div>';
     } else {
       container.innerHTML = scores.slice(0, 20).map((s, i) => `
         <div class="leaderboard-row">
           <span class="leaderboard-rank">#${i + 1}</span>
           <span class="leaderboard-name">${escapeHtml(s.name)}</span>
-          <span class="leaderboard-score">${s.score}/10</span>
+          <span class="leaderboard-score">${s.score}/${s.total || 10}</span>
         </div>
       `).join('');
     }
 
     const winnerCard = document.getElementById('randomWinnerCard');
-    if(isAdmin && isAdmin() && scores.length > 0){
+    if(typeof isAdmin === 'function' && isAdmin() && scores.length > 0){
       winnerCard.classList.remove('hidden');
     } else {
       winnerCard.classList.add('hidden');
@@ -1997,9 +2174,131 @@ function pickRandomWinner(){
   document.getElementById('randomWinnerResult').innerHTML = `
     <div class="msg ok" style="text-align:center;font-size:0.95rem;">
       🎉 <strong>${escapeHtml(winner.name)}</strong><br>
-      Index: ${escapeHtml(winner.indexNumber)} &middot; Score: ${winner.score}/10
+      Index: ${escapeHtml(winner.indexNumber)} &middot; Score: ${winner.score}/${winner.total || 10}
     </div>
   `;
+}
+
+// ===== AI Study Assistant (client-side search over real course content) =====
+
+function toggleAssistWidget(show){
+  document.getElementById('assistWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('assistWidgetPanel').classList.toggle('hidden', !show);
+  if(show){
+    document.getElementById('assistInput').focus();
+    populateAssistCourseSelect();
+  }
+}
+
+async function populateAssistCourseSelect(){
+  const select = document.getElementById('assistCourseSelect');
+  try{
+    const data = await fetchSupabaseData();
+    const courseSet = new Set();
+    (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
+    (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
+    (data.videos || []).forEach(v => { if(v.course) courseSet.add(v.course); });
+    (data.rosters || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    const courses = [...courseSet].sort();
+    const current = select.value;
+    select.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    select.value = current;
+  }catch(e){ /* leave default "All Courses" option in place */ }
+}
+
+function appendAssistBubble(text, who){
+  const area = document.getElementById('assistChatArea');
+  const bubble = document.createElement('div');
+  bubble.className = `assist-bubble ${who}`;
+  bubble.innerHTML = text;
+  area.appendChild(bubble);
+  area.scrollTop = area.scrollHeight;
+}
+
+const STOP_WORDS = new Set(['a','an','the','is','are','was','were','what','which','who','when','where','how','do','does','did','for','on','in','of','to','and','or','any','about','has','have','with','we','i','our','my']);
+
+function extractKeywords(text){
+  return (text.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+function scoreText(itemText, keywords){
+  const lower = itemText.toLowerCase();
+  let score = 0;
+  keywords.forEach(k => { if(lower.includes(k)) score++; });
+  return score;
+}
+
+async function sendAssistMessage(){
+  const input = document.getElementById('assistInput');
+  const query = input.value.trim();
+  if(!query) return;
+  appendAssistBubble(escapeHtml(query), 'user');
+  input.value = '';
+  appendAssistBubble('Searching...', 'bot');
+
+  try{
+    const data = await fetchSupabaseData();
+    const keywords = extractKeywords(query);
+    const selectedCourse = document.getElementById('assistCourseSelect').value;
+
+    const candidates = [];
+
+    (data.resources || []).forEach(r => {
+      if(selectedCourse && r.course !== selectedCourse) return;
+      const score = scoreText(`${r.course} ${r.title}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Lecture Note', label: `${r.course}: ${r.title}`, link: r.url, linkText: 'Download' });
+    });
+
+    (data.announcements || []).forEach(a => {
+      if(selectedCourse && a.course !== selectedCourse) return;
+      const score = scoreText(`${a.course} ${a.text}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Announcement', label: `[${a.course}] ${a.text.slice(0, 90)}${a.text.length > 90 ? '...' : ''}`, link: 'lecture-hall.html', linkText: 'View in Lecture Hall' });
+    });
+
+    (data.syllabi || []).forEach(s => {
+      if(selectedCourse && s.course !== selectedCourse) return;
+      const score = scoreText(`${s.course} ${s.content || ''}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Course Syllabus', label: s.course, link: `course.html?course=${encodeURIComponent(s.course)}`, linkText: 'View Course' });
+    });
+
+    (data.blogPosts || []).forEach(p => {
+      const score = scoreText(`${p.title} ${p.body || ''}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Blog Post', label: p.title, link: 'blog.html', linkText: 'Read Post' });
+    });
+
+    (data.videos || []).forEach(v => {
+      if(selectedCourse && v.course !== selectedCourse) return;
+      const score = scoreText(`${v.course} ${v.title}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Video', label: `${v.course}: ${v.title}`, link: 'videos.html', linkText: 'Watch' });
+    });
+
+    candidates.sort((a, b) => b.score - a.score);
+    const top = candidates.slice(0, 5);
+
+    // remove the "Searching..." placeholder bubble
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+
+    if(top.length === 0){
+      const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
+      appendAssistBubble(`I couldn't find anything matching that${scopeNote}. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`, 'bot');
+      return;
+    }
+
+    let responseHtml = `Here's what I found:<br><br>` + top.map(c => `
+      <div style="margin-bottom:8px;">
+        <span style="font-size:0.68rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;">${escapeHtml(c.type)}</span><br>
+        ${escapeHtml(c.label)}<br>
+        <a href="${escapeHtml(c.link)}" target="_blank">${escapeHtml(c.linkText)} &rarr;</a>
+      </div>
+    `).join('');
+    appendAssistBubble(responseHtml, 'bot');
+  }catch(e){
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+    appendAssistBubble('Something went wrong searching the site content. Please try again.', 'bot');
+  }
 }
 
 function switchCalcTool(tool){
@@ -2462,7 +2761,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 <div id="gameWidgetOverlay" class="game-widget-overlay hidden" onclick="toggleGameWidget(false)"></div>
 <div id="gameWidgetPanel" class="game-widget-panel hidden">
   <div class="game-widget-header">
-    <span>Engineering Quiz</span>
+    <span id="gameWidgetTitle">Play &amp; Win</span>
     <button onclick="toggleGameWidget(false)" class="game-widget-close">&times;</button>
   </div>
   <div style="display:flex;gap:2px;padding:10px 14px 0;background:var(--red);">
@@ -2471,9 +2770,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   </div>
 
   <div class="game-widget-body" id="gameTabContentPlay">
-    <div id="gameIntroView">
-      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;">10 quick questions, 15 seconds each. Answer as many correctly as you can and see how you rank!</p>
-      <button onclick="startGame()" style="width:100%;">Start Quiz</button>
+
+    <div id="gameSelectorView">
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;">Pick a game to play:</p>
+      <button onclick="selectGame('quiz')" style="width:100%;margin-bottom:10px;text-align:left;">🧠 Engineering Quiz<br><span style="font-weight:400;font-size:0.78rem;opacity:0.85;">10 multiple-choice questions, 15s each</span></button>
+      <button onclick="selectGame('truefalse')" style="width:100%;margin-bottom:10px;text-align:left;">⚡ True or False Blitz<br><span style="font-weight:400;font-size:0.78rem;opacity:0.85;">12 rapid-fire statements, 8s each</span></button>
+      <button onclick="selectGame('scramble')" style="width:100%;text-align:left;">🔤 Term Scramble<br><span style="font-weight:400;font-size:0.78rem;opacity:0.85;">8 scrambled engineering terms, 20s each</span></button>
+    </div>
+
+    <div id="gameIntroView" class="hidden">
+      <p id="gameIntroText" style="color:var(--muted);font-size:0.85rem;margin-top:0;"></p>
+      <button onclick="startGame()" style="width:100%;">Start</button>
+      <button class="secondary" onclick="backToGameSelector()" style="width:100%;margin-top:8px;">&larr; Choose a Different Game</button>
     </div>
 
     <div id="gamePlayView" class="hidden">
@@ -2484,6 +2792,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       <div class="game-progress-bar"><div class="game-progress-fill" id="gameTimerBar" style="width:100%;"></div></div>
       <div id="gameQuestionText" style="font-size:0.95rem;font-weight:600;margin-bottom:14px;"></div>
       <div id="gameOptionsContainer"></div>
+      <div id="gameScrambleInputWrap" class="hidden">
+        <input type="text" id="gameScrambleInput" placeholder="Type your answer" autocomplete="off" style="text-transform:uppercase;">
+        <button onclick="submitScrambleAnswer()" style="width:100%;">Submit Answer</button>
+      </div>
     </div>
 
     <div id="gameEndView" class="hidden">
@@ -2491,17 +2803,25 @@ window.addEventListener('DOMContentLoaded', async () => {
         <div style="font-family:'Fraunces',sans-serif;font-size:2.2rem;font-weight:700;color:var(--red);" id="gameFinalScore">0/10</div>
         <div style="color:var(--muted);font-size:0.85rem;">Final Score</div>
       </div>
+      <button class="secondary" onclick="toggleGameReview()" style="width:100%;margin-bottom:14px;" id="reviewToggleBtn">See Correct Answers</button>
+      <div id="gameReviewView" class="hidden" style="margin-bottom:16px;max-height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:12px;"></div>
       <label>Your Name</label>
       <input type="text" id="gamePlayerName" placeholder="e.g. Kwame Mensah">
       <label>Your Index Number</label>
       <input type="text" id="gamePlayerIndex" placeholder="e.g. UEB0700123">
       <button onclick="submitGameScore()" style="width:100%;">Submit Score</button>
       <div id="gameSubmitMsg"></div>
-      <button class="secondary" onclick="resetGameWidget()" style="width:100%;margin-top:8px;">Play Again</button>
+      <button class="secondary" onclick="backToGameSelector()" style="width:100%;margin-top:8px;">&larr; Play Another Game</button>
     </div>
   </div>
 
   <div class="game-widget-body hidden" id="gameTabContentLeaderboard">
+    <label>Filter by Game</label>
+    <select id="leaderboardGameFilter" onchange="loadLeaderboard()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.9rem;margin-bottom:14px;background:#f8f6f0;color:var(--ink);">
+      <option value="quiz">Engineering Quiz</option>
+      <option value="truefalse">True or False Blitz</option>
+      <option value="scramble">Term Scramble</option>
+    </select>
     <div id="leaderboardList"><div class="empty">Loading...</div></div>
     <div id="randomWinnerCard" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
       <button onclick="pickRandomWinner()" style="width:100%;">🎲 Pick Random Winner</button>
@@ -2513,6 +2833,29 @@ window.addEventListener('DOMContentLoaded', async () => {
   🎮
 </button>
 
+<!-- AI Study Assistant Widget -->
+<div id="assistWidgetOverlay" class="assist-widget-overlay hidden" onclick="toggleAssistWidget(false)"></div>
+<div id="assistWidgetPanel" class="assist-widget-panel hidden">
+  <div class="assist-widget-header">
+    <span>Study Assistant</span>
+    <button onclick="toggleAssistWidget(false)" class="assist-widget-close">&times;</button>
+  </div>
+  <div class="assist-widget-disclaimer">Searches your actual courses, lecture notes, and announcements on this site — not a general AI chatbot.</div>
+  <div style="padding:12px 16px 0;flex-shrink:0;">
+    <label style="display:block;font-size:0.68rem;font-weight:600;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Mono',monospace;">Course</label>
+    <select id="assistCourseSelect" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.85rem;margin-bottom:12px;background:#f8f6f0;color:var(--ink);">
+      <option value="">All Courses</option>
+    </select>
+  </div>
+  <div class="assist-chat-area" id="assistChatArea">
+    <div class="assist-bubble bot">Hi! Pick a course above (or leave it on "All Courses"), then ask me about a lecture note, an announcement, or a topic — e.g. "What lecture notes do we have?" or "Any announcements about the exam?"</div>
+  </div>
+  <div class="assist-input-row">
+    <input type="text" id="assistInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendAssistMessage();">
+    <button onclick="sendAssistMessage()">Ask</button>
+  </div>
+</div>
+
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -2521,172 +2864,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-
-<!-- Additional Games -->
-<style>
-  .extra-games-toggle{position:fixed;bottom:24px;left:94px;z-index:50;width:58px;height:58px;border-radius:50%;background:#174a7e;color:#fff;border:none;font-size:1.35rem;box-shadow:0 6px 20px rgba(23,74,126,.35);cursor:pointer}
-  .extra-games-panel{position:fixed;bottom:24px;left:24px;z-index:80;width:360px;max-width:92vw;max-height:85vh;overflow:auto;background:#fff;border:1px solid #ddd;border-radius:16px;box-shadow:6px -4px 30px rgba(0,0,0,.15);display:none}
-  .extra-games-panel.open{display:block}
-  .extra-games-head{background:#174a7e;color:#fff;padding:16px 20px;font-weight:700;display:flex;justify-content:space-between}
-  .extra-games-body{padding:20px}
-  .extra-game-card{border:1px solid #ddd;border-radius:10px;padding:16px;margin-bottom:12px}
-  .extra-game-card h3{margin:0 0 7px}
-  .extra-game-card p{font-size:.9rem;line-height:1.45}
-  .extra-game-card button{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 16px;cursor:pointer}
-  .game-q{font-size:1rem;font-weight:700;margin:12px 0}
-  .game-input{width:100%;padding:10px;border:1px solid #ccc;border-radius:7px;box-sizing:border-box}
-  .game-options button{display:block;width:100%;margin:7px 0;text-align:left}
-  .game-score{font-weight:700;margin-top:12px}
-</style>
-
-<button class="extra-games-toggle" onclick="toggleExtraGames()" aria-label="Open additional games">🎮</button>
-
-<div id="extraGamesPanel" class="extra-games-panel">
-  <div class="extra-games-head">
-    <span>Engineering Games</span>
-    <button onclick="toggleExtraGames()" style="background:none;border:0;color:#fff;font-size:1.3rem;cursor:pointer">×</button>
-  </div>
-  <div class="extra-games-body">
-    <div id="gameMenu">
-      <div class="extra-game-card">
-        <h3>🔤 Engineering Word Scramble</h3>
-        <p>Unscramble engineering and construction terms against the clock.</p>
-        <button onclick="startWordScramble()">Play</button>
-      </div>
-      <div class="extra-game-card">
-        <h3>🧮 Civil Calculation Challenge</h3>
-        <p>Answer short civil-engineering calculation questions as quickly as possible.</p>
-        <button onclick="startCivilChallenge()">Play</button>
-      </div>
-    </div>
-    <div id="extraGameArea"></div>
-  </div>
-</div>
-
-<script>
-(function(){
-  const scrambleWords = [
-    ['TNEOCERC','CONCRETE'],['EMNITC','CEMENT'],['RIEBAM','BEAM'],
-    ['MLOCUN','COLUMN'],['RDEGA','GRADE'],['LOSI','SOIL'],
-    ['RTAWRE','WATER'],['RUTUCSTRE','STRUCTURE'],['DONAUTFION','FOUNDATION'],
-    ['EGNINER','ENGINEER']
-  ];
-
-  const civilQuestions = [
-    {q:'A 4 m × 3 m slab has an area of:',o:['7 m²','12 m²','14 m²','24 m²'],a:1},
-    {q:'If concrete has a mass of 2400 kg and a volume of 1 m³, its density is:',o:['240 kg/m³','1200 kg/m³','2400 kg/m³','4800 kg/m³'],a:2},
-    {q:'A force of 20 kN acts over 2 m². The stress is:',o:['5 kPa','10 kPa','20 kPa','40 kPa'],a:1},
-    {q:'A 5 m beam carries a uniform load of 2 kN/m. Total load is:',o:['2 kN','5 kN','10 kN','20 kN'],a:2},
-    {q:'A 3 m × 4 m × 0.15 m slab has a volume of:',o:['0.45 m³','1.20 m³','1.80 m³','7.15 m³'],a:2},
-    {q:'If a 10 m wall rises 3 m, its face area is:',o:['13 m²','26 m²','30 m²','60 m²'],a:2},
-    {q:'A 50 kN load acts on an area of 5 m². Pressure is:',o:['5 kPa','10 kPa','25 kPa','250 kPa'],a:1},
-    {q:'A 6 m × 5 m floor has a perimeter of:',o:['11 m','22 m','30 m','60 m'],a:1}
-  ];
-
-  let timer, wordRound, wordScore, calcRound, calcScore;
-
-  window.toggleExtraGames = function(){
-    document.getElementById('extraGamesPanel').classList.toggle('open');
-  };
-
-  function menu(){
-    clearInterval(timer);
-    document.getElementById('gameMenu').style.display='block';
-    document.getElementById('extraGameArea').innerHTML='';
-  }
-
-  window.startWordScramble = function(){
-    wordRound=0; wordScore=0;
-    document.getElementById('gameMenu').style.display='none';
-    nextWord();
-  };
-
-  function nextWord(){
-    clearInterval(timer);
-    if(wordRound>=5){
-      document.getElementById('extraGameArea').innerHTML =
-        '<div class="extra-game-card"><h3>Finished!</h3><div class="game-score">Score: '+wordScore+'/5</div><button onclick="returnToGameMenu()">Play Again</button></div>';
-      return;
-    }
-    const item=scrambleWords[Math.floor(Math.random()*scrambleWords.length)];
-    let seconds=20;
-    document.getElementById('extraGameArea').innerHTML =
-      '<div class="extra-game-card"><h3>Round '+(wordRound+1)+' of 5</h3><div>Time: <strong id="wordTimer">'+seconds+'</strong>s</div><div class="game-q">'+item[0]+'</div><input id="wordAnswer" class="game-input" placeholder="Your answer" autocomplete="off"><button style="margin-top:8px" onclick="submitWord()">Submit</button><div id="wordMsg"></div></div>';
-    document.getElementById('wordAnswer').focus();
-    timer=setInterval(function(){
-      seconds--;
-      const el=document.getElementById('wordTimer');
-      if(el) el.textContent=seconds;
-      if(seconds<=0){
-        clearInterval(timer);
-        wordRound++;
-        document.getElementById('wordMsg').innerHTML='<p>Time is up. Answer: <strong>'+item[1]+'</strong></p>';
-        setTimeout(nextWord,900);
-      }
-    },1000);
-    window.currentWord=item[1];
-  }
-
-  window.submitWord = function(){
-    const input=document.getElementById('wordAnswer');
-    if(!input) return;
-    clearInterval(timer);
-    if(input.value.trim().toUpperCase()===window.currentWord){
-      wordScore++;
-      document.getElementById('wordMsg').innerHTML='<p>✓ Correct!</p>';
-    }else{
-      document.getElementById('wordMsg').innerHTML='<p>✗ Correct answer: <strong>'+window.currentWord+'</strong></p>';
-    }
-    wordRound++;
-    setTimeout(nextWord,700);
-  };
-
-  window.startCivilChallenge = function(){
-    calcRound=0; calcScore=0;
-    document.getElementById('gameMenu').style.display='none';
-    nextCalc();
-  };
-
-  function nextCalc(){
-    clearInterval(timer);
-    if(calcRound>=civilQuestions.length){
-      document.getElementById('extraGameArea').innerHTML =
-        '<div class="extra-game-card"><h3>Challenge Complete!</h3><div class="game-score">Score: '+calcScore+'/'+civilQuestions.length+'</div><button onclick="returnToGameMenu()">Back to Games</button></div>';
-      return;
-    }
-    const item=civilQuestions[calcRound];
-    let seconds=15;
-    document.getElementById('extraGameArea').innerHTML =
-      '<div class="extra-game-card"><h3>Question '+(calcRound+1)+' of '+civilQuestions.length+'</h3><div>Time: <strong id="calcTimer">'+seconds+'</strong>s</div><div class="game-q">'+item.q+'</div><div class="game-options">'+item.o.map((x,i)=>'<button onclick="answerCalc('+i+')">'+x+'</button>').join('')+'</div><div id="calcMsg"></div></div>';
-    timer=setInterval(function(){
-      seconds--;
-      const el=document.getElementById('calcTimer');
-      if(el) el.textContent=seconds;
-      if(seconds<=0){
-        clearInterval(timer);
-        document.getElementById('calcMsg').innerHTML='<p>Time is up.</p>';
-        calcRound++;
-        setTimeout(nextCalc,700);
-      }
-    },1000);
-    window.currentCalc=item;
-  }
-
-  window.answerCalc=function(choice){
-    clearInterval(timer);
-    if(choice===window.currentCalc.a){
-      calcScore++;
-      document.getElementById('calcMsg').innerHTML='<p>✓ Correct!</p>';
-    }else{
-      document.getElementById('calcMsg').innerHTML='<p>✗ Incorrect.</p>';
-    }
-    calcRound++;
-    setTimeout(nextCalc,600);
-  };
-
-  window.returnToGameMenu=function(){ menu(); };
-})();
-</script>
-
 </body>
 </html>

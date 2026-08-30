@@ -326,6 +326,40 @@
     padding:0;transition:transform 0.2s ease, background 0.2s ease;
   }
   .calc-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
+  .formula-widget-toggle{
+    position:fixed; bottom:94px; right:24px; z-index:50;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--gold);color:#fff;border:none;
+    font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .formula-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
+  .formula-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .formula-widget-panel{
+    position:fixed; bottom:0; right:0; z-index:70;
+    width:340px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){
+    .formula-widget-panel{ bottom:24px; right:24px; border-radius:16px; }
+  }
+  .formula-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy-dark); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:16px 0 0 0;
+  }
+  @media (min-width:640px){ .formula-widget-header{ border-radius:16px 16px 0 0; } }
+  .formula-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .formula-widget-close:hover{ background:none; color:var(--gold); }
+  .formula-search-wrap{ padding:20px 20px 0; }
+  .formula-body{ padding:14px 20px 20px; }
+  .formula-category{ font-family:'IBM Plex Mono',monospace; font-size:0.68rem; font-weight:700; color:var(--gold-dark); text-transform:uppercase; letter-spacing:0.06em; margin:18px 0 8px; }
+  .formula-category:first-child{ margin-top:0; }
+  .formula-item{ padding:10px 0; border-bottom:1px dashed var(--line); }
+  .formula-name{ font-weight:600; font-size:0.88rem; margin-bottom:4px; }
+  .formula-eq{ font-family:'IBM Plex Mono',monospace; font-size:0.85rem; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin-bottom:6px; }
+  .formula-legend{ font-size:0.75rem; color:var(--muted); line-height:1.5; }
   .game-widget-toggle{
     position:fixed; bottom:24px; left:24px; z-index:50;
     width:58px;height:58px;border-radius:50%;
@@ -335,6 +369,71 @@
     padding:0;transition:transform 0.2s ease, background 0.2s ease;
   }
   .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
+  .flashcard-widget-toggle{
+    position:fixed; bottom:94px; left:24px; z-index:50;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--navy);color:#fff;border:none;
+    font-size:1.4rem;box-shadow:0 6px 20px rgba(13,13,11,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .flashcard-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
+  .flashcard-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .flashcard-widget-panel{
+    position:fixed; bottom:0; left:0; z-index:70;
+    width:340px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){ .flashcard-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  .flashcard-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:0 16px 0 0;
+  }
+  @media (min-width:640px){ .flashcard-widget-header{ border-radius:16px 16px 0 0; } }
+  .flashcard-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .flashcard-widget-body{ padding:20px; }
+  .flashcard-counter{ font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--muted); text-align:center; margin-bottom:12px; }
+  .flashcard-card{
+    background:var(--bg); border:1px solid var(--line); border-radius:12px;
+    min-height:150px; display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:24px 18px; cursor:pointer; margin-bottom:16px; user-select:none;
+  }
+  .flashcard-term{ font-family:'Fraunces',sans-serif; font-size:1.3rem; font-weight:600; }
+  .flashcard-def{ font-size:0.9rem; line-height:1.5; color:var(--ink); }
+  .flashcard-hint{ font-size:0.7rem; color:var(--muted); text-align:center; margin-top:-10px; margin-bottom:16px; }
+  .flashcard-nav-row{ display:flex; gap:8px; }
+  .flashcard-nav-row button{ flex:1; }
+
+  .timer-widget-toggle{
+    position:fixed; top:20px; right:20px; z-index:50;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--gold);color:#fff;border:none;
+    font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .timer-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
+  .timer-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .timer-widget-panel{
+    position:fixed; top:0; right:0; z-index:70;
+    width:320px; max-width:92vw;
+    background:var(--card); border:1px solid var(--line); border-radius:0 0 0 16px; box-shadow:-6px 6px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){ .timer-widget-panel{ top:20px; right:20px; border-radius:16px; } }
+  .timer-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--navy-dark); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:0 0 0 16px;
+  }
+  @media (min-width:640px){ .timer-widget-header{ border-radius:16px 16px 0 0; } }
+  .timer-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .timer-widget-body{ padding:24px 20px; text-align:center; }
+  .timer-display{ font-family:'IBM Plex Mono',monospace; font-size:3rem; font-weight:600; color:var(--ink); margin-bottom:6px; }
+  .timer-mode-label{ font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:20px; }
+  .timer-controls{ display:flex; gap:8px; justify-content:center; margin-bottom:16px; }
+  .timer-controls button{ flex:1; }
+  .timer-session-count{ font-size:0.75rem; color:var(--muted); }
   .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .game-widget-panel{
     position:fixed; bottom:0; left:0; z-index:70;
@@ -1867,6 +1966,428 @@ function toggleGameWidget(show){
   }
 }
 
+// ===== Flashcards =====
+
+const FLASHCARD_DATA = [
+  { term: "Concrete", def: "A composite material made of cement, aggregate, and water that hardens over time; strong in compression, weak in tension." },
+  { term: "Truss", def: "A structural framework of members connected at joints, typically forming triangles, used to span distances efficiently." },
+  { term: "Foundation", def: "The lowest part of a structure that transfers loads from the building into the supporting soil or rock." },
+  { term: "Cantilever", def: "A structural element supported at only one end, projecting freely into space." },
+  { term: "Reinforced Concrete", def: "Concrete with embedded steel bars (rebar) added to improve its tensile strength." },
+  { term: "Bearing Capacity", def: "The maximum load per unit area that soil can support without excessive settlement or shear failure." },
+  { term: "Shear Force", def: "An internal force that acts parallel to a cross-section, tending to cause one part of a member to slide past another." },
+  { term: "Bending Moment", def: "An internal moment that causes a structural element to bend, calculated as force times distance." },
+  { term: "Modulus of Elasticity", def: "A measure of a material's stiffness — the ratio of stress to strain within the elastic range." },
+  { term: "Slump Test", def: "A field test that measures the workability (consistency) of freshly mixed concrete." },
+  { term: "Aggregate", def: "Granular material such as sand, gravel, or crushed stone, used as a component in concrete." },
+  { term: "Water-Cement Ratio", def: "The ratio of the weight of water to the weight of cement in a concrete mix, strongly affecting strength and workability." },
+  { term: "Void Ratio", def: "The ratio of the volume of voids to the volume of solids in a soil sample." },
+  { term: "Bitumen", def: "A sticky, black, highly viscous petroleum product commonly used as a binder in asphalt road surfacing." },
+  { term: "Surveying", def: "The technique of determining the positions of points and distances/angles between them, used for mapping and construction layout." },
+  { term: "Theodolite", def: "A precision surveying instrument used to measure horizontal and vertical angles." },
+  { term: "Benchmark (Surveying)", def: "A point of known elevation used as a reference for leveling surveys." },
+  { term: "Manning's Equation", def: "A formula used to calculate the velocity of flow in an open channel, based on the channel's roughness, slope, and hydraulic radius." },
+  { term: "Hydraulic Radius", def: "The cross-sectional area of flow divided by the wetted perimeter — used in open channel and pipe flow calculations." },
+  { term: "Factor of Safety", def: "The ratio of a structure's ultimate capacity to the actual working load, providing a margin against uncertainty." },
+  { term: "Moment of Inertia", def: "A geometric property of a cross-section that measures its resistance to bending." },
+  { term: "Section Modulus", def: "A geometric property equal to moment of inertia divided by distance to the extreme fiber, used to relate bending moment to stress." },
+  { term: "Slenderness Ratio", def: "The ratio of a column's effective length to its radius of gyration, used to assess buckling risk." },
+  { term: "Euler's Buckling Load", def: "The critical axial load at which a slender column becomes unstable and buckles." },
+  { term: "Lateral Earth Pressure", def: "The horizontal pressure exerted by soil against a retaining structure." },
+  { term: "Consolidation (Soil)", def: "The gradual reduction in soil volume over time due to expulsion of pore water under sustained load." },
+  { term: "Rebar", def: "Steel reinforcing bars embedded in concrete to resist tensile forces." },
+  { term: "Formwork", def: "Temporary molds used to shape and support concrete until it cures and can support itself." },
+  { term: "Scaffolding", def: "A temporary structure used to support workers and materials during construction or maintenance." },
+  { term: "Culvert", def: "A structure that allows water to flow under a road, railway, or embankment." }
+];
+
+let flashcardOrder = [];
+let flashcardIndex = 0;
+let flashcardFlipped = false;
+
+function toggleFlashcardWidget(show){
+  document.getElementById('flashcardWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('flashcardWidgetPanel').classList.toggle('hidden', !show);
+  if(show && flashcardOrder.length === 0){
+    flashcardOrder = FLASHCARD_DATA.map((_, i) => i);
+    flashcardIndex = 0;
+    renderFlashcard();
+  }
+}
+
+function renderFlashcard(){
+  const card = FLASHCARD_DATA[flashcardOrder[flashcardIndex]];
+  flashcardFlipped = false;
+  document.getElementById('flashcardCounter').textContent = `Card ${flashcardIndex + 1}/${flashcardOrder.length}`;
+  document.getElementById('flashcardCard').innerHTML = `<div class="flashcard-term">${escapeHtml(card.term)}</div>`;
+}
+
+function flipFlashcard(){
+  const card = FLASHCARD_DATA[flashcardOrder[flashcardIndex]];
+  flashcardFlipped = !flashcardFlipped;
+  if(flashcardFlipped){
+    document.getElementById('flashcardCard').innerHTML = `<div class="flashcard-def">${escapeHtml(card.def)}</div>`;
+  } else {
+    document.getElementById('flashcardCard').innerHTML = `<div class="flashcard-term">${escapeHtml(card.term)}</div>`;
+  }
+}
+
+function nextFlashcard(){
+  flashcardIndex = (flashcardIndex + 1) % flashcardOrder.length;
+  renderFlashcard();
+}
+
+function prevFlashcard(){
+  flashcardIndex = (flashcardIndex - 1 + flashcardOrder.length) % flashcardOrder.length;
+  renderFlashcard();
+}
+
+function shuffleFlashcards(){
+  flashcardOrder = shuffleArray(flashcardOrder);
+  flashcardIndex = 0;
+  renderFlashcard();
+}
+
+// ===== Study Timer (Pomodoro) =====
+
+const TIMER_FOCUS_SECONDS = 25 * 60;
+const TIMER_BREAK_SECONDS = 5 * 60;
+const TIMER_TOTAL_SESSIONS = 4;
+
+let timerState = {
+  secondsLeft: TIMER_FOCUS_SECONDS,
+  mode: 'focus', // 'focus' or 'break'
+  session: 1,
+  running: false,
+  interval: null
+};
+
+function toggleTimerWidget(show){
+  document.getElementById('timerWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('timerWidgetPanel').classList.toggle('hidden', !show);
+}
+
+function formatTimerDisplay(seconds){
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function updateTimerDisplay(){
+  document.getElementById('timerDisplay').textContent = formatTimerDisplay(timerState.secondsLeft);
+  document.getElementById('timerModeLabel').textContent = timerState.mode === 'focus' ? 'Focus Session' : 'Break';
+  document.getElementById('timerSessionCount').textContent = `Session ${timerState.session} of ${TIMER_TOTAL_SESSIONS} · 25 min focus / 5 min break`;
+  document.getElementById('timerStartBtn').textContent = timerState.running ? 'Pause' : 'Start';
+}
+
+function startPauseTimer(){
+  if(timerState.running){
+    clearInterval(timerState.interval);
+    timerState.running = false;
+    updateTimerDisplay();
+    return;
+  }
+  timerState.running = true;
+  updateTimerDisplay();
+  timerState.interval = setInterval(() => {
+    timerState.secondsLeft--;
+    if(timerState.secondsLeft <= 0){
+      handleTimerComplete();
+    } else {
+      updateTimerDisplay();
+    }
+  }, 1000);
+}
+
+function handleTimerComplete(){
+  clearInterval(timerState.interval);
+  timerState.running = false;
+
+  if(timerState.mode === 'focus'){
+    if(timerState.session >= TIMER_TOTAL_SESSIONS){
+      alert('Great work! You completed all 4 focus sessions. Time for a longer break.');
+      resetTimer();
+      return;
+    }
+    timerState.mode = 'break';
+    timerState.secondsLeft = TIMER_BREAK_SECONDS;
+    alert('Focus session complete! Take a 5-minute break.');
+  } else {
+    timerState.session++;
+    timerState.mode = 'focus';
+    timerState.secondsLeft = TIMER_FOCUS_SECONDS;
+    alert('Break over — back to focus.');
+  }
+  updateTimerDisplay();
+}
+
+function resetTimer(){
+  clearInterval(timerState.interval);
+  timerState = { secondsLeft: TIMER_FOCUS_SECONDS, mode: 'focus', session: 1, running: false, interval: null };
+  updateTimerDisplay();
+}
+
+// ===== Engineering Formula Sheet =====
+
+const FORMULA_DATA = [
+  { category: "Structural Analysis", name: "Bending Stress", eq: "σ = M·y / I", legend: "σ = bending stress, M = bending moment, y = distance from neutral axis, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Shear Stress (Beam)", eq: "τ = V·Q / (I·b)", legend: "τ = shear stress, V = shear force, Q = first moment of area, I = moment of inertia, b = width" },
+  { category: "Structural Analysis", name: "Moment of Inertia (Rectangle)", eq: "I = b·h³ / 12", legend: "I = moment of inertia, b = width, h = height" },
+  { category: "Structural Analysis", name: "Moment of Inertia (Circle)", eq: "I = π·d⁴ / 64", legend: "I = moment of inertia, d = diameter" },
+  { category: "Structural Analysis", name: "Moment of Inertia (Hollow Circle)", eq: "I = π·(D⁴−d⁴) / 64", legend: "I = moment of inertia, D = outer diameter, d = inner diameter" },
+  { category: "Structural Analysis", name: "Moment of Inertia (Triangle, base b, height h)", eq: "I = b·h³ / 36", legend: "I about the centroidal axis parallel to the base" },
+  { category: "Structural Analysis", name: "Polar Moment of Inertia (Circle)", eq: "J = π·d⁴ / 32", legend: "J = polar moment of inertia, d = diameter" },
+  { category: "Structural Analysis", name: "Torsional Shear Stress", eq: "τ = T·r / J", legend: "τ = shear stress, T = torque, r = radius, J = polar moment of inertia" },
+  { category: "Structural Analysis", name: "Angle of Twist", eq: "θ = T·L / (G·J)", legend: "θ = angle of twist, T = torque, L = length, G = shear modulus, J = polar moment of inertia" },
+  { category: "Structural Analysis", name: "Section Modulus", eq: "S = I / c", legend: "S = section modulus, I = moment of inertia, c = distance to extreme fiber" },
+  { category: "Structural Analysis", name: "Radius of Gyration", eq: "r = √(I / A)", legend: "r = radius of gyration, I = moment of inertia, A = cross-sectional area" },
+  { category: "Structural Analysis", name: "Slenderness Ratio", eq: "λ = K·L / r", legend: "λ = slenderness ratio, K = effective length factor, L = unsupported length, r = radius of gyration" },
+  { category: "Structural Analysis", name: "Deflection (Simply Supported, Point Load at Center)", eq: "δ = P·L³ / (48·E·I)", legend: "δ = deflection, P = load, L = span, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Deflection (Simply Supported, UDL)", eq: "δ = 5·w·L⁴ / (384·E·I)", legend: "δ = deflection, w = load per unit length, L = span, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Deflection (Cantilever, Point Load at Free End)", eq: "δ = P·L³ / (3·E·I)", legend: "δ = deflection, P = load, L = length, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Deflection (Cantilever, UDL)", eq: "δ = w·L⁴ / (8·E·I)", legend: "δ = deflection, w = load per unit length, L = length, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Deflection (Fixed-Fixed Beam, UDL)", eq: "δ = w·L⁴ / (384·E·I)", legend: "δ = deflection at midspan, w = load per unit length, L = span, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Slope at End (Simply Supported, UDL)", eq: "θ = w·L³ / (24·E·I)", legend: "θ = end slope, w = load per unit length, L = span, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Slope at Free End (Cantilever, Point Load)", eq: "θ = P·L² / (2·E·I)", legend: "θ = slope at free end, P = load, L = length, E = modulus of elasticity, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Maximum Moment (Simply Supported, Point Load at Center)", eq: "Mmax = P·L / 4", legend: "Mmax = maximum bending moment, P = load, L = span" },
+  { category: "Structural Analysis", name: "Maximum Moment (Simply Supported, UDL)", eq: "Mmax = w·L² / 8", legend: "Mmax = maximum bending moment, w = load per unit length, L = span" },
+  { category: "Structural Analysis", name: "Maximum Moment (Cantilever, Point Load at Free End)", eq: "Mmax = P·L", legend: "Mmax = maximum bending moment, P = load, L = length" },
+  { category: "Structural Analysis", name: "Maximum Moment (Fixed-Fixed, UDL)", eq: "Mmax = w·L² / 12", legend: "Mmax = maximum bending moment at supports, w = load per unit length, L = span" },
+  { category: "Structural Analysis", name: "Maximum Moment (Fixed-Fixed, Point Load at Center)", eq: "Mmax = P·L / 8", legend: "Mmax = maximum bending moment at supports, P = load, L = span" },
+  { category: "Structural Analysis", name: "Support Reaction (Simply Supported, UDL)", eq: "R = w·L / 2", legend: "R = reaction at each support, w = load per unit length, L = span" },
+  { category: "Structural Analysis", name: "Support Reaction (Simply Supported, Point Load at Center)", eq: "R = P / 2", legend: "R = reaction at each support, P = load" },
+  { category: "Structural Analysis", name: "Euler's Buckling Load", eq: "Pcr = π²·E·I / (K·L)²", legend: "Pcr = critical buckling load, E = modulus of elasticity, I = moment of inertia, K = effective length factor, L = column length" },
+  { category: "Structural Analysis", name: "Axial Stress", eq: "σ = P / A", legend: "σ = stress, P = axial force, A = cross-sectional area" },
+  { category: "Structural Analysis", name: "Combined Axial and Bending Stress", eq: "σ = P/A ± M·y/I", legend: "σ = combined stress, P = axial load, A = area, M = moment, y = distance from neutral axis, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Stiffness", eq: "k = P / δ", legend: "k = stiffness, P = applied load, δ = resulting deflection" },
+  { category: "Structural Analysis", name: "Strain Energy (Axial)", eq: "U = P²·L / (2·A·E)", legend: "U = strain energy, P = axial load, L = length, A = cross-sectional area, E = modulus of elasticity" },
+  { category: "Structural Analysis", name: "Modulus of Resilience", eq: "Ur = σy² / (2·E)", legend: "Ur = modulus of resilience, σy = yield stress, E = modulus of elasticity" },
+  { category: "Structural Analysis", name: "Shear Flow", eq: "q = V·Q / I", legend: "q = shear flow, V = shear force, Q = first moment of area, I = moment of inertia" },
+  { category: "Structural Analysis", name: "Truss Method of Joints (equilibrium)", eq: "ΣFx = 0, ΣFy = 0", legend: "Used at each joint to solve for unknown member forces in a truss" },
+  { category: "Structural Analysis", name: "Degree of Static Indeterminacy (Beams)", eq: "DSI = R − E", legend: "DSI = degree of static indeterminacy, R = number of reactions, E = equilibrium equations (typically 3)" },
+
+  { category: "Concrete & Materials", name: "Modulus of Elasticity (Concrete)", eq: "Ec = 4700·√fc'", legend: "Ec = modulus of elasticity (MPa), fc' = concrete compressive strength (MPa)" },
+  { category: "Concrete & Materials", name: "Water-Cement Ratio", eq: "W/C = Weight of Water / Weight of Cement", legend: "Lower W/C generally increases strength but reduces workability" },
+  { category: "Concrete & Materials", name: "Factor of Safety", eq: "FoS = Ultimate Strength / Working Stress", legend: "FoS accounts for uncertainty in loads and material properties" },
+  { category: "Concrete & Materials", name: "Strain", eq: "ε = ΔL / L₀", legend: "ε = strain, ΔL = change in length, L₀ = original length" },
+  { category: "Concrete & Materials", name: "Young's Modulus", eq: "E = σ / ε", legend: "E = modulus of elasticity, σ = stress, ε = strain" },
+  { category: "Concrete & Materials", name: "Poisson's Ratio", eq: "ν = εlateral / εaxial", legend: "ν = Poisson's ratio, ε = strain (lateral and axial)" },
+  { category: "Concrete & Materials", name: "Shear Modulus", eq: "G = E / (2·(1+ν))", legend: "G = shear modulus, E = modulus of elasticity, ν = Poisson's ratio" },
+  { category: "Concrete & Materials", name: "Thermal Expansion", eq: "ΔL = α·L·ΔT", legend: "ΔL = change in length, α = coefficient of thermal expansion, L = original length, ΔT = temperature change" },
+  { category: "Concrete & Materials", name: "Flexural Strength (Modulus of Rupture, approx.)", eq: "fr ≈ 0.62·√fc'", legend: "fr = modulus of rupture (MPa), fc' = concrete compressive strength (MPa)" },
+  { category: "Concrete & Materials", name: "Reinforcement Ratio", eq: "ρ = As / (b·d)", legend: "ρ = reinforcement ratio, As = area of steel, b = width, d = effective depth" },
+  { category: "Concrete & Materials", name: "Nominal Moment Capacity (Rectangular RC Section, simplified)", eq: "Mn = As·fy·(d − a/2)", legend: "Mn = nominal moment capacity, As = steel area, fy = yield strength, d = effective depth, a = depth of stress block" },
+  { category: "Concrete & Materials", name: "Depth of Equivalent Stress Block", eq: "a = As·fy / (0.85·fc'·b)", legend: "a = stress block depth, As = steel area, fy = yield strength, fc' = concrete strength, b = width" },
+  { category: "Concrete & Materials", name: "Ultimate Load (LRFD, simplified)", eq: "Pu = 1.2D + 1.6L", legend: "Pu = factored load, D = dead load, L = live load (typical load combination)" },
+  { category: "Concrete & Materials", name: "Bulk Density", eq: "ρ = Mass / Volume", legend: "Common property test for aggregates and concrete" },
+  { category: "Concrete & Materials", name: "Specific Gravity", eq: "SG = Density of Material / Density of Water", legend: "Used to characterize aggregates and other construction materials" },
+
+  { category: "Steel Design", name: "Allowable Bending Stress (Compact Section, approx.)", eq: "Fb ≈ 0.66·Fy", legend: "Fb = allowable bending stress, Fy = yield strength" },
+  { category: "Steel Design", name: "Yield Condition", eq: "Fy = P / A", legend: "Fy = yield strength, P = axial load at yield, A = cross-sectional area" },
+  { category: "Steel Design", name: "Elastic Section Modulus Requirement", eq: "S ≥ M / Fb", legend: "S = required section modulus, M = applied moment, Fb = allowable bending stress" },
+  { category: "Steel Design", name: "Allowable Axial Compressive Stress (approx.)", eq: "Fa ≈ Fy / FoS", legend: "Fa = allowable stress, Fy = yield strength, FoS = factor of safety" },
+  { category: "Steel Design", name: "Plastic Section Modulus (Rectangle)", eq: "Z = b·h² / 4", legend: "Z = plastic section modulus, b = width, h = height" },
+  { category: "Steel Design", name: "Shape Factor", eq: "SF = Z / S", legend: "SF = shape factor, Z = plastic section modulus, S = elastic section modulus" },
+  { category: "Steel Design", name: "Bolt Shear Capacity (simplified)", eq: "Pn = Fv·Ab", legend: "Pn = nominal shear capacity, Fv = shear strength of bolt, Ab = bolt cross-sectional area" },
+
+  { category: "Soil Mechanics", name: "Void Ratio", eq: "e = Vv / Vs", legend: "e = void ratio, Vv = volume of voids, Vs = volume of solids" },
+  { category: "Soil Mechanics", name: "Porosity", eq: "n = Vv / V", legend: "n = porosity, Vv = volume of voids, V = total volume" },
+  { category: "Soil Mechanics", name: "Relationship between Porosity and Void Ratio", eq: "n = e / (1+e)", legend: "n = porosity, e = void ratio" },
+  { category: "Soil Mechanics", name: "Degree of Saturation", eq: "S = Vw / Vv", legend: "S = degree of saturation, Vw = volume of water, Vv = volume of voids" },
+  { category: "Soil Mechanics", name: "Specific Gravity of Soil Solids", eq: "Gs = ρs / ρw", legend: "Gs = specific gravity, ρs = density of solids, ρw = density of water" },
+  { category: "Soil Mechanics", name: "Bulk Unit Weight", eq: "γ = W / V", legend: "γ = unit weight, W = total weight of soil, V = total volume" },
+  { category: "Soil Mechanics", name: "Dry Unit Weight", eq: "γd = γ / (1+w)", legend: "γd = dry unit weight, γ = bulk unit weight, w = water content" },
+  { category: "Soil Mechanics", name: "Water Content", eq: "w = Ww / Ws", legend: "w = water content, Ww = weight of water, Ws = weight of solids" },
+  { category: "Soil Mechanics", name: "Effective Stress", eq: "σ' = σ − u", legend: "σ' = effective stress, σ = total stress, u = pore water pressure" },
+  { category: "Soil Mechanics", name: "Darcy's Law (Seepage Velocity)", eq: "v = k·i", legend: "v = seepage velocity, k = coefficient of permeability, i = hydraulic gradient" },
+  { category: "Soil Mechanics", name: "Hydraulic Gradient", eq: "i = Δh / L", legend: "i = hydraulic gradient, Δh = head difference, L = flow path length" },
+  { category: "Soil Mechanics", name: "Terzaghi Bearing Capacity (Strip Footing, simplified)", eq: "qu = c·Nc + q·Nq + 0.5·γ·B·Nγ", legend: "qu = ultimate bearing capacity, c = cohesion, q = surcharge, γ = unit weight, B = footing width, N-values = bearing capacity factors" },
+  { category: "Soil Mechanics", name: "Net Bearing Capacity", eq: "qnet = qu − γ·Df", legend: "qnet = net ultimate bearing capacity, qu = gross bearing capacity, γ = unit weight, Df = depth of foundation" },
+  { category: "Soil Mechanics", name: "Lateral Earth Pressure (Active, Rankine)", eq: "Pa = 0.5·Ka·γ·H²", legend: "Pa = active earth pressure, Ka = active pressure coefficient, γ = unit weight, H = height" },
+  { category: "Soil Mechanics", name: "Rankine Active Pressure Coefficient", eq: "Ka = tan²(45° − φ/2)", legend: "Ka = active pressure coefficient, φ = angle of internal friction" },
+  { category: "Soil Mechanics", name: "Rankine Passive Pressure Coefficient", eq: "Kp = tan²(45° + φ/2)", legend: "Kp = passive pressure coefficient, φ = angle of internal friction" },
+  { category: "Soil Mechanics", name: "Primary Consolidation Settlement", eq: "Sc = (Cc·H)/(1+e0) · log10((σ0'+Δσ)/σ0')", legend: "Sc = settlement, Cc = compression index, H = layer thickness, e0 = initial void ratio, σ0' = initial effective stress, Δσ = stress increase" },
+  { category: "Soil Mechanics", name: "Coefficient of Consolidation", eq: "cv = Tv·H² / t", legend: "cv = coefficient of consolidation, Tv = time factor, H = drainage path length, t = time" },
+  { category: "Soil Mechanics", name: "Standard Penetration Test (N-value) Correlation to Bearing Capacity (very approximate)", eq: "qu ≈ N × 5 to 10 (kPa, rough field estimate)", legend: "N = SPT blow count — a rough field correlation only, not a substitute for full analysis" },
+
+  { category: "Fluid Mechanics & Hydraulics", name: "Continuity Equation", eq: "A₁V₁ = A₂V₂", legend: "A = cross-sectional area, V = flow velocity (subscripts denote two points in a system)" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Bernoulli's Equation", eq: "P/γ + V²/2g + z = constant", legend: "P = pressure, γ = specific weight, V = velocity, g = gravity, z = elevation" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Manning's Equation (Open Channel Flow)", eq: "V = (1/n)·R^(2/3)·S^(1/2)", legend: "V = flow velocity, n = Manning's roughness coefficient, R = hydraulic radius, S = channel slope" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Discharge (Flow Rate)", eq: "Q = A·V", legend: "Q = flow rate, A = cross-sectional area, V = velocity" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Hydraulic Radius", eq: "R = A / P", legend: "R = hydraulic radius, A = cross-sectional area, P = wetted perimeter" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Reynolds Number", eq: "Re = ρ·V·D / μ", legend: "Re = Reynolds number, ρ = fluid density, V = velocity, D = characteristic length, μ = dynamic viscosity" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Froude Number", eq: "Fr = V / √(g·D)", legend: "Fr = Froude number, V = velocity, g = gravity, D = hydraulic depth" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Head Loss (Darcy-Weisbach)", eq: "hf = f·(L/D)·(V²/2g)", legend: "hf = head loss, f = friction factor, L = pipe length, D = pipe diameter, V = velocity, g = gravity" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Rectangular Weir Flow", eq: "Q = (2/3)·Cd·√(2g)·L·H^(3/2)", legend: "Q = flow rate, Cd = discharge coefficient, L = weir length, H = head over weir, g = gravity" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Triangular (V-Notch) Weir Flow", eq: "Q = (8/15)·Cd·√(2g)·tan(θ/2)·H^(5/2)", legend: "Q = flow rate, Cd = discharge coefficient, θ = notch angle, H = head over weir, g = gravity" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Orifice Flow", eq: "Q = Cd·A·√(2gh)", legend: "Q = flow rate, Cd = discharge coefficient, A = orifice area, g = gravity, h = head" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Hydrostatic Pressure", eq: "P = γ·h", legend: "P = pressure, γ = specific weight of fluid, h = depth" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Hydrostatic Force on a Vertical Plane Surface", eq: "F = γ·hc·A", legend: "F = resultant force, γ = specific weight, hc = depth to centroid, A = area of surface" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Specific Weight", eq: "γ = ρ·g", legend: "γ = specific weight, ρ = density, g = gravitational acceleration" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Velocity Head", eq: "hv = V² / 2g", legend: "hv = velocity head, V = velocity, g = gravity" },
+
+  { category: "Surveying", name: "Bearing to Azimuth Conversion (NE Quadrant)", eq: "Azimuth = Bearing Angle", legend: "Conversion depends on quadrant (NE, SE, SW, NW) — this is the simplest case" },
+  { category: "Surveying", name: "Horizontal Distance from Slope", eq: "HD = SD × cos(θ)", legend: "HD = horizontal distance, SD = slope distance, θ = angle of inclination" },
+  { category: "Surveying", name: "Difference in Elevation (Leveling)", eq: "ΔElev = Backsight − Foresight", legend: "Used in differential leveling between two points" },
+  { category: "Surveying", name: "Stadia Distance (simplified)", eq: "D = 100 × s", legend: "D = horizontal distance, s = stadia interval (difference between upper and lower hair readings)" },
+  { category: "Surveying", name: "Vertical Distance (Stadia)", eq: "V = 100 × s × sin(θ)·cos(θ)", legend: "V = vertical distance, s = stadia interval, θ = vertical angle" },
+  { category: "Surveying", name: "Area by Coordinates (Shoelace Formula)", eq: "A = 0.5·|Σ(xi·yi+1 − xi+1·yi)|", legend: "A = enclosed area, (xi, yi) = coordinates of each vertex in order" },
+  { category: "Surveying", name: "Latitude and Departure", eq: "Lat = L·cos(bearing), Dep = L·sin(bearing)", legend: "Lat = latitude (N-S component), Dep = departure (E-W component), L = line length" },
+  { category: "Surveying", name: "Closure Error (Traverse)", eq: "Error = √((ΣLat)² + (ΣDep)²)", legend: "Measures the misclosure of a closed traverse survey" },
+  { category: "Surveying", name: "Curvature Correction", eq: "Cc = 0.0785·D²", legend: "Cc = curvature correction (m), D = distance (km) — approximate, for leveling over long distances" },
+  { category: "Surveying", name: "Refraction Correction", eq: "Cr ≈ 0.011·D²", legend: "Cr = refraction correction (m), D = distance (km) — approximate, opposes curvature effect" },
+
+  { category: "Transportation Engineering", name: "Stopping Sight Distance (approx., metric)", eq: "SSD = 0.278·V·t + V² / (254·f)", legend: "SSD = stopping sight distance (m), V = speed (km/h), t = reaction time (s), f = friction factor" },
+  { category: "Transportation Engineering", name: "Superelevation Formula", eq: "e + f = V² / (127·R)", legend: "e = superelevation rate, f = side friction factor, V = speed (km/h), R = curve radius (m)" },
+  { category: "Transportation Engineering", name: "Minimum Curve Radius", eq: "R = V² / (127·(e+f))", legend: "R = minimum radius (m), V = design speed (km/h), e = superelevation, f = side friction factor" },
+  { category: "Transportation Engineering", name: "Degree of Curve (100 ft arc, US customary)", eq: "R = 5729.58 / D", legend: "R = radius (ft), D = degree of curve" },
+  { category: "Transportation Engineering", name: "Peak Hour Factor", eq: "PHF = Total Hourly Volume / (4 × Peak 15-min Volume)", legend: "PHF = peak hour factor, measures traffic flow variation within the peak hour" },
+  { category: "Transportation Engineering", name: "Traffic Density", eq: "k = q / v", legend: "k = traffic density, q = traffic flow rate, v = space mean speed" },
+  { category: "Transportation Engineering", name: "Length of Vertical Curve (Sight Distance Governed, Crest, simplified)", eq: "L = A·S² / 100·(√(2h1)+√(2h2))²", legend: "L = curve length, A = algebraic grade difference, S = sight distance, h1/h2 = eye/object heights" },
+  { category: "Transportation Engineering", name: "Rate of Vertical Curvature", eq: "K = L / A", legend: "K = rate of vertical curvature, L = curve length, A = algebraic grade difference" },
+  { category: "Transportation Engineering", name: "Pavement Structural Number (AASHTO, simplified)", eq: "SN = a1D1 + a2D2 + a3D3", legend: "SN = structural number, a = layer coefficients, D = layer thicknesses" },
+  { category: "Transportation Engineering", name: "California Bearing Ratio", eq: "CBR = (Test Load / Standard Load) × 100", legend: "CBR = California Bearing Ratio, used to assess subgrade/subbase strength" },
+
+  { category: "Construction Management", name: "Total Project Cost (Unit Rate Method)", eq: "Cost = Quantity × Unit Rate", legend: "Used to estimate the cost of a work item from its measured quantity" },
+  { category: "Construction Management", name: "Labor Productivity", eq: "Productivity = Output / Labor-Hours", legend: "Measures output per unit of labor input, used for scheduling and cost control" },
+  { category: "Construction Management", name: "Total Float (CPM)", eq: "TF = LS − ES  (or LF − EF)", legend: "TF = total float, LS/ES = late/early start, LF/EF = late/early finish" },
+  { category: "Construction Management", name: "Free Float (CPM)", eq: "FF = ES(next) − EF(current)", legend: "FF = free float, ES = early start of next activity, EF = early finish of current activity" },
+  { category: "Construction Management", name: "Cost Variance (Earned Value)", eq: "CV = EV − AC", legend: "CV = cost variance, EV = earned value, AC = actual cost" },
+  { category: "Construction Management", name: "Schedule Variance", eq: "SV = EV − PV", legend: "SV = schedule variance, EV = earned value, PV = planned value" },
+  { category: "Construction Management", name: "Cost Performance Index", eq: "CPI = EV / AC", legend: "CPI = cost performance index, EV = earned value, AC = actual cost" },
+  { category: "Construction Management", name: "Schedule Performance Index", eq: "SPI = EV / PV", legend: "SPI = schedule performance index, EV = earned value, PV = planned value" },
+  { category: "Construction Management", name: "Estimate at Completion", eq: "EAC = BAC / CPI", legend: "EAC = estimate at completion, BAC = budget at completion, CPI = cost performance index" },
+  { category: "Construction Management", name: "Rebar Weight (Standard Formula)", eq: "W = (d² / 162) × L", legend: "W = weight (kg), d = bar diameter (mm), L = length (m)" },
+  { category: "Construction Management", name: "Prismoidal Formula (Earthwork Volume)", eq: "V = (L/6)·(A1 + 4Am + A2)", legend: "V = volume, L = distance between end sections, A1/A2 = end areas, Am = mid-section area" },
+
+  { category: "Environmental Engineering", name: "Hydraulic Detention Time", eq: "t = V / Q", legend: "t = detention time, V = tank/basin volume, Q = flow rate" },
+  { category: "Environmental Engineering", name: "BOD Remaining (First-Order Decay)", eq: "BODt = BOD0 · e^(−k·t)", legend: "BODt = BOD remaining at time t, BOD0 = initial BOD, k = decay rate constant, t = time" },
+  { category: "Environmental Engineering", name: "Surface Loading Rate (Sedimentation Tank)", eq: "SLR = Q / A", legend: "SLR = surface loading rate, Q = flow rate, A = tank surface area" },
+  { category: "Environmental Engineering", name: "Weir Overflow Rate", eq: "WOR = Q / L", legend: "WOR = weir overflow rate, Q = flow rate, L = total weir length" },
+  { category: "Environmental Engineering", name: "Filtration Rate", eq: "Rate = Q / A", legend: "Rate = filtration rate, Q = flow rate, A = filter surface area" },
+  { category: "Environmental Engineering", name: "Population Equivalent (simplified)", eq: "PE = BOD load (kg/day) / 0.06", legend: "PE = population equivalent, based on standard per-capita BOD contribution (~60 g/day)" },
+  { category: "Environmental Engineering", name: "Chlorine Dosage", eq: "Dose = Demand + Residual", legend: "Total chlorine dose required equals chlorine demand plus desired residual" },
+
+  { category: "Structural Dynamics", name: "Natural Circular Frequency (Single DOF)", eq: "ω = √(k / m)", legend: "ω = natural circular frequency, k = stiffness, m = mass" },
+  { category: "Structural Dynamics", name: "Natural Frequency", eq: "f = (1/2π)·√(k/m)", legend: "f = natural frequency (Hz), k = stiffness, m = mass" },
+  { category: "Structural Dynamics", name: "Period of Vibration", eq: "T = 1 / f", legend: "T = period, f = natural frequency" },
+  { category: "Structural Dynamics", name: "Damping Ratio", eq: "ζ = c / (2√(k·m))", legend: "ζ = damping ratio, c = damping coefficient, k = stiffness, m = mass" },
+
+  { category: "Water Resources", name: "Rational Method (Peak Runoff)", eq: "Q = C·i·A", legend: "Q = peak runoff, C = runoff coefficient, i = rainfall intensity, A = drainage area" },
+  { category: "Water Resources", name: "Time of Concentration (Kirpich, simplified)", eq: "tc = 0.0195·L^0.77·S^−0.385", legend: "tc = time of concentration (min), L = flow length (m), S = slope (m/m)" },
+  { category: "Water Resources", name: "Runoff Volume", eq: "V = C·P·A", legend: "V = runoff volume, C = runoff coefficient, P = precipitation depth, A = area" },
+  { category: "Water Resources", name: "Reservoir Storage-Yield Relationship", eq: "Storage = Inflow − Outflow (over time)", legend: "Basic water balance principle used in reservoir sizing" },
+
+  { category: "Electrical & Thermal Basics", name: "Ohm's Law", eq: "V = I·R", legend: "V = voltage, I = current, R = resistance" },
+  { category: "Electrical & Thermal Basics", name: "Electrical Power", eq: "P = V·I", legend: "P = power, V = voltage, I = current" },
+  { category: "Electrical & Thermal Basics", name: "Heat Conduction (Fourier's Law, simplified)", eq: "Q = k·A·ΔT / L", legend: "Q = heat transfer rate, k = thermal conductivity, A = area, ΔT = temperature difference, L = thickness" },
+  { category: "Electrical & Thermal Basics", name: "Sensible Heat", eq: "Q = m·c·ΔT", legend: "Q = heat energy, m = mass, c = specific heat capacity, ΔT = temperature change" },
+
+  { category: "Geometry & Mensuration", name: "Area of a Circle", eq: "A = π·r²", legend: "A = area, r = radius" },
+  { category: "Geometry & Mensuration", name: "Circumference of a Circle", eq: "C = 2·π·r", legend: "C = circumference, r = radius" },
+  { category: "Geometry & Mensuration", name: "Area of a Triangle", eq: "A = 0.5·b·h", legend: "A = area, b = base, h = height" },
+  { category: "Geometry & Mensuration", name: "Area of a Trapezoid", eq: "A = 0.5·(b1+b2)·h", legend: "A = area, b1/b2 = parallel sides, h = height" },
+  { category: "Geometry & Mensuration", name: "Area of a Rectangle", eq: "A = l·w", legend: "A = area, l = length, w = width" },
+  { category: "Geometry & Mensuration", name: "Volume of a Cylinder", eq: "V = π·r²·h", legend: "V = volume, r = radius, h = height" },
+  { category: "Geometry & Mensuration", name: "Volume of a Cone", eq: "V = (1/3)·π·r²·h", legend: "V = volume, r = radius, h = height" },
+  { category: "Geometry & Mensuration", name: "Volume of a Sphere", eq: "V = (4/3)·π·r³", legend: "V = volume, r = radius" },
+  { category: "Geometry & Mensuration", name: "Volume of a Rectangular Prism", eq: "V = l·w·h", legend: "V = volume, l = length, w = width, h = height" },
+  { category: "Geometry & Mensuration", name: "Pythagorean Theorem", eq: "c² = a² + b²", legend: "c = hypotenuse, a and b = other two sides of a right triangle" },
+  { category: "Geometry & Mensuration", name: "Law of Cosines", eq: "c² = a² + b² − 2ab·cos(C)", legend: "a, b, c = triangle sides, C = angle opposite side c" },
+  { category: "Geometry & Mensuration", name: "Law of Sines", eq: "a/sin(A) = b/sin(B) = c/sin(C)", legend: "a, b, c = triangle sides, A, B, C = opposite angles" },
+  { category: "Geometry & Mensuration", name: "Quadratic Formula", eq: "x = (−b ± √(b²−4ac)) / 2a", legend: "Solves ax² + bx + c = 0 for x" },
+  { category: "Geometry & Mensuration", name: "Slope of a Line", eq: "m = (y2−y1) / (x2−x1)", legend: "m = slope, (x1,y1) and (x2,y2) = two points on the line" },
+  { category: "Geometry & Mensuration", name: "Distance Between Two Points", eq: "d = √((x2−x1)² + (y2−y1)²)", legend: "d = distance, (x1,y1) and (x2,y2) = coordinates of the two points" },
+
+  { category: "Constants & Unit Weights", name: "Standard Gravity", eq: "g = 9.81 m/s²", legend: "Standard acceleration due to gravity used in engineering calculations" },
+  { category: "Constants & Unit Weights", name: "Unit Weight of Water", eq: "γw = 9.81 kN/m³", legend: "Standard reference unit weight of water" },
+  { category: "Constants & Unit Weights", name: "Typical Unit Weight of Reinforced Concrete", eq: "γc ≈ 24 kN/m³", legend: "Commonly used design value; actual value depends on mix and aggregates" },
+  { category: "Constants & Unit Weights", name: "Typical Unit Weight of Structural Steel", eq: "γs ≈ 78.5 kN/m³", legend: "Commonly used design value for structural steel" },
+  { category: "Constants & Unit Weights", name: "1 MPa in Base Units", eq: "1 MPa = 1 N/mm² = 1000 kPa", legend: "Common pressure/stress unit conversions in structural design" },
+  { category: "Constants & Unit Weights", name: "1 kN in Base Units", eq: "1 kN = 1000 N", legend: "Common force unit conversion" },
+
+  { category: "General & Unit Relations", name: "Newton's Second Law", eq: "F = m·a", legend: "F = force, m = mass, a = acceleration" },
+  { category: "General & Unit Relations", name: "Pressure", eq: "P = F / A", legend: "P = pressure, F = force, A = area" },
+  { category: "General & Unit Relations", name: "Density", eq: "ρ = m / V", legend: "ρ = density, m = mass, V = volume" },
+  { category: "General & Unit Relations", name: "Work", eq: "W = F · d", legend: "W = work, F = force, d = displacement in the direction of force" },
+  { category: "General & Unit Relations", name: "Power", eq: "P = W / t", legend: "P = power, W = work done, t = time" },
+  { category: "General & Unit Relations", name: "Kinetic Energy", eq: "KE = 0.5·m·v²", legend: "KE = kinetic energy, m = mass, v = velocity" },
+  { category: "General & Unit Relations", name: "Potential Energy", eq: "PE = m·g·h", legend: "PE = potential energy, m = mass, g = gravity, h = height" },
+  { category: "General & Unit Relations", name: "Torque", eq: "T = F × d", legend: "T = torque, F = applied force, d = perpendicular distance from pivot" },
+  { category: "General & Unit Relations", name: "Uniform Acceleration (Velocity)", eq: "v = u + a·t", legend: "v = final velocity, u = initial velocity, a = acceleration, t = time" },
+  { category: "General & Unit Relations", name: "Uniform Acceleration (Displacement)", eq: "s = u·t + 0.5·a·t²", legend: "s = displacement, u = initial velocity, a = acceleration, t = time" },
+  { category: "General & Unit Relations", name: "Average Speed", eq: "Speed = Distance / Time", legend: "Basic rate relationship used throughout engineering calculations" },
+  { category: "General & Unit Relations", name: "Percentage Error", eq: "% Error = |Measured − True| / True × 100", legend: "Used to assess accuracy of measurements and test results" },
+  { category: "General & Unit Relations", name: "Centripetal Acceleration", eq: "ac = v² / r", legend: "ac = centripetal acceleration, v = velocity, r = radius of curvature" },
+  { category: "General & Unit Relations", name: "Impulse-Momentum", eq: "F·t = m·Δv", legend: "F = force, t = time, m = mass, Δv = change in velocity" },
+  { category: "General & Unit Relations", name: "Efficiency", eq: "η = Output / Input × 100%", legend: "η = efficiency, used to assess mechanical or process performance" },
+
+  { category: "Structural Analysis", name: "Shear Center Concept (Note)", eq: "Applies torsion-free bending for unsymmetrical sections", legend: "The shear center is the point where transverse load produces no twisting" },
+  { category: "Structural Analysis", name: "Fixed-End Moment (UDL, Fixed-Fixed Beam)", eq: "FEM = w·L² / 12", legend: "FEM = fixed-end moment, w = load per unit length, L = span" },
+  { category: "Structural Analysis", name: "Fixed-End Moment (Point Load at Center, Fixed-Fixed Beam)", eq: "FEM = P·L / 8", legend: "FEM = fixed-end moment, P = point load, L = span" },
+  { category: "Structural Analysis", name: "Influence Line Ordinate (Concept)", eq: "y(x) = response at fixed point due to unit load at x", legend: "Used to determine the position of moving loads for maximum effect" },
+  { category: "Structural Analysis", name: "Column Capacity (Short Column, Axial)", eq: "Pn = 0.85·fc'·(Ag−Ast) + fy·Ast", legend: "Pn = nominal axial capacity, fc' = concrete strength, Ag = gross area, Ast = steel area, fy = yield strength" },
+
+  { category: "Concrete & Materials", name: "Slump Test (Workability Indicator)", eq: "Slump = Mould Height − Concrete Height After Removal", legend: "Higher slump indicates greater workability of fresh concrete" },
+  { category: "Concrete & Materials", name: "Compressive Strength (Cube Test)", eq: "fc = P / A", legend: "fc = compressive strength, P = failure load, A = cross-sectional area of specimen" },
+  { category: "Concrete & Materials", name: "Curing Requirement (General Guideline)", eq: "Minimum 7–28 days moist curing (typical)", legend: "Adequate curing time is essential for concrete to reach design strength" },
+
+  { category: "Soil Mechanics", name: "Plasticity Index", eq: "PI = LL − PL", legend: "PI = plasticity index, LL = liquid limit, PL = plastic limit" },
+  { category: "Soil Mechanics", name: "Liquidity Index", eq: "LI = (w − PL) / PI", legend: "LI = liquidity index, w = natural water content, PL = plastic limit, PI = plasticity index" },
+  { category: "Soil Mechanics", name: "Relative Density", eq: "Dr = (emax − e) / (emax − emin)", legend: "Dr = relative density, e = current void ratio, emax/emin = void ratio at loosest/densest states" },
+  { category: "Soil Mechanics", name: "Coefficient of Uniformity", eq: "Cu = D60 / D10", legend: "Cu = coefficient of uniformity, D60/D10 = particle diameters at 60%/10% passing" },
+  { category: "Soil Mechanics", name: "Coefficient of Curvature", eq: "Cc = (D30)² / (D60 × D10)", legend: "Cc = coefficient of curvature, D30/D60/D10 = particle diameters at respective % passing" },
+
+  { category: "Fluid Mechanics & Hydraulics", name: "Total Dynamic Head (Pumping)", eq: "TDH = Static Head + Friction Losses + Velocity Head", legend: "TDH = total dynamic head, used in pump selection" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Pump Power Requirement", eq: "P = ρ·g·Q·H / η", legend: "P = power, ρ = fluid density, g = gravity, Q = flow rate, H = head, η = pump efficiency" },
+  { category: "Fluid Mechanics & Hydraulics", name: "Specific Gravity of Fluid", eq: "SG = ρfluid / ρwater", legend: "SG = specific gravity, ρ = density" },
+
+  { category: "Surveying", name: "Bowditch Rule (Traverse Adjustment)", eq: "Correction = (Line Length / Total Traverse Length) × Total Closure Error", legend: "Distributes closure error proportionally to line lengths in a traverse" },
+  { category: "Surveying", name: "Grade (Percent Slope)", eq: "Grade (%) = (Rise / Run) × 100", legend: "Used to express slope in road and site design" },
+
+  { category: "Transportation Engineering", name: "Level of Service (Concept)", eq: "LOS graded A (best) to F (worst) based on density/flow", legend: "Qualitative measure of traffic flow conditions on a roadway" },
+  { category: "Transportation Engineering", name: "Design Hourly Volume", eq: "DHV = AADT × K", legend: "DHV = design hourly volume, AADT = annual average daily traffic, K = proportion of AADT in peak hour" },
+
+  { category: "Construction Management", name: "Contingency Allowance", eq: "Contingency = % × Base Estimate", legend: "Additional allowance in a cost estimate to cover unforeseen costs" },
+  { category: "Construction Management", name: "Overhead and Profit Markup", eq: "Bid Price = Direct Cost + Overhead + Profit", legend: "Standard structure of a construction bid/tender price" }
+];
+function toggleFormulaWidget(show){
+  document.getElementById('formulaWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('formulaWidgetPanel').classList.toggle('hidden', !show);
+  if(show) renderFormulaSheet();
+}
+
+function renderFormulaSheet(){
+  const query = (document.getElementById('formulaSearchInput').value || '').trim().toLowerCase();
+  const container = document.getElementById('formulaBody');
+
+  const filtered = query
+    ? FORMULA_DATA.filter(f => (f.name + ' ' + f.category + ' ' + f.legend).toLowerCase().includes(query))
+    : FORMULA_DATA;
+
+  if(filtered.length === 0){
+    container.innerHTML = '<div class="empty">No formulas match that search.</div>';
+    return;
+  }
+
+  let html = '';
+  let lastCategory = null;
+  filtered.forEach(f => {
+    if(f.category !== lastCategory){
+      html += `<div class="formula-category">${escapeHtml(f.category)}</div>`;
+      lastCategory = f.category;
+    }
+    html += `
+      <div class="formula-item">
+        <div class="formula-name">${escapeHtml(f.name)}</div>
+        <div class="formula-eq">${escapeHtml(f.eq)}</div>
+        <div class="formula-legend">${escapeHtml(f.legend)}</div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
 function switchGameTab(tab){
   document.getElementById('gameTabContentPlay').classList.toggle('hidden', tab !== 'play');
   document.getElementById('gameTabContentLeaderboard').classList.toggle('hidden', tab !== 'leaderboard');
@@ -2676,6 +3197,67 @@ window.addEventListener('DOMContentLoaded', async () => {
 </div>
 <button id="gameWidgetToggle" class="game-widget-toggle" onclick="toggleGameWidget(true)" title="Play & Win">
   🎮
+</button>
+
+<!-- Flashcards Widget -->
+<div id="flashcardWidgetOverlay" class="flashcard-widget-overlay hidden" onclick="toggleFlashcardWidget(false)"></div>
+<div id="flashcardWidgetPanel" class="flashcard-widget-panel hidden">
+  <div class="flashcard-widget-header">
+    <span>Flashcards</span>
+    <button onclick="toggleFlashcardWidget(false)" class="flashcard-widget-close">&times;</button>
+  </div>
+  <div class="flashcard-widget-body">
+    <div class="flashcard-counter" id="flashcardCounter">Card 1/30</div>
+    <div class="flashcard-card" id="flashcardCard" onclick="flipFlashcard()">
+      <div class="flashcard-term" id="flashcardFront">Loading...</div>
+    </div>
+    <div class="flashcard-hint">Tap the card to flip</div>
+    <div class="flashcard-nav-row">
+      <button class="secondary" onclick="prevFlashcard()">&larr; Prev</button>
+      <button onclick="shuffleFlashcards()">Shuffle</button>
+      <button class="secondary" onclick="nextFlashcard()">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+<button id="flashcardWidgetToggle" class="flashcard-widget-toggle" onclick="toggleFlashcardWidget(true)" title="Flashcards">
+  🗂️
+</button>
+
+<!-- Engineering Formula Sheet Widget -->
+<div id="formulaWidgetOverlay" class="formula-widget-overlay hidden" onclick="toggleFormulaWidget(false)"></div>
+<div id="formulaWidgetPanel" class="formula-widget-panel hidden">
+  <div class="formula-widget-header">
+    <span>Formula Sheet</span>
+    <button onclick="toggleFormulaWidget(false)" class="formula-widget-close">&times;</button>
+  </div>
+  <div class="formula-search-wrap">
+    <input type="text" id="formulaSearchInput" placeholder="Search formulas..." oninput="renderFormulaSheet()" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.88rem;background:#f8f6f0;color:var(--ink);">
+  </div>
+  <div class="formula-body" id="formulaBody"></div>
+</div>
+<button id="formulaWidgetToggle" class="formula-widget-toggle" onclick="toggleFormulaWidget(true)" title="Formula Sheet">
+  📐
+</button>
+
+<!-- Study Timer Widget -->
+<div id="timerWidgetOverlay" class="timer-widget-overlay hidden" onclick="toggleTimerWidget(false)"></div>
+<div id="timerWidgetPanel" class="timer-widget-panel hidden">
+  <div class="timer-widget-header">
+    <span>Study Timer</span>
+    <button onclick="toggleTimerWidget(false)" class="timer-widget-close">&times;</button>
+  </div>
+  <div class="timer-widget-body">
+    <div class="timer-mode-label" id="timerModeLabel">Focus Session</div>
+    <div class="timer-display" id="timerDisplay">25:00</div>
+    <div class="timer-controls">
+      <button onclick="startPauseTimer()" id="timerStartBtn">Start</button>
+      <button class="secondary" onclick="resetTimer()">Reset</button>
+    </div>
+    <div class="timer-session-count" id="timerSessionCount">Session 1 of 4 &middot; 25 min focus / 5 min break</div>
+  </div>
+</div>
+<button id="timerWidgetToggle" class="timer-widget-toggle" onclick="toggleTimerWidget(true)" title="Study Timer">
+  ⏱️
 </button>
 
 

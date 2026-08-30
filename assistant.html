@@ -61,6 +61,7 @@
   .input-row input{ flex:1; }
   .empty{color:var(--muted);font-size:0.9rem;padding:16px 0;text-align:center;}
 </style>
+<script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
 
@@ -78,7 +79,7 @@
 
 <div class="wrap">
   <div class="card">
-    <div class="disclaimer">This is a keyword search over your actual courses, lecture notes, and announcements — not a conversational AI. Each question is searched independently.</div>
+    <div class="disclaimer">This is a real AI conversation, grounded in your actual courses, lecture notes, and announcements. It remembers your earlier questions in this session.</div>
     <div class="course-select-wrap">
       <label>Course</label>
       <select id="assistCourseSelect">
@@ -86,7 +87,7 @@
       </select>
     </div>
     <div class="chat-area" id="assistChatArea">
-      <div class="bubble bot">Hi! I'm a search tool, not a conversational AI — each question is looked up fresh, with no memory of what you asked before. Pick a course above (or leave it on "All Courses"), then search for a specific topic — e.g. "beam deflection," "attendance policy," or "week 3 notes."</div>
+      <div class="bubble bot">Hi! Pick a course above (or leave it on "All Courses"), then ask me anything about your lecture notes, announcements, or coursework. I'll look up your actual course material and hold a real conversation — feel free to ask follow-up questions.</div>
     </div>
     <div class="input-row">
       <input type="text" id="assistInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendAssistMessage();">
@@ -156,80 +157,143 @@ function scoreText(itemText, keywords){
   return score;
 }
 
+let conversationHistory = [];
+
+async function gatherContext(query, selectedCourse){
+  const keywords = extractKeywords(query);
+  const data = await fetchSupabaseData();
+  const candidates = [];
+
+  (data.resources || []).forEach(r => {
+    if(selectedCourse && r.course !== selectedCourse) return;
+    const score = scoreText(`${r.course} ${r.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Lecture Note', text: `[${r.course}] "${r.title}" (downloadable file: ${r.url})` });
+  });
+
+  (data.announcements || []).forEach(a => {
+    if(selectedCourse && a.course !== selectedCourse) return;
+    const score = scoreText(`${a.course} ${a.text}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Announcement', text: `[${a.course}] Announcement: ${a.text}` });
+  });
+
+  (data.syllabi || []).forEach(s => {
+    if(selectedCourse && s.course !== selectedCourse) return;
+    const score = scoreText(`${s.course} ${s.content || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Syllabus', text: `[${s.course}] Syllabus: ${(s.content || '').slice(0, 500)}` });
+  });
+
+  (data.blogPosts || []).forEach(p => {
+    const score = scoreText(`${p.title} ${p.body || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Blog Post', text: `Blog post "${p.title}": ${(p.body || '').slice(0, 400)}` });
+  });
+
+  (data.videos || []).forEach(v => {
+    if(selectedCourse && v.course !== selectedCourse) return;
+    const score = scoreText(`${v.course} ${v.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Video', text: `[${v.course}] Video: "${v.title}"` });
+  });
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, 6).map(c => c.text).join('\n');
+}
+
+async function localSearchFallback(query, selectedCourse){
+  const keywords = extractKeywords(query);
+  if(keywords.length === 0){
+    return `I couldn't reach the AI assistant, and that question is too general for me to search on directly. Try a more specific term, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+  }
+
+  const data = await fetchSupabaseData();
+  const candidates = [];
+
+  (data.resources || []).forEach(r => {
+    if(selectedCourse && r.course !== selectedCourse) return;
+    const score = scoreText(`${r.course} ${r.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Lecture Note', label: `${r.course}: ${r.title}`, link: r.url, linkText: 'Download' });
+  });
+
+  (data.announcements || []).forEach(a => {
+    if(selectedCourse && a.course !== selectedCourse) return;
+    const score = scoreText(`${a.course} ${a.text}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Announcement', label: `[${a.course}] ${a.text.slice(0, 90)}${a.text.length > 90 ? '...' : ''}`, link: 'lecture-hall.html', linkText: 'View in Lecture Hall' });
+  });
+
+  (data.syllabi || []).forEach(s => {
+    if(selectedCourse && s.course !== selectedCourse) return;
+    const score = scoreText(`${s.course} ${s.content || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Course Syllabus', label: s.course, link: `course.html?course=${encodeURIComponent(s.course)}`, linkText: 'View Course' });
+  });
+
+  (data.blogPosts || []).forEach(p => {
+    const score = scoreText(`${p.title} ${p.body || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Blog Post', label: p.title, link: 'lecture-hall.html', linkText: 'Read in Lecture Hall' });
+  });
+
+  (data.videos || []).forEach(v => {
+    if(selectedCourse && v.course !== selectedCourse) return;
+    const score = scoreText(`${v.course} ${v.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Video', label: `${v.course}: ${v.title}`, link: 'videos.html', linkText: 'Watch' });
+  });
+
+  candidates.sort((a, b) => b.score - a.score);
+  const top = candidates.slice(0, 5);
+
+  if(top.length === 0){
+    const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
+    return `The AI assistant is temporarily unavailable, and I couldn't find anything matching that${scopeNote} in a direct search either. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+  }
+
+  return `The AI assistant is temporarily unavailable, so here's what I found via direct search instead:<br><br>` + top.map(c => `
+    <div style="margin-bottom:8px;">
+      <span style="font-size:0.68rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;">${escapeHtml(c.type)}</span><br>
+      ${escapeHtml(c.label)}<br>
+      <a href="${escapeHtml(c.link)}" target="_blank">${escapeHtml(c.linkText)} &rarr;</a>
+    </div>
+  `).join('');
+}
+
 async function sendAssistMessage(){
   const input = document.getElementById('assistInput');
   const query = input.value.trim();
   if(!query) return;
   appendBubble(escapeHtml(query), 'user');
   input.value = '';
+  appendBubble('Thinking...', 'bot');
 
-  const keywords = extractKeywords(query);
-  if(keywords.length === 0){
-    appendBubble(`That's too general for me to search on — I don't hold a conversation, I look up specific keywords each time. Try something like "beam deflection" or "attendance policy."`, 'bot');
-    return;
-  }
-
-  appendBubble('Searching...', 'bot');
+  const selectedCourse = document.getElementById('assistCourseSelect').value;
 
   try{
-    const data = await fetchSupabaseData();
-    const selectedCourse = document.getElementById('assistCourseSelect').value;
+    const context = await gatherContext(query, selectedCourse);
 
-    const candidates = [];
+    const courseNote = selectedCourse ? `The student has selected the course: ${selectedCourse}.` : `No specific course is selected.`;
+    const contextBlock = context
+      ? `Here is relevant material found on the course website for this question:\n${context}`
+      : `No specific matching material was found on the course website for this question — answer using your own general knowledge, and mention that you couldn't find anything specific in the site's lecture notes/announcements for this.`;
 
-    (data.resources || []).forEach(r => {
-      if(selectedCourse && r.course !== selectedCourse) return;
-      const score = scoreText(`${r.course} ${r.title}`, keywords);
-      if(score > 0) candidates.push({ score, type: 'Lecture Note', label: `${r.course}: ${r.title}`, link: r.url, linkText: 'Download' });
+    let promptText = `You are a helpful study assistant embedded in a Civil Engineering course website. You help students understand course material, lecture notes, and announcements. Be concise, clear, and encouraging. ${courseNote}\n\n${contextBlock}\n\nConversation so far:\n`;
+    conversationHistory.slice(-6).forEach(turn => {
+      promptText += `${turn.role === 'user' ? 'Student' : 'Assistant'}: ${turn.text}\n`;
     });
+    promptText += `Student: ${query}\nAssistant:`;
 
-    (data.announcements || []).forEach(a => {
-      if(selectedCourse && a.course !== selectedCourse) return;
-      const score = scoreText(`${a.course} ${a.text}`, keywords);
-      if(score > 0) candidates.push({ score, type: 'Announcement', label: `[${a.course}] ${a.text.slice(0, 90)}${a.text.length > 90 ? '...' : ''}`, link: 'lecture-hall.html', linkText: 'View in Lecture Hall' });
-    });
+    const response = await puter.ai.chat(promptText, { model: "openai/gpt-5.4-nano" });
+    const replyText = (typeof response === 'string') ? response : (response && response.message && response.message.content) || (response && response.toString()) || "I'm not sure how to respond to that.";
 
-    (data.syllabi || []).forEach(s => {
-      if(selectedCourse && s.course !== selectedCourse) return;
-      const score = scoreText(`${s.course} ${s.content || ''}`, keywords);
-      if(score > 0) candidates.push({ score, type: 'Course Syllabus', label: s.course, link: `course.html?course=${encodeURIComponent(s.course)}`, linkText: 'View Course' });
-    });
-
-    (data.blogPosts || []).forEach(p => {
-      const score = scoreText(`${p.title} ${p.body || ''}`, keywords);
-      if(score > 0) candidates.push({ score, type: 'Blog Post', label: p.title, link: 'lecture-hall.html', linkText: 'Read in Lecture Hall' });
-    });
-
-    (data.videos || []).forEach(v => {
-      if(selectedCourse && v.course !== selectedCourse) return;
-      const score = scoreText(`${v.course} ${v.title}`, keywords);
-      if(score > 0) candidates.push({ score, type: 'Video', label: `${v.course}: ${v.title}`, link: 'videos.html', linkText: 'Watch' });
-    });
-
-    candidates.sort((a, b) => b.score - a.score);
-    const top = candidates.slice(0, 5);
+    conversationHistory.push({ role: 'user', text: query });
+    conversationHistory.push({ role: 'assistant', text: replyText });
 
     const area = document.getElementById('assistChatArea');
     area.removeChild(area.lastChild);
-
-    if(top.length === 0){
-      const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
-      appendBubble(`I couldn't find anything matching that${scopeNote}. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`, 'bot');
-      return;
-    }
-
-    let responseHtml = `Here's what I found:<br><br>` + top.map(c => `
-      <div style="margin-bottom:8px;">
-        <span style="font-size:0.68rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;">${escapeHtml(c.type)}</span><br>
-        ${escapeHtml(c.label)}<br>
-        <a href="${escapeHtml(c.link)}" target="_blank">${escapeHtml(c.linkText)} &rarr;</a>
-      </div>
-    `).join('');
-    appendBubble(responseHtml, 'bot');
+    appendBubble(escapeHtml(replyText).replace(/\n/g, '<br>'), 'bot');
   }catch(e){
     const area = document.getElementById('assistChatArea');
     area.removeChild(area.lastChild);
-    appendBubble('Something went wrong searching the site content. Please try again.', 'bot');
+    try{
+      const fallbackHtml = await localSearchFallback(query, selectedCourse);
+      appendBubble(fallbackHtml, 'bot');
+    }catch(e2){
+      appendBubble('Something went wrong reaching the AI assistant, and the backup search also failed. Please try again in a moment.', 'bot');
+    }
   }
 }
 

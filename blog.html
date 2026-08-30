@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b2545">
+<meta name="theme-color" content="#0d0d0b">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,62 +11,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Engineering Notes — Blog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --paper:#f5f7fa;
-    --paper-line:rgba(11,37,69,0.04);
-    --margin-red:#0b2545;
-    --card:#ffffff;
-    --ink:#1a2433;
-    --muted:#64748b;
-    --accent:#0b2545;
-    --accent-dark:#071a33;
-    --copper:#d4a017;
-    --line:#e3e8ef;
-    --danger:#c0392b;
-    --ok:#1f8a4c;
+    --paper:#ffffff;
+    --paper-line:rgba(0,0,0,0.04);
+    --margin-red:#b3261e;
+    --bg:#ffffff;
+    --card:#faf8f3;
+    --ink:#181816;
+    --muted:#726b5c;
+    --accent:#3f7a32;
+    --accent-dark:#2f5f26;
+    --copper:#3f7a32;
+    --line:#e2ded2;
+    --danger:#b3261e;
+    --ok:#3f7a32;
+    --red:#b3261e;
+    --red-dark:#8f1e18;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   html{ font-size:17px; }
   body{
     margin:0;
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--paper);
     color:var(--ink);
     padding:24px;
     min-height:100vh;
   }
   .wrap{max-width:720px;margin:0 auto;position:relative;}
-  .home-link{position:absolute;top:-6px;left:0;font-family:'Inter',sans-serif;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:3px;}
-  h1{font-family:'Poppins',sans-serif;font-size:2rem;font-weight:700;font-style:normal;letter-spacing:-0.02em;margin-bottom:4px;color:var(--ink);}
+  .home-link{position:absolute;top:-6px;left:0;font-family:'IBM Plex Sans',sans-serif;font-size:0.75rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:3px;}
+  h1{font-family:'Fraunces',sans-serif;font-size:2rem;font-weight:700;font-style:normal;letter-spacing:-0.02em;margin-bottom:4px;color:var(--ink);}
   p.sub{color:var(--muted);margin-top:0;margin-bottom:24px;font-size:0.9rem;}
   .tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--line);}
-  .tab{padding:9px 18px;text-align:center;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'Inter',sans-serif;}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab{padding:9px 18px;text-align:center;background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;letter-spacing:0.02em;font-family:'IBM Plex Sans',sans-serif;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--red);}
   .card{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:24px;margin-bottom:18px;box-shadow:3px 3px 0 rgba(43,36,32,0.06);}
-  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Inter',sans-serif;}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Sans',sans-serif;}
   input[type=text], input[type=password], textarea{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
-    font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:#fffef9;color:var(--ink);
+    font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:#fffef9;color:var(--ink);
   }
-  textarea{min-height:220px;resize:vertical;font-family:'Inter',sans-serif;font-size:0.95rem;line-height:1.6;}
+  textarea{min-height:220px;resize:vertical;font-family:'IBM Plex Sans',sans-serif;font-size:0.95rem;line-height:1.6;}
   input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
-  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'Inter',sans-serif;}
+  button{background:var(--accent);color:#fffef9;border:none;padding:11px 22px;border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;}
   button:hover{background:var(--accent-dark);}
   button.secondary{background:transparent;color:var(--danger);border:1px solid var(--danger);}
   button.secondary:hover{background:var(--danger);color:#fffef9;}
   button:disabled{opacity:0.5;cursor:not-allowed;}
   .hidden{display:none;}
-  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Inter',sans-serif;border-left:3px solid transparent;}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'IBM Plex Sans',sans-serif;border-left:3px solid transparent;}
   .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
   .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
-  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Inter',sans-serif;}
+  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'IBM Plex Sans',sans-serif;}
 
-  .post-title{font-family:'Poppins',sans-serif;font-size:1.4rem;font-weight:700;margin:0 0 4px 0;color:var(--ink);}
-  .post-date{font-family:'Inter',sans-serif;font-size:0.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
+  .post-title{font-family:'Fraunces',sans-serif;font-size:1.4rem;font-weight:700;margin:0 0 4px 0;color:var(--ink);}
+  .post-date{font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--copper);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;}
   .post-body{line-height:1.7;font-size:0.98rem;white-space:pre-wrap;color:var(--ink);}
   .post-actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
   .share-btn{
@@ -82,10 +85,10 @@
   .comment-text{font-size:0.9rem;color:var(--ink);margin-top:4px;line-height:1.5;white-space:pre-wrap;}
   .comment-form{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);}
   .post-actions button{padding:6px 14px;font-size:0.72rem;}
-  .back-to-list{font-family:'Inter',sans-serif;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
+  .back-to-list{font-family:'IBM Plex Sans',sans-serif;font-size:0.8rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent);display:inline-block;margin-bottom:16px;cursor:pointer;}
   .post-preview{cursor:pointer;}
   .post-preview .post-body{max-height:70px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 40%,transparent 100%);mask-image:linear-gradient(180deg,#000 40%,transparent 100%);}
-  .read-more{font-family:'Inter',sans-serif;font-size:0.78rem;color:var(--accent);margin-top:8px;display:inline-block;}
+  .read-more{font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;color:var(--accent);margin-top:8px;display:inline-block;}
   .hero{
     background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
     color:#fff;
@@ -109,10 +112,10 @@
     width:88px;height:88px;border-radius:50%;border:3px solid var(--gold);
     object-fit:cover;margin-bottom:14px;background:#fff;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Poppins',sans-serif;font-size:1.8rem;color:var(--navy);
+    font-family:'Fraunces',sans-serif;font-size:1.8rem;color:var(--navy);
     box-shadow:0 8px 24px rgba(0,0,0,0.25);
   }
-  .hero h1{ color:#fff; font-family:'Poppins',sans-serif; margin-bottom:4px; }
+  .hero h1{ color:#fff; font-family:'Fraunces',sans-serif; margin-bottom:4px; }
   .hero .hero-sub{ font-size:0.85rem; color:var(--gold); font-weight:600; margin-top:0; margin-bottom:4px; }
   .hero-tabs{
     display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
@@ -121,20 +124,37 @@
   }
   .hero-tabs a, .hero-tabs .tab-static{
     flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
-    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'Inter',sans-serif;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;
     text-decoration:none;
   }
-  .hero-tabs .active{ background:var(--navy); color:#fff; }
+  .hero-tabs .active{ background:var(--navy); color:#fff; border-bottom:2px solid var(--red); }
   :root{
-    --navy:#0b2545;
-    --navy-dark:#071a33;
-    --gold:#d4a017;
-    --gold-dark:#b5860e;
+    --navy:#0d0d0b;
+    --navy-dark:#000000;
+    --gold:#3f7a32;
+    --gold-dark:#2f5f26;
   }
 
   .datetime-display{
     font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
+    font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; justify-content:center; gap:8px;
   }
+  .live-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--red); display:inline-block;
+    box-shadow:0 0 0 0 rgba(179,38,30,0.6); animation:live-pulse 2s infinite;
+  }
+  @keyframes live-pulse{
+    0%{ box-shadow:0 0 0 0 rgba(179,38,30,0.6); }
+    70%{ box-shadow:0 0 0 8px rgba(179,38,30,0); }
+    100%{ box-shadow:0 0 0 0 rgba(179,38,30,0); }
+  }
+  @media (prefers-reduced-motion: reduce){ .live-dot{ animation:none; } }
+  .site-footer{ background:var(--navy-dark); color:rgba(255,255,255,0.75); padding:48px 24px 24px; margin-top:40px; }
+  .footer-brand{
+    font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-size:clamp(1.3rem,4vw,1.8rem);
+    font-weight:500; letter-spacing:-0.01em; color:#fff; margin-bottom:16px;
+  }
+  .footer-bottom{ font-size:0.75rem; color:rgba(255,255,255,0.35); border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; }
   @media (max-width:640px){
     .hero{ padding:32px 16px 48px; margin-left:-16px; margin-right:-16px; }
     .hero h1{ font-size:1.7rem; }
@@ -157,34 +177,12 @@
     .hero h1{ font-size:1.5rem; }
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
-
-  [data-theme="dark"]{
-    --bg:#0f172a;
-    --card:#1a2740;
-    --ink:#e8edf5;
-    --muted:#9aabc4;
-    --line:#2c3d5c;
-    --paper:#0f172a;
-  }
-  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
-  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
-    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
-  }
-  .theme-toggle{
-    position:fixed; bottom:24px; left:24px; z-index:50;
-    width:48px;height:48px;border-radius:50%;
-    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
-    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-  }
-  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 </head>
 <body>
-<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
 
 <div class="hero">
-  <div class="datetime-display" id="liveDateTime">Loading...</div>
+  <div class="datetime-display"><span class="live-dot"></span> <span id="liveDateTime">Loading...</span></div>
   <div class="stamp">Verified Faculty Profile</div>
   <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
   <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
@@ -319,6 +317,13 @@
     </div>
   </div>
 </div>
+
+<footer class="site-footer">
+  <div class="wrap" style="padding:24px;">
+    <div class="footer-brand">ENGR. OBENG-AHENKORA</div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+  </div>
+</footer>
 
 <script>
 // ===== Supabase configuration (blog posts + profile) =====
@@ -780,7 +785,7 @@ async function loadManageList(){
     container.innerHTML = posts.map(p => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
         <div>
-          <div style="font-family:'Poppins',sans-serif;font-size:0.95rem;">${escapeHtml(p.title)}</div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.95rem;">${escapeHtml(p.title)}</div>
           <div class="post-date" style="margin-bottom:0;">${formatDate(p.date)}</div>
         </div>
         <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deletePost('${p.id}')">Delete</button>
@@ -920,7 +925,7 @@ async function loadManageResourcesList(){
     container.innerHTML = resources.map(r => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
         <div>
-          <div style="font-family:'Poppins',sans-serif;font-size:0.9rem;">${escapeHtml(r.title)}</div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.9rem;">${escapeHtml(r.title)}</div>
           <div class="post-date" style="margin-bottom:0;">${formatDate(r.uploadedAt)}</div>
         </div>
         <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteResource('${r.id}')">Delete</button>
@@ -1030,7 +1035,7 @@ async function loadManageAnnouncementsList(){
     container.innerHTML = announcements.map(a => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
         <div>
-          <div style="font-family:'Poppins',sans-serif;font-size:0.85rem;">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,60))}${a.text.length>60?'...':''}</div>
+          <div style="font-family:'Fraunces',sans-serif;font-size:0.85rem;">[${escapeHtml(a.course)}] ${escapeHtml(a.text.slice(0,60))}${a.text.length>60?'...':''}</div>
           <div class="post-date" style="margin-bottom:0;">${formatDate(a.date)}</div>
         </div>
         <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteAnnouncement('${a.id}')">Delete</button>
@@ -1137,31 +1142,11 @@ function updateLiveDateTime(){
 setInterval(updateLiveDateTime, 1000 * 30);
 
 
-function initDarkMode(){
-  const saved = localStorage.getItem('site_theme');
-  if(saved === 'dark'){
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
-}
-function toggleDarkMode(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if(isDark){
-    document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('site_theme', 'light');
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('site_theme', 'dark');
-  }
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
-}
-
 window.addEventListener('DOMContentLoaded', async () => {
-  initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
+  const footerYearEl = document.getElementById('footerYear');
+  if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
   await onAuthReady(false);
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'resources'){

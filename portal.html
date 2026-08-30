@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b2545">
+<meta name="theme-color" content="#0d0d0b">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,25 +11,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Assessment Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f5f7fa;
-    --paper-line:rgba(11,37,69,0.04);
-    --margin-red:#0b2545;
-    --card:#ffffff;
-    --ink:#1a2433;
-    --muted:#64748b;
-    --accent:#0b2545;
-    --accent-dark:#071a33;
-    --copper:#d4a017;
-    --line:#e3e8ef;
-    --danger:#c0392b;
-    --ok:#1f8a4c;
-    --navy:#0b2545;
-    --navy-dark:#071a33;
-    --gold:#d4a017;
-    --gold-dark:#b5860e;
+    --paper:#ffffff;
+    --paper-line:rgba(0,0,0,0.04);
+    --margin-red:#b3261e;
+    --bg:#ffffff;
+    --card:#faf8f3;
+    --ink:#181816;
+    --muted:#726b5c;
+    --accent:#3f7a32;
+    --accent-dark:#2f5f26;
+    --copper:#3f7a32;
+    --line:#e2ded2;
+    --danger:#b3261e;
+    --ok:#3f7a32;
+    --navy:#0d0d0b;
+    --navy-dark:#000000;
+    --gold:#3f7a32;
+    --gold-dark:#2f5f26;
+    --red:#b3261e;
+    --red-dark:#8f1e18;
   }
   .hero{
     background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
@@ -54,10 +57,10 @@
     width:88px;height:88px;border-radius:50%;border:3px solid var(--gold);
     object-fit:cover;margin-bottom:14px;background:#fff;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Poppins',sans-serif;font-size:1.8rem;color:var(--navy);
+    font-family:'Fraunces',sans-serif;font-size:1.8rem;color:var(--navy);
     box-shadow:0 8px 24px rgba(0,0,0,0.25);
   }
-  .hero h1{ color:#fff; font-family:'Poppins',sans-serif; font-size:1.7rem; margin-bottom:4px; }
+  .hero h1{ color:#fff; font-family:'Fraunces',sans-serif; font-size:1.7rem; margin-bottom:4px; }
   .hero .hero-sub{ font-size:0.85rem; color:var(--gold); font-weight:600; margin-top:0; margin-bottom:4px; }
   .hero-tabs{
     display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
@@ -66,7 +69,7 @@
   }
   .hero-tabs a, .hero-tabs .tab-static{
     flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
-    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'Inter',sans-serif;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;
     text-decoration:none;
   }
   .hero-tabs .active{ background:var(--navy); color:#fff; }
@@ -75,7 +78,7 @@
   html{ font-size:17px; }
   body{
     margin:0;
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--paper);
     color:var(--ink);
     padding:24px;
@@ -86,7 +89,7 @@
     position:absolute; top:-6px; right:0;
     border:2px solid var(--copper);
     color:var(--copper);
-    font-family:'Inter',sans-serif;
+    font-family:'IBM Plex Sans',sans-serif;
     font-size:0.62rem;
     letter-spacing:0.12em;
     padding:5px 10px;
@@ -96,7 +99,7 @@
     opacity:0.75;
   }
   h1{
-    font-family:'Poppins',sans-serif;
+    font-family:'Fraunces',sans-serif;
     font-size:1.9rem;
     font-weight:700;
     font-style:normal;
@@ -110,9 +113,9 @@
     padding:9px 18px;text-align:center;border-radius:0;
     background:transparent;border:none;border-bottom:3px solid transparent;cursor:pointer;
     font-weight:600;color:var(--muted);font-size:0.88rem;
-    letter-spacing:0.02em;font-family:'Inter',sans-serif;
+    letter-spacing:0.02em;font-family:'IBM Plex Sans',sans-serif;
   }
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--red);}
   .card{
     background:var(--card);
     border:1px solid var(--line);
@@ -121,10 +124,10 @@
     margin-bottom:16px;
     box-shadow:3px 3px 0 rgba(43,36,32,0.06);
   }
-  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'Inter',sans-serif;}
+  label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Sans',sans-serif;}
   input[type=text], input[type=password], textarea, select{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
-    font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;
+    font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;
     background:#fffef9;color:var(--ink);
   }
   input::placeholder, textarea::placeholder{color:rgba(122,111,96,0.5);}
@@ -133,7 +136,7 @@
   button{
     background:var(--accent);color:#fffef9;border:none;padding:11px 22px;
     border-radius:3px;font-weight:700;cursor:pointer;font-size:0.85rem;
-    letter-spacing:0.03em;text-transform:uppercase;font-family:'Inter',sans-serif;
+    letter-spacing:0.03em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;
     transition:background 0.15s, transform 0.1s;
   }
   button:hover{background:var(--accent-dark);}
@@ -142,14 +145,14 @@
   button.secondary:hover{background:var(--danger);color:#fffef9;}
   button:disabled{opacity:0.5;cursor:not-allowed;}
   .hidden{display:none;}
-  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'Inter',sans-serif;border-left:3px solid transparent;}
+  .msg{padding:10px 12px;border-radius:3px;margin-bottom:14px;font-size:0.85rem;font-family:'IBM Plex Sans',sans-serif;border-left:3px solid transparent;}
   .msg.ok{background:rgba(63,107,74,0.08);color:var(--ok);border-left-color:var(--ok);}
   .msg.err{background:rgba(168,51,42,0.08);color:var(--danger);border-left-color:var(--danger);}
   table{width:100%;border-collapse:collapse;margin-top:10px;}
-  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;font-family:'Inter',sans-serif;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;font-family:'IBM Plex Sans',sans-serif;}
   th{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.06em;}
-  .result-name{font-family:'Poppins',sans-serif;font-style:italic;font-size:1.2rem;font-weight:700;margin-bottom:10px;color:var(--ink);}
-  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'Inter',sans-serif;}
+  .result-name{font-family:'Fraunces',sans-serif;font-style:italic;font-size:1.2rem;font-weight:700;margin-bottom:10px;color:var(--ink);}
+  .empty{color:var(--muted);font-size:0.9rem;padding:8px 0;font-family:'IBM Plex Sans',sans-serif;}
   .hint{font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;}
   .switch{ position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
   .switch input{ opacity:0; width:0; height:0; }
@@ -160,7 +163,24 @@
 
   .datetime-display{
     font-size:0.78rem;color:rgba(255,255,255,0.75);letter-spacing:0.03em;margin-bottom:14px;font-weight:500;
+    font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; justify-content:center; gap:8px;
   }
+  .live-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--red); display:inline-block;
+    box-shadow:0 0 0 0 rgba(179,38,30,0.6); animation:live-pulse 2s infinite;
+  }
+  @keyframes live-pulse{
+    0%{ box-shadow:0 0 0 0 rgba(179,38,30,0.6); }
+    70%{ box-shadow:0 0 0 8px rgba(179,38,30,0); }
+    100%{ box-shadow:0 0 0 0 rgba(179,38,30,0); }
+  }
+  @media (prefers-reduced-motion: reduce){ .live-dot{ animation:none; } }
+  .site-footer{ background:var(--navy-dark); color:rgba(255,255,255,0.75); padding:48px 24px 24px; margin-top:40px; }
+  .footer-brand{
+    font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-size:clamp(1.3rem,4vw,1.8rem);
+    font-weight:500; letter-spacing:-0.01em; color:#fff; margin-bottom:16px;
+  }
+  .footer-bottom{ font-size:0.75rem; color:rgba(255,255,255,0.35); border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; }
   @media (max-width:640px){
     .hero{ padding:32px 16px 48px; margin-left:-16px; margin-right:-16px; }
     .hero h1{ font-size:1.7rem; }
@@ -184,34 +204,13 @@
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
 
-  [data-theme="dark"]{
-    --bg:#0f172a;
-    --card:#1a2740;
-    --ink:#e8edf5;
-    --muted:#9aabc4;
-    --line:#2c3d5c;
-    --paper:#0f172a;
-  }
-  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
-  [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select{
-    background:#101c34 !important; color:var(--ink) !important; border-color:var(--line) !important;
-  }
-  .theme-toggle{
-    position:fixed; bottom:24px; left:24px; z-index:50;
-    width:48px;height:48px;border-radius:50%;
-    background:#fff;color:#0b2545;border:1px solid #e3e8ef;
-    font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-  }
-  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 
 </head>
 <body>
-<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
 
 <div class="hero">
-  <div class="datetime-display" id="liveDateTime">Loading...</div>
+  <div class="datetime-display"><span class="live-dot"></span> <span id="liveDateTime">Loading...</span></div>
   <div class="stamp">Verified Faculty Profile</div>
   <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
   <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
@@ -378,7 +377,7 @@
 
     <div class="card hidden" id="deleteCourseCard">
       <label>Delete All Results For a Course</label>
-      <select id="deleteCourseSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;font-family:'Inter',sans-serif;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
+      <select id="deleteCourseSelect" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);">
         <option value="">Select a course...</option>
       </select>
       <button class="secondary" id="deleteCourseBtn" onclick="deleteCourse()">Delete This Course's Results</button>
@@ -505,7 +504,7 @@
       <div id="qrCheckinMsg"></div>
       <div id="qrCheckinDisplay" class="hidden" style="text-align:center;margin-top:16px;">
         <img id="qrCheckinImage" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--line);">
-        <div id="qrCheckinTimer" style="margin-top:10px;font-family:'Poppins',sans-serif;font-weight:700;color:var(--navy);"></div>
+        <div id="qrCheckinTimer" style="margin-top:10px;font-family:'Fraunces',sans-serif;font-weight:700;color:var(--navy);"></div>
         <div id="qrCheckinPresentCount" style="margin-top:6px;color:var(--muted);font-size:0.85rem;"></div>
       </div>
     </div>
@@ -587,6 +586,13 @@
     </div>
   </div>
 </div>
+
+<footer class="site-footer">
+  <div class="wrap" style="padding:24px;">
+    <div class="footer-brand">ENGR. OBENG-AHENKORA</div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+  </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2814,31 +2820,11 @@ async function loadAttendanceSummary(){
 }
 
 
-function initDarkMode(){
-  const saved = localStorage.getItem('site_theme');
-  if(saved === 'dark'){
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = saved === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
-}
-function toggleDarkMode(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if(isDark){
-    document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('site_theme', 'light');
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    localStorage.setItem('site_theme', 'dark');
-  }
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = isDark ? '\uD83C\uDF19' : '\u2600\uFE0F';
-}
-
 window.addEventListener('DOMContentLoaded', async () => {
-  initDarkMode();
   updateLiveDateTime();
   loadHeroProfile();
+  const footerYearEl = document.getElementById('footerYear');
+  if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
   await onAuthReady(false); // checks for an existing Supabase Auth session and renders accordingly, no toast on plain page load
   const lockedIndex = localStorage.getItem(LOCK_KEY);
   if(lockedIndex){

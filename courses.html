@@ -11,22 +11,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   html{ font-size:17px; }
   :root{
-    --navy:#0b2545; --navy-dark:#071a33; --gold:#d4a017; --gold-dark:#b5860e;
-    --bg:#f5f7fa; --card:#ffffff; --ink:#1a2433; --muted:#64748b;
-    --line:#e3e8ef; --danger:#c0392b; --ok:#1f8a4c;
+    --navy:#0d0d0b; --navy-dark:#000000; --gold:#3f7a32; --gold-dark:#2f5f26;
+    --bg:#ffffff; --card:#faf8f3; --ink:#181816; --muted:#726b5c;
+    --line:#e2ded2; --danger:#b3261e; --ok:#3f7a32; --red:#b3261e; --red-dark:#8f1e18;
   }
   *{box-sizing:border-box;}
-  body{ margin:0; font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  body{ margin:0; font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
   .hero{
     background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
     color:#fff; padding:40px 24px 56px; text-align:center; position:relative;
   }
   .hero::after{ content:""; position:absolute; bottom:-1px; left:0; width:100%; height:6px; background:linear-gradient(90deg, var(--gold), #fff2, var(--gold)); }
-  .hero h1{ color:#fff; font-family:'Poppins',sans-serif; margin-bottom:4px; }
+  .hero h1{ color:#fff; font-family:'Fraunces',sans-serif; margin-bottom:4px; }
   .hero p{ color:rgba(255,255,255,0.75); font-size:0.9rem; margin:0; }
   .hero-tabs{
     display:flex;gap:6px;margin:-30px auto 24px;max-width:760px;
@@ -34,7 +34,7 @@
   }
   .hero-tabs a, .hero-tabs .tab-static{
     flex:1;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
-    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'Inter',sans-serif;text-decoration:none;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;text-decoration:none;
   }
   .hero-tabs .active{ background:var(--navy); color:#fff; }
   .wrap{ max-width:760px; margin:0 auto; padding:0 24px 40px; }
@@ -45,21 +45,12 @@
     transition:transform 0.15s ease, box-shadow 0.15s ease;
   }
   .course-card:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(15,30,60,0.1); }
-  .course-name{ font-family:'Poppins',sans-serif; font-weight:700; font-size:1.05rem; color:var(--navy); }
+  .course-name{ font-family:'Fraunces',sans-serif; font-weight:700; font-size:1.05rem; color:var(--navy); }
   .course-arrow{ color:var(--gold); font-size:1.3rem; }
   .empty{ color:var(--muted); font-size:0.9rem; padding:20px 0; text-align:center; }
-  .theme-toggle{
-    position:fixed; bottom:24px; left:24px; z-index:50; width:48px;height:48px;border-radius:50%;
-    background:#fff;color:#0b2545;border:1px solid #e3e8ef;font-size:1.2rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-  }
-  [data-theme="dark"]{ --bg:#0f172a; --card:#1a2740; --ink:#e8edf5; --muted:#9aabc4; --line:#2c3d5c; }
-  [data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
-  [data-theme="dark"] .theme-toggle{ background:#1a2740; color:#d4a017; border-color:#2c3d5c; }
 </style>
 </head>
 <body>
-<button class="theme-toggle" id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle dark mode">🌙</button>
 
 <div class="hero">
   <h1>Courses</h1>
@@ -76,6 +67,10 @@
 <div class="wrap">
   <div id="coursesList"><div class="empty">Loading courses...</div></div>
 </div>
+
+<footer style="background:var(--navy-dark); color:rgba(255,255,255,0.35); padding:32px 24px; margin-top:40px; text-align:center; font-size:0.75rem;">
+  &copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.
+</footer>
 
 <script>
 const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
@@ -110,20 +105,6 @@ async function fetchJsonBinCourses(){
   }catch(e){ return []; }
 }
 
-function initDarkMode(){
-  const saved = localStorage.getItem('site_theme');
-  if(saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
-}
-function toggleDarkMode(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if(isDark){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('site_theme', 'light'); }
-  else{ document.documentElement.setAttribute('data-theme', 'dark'); localStorage.setItem('site_theme', 'dark'); }
-  const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = isDark ? '🌙' : '☀️';
-}
-
 async function loadCourses(){
   const container = document.getElementById('coursesList');
   try{
@@ -154,7 +135,8 @@ async function loadCourses(){
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  initDarkMode();
+  const footerYearEl = document.getElementById('footerYear');
+  if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
   loadCourses();
 });
 </script>

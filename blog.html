@@ -272,7 +272,14 @@
       <label>Upload Lecture Notes / Resource</label>
       <div class="hint" style="font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;">PDF, Word, PowerPoint, video, or any file — larger files supported now.</div>
       <label>Course</label>
-      <input type="text" id="resourceCourseInput" placeholder="e.g. CIVL 368">
+      <select id="resourceCourseInput" onchange="handleResourceCourseChange()">
+        <option value="">Select a course...</option>
+        <option value="__new__">+ Add a new course...</option>
+      </select>
+      <div id="resourceCourseNewWrap" class="hidden">
+        <label>New Course Name</label>
+        <input type="text" id="resourceCourseNewInput" placeholder="e.g. CIVL 368">
+      </div>
       <label>Title</label>
       <input type="text" id="resourceTitleInput" placeholder="e.g. Week 3 - Structural Loads Notes">
       <label>File</label>
@@ -446,6 +453,7 @@ async function onAuthReady(showToast){
     document.getElementById('manageResourcesCard').classList.remove('hidden');
     loadManageList();
     loadManageResourcesList();
+    populateResourceCourseSelect();
   } else {
     document.getElementById('taWriteNotice').classList.remove('hidden');
   }
@@ -784,18 +792,47 @@ async function deletePost(id){
 
 // ===== Lecture Notes / Resources =====
 
+function handleResourceCourseChange(){
+  const select = document.getElementById('resourceCourseInput');
+  document.getElementById('resourceCourseNewWrap').classList.toggle('hidden', select.value !== '__new__');
+}
+
+async function populateResourceCourseSelect(){
+  const select = document.getElementById('resourceCourseInput');
+  try{
+    const data = await fetchSupabaseData();
+    const courseSet = new Set();
+    (data.courseList || []).forEach(c => { if(c) courseSet.add(c); });
+    Object.keys(data.rosters || {}).forEach(c => { if(c) courseSet.add(c); });
+    (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
+    (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
+    (data.videos || []).forEach(v => { if(v.course) courseSet.add(v.course); });
+    const courses = [...courseSet].sort();
+    select.innerHTML = '<option value="">Select a course...</option>'
+      + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')
+      + '<option value="__new__">+ Add a new course...</option>';
+  }catch(e){ /* leave default options in place */ }
+}
+
 async function uploadResource(){
   if(!isAdmin()){ document.getElementById('uploadResourceMsg').innerHTML = '<div class="msg err">Only the Main Instructor can upload resources.</div>'; return; }
   const courseInput = document.getElementById('resourceCourseInput');
+  const newCourseInput = document.getElementById('resourceCourseNewInput');
   const titleInput = document.getElementById('resourceTitleInput');
   const fileInput = document.getElementById('resourceFileInput');
   const msg = document.getElementById('uploadResourceMsg');
   const btn = document.getElementById('uploadResourceBtn');
 
-  const course = courseInput.value.trim() || 'General';
+  const isNewCourse = courseInput.value === '__new__';
+  const course = isNewCourse ? newCourseInput.value.trim() : courseInput.value.trim();
   const title = titleInput.value.trim();
   const file = fileInput.files[0];
 
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please select or enter a course.</div>';
+    return;
+  }
   if(!title){
     msg.innerHTML = '<div class="msg err">Please enter a title.</div>';
     return;
@@ -843,12 +880,21 @@ async function uploadResource(){
       uploadedAt: new Date().toISOString()
     });
     data.resources = resources;
+
+    if(isNewCourse){
+      const courseList = data.courseList || [];
+      if(!courseList.includes(course)) courseList.push(course);
+      data.courseList = courseList;
+    }
+
     await saveSupabaseData(data);
 
     msg.innerHTML = '<div class="msg ok">Resource uploaded.</div>';
-    courseInput.value = '';
     titleInput.value = '';
     fileInput.value = '';
+    newCourseInput.value = '';
+    document.getElementById('resourceCourseNewWrap').classList.add('hidden');
+    populateResourceCourseSelect();
     loadManageResourcesList();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;

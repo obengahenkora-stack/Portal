@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Assistant</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0d0d0b; --navy-dark:#000000; --gold:#3f7a32; --gold-dark:#2f5f26;
+    --bg:#ffffff; --card:#faf8f3; --ink:#181816; --muted:#726b5c;
+    --line:#e2ded2; --danger:#b3261e; --ok:#3f7a32; --red:#b3261e; --red-dark:#8f1e18;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#fff; padding:36px 24px 52px; text-align:center; position:relative;
+  }
+  .hero h1{ font-family:'Fraunces',sans-serif; font-size:1.8rem; margin:0 0 6px 0; }
+  .hero p{ color:rgba(255,255,255,0.7); font-size:0.9rem; margin:0; }
+  .hero-tabs{
+    display:flex;flex-wrap:wrap;gap:6px;row-gap:6px;margin:-28px auto 24px;max-width:760px;
+    background:#fff;border-radius:12px;padding:6px;box-shadow:0 4px 18px rgba(0,0,0,0.1);
+    position:relative;z-index:2;
+  }
+  .hero-tabs a, .hero-tabs .tab-static{
+    flex:1 1 auto;min-width:90px;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.85rem;font-family:'IBM Plex Sans',sans-serif;
+    text-decoration:none;
+  }
+  .hero-tabs .active{ background:var(--navy); color:#fff; border-bottom:2px solid var(--red); }
+  .wrap{max-width:640px;margin:0 auto;padding:0 24px 40px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:0; margin-bottom:16px; box-shadow:0 2px 10px rgba(15,30,60,0.04);
+    display:flex; flex-direction:column; height:70vh; min-height:420px;
+  }
+  label{display:block;font-size:0.68rem;font-weight:600;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Mono',monospace;}
+  select, input[type=text]{
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:0;background:#f8f6f0;color:var(--ink);
+  }
+  button{background:var(--gold);color:#fff;border:none;padding:11px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;font-family:'IBM Plex Sans',sans-serif;}
+  button:hover{opacity:0.9;}
+  .disclaimer{ font-size:0.75rem; color:var(--muted); padding:12px 20px; border-bottom:1px solid var(--line); background:rgba(63,122,50,0.05); flex-shrink:0; }
+  .course-select-wrap{ padding:14px 20px 0; flex-shrink:0; }
+  .chat-area{ flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .bubble{ max-width:88%; padding:10px 14px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
+  .bubble.user{ align-self:flex-end; background:var(--navy-dark); color:#fff; border-bottom-right-radius:2px; }
+  .bubble.bot{ align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-bottom-left-radius:2px; }
+  .bubble.bot a{ color:var(--gold-dark); font-weight:600; }
+  .input-row{ display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--line); flex-shrink:0; }
+  .input-row input{ flex:1; }
+  .empty{color:var(--muted);font-size:0.9rem;padding:16px 0;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Student Assistant</h1>
+  <p>Search your actual courses, lecture notes, and announcements.</p>
+</div>
+
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="lecture-hall.html">Lecture Hall</a>
+  <div class="tab-static active">Student Assistant</div>
+  <a href="portal.html">Assessment Portal</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="disclaimer">This searches your actual courses, lecture notes, and announcements on this site — it's not a general AI chatbot.</div>
+    <div class="course-select-wrap">
+      <label>Course</label>
+      <select id="assistCourseSelect">
+        <option value="">All Courses</option>
+      </select>
+    </div>
+    <div class="chat-area" id="assistChatArea">
+      <div class="bubble bot">Hi! Pick a course above (or leave it on "All Courses"), then ask me about a lecture note, an announcement, or a topic — e.g. "What lecture notes do we have?" or "Any announcements about the exam?"</div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="assistInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendAssistMessage();">
+      <button onclick="sendAssistMessage()">Ask</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "portal-data";
+const SUPABASE_FILE = "site-data.json";
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+
+async function fetchSupabaseData(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return {};
+    return await res.json();
+  }catch(e){ return {}; }
+}
+
+// Course derivation logic — kept identical to Lecture Hall's Courses tab so both lists always match.
+async function populateAssistCourseSelect(){
+  const select = document.getElementById('assistCourseSelect');
+  try{
+    const data = await fetchSupabaseData();
+    const courseSet = new Set();
+    (data.rosters || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
+    (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
+    (data.videos || []).forEach(v => { if(v.course) courseSet.add(v.course); });
+    const courses = [...courseSet].sort();
+    const current = select.value;
+    select.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    select.value = current;
+  }catch(e){ /* leave default "All Courses" option in place */ }
+}
+
+function appendBubble(text, who){
+  const area = document.getElementById('assistChatArea');
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${who}`;
+  bubble.innerHTML = text;
+  area.appendChild(bubble);
+  area.scrollTop = area.scrollHeight;
+}
+
+const STOP_WORDS = new Set(['a','an','the','is','are','was','were','what','which','who','when','where','how','do','does','did','for','on','in','of','to','and','or','any','about','has','have','with','we','i','our','my']);
+
+function extractKeywords(text){
+  return (text.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+function scoreText(itemText, keywords){
+  const lower = itemText.toLowerCase();
+  let score = 0;
+  keywords.forEach(k => { if(lower.includes(k)) score++; });
+  return score;
+}
+
+async function sendAssistMessage(){
+  const input = document.getElementById('assistInput');
+  const query = input.value.trim();
+  if(!query) return;
+  appendBubble(escapeHtml(query), 'user');
+  input.value = '';
+  appendBubble('Searching...', 'bot');
+
+  try{
+    const data = await fetchSupabaseData();
+    const keywords = extractKeywords(query);
+    const selectedCourse = document.getElementById('assistCourseSelect').value;
+
+    const candidates = [];
+
+    (data.resources || []).forEach(r => {
+      if(selectedCourse && r.course !== selectedCourse) return;
+      const score = scoreText(`${r.course} ${r.title}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Lecture Note', label: `${r.course}: ${r.title}`, link: r.url, linkText: 'Download' });
+    });
+
+    (data.announcements || []).forEach(a => {
+      if(selectedCourse && a.course !== selectedCourse) return;
+      const score = scoreText(`${a.course} ${a.text}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Announcement', label: `[${a.course}] ${a.text.slice(0, 90)}${a.text.length > 90 ? '...' : ''}`, link: 'lecture-hall.html', linkText: 'View in Lecture Hall' });
+    });
+
+    (data.syllabi || []).forEach(s => {
+      if(selectedCourse && s.course !== selectedCourse) return;
+      const score = scoreText(`${s.course} ${s.content || ''}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Course Syllabus', label: s.course, link: `course.html?course=${encodeURIComponent(s.course)}`, linkText: 'View Course' });
+    });
+
+    (data.blogPosts || []).forEach(p => {
+      const score = scoreText(`${p.title} ${p.body || ''}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Blog Post', label: p.title, link: 'lecture-hall.html', linkText: 'Read in Lecture Hall' });
+    });
+
+    (data.videos || []).forEach(v => {
+      if(selectedCourse && v.course !== selectedCourse) return;
+      const score = scoreText(`${v.course} ${v.title}`, keywords);
+      if(score > 0) candidates.push({ score, type: 'Video', label: `${v.course}: ${v.title}`, link: 'videos.html', linkText: 'Watch' });
+    });
+
+    candidates.sort((a, b) => b.score - a.score);
+    const top = candidates.slice(0, 5);
+
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+
+    if(top.length === 0){
+      const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
+      appendBubble(`I couldn't find anything matching that${scopeNote}. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`, 'bot');
+      return;
+    }
+
+    let responseHtml = `Here's what I found:<br><br>` + top.map(c => `
+      <div style="margin-bottom:8px;">
+        <span style="font-size:0.68rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;">${escapeHtml(c.type)}</span><br>
+        ${escapeHtml(c.label)}<br>
+        <a href="${escapeHtml(c.link)}" target="_blank">${escapeHtml(c.linkText)} &rarr;</a>
+      </div>
+    `).join('');
+    appendBubble(responseHtml, 'bot');
+  }catch(e){
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+    appendBubble('Something went wrong searching the site content. Please try again.', 'bot');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  populateAssistCourseSelect();
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

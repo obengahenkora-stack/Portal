@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#0d0d0b; --navy-dark:#000000; --gold:#3f7a32; --gold-dark:#2f5f26;
@@ -68,8 +69,8 @@
 
 <div class="hero-tabs">
   <a href="index.html">Home</a>
-  <a href="blog.html">Blog</a>
   <div class="tab-static active">Lecture Hall</div>
+  <a href="assistant.html">Student Assistant</a>
   <a href="portal.html">Assessment Portal</a>
   <a href="dashboard.html">My Dashboard</a>
 </div>
@@ -80,11 +81,21 @@
     <div class="sub-tab" id="subTabNotes" onclick="switchHallTab('notes')">Lecture Notes</div>
     <div class="sub-tab" id="subTabAnnouncements" onclick="switchHallTab('announcements')">Announcements</div>
     <div class="sub-tab" id="subTabVideos" onclick="switchHallTab('videos')">Videos</div>
+    <div class="sub-tab" id="subTabBlog" onclick="switchHallTab('blog')">Blog</div>
   </div>
 
   <div id="hallCourses" class="card">
     <h2>Courses</h2>
     <div id="coursesList"><div class="empty">Loading courses...</div></div>
+  </div>
+
+  <div id="addCourseCard" class="card hidden">
+    <h2>Add a Course</h2>
+    <label>Course Name</label>
+    <input type="text" id="newCourseInput" placeholder="e.g. CIVL 452">
+    <button onclick="addCourse()">Add Course</button>
+    <div id="addCourseMsg"></div>
+    <div style="font-size:0.75rem;color:var(--muted);margin-top:8px;">Signed in as Owner/Admin — this card is only visible to you.</div>
   </div>
 
   <div id="hallNotes" class="card hidden">
@@ -116,6 +127,12 @@
     <div id="videosList"><div class="empty">Loading...</div></div>
     <a href="videos.html" class="manage-link">Manage Videos &rarr;</a>
   </div>
+
+  <div id="hallBlog" class="card hidden">
+    <h2>Blog</h2>
+    <div id="blogPostsList"><div class="empty">Loading...</div></div>
+    <a href="blog.html" class="manage-link">Write / Manage Posts &rarr;</a>
+  </div>
 </div>
 
 <script>
@@ -140,6 +157,31 @@ async function fetchSupabaseData(){
     return await res.json();
   }catch(e){ return {}; }
 }
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST", cache: "no-store",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save");
+  return true;
+}
+
+const OWNER_EMAIL = "obengahenkora@gmail.com";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function checkAdminSession(){
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){ isSignedInAdmin = false; return; }
+    const email = session.user.email.toLowerCase();
+    if(email === OWNER_EMAIL.toLowerCase()){ isSignedInAdmin = true; return; }
+    const data = await getData();
+    const members = data.teamMembers || [];
+    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    isSignedInAdmin = !!(me && (me.role === 'owner' || me.role === 'admin'));
+  }catch(e){ isSignedInAdmin = false; }
+}
 
 let hallDataCache = null;
 async function getData(){
@@ -148,7 +190,7 @@ async function getData(){
 }
 
 function switchHallTab(tab){
-  ['courses','notes','announcements','videos'].forEach(t => {
+  ['courses','notes','announcements','videos','blog'].forEach(t => {
     document.getElementById('hall' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tab);
     document.getElementById('subTab' + (t === 'notes' ? 'Notes' : t === 'courses' ? 'Courses' : t.charAt(0).toUpperCase() + t.slice(1))).classList.toggle('active', t === tab);
   });
@@ -156,6 +198,7 @@ function switchHallTab(tab){
   if(tab === 'notes') loadResourcesList();
   if(tab === 'announcements') loadAnnouncementsList();
   if(tab === 'videos') loadVideosList();
+  if(tab === 'blog') loadBlogPosts();
 }
 
 async function loadCourses(){
@@ -164,7 +207,8 @@ async function loadCourses(){
   try{
     const data = await getData();
     const courseSet = new Set();
-    (data.rosters || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.courseList || []).forEach(c => { if(c) courseSet.add(c); });
+    Object.keys(data.rosters || {}).forEach(c => { if(c) courseSet.add(c); });
     (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
     (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
     (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
@@ -172,13 +216,66 @@ async function loadCourses(){
 
     if(courses.length === 0){
       container.innerHTML = '<div class="empty">No courses listed yet.</div>';
-      return;
+    } else {
+      container.innerHTML = courses.map(c => `
+        <div class="course-item" style="display:flex;justify-content:space-between;align-items:center;">
+          <a href="course.html?course=${encodeURIComponent(c)}">${escapeHtml(c)}</a>
+          <button class="secondary hidden manage-course-delete" data-course="${escapeHtml(c)}" onclick="deleteCourse(this.getAttribute('data-course'))" style="padding:4px 10px;font-size:0.7rem;">Remove</button>
+        </div>
+      `).join('');
     }
-    container.innerHTML = courses.map(c => `
-      <div class="course-item"><a href="course.html?course=${encodeURIComponent(c)}">${escapeHtml(c)}</a></div>
-    `).join('');
+    updateManageCourseVisibility();
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load courses.</div>';
+  }
+}
+
+function updateManageCourseVisibility(){
+  const show = isSignedInAdmin;
+  document.getElementById('addCourseCard').classList.toggle('hidden', !show);
+  document.querySelectorAll('.manage-course-delete').forEach(btn => btn.classList.toggle('hidden', !show));
+}
+
+let isSignedInAdmin = false;
+
+async function addCourse(){
+  const input = document.getElementById('newCourseInput');
+  const msg = document.getElementById('addCourseMsg');
+  const name = input.value.trim();
+  if(!name){
+    msg.innerHTML = '<div class="msg err">Enter a course name.</div>';
+    return;
+  }
+  msg.innerHTML = '<div class="msg ok">Adding...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const list = data.courseList || [];
+    if(list.includes(name)){
+      msg.innerHTML = '<div class="msg err">That course is already listed.</div>';
+      return;
+    }
+    list.push(name);
+    data.courseList = list;
+    await saveSupabaseData(data);
+    hallDataCache = data;
+    input.value = '';
+    msg.innerHTML = '<div class="msg ok">Course added.</div>';
+    loadCourses();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not add course: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function deleteCourse(name){
+  if(!confirm(`Remove "${name}" from the course list? (This only removes the manual listing — any lecture notes, announcements, or videos already tagged with this course stay untouched and it may still appear if they exist.)`)) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.courseList = (data.courseList || []).filter(c => c !== name);
+    await saveSupabaseData(data);
+    hallDataCache = data;
+    loadCourses();
+  }catch(e){
+    alert('Could not remove course.');
   }
 }
 
@@ -276,7 +373,30 @@ async function loadVideosList(){
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+async function loadBlogPosts(){
+  const container = document.getElementById('blogPostsList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await getData();
+    const posts = (data.blogPosts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(posts.length === 0){
+      container.innerHTML = '<div class="empty">No posts yet.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(p => `
+      <div style="padding:14px 0;border-bottom:1px dashed var(--line);">
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px;">${escapeHtml(p.title)}</div>
+        <div class="post-date" style="margin-bottom:8px;">${formatDate(p.date)} &middot; &hearts; ${p.likes || 0}</div>
+        <div style="font-size:0.85rem;color:var(--ink);line-height:1.5;">${escapeHtml((p.body || '').slice(0, 160))}${(p.body || '').length > 160 ? '...' : ''}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load posts.</div>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await checkAdminSession();
   loadCourses();
 });
 </script>

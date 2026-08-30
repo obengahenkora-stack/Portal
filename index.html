@@ -326,6 +326,47 @@
     padding:0;transition:transform 0.2s ease, background 0.2s ease;
   }
   .calc-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
+  .game-widget-toggle{
+    position:fixed; bottom:24px; left:24px; z-index:50;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--red);color:#fff;border:none;
+    font-size:1.5rem;box-shadow:0 6px 20px rgba(179,38,30,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
+  .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .game-widget-panel{
+    position:fixed; bottom:0; left:0; z-index:70;
+    width:360px; max-width:92vw; max-height:85vh; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+  }
+  @media (min-width:640px){ .game-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  .game-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--red); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    border-radius:0 16px 0 0;
+  }
+  @media (min-width:640px){ .game-widget-header{ border-radius:16px 16px 0 0; } }
+  .game-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .game-widget-body{ padding:20px; }
+  .game-tab-row{ display:flex; gap:2px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+  .game-tab{ flex:1; text-align:center; padding:8px 4px; font-size:0.78rem; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .game-tab.active{ color:var(--ink); border-bottom-color:var(--red); }
+  .game-progress-bar{ height:4px; background:var(--line); border-radius:2px; overflow:hidden; margin-bottom:14px; }
+  .game-progress-fill{ height:100%; background:var(--red); transition:width 1s linear; }
+  .game-option{
+    display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
+    border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif; font-size:0.88rem; color:var(--ink); transition:background 0.15s ease, border-color 0.15s ease;
+  }
+  .game-option:hover{ border-color:var(--red); }
+  .game-option.correct{ background:rgba(63,122,50,0.12); border-color:var(--ok); }
+  .game-option.wrong{ background:rgba(179,38,30,0.12); border-color:var(--danger); }
+  .leaderboard-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); font-size:0.85rem; }
+  .leaderboard-rank{ font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--red); width:24px; }
+  .leaderboard-name{ flex:1; font-weight:600; }
+  .leaderboard-score{ font-family:'IBM Plex Mono',monospace; color:var(--muted); }
   .calc-widget-overlay{
     position:fixed; inset:0; background:rgba(11,37,69,0.35); z-index:60;
   }
@@ -1750,6 +1791,217 @@ function toggleCalcWidget(show){
   document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
 }
 
+// ===== Engineering Quiz Game =====
+
+const GAME_QUESTIONS = [
+  { q: "What does the acronym 'CAD' stand for in engineering?", options: ["Computer-Aided Design", "Civil Analysis Data", "Construction Applied Drawing", "Concrete Aggregate Density"], correct: 0 },
+  { q: "Which material is most commonly used for reinforcing concrete?", options: ["Aluminum", "Steel", "Copper", "Titanium"], correct: 1 },
+  { q: "What is the SI unit of force?", options: ["Joule", "Watt", "Newton", "Pascal"], correct: 2 },
+  { q: "Which famous bridge collapsed in 1940 due to wind-induced oscillation?", options: ["Golden Gate Bridge", "Tacoma Narrows Bridge", "Brooklyn Bridge", "Sydney Harbour Bridge"], correct: 1 },
+  { q: "What does 'W/C ratio' refer to in concrete mixing?", options: ["Weight/Cost ratio", "Water/Cement ratio", "Width/Curve ratio", "Weld/Column ratio"], correct: 1 },
+  { q: "Which shape is inherently the most structurally stable?", options: ["Square", "Circle", "Triangle", "Pentagon"], correct: 2 },
+  { q: "What is the standard unit for measuring pressure?", options: ["Newton", "Pascal", "Joule", "Watt"], correct: 1 },
+  { q: "What does 'RCC' stand for in construction?", options: ["Rapid Concrete Curing", "Reinforced Cement Concrete", "Road Construction Code", "Resistant Column Cross-section"], correct: 1 },
+  { q: "Which of these is NOT a type of foundation?", options: ["Pile Foundation", "Raft Foundation", "Truss Foundation", "Strip Foundation"], correct: 2 },
+  { q: "What is the primary purpose of a surveyor's theodolite?", options: ["Measuring temperature", "Measuring angles", "Measuring weight", "Measuring water flow"], correct: 1 },
+  { q: "Who is often called the 'father of modern structural engineering'?", options: ["Isambard Kingdom Brunel", "Gustave Eiffel", "Leonardo da Vinci", "Thomas Telford"], correct: 1 },
+  { q: "What does 'BOQ' stand for in Quantity Surveying?", options: ["Basis of Quotation", "Bill of Quantities", "Building Ownership Query", "Base of Quarry"], correct: 1 },
+  { q: "Which test measures the compressive strength of concrete?", options: ["Slump Test", "Cube Test", "Sieve Test", "Litmus Test"], correct: 1 },
+  { q: "What is the term for the sideways force exerted by soil against a wall?", options: ["Shear Force", "Lateral Earth Pressure", "Torque", "Tensile Load"], correct: 1 },
+  { q: "Which of these is a non-renewable energy source?", options: ["Solar", "Wind", "Coal", "Hydropower"], correct: 2 },
+  { q: "What does 'GPS' stand for?", options: ["Global Positioning System", "Geographic Placement Survey", "Ground Penetrating Sonar", "General Project Schedule"], correct: 0 },
+  { q: "What is the main gas responsible for the greenhouse effect?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], correct: 2 },
+  { q: "Which continent is the Great Wall of China located on?", options: ["Europe", "Africa", "Asia", "South America"], correct: 2 },
+  { q: "What does 'HVAC' stand for?", options: ["Heating, Ventilation, and Air Conditioning", "High Voltage Alternating Current", "Hydraulic Valve and Component", "Horizontal Vertical Alignment Chart"], correct: 0 },
+  { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], correct: 1 },
+  { q: "What is the tallest mountain in the world?", options: ["K2", "Mount Kilimanjaro", "Mount Everest", "Denali"], correct: 2 },
+  { q: "In engineering drawings, what does a dashed line typically represent?", options: ["Visible edge", "Hidden edge", "Centerline", "Dimension line"], correct: 1 },
+  { q: "What does 'MEP' stand for in construction?", options: ["Mechanical, Electrical, Plumbing", "Materials Engineering Plan", "Multiple Entry Point", "Maximum Effort Project"], correct: 0 },
+  { q: "Which of these bridges is a cable-stayed bridge design?", options: ["Beam Bridge", "Arch Bridge", "Cable-Stayed Bridge", "Truss Bridge"], correct: 2 },
+  { q: "What is the currency of Ghana?", options: ["Naira", "Cedi", "Rand", "Shilling"], correct: 1 },
+  { q: "Which river is the longest in the world?", options: ["Amazon River", "Nile River", "Yangtze River", "Mississippi River"], correct: 1 },
+  { q: "What does 'PPE' stand for on a construction site?", options: ["Personal Protective Equipment", "Project Planning Estimate", "Public Property Easement", "Pre-Poured Element"], correct: 0 },
+  { q: "Which of these best describes 'tensile strength'?", options: ["Resistance to being pulled apart", "Resistance to compression", "Resistance to bending", "Resistance to twisting"], correct: 0 },
+  { q: "What is the boiling point of water at sea level in Celsius?", options: ["90°C", "100°C", "110°C", "120°C"], correct: 1 },
+  { q: "Which country has the most UNESCO World Heritage Sites?", options: ["China", "Italy", "France", "Spain"], correct: 1 }
+];
+
+let gameState = { questions: [], currentIndex: 0, score: 0, timer: null, timeLeft: 15 };
+
+function toggleGameWidget(show){
+  document.getElementById('gameWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('gameWidgetPanel').classList.toggle('hidden', !show);
+  if(show){
+    switchGameTab('play');
+  } else if(gameState.timer){
+    clearInterval(gameState.timer);
+  }
+}
+
+function switchGameTab(tab){
+  document.getElementById('gameTabContentPlay').classList.toggle('hidden', tab !== 'play');
+  document.getElementById('gameTabContentLeaderboard').classList.toggle('hidden', tab !== 'leaderboard');
+  document.getElementById('gameTabPlay').classList.toggle('active', tab === 'play');
+  document.getElementById('gameTabLeaderboard').classList.toggle('active', tab === 'leaderboard');
+  if(tab === 'leaderboard') loadLeaderboard();
+}
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  gameState.questions = shuffleArray(GAME_QUESTIONS).slice(0, 10);
+  gameState.currentIndex = 0;
+  gameState.score = 0;
+  document.getElementById('gameIntroView').classList.add('hidden');
+  document.getElementById('gameEndView').classList.add('hidden');
+  document.getElementById('gamePlayView').classList.remove('hidden');
+  showGameQuestion();
+}
+
+function showGameQuestion(){
+  if(gameState.timer) clearInterval(gameState.timer);
+  const q = gameState.questions[gameState.currentIndex];
+  document.getElementById('gameQuestionCounter').textContent = `Question ${gameState.currentIndex + 1}/10`;
+  document.getElementById('gameScoreCounter').textContent = `Score: ${gameState.score}`;
+  document.getElementById('gameQuestionText').textContent = q.q;
+
+  const shuffledOptions = q.options.map((opt, i) => ({ opt, isCorrect: i === q.correct }));
+  const shuffled = shuffleArray(shuffledOptions);
+  const container = document.getElementById('gameOptionsContainer');
+  container.innerHTML = shuffled.map((o, i) => `<button class="game-option" data-correct="${o.isCorrect}" onclick="selectGameAnswer(this)">${escapeHtml(o.opt)}</button>`).join('');
+
+  gameState.timeLeft = 15;
+  const bar = document.getElementById('gameTimerBar');
+  bar.style.width = '100%';
+  gameState.timer = setInterval(() => {
+    gameState.timeLeft--;
+    bar.style.width = `${(gameState.timeLeft / 15) * 100}%`;
+    if(gameState.timeLeft <= 0){
+      clearInterval(gameState.timer);
+      revealGameAnswer(null);
+    }
+  }, 1000);
+}
+
+function selectGameAnswer(btn){
+  if(gameState.timer) clearInterval(gameState.timer);
+  revealGameAnswer(btn);
+}
+
+function revealGameAnswer(selectedBtn){
+  const buttons = document.querySelectorAll('#gameOptionsContainer .game-option');
+  buttons.forEach(b => {
+    b.disabled = true;
+    if(b.getAttribute('data-correct') === 'true'){
+      b.classList.add('correct');
+    } else if(b === selectedBtn){
+      b.classList.add('wrong');
+    }
+  });
+  if(selectedBtn && selectedBtn.getAttribute('data-correct') === 'true'){
+    gameState.score++;
+  }
+  setTimeout(() => {
+    gameState.currentIndex++;
+    if(gameState.currentIndex < gameState.questions.length){
+      showGameQuestion();
+    } else {
+      endGame();
+    }
+  }, 900);
+}
+
+function endGame(){
+  document.getElementById('gamePlayView').classList.add('hidden');
+  document.getElementById('gameEndView').classList.remove('hidden');
+  document.getElementById('gameFinalScore').textContent = `${gameState.score}/10`;
+}
+
+function resetGameWidget(){
+  document.getElementById('gameEndView').classList.add('hidden');
+  document.getElementById('gameIntroView').classList.remove('hidden');
+  document.getElementById('gamePlayerName').value = '';
+  document.getElementById('gamePlayerIndex').value = '';
+  document.getElementById('gameSubmitMsg').innerHTML = '';
+}
+
+async function submitGameScore(){
+  const name = document.getElementById('gamePlayerName').value.trim();
+  const indexNum = document.getElementById('gamePlayerIndex').value.trim();
+  const msg = document.getElementById('gameSubmitMsg');
+
+  if(!name || !indexNum){
+    msg.innerHTML = '<div class="msg err">Please enter both your name and index number.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Submitting...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const scores = data.gameScores || [];
+    scores.push({
+      name, indexNumber: indexNum,
+      score: gameState.score,
+      playedAt: new Date().toISOString()
+    });
+    data.gameScores = scores;
+    await saveSupabaseData(data);
+    msg.innerHTML = '<div class="msg ok">Score submitted! Check the Leaderboard tab.</div>';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not submit: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadLeaderboard(){
+  const container = document.getElementById('leaderboardList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const scores = (data.gameScores || []).slice().sort((a, b) => b.score - a.score || new Date(a.playedAt) - new Date(b.playedAt));
+    window.leaderboardCache = scores;
+
+    if(scores.length === 0){
+      container.innerHTML = '<div class="empty">No scores yet — be the first to play!</div>';
+    } else {
+      container.innerHTML = scores.slice(0, 20).map((s, i) => `
+        <div class="leaderboard-row">
+          <span class="leaderboard-rank">#${i + 1}</span>
+          <span class="leaderboard-name">${escapeHtml(s.name)}</span>
+          <span class="leaderboard-score">${s.score}/10</span>
+        </div>
+      `).join('');
+    }
+
+    const winnerCard = document.getElementById('randomWinnerCard');
+    if(isAdmin && isAdmin() && scores.length > 0){
+      winnerCard.classList.remove('hidden');
+    } else {
+      winnerCard.classList.add('hidden');
+    }
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load leaderboard.</div>';
+  }
+}
+
+function pickRandomWinner(){
+  const scores = window.leaderboardCache || [];
+  if(scores.length === 0) return;
+  const winner = scores[Math.floor(Math.random() * scores.length)];
+  document.getElementById('randomWinnerResult').innerHTML = `
+    <div class="msg ok" style="text-align:center;font-size:0.95rem;">
+      🎉 <strong>${escapeHtml(winner.name)}</strong><br>
+      Index: ${escapeHtml(winner.indexNumber)} &middot; Score: ${winner.score}/10
+    </div>
+  `;
+}
+
 function switchCalcTool(tool){
   ['concrete','units','grade','soil','slope','flow'].forEach(t => {
     document.getElementById('calcTool' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tool);
@@ -2204,6 +2456,61 @@ window.addEventListener('DOMContentLoaded', async () => {
 </div>
 <button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Student Toolkit">
   🧮
+</button>
+
+<!-- Game Widget -->
+<div id="gameWidgetOverlay" class="game-widget-overlay hidden" onclick="toggleGameWidget(false)"></div>
+<div id="gameWidgetPanel" class="game-widget-panel hidden">
+  <div class="game-widget-header">
+    <span>Engineering Quiz</span>
+    <button onclick="toggleGameWidget(false)" class="game-widget-close">&times;</button>
+  </div>
+  <div style="display:flex;gap:2px;padding:10px 14px 0;background:var(--red);">
+    <div class="game-tab active" id="gameTabPlay" onclick="switchGameTab('play')" style="flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;border-bottom:2px solid transparent;">Play</div>
+    <div class="game-tab" id="gameTabLeaderboard" onclick="switchGameTab('leaderboard')" style="flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;border-bottom:2px solid transparent;">Leaderboard</div>
+  </div>
+
+  <div class="game-widget-body" id="gameTabContentPlay">
+    <div id="gameIntroView">
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:0;">10 quick questions, 15 seconds each. Answer as many correctly as you can and see how you rank!</p>
+      <button onclick="startGame()" style="width:100%;">Start Quiz</button>
+    </div>
+
+    <div id="gamePlayView" class="hidden">
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace;">
+        <span id="gameQuestionCounter">Question 1/10</span>
+        <span id="gameScoreCounter">Score: 0</span>
+      </div>
+      <div class="game-progress-bar"><div class="game-progress-fill" id="gameTimerBar" style="width:100%;"></div></div>
+      <div id="gameQuestionText" style="font-size:0.95rem;font-weight:600;margin-bottom:14px;"></div>
+      <div id="gameOptionsContainer"></div>
+    </div>
+
+    <div id="gameEndView" class="hidden">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-family:'Fraunces',sans-serif;font-size:2.2rem;font-weight:700;color:var(--red);" id="gameFinalScore">0/10</div>
+        <div style="color:var(--muted);font-size:0.85rem;">Final Score</div>
+      </div>
+      <label>Your Name</label>
+      <input type="text" id="gamePlayerName" placeholder="e.g. Kwame Mensah">
+      <label>Your Index Number</label>
+      <input type="text" id="gamePlayerIndex" placeholder="e.g. UEB0700123">
+      <button onclick="submitGameScore()" style="width:100%;">Submit Score</button>
+      <div id="gameSubmitMsg"></div>
+      <button class="secondary" onclick="resetGameWidget()" style="width:100%;margin-top:8px;">Play Again</button>
+    </div>
+  </div>
+
+  <div class="game-widget-body hidden" id="gameTabContentLeaderboard">
+    <div id="leaderboardList"><div class="empty">Loading...</div></div>
+    <div id="randomWinnerCard" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);">
+      <button onclick="pickRandomWinner()" style="width:100%;">🎲 Pick Random Winner</button>
+      <div id="randomWinnerResult" style="margin-top:12px;"></div>
+    </div>
+  </div>
+</div>
+<button id="gameWidgetToggle" class="game-widget-toggle" onclick="toggleGameWidget(true)" title="Play & Win">
+  🎮
 </button>
 
 

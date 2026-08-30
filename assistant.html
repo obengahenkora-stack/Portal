@@ -121,7 +121,8 @@ async function populateAssistCourseSelect(){
   try{
     const data = await fetchSupabaseData();
     const courseSet = new Set();
-    (data.rosters || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.courseList || []).forEach(c => { if(c) courseSet.add(c); });
+    Object.keys(data.rosters || {}).forEach(c => { if(c) courseSet.add(c); });
     (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
     (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
     (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });

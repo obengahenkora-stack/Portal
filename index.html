@@ -646,11 +646,11 @@
       <div id="manageOfficeHoursCard" class="hidden" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">
         <h2>Add Office Hour Slots</h2>
         <label>Date</label>
-        <input type="text" id="ohDateInput" placeholder="YYYY-MM-DD">
+        <input type="date" id="ohDateInput">
         <label>Start Time</label>
-        <input type="text" id="ohStartInput" placeholder="e.g. 14:00">
+        <input type="time" id="ohStartInput">
         <label>End Time</label>
-        <input type="text" id="ohEndInput" placeholder="e.g. 16:00">
+        <input type="time" id="ohEndInput">
         <label>Slot Length (minutes)</label>
         <input type="text" id="ohDurationInput" placeholder="e.g. 20" value="20">
         <button onclick="generateOfficeHourSlots()">Generate Slots</button>
@@ -1389,8 +1389,10 @@ async function shareNotice(id){
 // ===== Office Hours =====
 
 function formatOhDate(dateStr){
-  try{ return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }); }
-  catch(e){ return dateStr; }
+  if(!dateStr) return 'No date set';
+  const d = new Date(dateStr + 'T00:00:00');
+  if(isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
 }
 
 function timeToMinutes(t){

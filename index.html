@@ -361,7 +361,7 @@
   .formula-eq{ font-family:'IBM Plex Mono',monospace; font-size:0.85rem; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin-bottom:6px; }
   .formula-legend{ font-size:0.75rem; color:var(--muted); line-height:1.5; }
   .game-widget-toggle{
-    position:fixed; bottom:24px; left:24px; z-index:50;
+    position:fixed; bottom:304px; right:24px; z-index:50;
     width:58px;height:58px;border-radius:50%;
     background:var(--red);color:#fff;border:none;
     font-size:1.5rem;box-shadow:0 6px 20px rgba(179,38,30,0.35);
@@ -370,7 +370,7 @@
   }
   .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
   .flashcard-widget-toggle{
-    position:fixed; bottom:94px; left:24px; z-index:50;
+    position:fixed; bottom:234px; right:24px; z-index:50;
     width:56px;height:56px;border-radius:50%;
     background:var(--navy);color:#fff;border:none;
     font-size:1.4rem;box-shadow:0 6px 20px rgba(13,13,11,0.35);
@@ -380,15 +380,15 @@
   .flashcard-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
   .flashcard-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .flashcard-widget-panel{
-    position:fixed; bottom:0; left:0; z-index:70;
+    position:fixed; bottom:0; right:0; z-index:70;
     width:340px; max-width:92vw; max-height:85vh; overflow-y:auto;
-    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
   }
-  @media (min-width:640px){ .flashcard-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  @media (min-width:640px){ .flashcard-widget-panel{ bottom:24px; right:24px; border-radius:16px; } }
   .flashcard-widget-header{
     display:flex;justify-content:space-between;align-items:center;
     background:var(--navy); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
-    border-radius:0 16px 0 0;
+    border-radius:16px 0 0 0;
   }
   @media (min-width:640px){ .flashcard-widget-header{ border-radius:16px 16px 0 0; } }
   .flashcard-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
@@ -436,15 +436,15 @@
   .timer-session-count{ font-size:0.75rem; color:var(--muted); }
   .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .game-widget-panel{
-    position:fixed; bottom:0; left:0; z-index:70;
+    position:fixed; bottom:0; right:0; z-index:70;
     width:360px; max-width:92vw; max-height:85vh; overflow-y:auto;
-    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
   }
-  @media (min-width:640px){ .game-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  @media (min-width:640px){ .game-widget-panel{ bottom:24px; right:24px; border-radius:16px; } }
   .game-widget-header{
     display:flex;justify-content:space-between;align-items:center;
     background:var(--red); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
-    border-radius:0 16px 0 0;
+    border-radius:16px 0 0 0;
   }
   @media (min-width:640px){ .game-widget-header{ border-radius:16px 16px 0 0; } }
   .game-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }

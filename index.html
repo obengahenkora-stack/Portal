@@ -406,7 +406,7 @@
   .flashcard-nav-row button{ flex:1; }
 
   .timer-widget-toggle{
-    position:fixed; top:20px; right:20px; z-index:50;
+    position:fixed; bottom:164px; right:24px; z-index:50;
     width:56px;height:56px;border-radius:50%;
     background:var(--gold);color:#fff;border:none;
     font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
@@ -416,15 +416,15 @@
   .timer-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
   .timer-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .timer-widget-panel{
-    position:fixed; top:0; right:0; z-index:70;
+    position:fixed; bottom:0; right:0; z-index:70;
     width:320px; max-width:92vw;
-    background:var(--card); border:1px solid var(--line); border-radius:0 0 0 16px; box-shadow:-6px 6px 30px rgba(0,0,0,0.15);
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
   }
-  @media (min-width:640px){ .timer-widget-panel{ top:20px; right:20px; border-radius:16px; } }
+  @media (min-width:640px){ .timer-widget-panel{ bottom:24px; right:24px; border-radius:16px; } }
   .timer-widget-header{
     display:flex;justify-content:space-between;align-items:center;
     background:var(--navy-dark); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
-    border-radius:0 0 0 16px;
+    border-radius:16px 0 0 0;
   }
   @media (min-width:640px){ .timer-widget-header{ border-radius:16px 16px 0 0; } }
   .timer-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
@@ -613,6 +613,7 @@
     <div class="tabs" style="margin:0 0 32px 0;padding:0;max-width:none;justify-content:flex-start;">
       <div class="tab active" id="subTabAbout" onclick="switchSubTab('about')">About</div>
       <div class="tab" id="subTabContact" onclick="switchSubTab('contact')">Contact</div>
+      <div class="tab" id="subTabOfficeHours" onclick="switchSubTab('officehours')">Office Hours</div>
       <div class="tab" id="subTabPubs" onclick="switchSubTab('pubs')">Publications</div>
       <div class="tab" id="subTabFaq" onclick="switchSubTab('faq')">FAQ</div>
       <div class="tab" id="subTabPosts" onclick="switchSubTab('posts')">Latest Posts</div>
@@ -635,6 +636,29 @@
     <div class="card sub-section hidden" id="subPubs">
       <h2>Publications &amp; Research</h2>
       <ul class="pub-list" id="pubDisplay"><li>Loading...</li></ul>
+    </div>
+
+    <div class="card sub-section hidden" id="subOfficehours">
+      <h2>Office Hours</h2>
+      <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Book a time slot to meet — pick an available slot below and fill in your details.</p>
+      <div id="officeHoursSlotsList"><div class="empty">Loading...</div></div>
+
+      <div id="manageOfficeHoursCard" class="hidden" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">
+        <h2>Add Office Hour Slots</h2>
+        <label>Date</label>
+        <input type="text" id="ohDateInput" placeholder="YYYY-MM-DD">
+        <label>Start Time</label>
+        <input type="text" id="ohStartInput" placeholder="e.g. 14:00">
+        <label>End Time</label>
+        <input type="text" id="ohEndInput" placeholder="e.g. 16:00">
+        <label>Slot Length (minutes)</label>
+        <input type="text" id="ohDurationInput" placeholder="e.g. 20" value="20">
+        <button onclick="generateOfficeHourSlots()">Generate Slots</button>
+        <div id="ohGenerateMsg"></div>
+
+        <h2 style="margin-top:24px;">Manage Slots</h2>
+        <div id="manageOfficeHoursList"><div class="empty">Loading...</div></div>
+      </div>
     </div>
 
     <div class="card sub-section hidden" id="subFaq">
@@ -1362,13 +1386,167 @@ async function shareNotice(id){
   }
 }
 
+// ===== Office Hours =====
+
+function formatOhDate(dateStr){
+  try{ return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }); }
+  catch(e){ return dateStr; }
+}
+
+function timeToMinutes(t){
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function minutesToTime(mins){
+  const h = Math.floor(mins / 60).toString().padStart(2, '0');
+  const m = (mins % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+async function loadOfficeHours(){
+  const container = document.getElementById('officeHoursSlotsList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const slots = (data.officeHours || []).filter(s => !s.booked && new Date(`${s.date}T${s.endTime}`) > new Date());
+    slots.sort((a,b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
+    window.officeHoursCache = data.officeHours || [];
+
+    if(slots.length === 0){
+      container.innerHTML = '<div class="empty">No open office hour slots right now — check back soon.</div>';
+    } else {
+      container.innerHTML = slots.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+          <div style="font-size:0.88rem;"><strong>${escapeHtml(formatOhDate(s.date))}</strong> &middot; ${escapeHtml(s.startTime)}&ndash;${escapeHtml(s.endTime)}</div>
+          <button style="padding:6px 14px;font-size:0.75rem;" onclick="openBookOfficeHour('${s.id}')">Book</button>
+        </div>
+      `).join('');
+    }
+
+    if(isAdmin()){
+      document.getElementById('manageOfficeHoursCard').classList.remove('hidden');
+      loadManageOfficeHoursList();
+    }
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load office hours.</div>';
+  }
+}
+
+async function openBookOfficeHour(slotId){
+  const name = prompt('Your name:');
+  if(!name) return;
+  const indexNum = prompt('Your index number:');
+  if(!indexNum) return;
+  const reason = prompt('Reason for meeting (optional):') || '';
+
+  try{
+    const data = await fetchSupabaseData();
+    const slots = data.officeHours || [];
+    const slot = slots.find(s => s.id === slotId);
+    if(!slot || slot.booked){
+      alert('Sorry, that slot was just booked by someone else. Please pick another.');
+      loadOfficeHours();
+      return;
+    }
+    slot.booked = true;
+    slot.studentName = name.trim();
+    slot.indexNumber = indexNum.trim();
+    slot.reason = reason.trim();
+    slot.bookedAt = new Date().toISOString();
+    data.officeHours = slots;
+    await saveSupabaseData(data);
+    alert(`Booked! ${formatOhDate(slot.date)}, ${slot.startTime}–${slot.endTime}.`);
+    loadOfficeHours();
+  }catch(e){
+    alert('Could not book that slot. Please try again.');
+  }
+}
+
+async function generateOfficeHourSlots(){
+  const msg = document.getElementById('ohGenerateMsg');
+  const date = document.getElementById('ohDateInput').value.trim();
+  const start = document.getElementById('ohStartInput').value.trim();
+  const end = document.getElementById('ohEndInput').value.trim();
+  const duration = parseInt(document.getElementById('ohDurationInput').value.trim(), 10);
+
+  if(!date || !start || !end || !duration || duration <= 0){
+    msg.innerHTML = '<div class="msg err">Please fill in date, start time, end time, and a valid slot length.</div>';
+    return;
+  }
+
+  const startMin = timeToMinutes(start);
+  const endMin = timeToMinutes(end);
+  if(endMin <= startMin){
+    msg.innerHTML = '<div class="msg err">End time must be after start time.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Generating...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const slots = data.officeHours || [];
+    let created = 0;
+    for(let t = startMin; t + duration <= endMin; t += duration){
+      slots.push({
+        id: 'oh_' + Date.now() + '_' + t,
+        date, startTime: minutesToTime(t), endTime: minutesToTime(t + duration),
+        booked: false
+      });
+      created++;
+    }
+    data.officeHours = slots;
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Created ${created} slot(s).</div>`;
+    loadOfficeHours();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not generate slots: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadManageOfficeHoursList(){
+  const container = document.getElementById('manageOfficeHoursList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const slots = (data.officeHours || []).slice().sort((a,b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
+    if(slots.length === 0){
+      container.innerHTML = '<div class="empty">No slots created yet.</div>';
+      return;
+    }
+    container.innerHTML = slots.map(s => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+        <div style="font-size:0.82rem;">
+          <strong>${escapeHtml(formatOhDate(s.date))}</strong> &middot; ${escapeHtml(s.startTime)}&ndash;${escapeHtml(s.endTime)}
+          ${s.booked ? `<br><span style="color:var(--red);">Booked: ${escapeHtml(s.studentName)} (${escapeHtml(s.indexNumber)})${s.reason ? ' — ' + escapeHtml(s.reason) : ''}</span>` : '<br><span style="color:var(--ok);">Open</span>'}
+        </div>
+        <button class="secondary" style="padding:5px 12px;font-size:0.7rem;" onclick="deleteOfficeHourSlot('${s.id}')">Delete</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load slots.</div>';
+  }
+}
+
+async function deleteOfficeHourSlot(id){
+  if(!confirm('Delete this slot?')) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.officeHours = (data.officeHours || []).filter(s => s.id !== id);
+    await saveSupabaseData(data);
+    loadOfficeHours();
+  }catch(e){
+    alert('Could not delete slot.');
+  }
+}
+
 function switchSubTab(sub){
-  const subs = ['about','contact','pubs','faq','posts'];
+  const subs = ['about','contact','officehours','pubs','faq','posts'];
   subs.forEach(s => {
     document.getElementById('sub' + s.charAt(0).toUpperCase() + s.slice(1)).classList.toggle('hidden', s!==sub);
-    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s==='faq'?'Faq':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
+    document.getElementById('subTab' + (s==='pubs'?'Pubs':s==='posts'?'Posts':s==='faq'?'Faq':s==='officehours'?'OfficeHours':s.charAt(0).toUpperCase()+s.slice(1))).classList.toggle('active', s===sub);
   });
   if(sub === 'posts') loadLatestPosts();
+  if(sub === 'officehours') loadOfficeHours();
 }
 
 async function loadLatestPosts(){

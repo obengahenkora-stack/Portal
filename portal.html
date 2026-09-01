@@ -214,30 +214,40 @@
   <div class="stamp">Verified Faculty Profile</div>
   <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
   <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
-  <h1>Assessment Portal</h1>
+  <h1>Faculty Console</h1>
   <p class="hero-sub" id="heroName">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
 </div>
 
 <div class="hero-tabs">
   <a href="index.html">Home</a>
   <a href="lecture-hall.html">Lecture Hall</a>
+  <div class="tab-static" id="navPortal" onclick="switchTab('hub')">Faculty Console</div>
+  <a href="dashboard.html">Students Dashboard</a>
   <a href="assistant.html">Student Assistant</a>
-  <div class="tab-static" id="navPortal" onclick="switchTab('teacher')">Assessment Portal</div>
-  <div class="tab-static" id="navAttendance" onclick="switchTab('attendance')">Attendance</div>
-  <a href="dashboard.html">My Dashboard</a>
 </div>
 
 <div class="wrap">
-  <p class="sub">Teachers upload scores. Students look up their own result using their index number only.</p>
+  <p class="sub">Manage assessment scores and attendance — for teaching staff only.</p>
 
-  <div class="tabs">
-    <div class="tab active" id="tabTeacher" onclick="switchTab('teacher')">Teacher</div>
-    <div class="tab" id="tabStudent" onclick="switchTab('student')">Student Lookup</div>
-    <div class="tab" id="tabReport" onclick="switchTab('report')">Report Issue</div>
+  <!-- HUB LANDING VIEW -->
+  <div id="hubView">
+    <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card" onclick="switchTab('teacher')" style="cursor:pointer;text-align:center;padding:32px 20px;">
+        <div style="font-size:2rem;margin-bottom:10px;">📊</div>
+        <h2 style="justify-content:center;">Assessment Portal</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">Upload scores, manage students, view reports.</p>
+      </div>
+      <div class="card" onclick="switchTab('attendance')" style="cursor:pointer;text-align:center;padding:32px 20px;">
+        <div style="font-size:2rem;margin-bottom:10px;">✅</div>
+        <h2 style="justify-content:center;">Attendance Portal</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">QR check-in, rosters, attendance summaries.</p>
+      </div>
+    </div>
   </div>
 
   <!-- TEACHER VIEW -->
-  <div id="teacherView">
+  <div id="teacherView" class="hidden">
+    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
     <div class="card" id="loginCard">
       <label>Email</label>
       <input type="text" id="authEmailInput" placeholder="you@school.edu">
@@ -433,44 +443,12 @@
     </div>
   </div>
 
-  <!-- STUDENT VIEW -->
-  <div id="studentView" class="hidden">
-    <div class="card">
-      <label>Enter your Index Number</label>
-      <input type="text" id="indexLookup" placeholder="e.g. 4501">
-      <button id="lookupBtn" onclick="lookupScore()">View My Results</button>
-      <div id="lookupMsg"></div>
-    </div>
-    <div class="card hidden" id="resultCard"></div>
-  </div>
-
-  <!-- REPORT ISSUE VIEW -->
-  <div id="reportView" class="hidden">
-    <div class="card">
-      <label>Course</label>
-      <select id="reportCourseSelect">
-        <option value="">Select your course...</option>
-      </select>
-
-      <label>Your Index Number</label>
-      <input type="text" id="reportIndexInput" placeholder="e.g. 4501">
-
-      <label>Your Email (so the lecturer can reply to you)</label>
-      <input type="text" id="reportEmailInput" placeholder="e.g. you@school.edu">
-
-      <label>Describe your issue</label>
-      <textarea id="reportIssueInput" placeholder="Describe your issue here..."></textarea>
-
-      <button id="reportSubmitBtn" onclick="submitIssueReport()">Submit Report</button>
-      <div id="reportSubmitMsg"></div>
-    </div>
-  </div>
-
   <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" class="hidden">
+    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
 
     <div class="card" id="takeAttendanceLoginCard">
-      <div class="msg err">Please sign in from the Teacher tab first to mark attendance.</div>
+      <div class="msg err">Please sign in from the Assessment Portal first to mark attendance.</div>
     </div>
 
     <div class="card hidden" id="takeAttendanceCard">
@@ -547,7 +525,7 @@
     <span class="back-to-list" onclick="switchTab('attendance')" style="display:block;margin-bottom:14px;cursor:pointer;color:var(--accent);font-size:0.85rem;">&larr; Back to Attendance</span>
 
     <div class="card" id="attendanceLoginCard">
-      <div class="msg err">Please sign in from the Teacher tab first to manage rosters.</div>
+      <div class="msg err">Please sign in from the Assessment Portal first to manage rosters.</div>
     </div>
 
     <div class="card hidden" id="rosterUploadCard">
@@ -894,18 +872,12 @@ if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 // ===================================
 
 function switchTab(tab){
+  document.getElementById('hubView').classList.toggle('hidden', tab!=='hub');
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
-  document.getElementById('studentView').classList.toggle('hidden', tab!=='student');
-  document.getElementById('reportView').classList.toggle('hidden', tab!=='report');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance' && tab!=='roster');
   document.getElementById('rosterView').classList.toggle('hidden', tab!=='roster');
   document.getElementById('attendanceSummaryCard').classList.toggle('hidden', tab==='roster');
-  document.getElementById('tabTeacher').classList.toggle('active', tab==='teacher');
-  document.getElementById('tabStudent').classList.toggle('active', tab==='student');
-  document.getElementById('tabReport').classList.toggle('active', tab==='report');
-  document.getElementById('navPortal').classList.toggle('active', tab==='teacher' || tab==='student' || tab==='report');
-  document.getElementById('navAttendance').classList.toggle('active', tab==='attendance' || tab==='roster');
-  if(tab === 'report') loadCourseOptionsForStudents();
+  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='roster');
   if(tab === 'attendance' || tab === 'roster'){
     loadAttendanceSummaryCourseOptions();
   }
@@ -1679,64 +1651,6 @@ async function sendWeeklyDigest(){
   }
 }
 
-async function lookupScore(){
-  const idxInput = document.getElementById('indexLookup');
-  const idx = idxInput.value.trim();
-  const msg = document.getElementById('lookupMsg');
-  const resultCard = document.getElementById('resultCard');
-  const lookupBtn = document.getElementById('lookupBtn');
-
-  if(!idx){
-    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
-    resultCard.classList.add('hidden');
-    return;
-  }
-
-  // If this device is already locked to a confirmed index number, block switching to another
-  // (only enforced when the teacher has the Device Lock setting turned ON)
-  const lockEnabled = await isDeviceLockEnabled();
-  const lockedIndex = localStorage.getItem(LOCK_KEY);
-  if(lockEnabled && lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
-    msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number. Each device can only check one student's results.</div>";
-    resultCard.classList.add('hidden');
-    return;
-  }
-
-  msg.innerHTML = '<div class="msg ok">Searching...</div>';
-
-  try{
-    const records = await fetchAllRecords();
-    const matches = records.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase());
-
-    if(matches.length === 0){
-      // Wrong/mistyped index number — do NOT lock, let them try again
-      msg.innerHTML = '<div class="msg err">No results found for that index number. Please check and try again.</div>';
-      resultCard.classList.add('hidden');
-      return;
-    }
-
-    // Only lock the device once a real, matching index number is confirmed, and only if enabled
-    if(lockEnabled && !lockedIndex){
-      localStorage.setItem(LOCK_KEY, idx);
-      idxInput.disabled = true;
-      if(lookupBtn) lookupBtn.disabled = true;
-    }
-
-    msg.innerHTML = '';
-    let html = `<div class="result-name">Index Number: ${escapeHtml(idx)}</div>`;
-    html += '<table><tr><th>Course</th><th>Level</th><th>Assessment</th><th>Score</th></tr>';
-    matches.forEach(r=>{
-      html += `<tr><td>${escapeHtml(r.course||'')}</td><td>${escapeHtml(r.level||'')}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}</td></tr>`;
-    });
-    html += '</table>';
-    resultCard.innerHTML = html;
-    resultCard.classList.remove('hidden');
-  }catch(e){
-    msg.innerHTML = '<div class="msg err">Could not reach server. Try again.</div>';
-    resultCard.classList.add('hidden');
-  }
-}
-
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str;
@@ -1915,88 +1829,6 @@ async function loadCourseManageList(){
     container.innerHTML = html;
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load courses.</div>';
-  }
-}
-
-// ===== Course dropdown for students (Report Issue tab) =====
-async function loadCourseOptionsForStudents(){
-  const select = document.getElementById('reportCourseSelect');
-  try{
-    const bin = await fetchBin();
-    const courses = bin.courses || [];
-    select.innerHTML = '<option value="">Select your course...</option>' +
-      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  }catch(e){
-    select.innerHTML = '<option value="">Could not load courses</option>';
-  }
-}
-
-// ===== Issue report submission (Student) =====
-async function submitIssueReport(){
-  const course = document.getElementById('reportCourseSelect').value;
-  const indexNumber = document.getElementById('reportIndexInput').value.trim();
-  const email = document.getElementById('reportEmailInput').value.trim();
-  const issue = document.getElementById('reportIssueInput').value.trim();
-  const msg = document.getElementById('reportSubmitMsg');
-  const btn = document.getElementById('reportSubmitBtn');
-
-  if(!course){
-    msg.innerHTML = '<div class="msg err">Please select your course.</div>';
-    return;
-  }
-  if(!indexNumber){
-    msg.innerHTML = '<div class="msg err">Please enter your index number.</div>';
-    return;
-  }
-  if(!email || !email.includes('@')){
-    msg.innerHTML = '<div class="msg err">Please enter a valid email address.</div>';
-    return;
-  }
-  if(!issue){
-    msg.innerHTML = '<div class="msg err">Please describe your issue.</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  msg.innerHTML = '<div class="msg ok">Submitting...</div>';
-
-  const report = {
-    course, indexNumber, email, issue,
-    submittedAt: new Date().toISOString()
-  };
-
-  try{
-    // Save to storage
-    const bin = await fetchBin();
-    const reports = bin.reports || [];
-    reports.push(report);
-    bin.reports = reports;
-    await saveBin(bin);
-
-    // Send email notification via EmailJS
-    if(window.emailjs){
-      try{
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          course: course,
-          issue: issue,
-          student_email: email,
-          student_index: indexNumber
-        });
-      }catch(emailErr){
-        console.error("Email send failed:", emailErr);
-        // Report is still saved even if email fails
-      }
-    }
-
-    msg.innerHTML = '<div class="msg ok">Your report has been submitted. The lecturer will reply to your email if a meeting is needed.</div>';
-    document.getElementById('reportCourseSelect').value = '';
-    document.getElementById('reportIndexInput').value = '';
-    document.getElementById('reportEmailInput').value = '';
-    document.getElementById('reportIssueInput').value = '';
-  }catch(e){
-    msg.innerHTML = `<div class="msg err">Could not submit report: ${escapeHtml(e.message)}</div>`;
-  }finally{
-    btn.disabled = false;
   }
 }
 
@@ -2825,14 +2657,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   const footerYearEl = document.getElementById('footerYear');
   if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
   await onAuthReady(false); // checks for an existing Supabase Auth session and renders accordingly, no toast on plain page load
-  const lockedIndex = localStorage.getItem(LOCK_KEY);
-  if(lockedIndex){
-    const idxInput = document.getElementById('indexLookup');
-    if(idxInput) idxInput.value = lockedIndex;
-  }
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'attendance'){
     switchTab('attendance');
+  } else {
+    switchTab('hub');
   }
 });
 </script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Student Dashboard</title>
+<title>Students Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2545">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -12,6 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
   :root{
     --paper:#ffffff; --bg:#ffffff; --card:#faf8f3; --ink:#181816; --muted:#726b5c;
@@ -114,25 +116,60 @@
 <div class="hero-tabs">
   <a href="index.html">Home</a>
   <a href="lecture-hall.html">Lecture Hall</a>
-  <a href="portal.html">Assessment Portal</a>
-  <div class="tab-static active">My Dashboard</div>
+  <a href="portal.html">Faculty Console</a>
+  <div class="tab-static active">Students Dashboard</div>
 </div>
 
 <div class="wrap">
   <div class="card" style="text-align:center;background:linear-gradient(135deg,#f0f4f9,#e8eef7);">
-    <h2 style="justify-content:center;">What is My Dashboard?</h2>
+    <h2 style="justify-content:center;">What is the Students Dashboard?</h2>
     <p style="color:var(--muted);font-size:0.92rem;line-height:1.6;max-width:520px;margin:0 auto;">
-      My Dashboard brings everything tied to your index number into one place — your assessment scores across all courses, your attendance record and percentage, and any issue reports you've submitted along with the lecturer's replies. Instead of checking the Assessment Portal, Attendance, and Report Issue sections separately, you can see it all here at a glance.
-      Once you enter your index number below, this device will remember it, so you won't need to type it in again.
+      The Students Dashboard brings everything tied to your index number into one place — your assessment scores across all courses, your attendance record and percentage, and any issue reports you've submitted along with the lecturer's replies. Instead of checking the Assessment Portal, Attendance, and Report Issue sections separately, you can see it all here at a glance.
+      Sign in below (creating an account takes a minute) and link it to your index number once — after that, your dashboard loads automatically every time you sign in.
     </p>
   </div>
 
-  <div class="card">
-    <label>Your Index Number</label>
-    <input type="text" id="dashIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') loadDashboard()">
-    <button id="dashLoadBtn" onclick="loadDashboard()">View My Dashboard</button>
-    <div id="dashMsg"></div>
+  <div class="card" id="studentAuthCard">
+    <h2>Sign In</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Create an account once and link it to your index number — after that, your dashboard loads automatically every time you sign in, no need to type your index number again.</p>
+    <label>Email</label>
+    <input type="text" id="studentAuthEmail" placeholder="you@school.edu">
+    <label>Password</label>
+    <input type="password" id="studentAuthPassword" placeholder="Your password">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="studentSignIn()">Sign In</button>
+      <button class="secondary" onclick="studentSignUp()">Create Account</button>
+    </div>
+    <div id="studentAuthMsg" style="margin-top:10px;"></div>
   </div>
+
+  <div class="card hidden" id="linkIndexCard">
+    <h2>Link Your Index Number</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">One-time step — this connects your account to your student records.</p>
+    <label>Your Index Number</label>
+    <input type="text" id="linkIndexInput" placeholder="e.g. UEB0700123">
+    <label>Your Name (optional)</label>
+    <input type="text" id="linkNameInput" placeholder="e.g. Kwame Mensah">
+    <button onclick="linkIndexNumber()">Link Account</button>
+    <div id="linkIndexMsg"></div>
+  </div>
+
+  <div class="card hidden" id="signedInCard" style="display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:0.85rem;color:var(--muted);">Signed in as <strong id="studentWhoAmI"></strong></span>
+    <button class="secondary" onclick="studentSignOut()">Sign Out</button>
+  </div>
+
+  <div class="card hidden" id="adminSearchCard">
+    <h2>Admin: Search Any Student</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Look up any student's scores, attendance, and reports by index number.</p>
+    <label>Student Index Number</label>
+    <input type="text" id="adminSearchIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') adminSearchStudent()">
+    <button onclick="adminSearchStudent()">Search</button>
+  </div>
+
+  <input type="hidden" id="dashIndexInput">
+  <button id="dashLoadBtn" onclick="loadDashboard()" class="hidden"></button>
+  <div id="dashMsg" class="hidden"></div>
 
   <div id="dashResults" class="hidden">
     <div class="card" id="dashOverviewCard">
@@ -167,6 +204,20 @@
       <h2>My Reports</h2>
       <div id="dashReports"><div class="empty">No data.</div></div>
     </div>
+
+    <div class="card">
+      <h2>Report an Issue</h2>
+      <label>Course</label>
+      <select id="reportCourseSelect">
+        <option value="">Select your course...</option>
+      </select>
+      <label>Your Email (so the lecturer can reply to you)</label>
+      <input type="text" id="reportEmailInput" placeholder="e.g. you@school.edu">
+      <label>Describe your issue</label>
+      <textarea id="reportIssueInput" placeholder="Describe your issue here..."></textarea>
+      <button id="reportSubmitBtn" onclick="submitIssueReport()">Submit Report</button>
+      <div id="reportSubmitMsg"></div>
+    </div>
   </div>
 </div>
 
@@ -180,11 +231,20 @@ const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
 const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
 const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
+// ===== EmailJS configuration (issue report notifications) =====
+const EMAILJS_SERVICE_ID = "service_cs5nqqo";
+const EMAILJS_TEMPLATE_ID = "template_xtvjkab";
+const EMAILJS_PUBLIC_KEY = "YAoDPw-tkurcPjVrU";
+if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
+
 // ===== Supabase configuration (profile, blog, rosters, attendance) =====
 const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
 const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
 const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
 
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -194,10 +254,176 @@ function escapeHtml(str){
 
 async function fetchSupabaseData(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
     return await res.json();
   }catch(e){ return {}; }
+}
+async function saveSupabaseData(data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
+    method: "POST", cache: "no-store",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save");
+}
+
+async function fetchBin(){
+  // If a previous save overflowed to Supabase, that copy is the freshest source of truth.
+  try{
+    const supaData = await fetchSupabaseData();
+    if(supaData.portalDataOverflow){
+      return supaData.portalDataOverflow;
+    }
+  }catch(e){
+    // ignore, fall through to JSONBin
+  }
+
+  const res = await fetch(`${JSONBIN_URL}/latest`, {
+    headers: { "X-Master-Key": JSONBIN_API_KEY }
+  });
+  if(!res.ok) throw new Error("Could not reach storage");
+  const data = await res.json();
+  return data.record || {};
+}
+
+async function saveBin(binData){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Master-Key": JSONBIN_API_KEY
+    },
+    body: JSON.stringify(binData)
+  });
+
+  if(res.ok){
+    // Successful JSONBin save — clear any old Supabase overflow copy so we don't read stale data later.
+    try{
+      const supaData = await fetchSupabaseData();
+      if(supaData.portalDataOverflow){
+        delete supaData.portalDataOverflow;
+        await saveSupabaseData(supaData);
+      }
+    }catch(e){ /* non-critical, ignore */ }
+    return res.json();
+  }
+
+  // JSONBin save failed — check if it's specifically a size-limit issue, and if so, fall back to Supabase automatically.
+  let detail = "";
+  try{
+    const errBody = await res.json();
+    detail = errBody.message || JSON.stringify(errBody);
+  }catch(e){
+    detail = `HTTP ${res.status}`;
+  }
+
+  const isSizeLimitError = /100\s*kb|over\s*100kb|upgrade to pro/i.test(detail);
+  if(isSizeLimitError){
+    try{
+      const supaData = await fetchSupabaseData();
+      supaData.portalDataOverflow = binData;
+      await saveSupabaseData(supaData);
+      return { success: true, overflow: true };
+    }catch(overflowErr){
+      throw new Error(`JSONBin is full and the automatic backup to Supabase also failed (${overflowErr.message})`);
+    }
+  }
+
+  throw new Error(`Could not save to storage (${detail})`);
+}
+
+// ===== Student Account Sign-In / Sign-Up / Index Linking =====
+const ADMIN_EMAIL = "obengahenkora@gmail.com";
+let studentCurrentEmail = null;
+
+async function studentSignUp(){
+  const email = document.getElementById('studentAuthEmail').value.trim();
+  const password = document.getElementById('studentAuthPassword').value;
+  const msg = document.getElementById('studentAuthMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ await onStudentSignedIn(); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+
+async function studentSignIn(){
+  const email = document.getElementById('studentAuthEmail').value.trim();
+  const password = document.getElementById('studentAuthPassword').value;
+  const msg = document.getElementById('studentAuthMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onStudentSignedIn();
+}
+
+async function studentSignOut(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function onStudentSignedIn(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  studentCurrentEmail = session.user.email;
+
+  document.getElementById('studentAuthCard').classList.add('hidden');
+  document.getElementById('signedInCard').classList.remove('hidden');
+  document.getElementById('studentWhoAmI').textContent = studentCurrentEmail;
+
+  if(studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+    document.getElementById('adminSearchCard').classList.remove('hidden');
+    return;
+  }
+
+  const data = await fetchSupabaseData();
+  const accounts = data.studentAccounts || [];
+  const myAccount = accounts.find(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
+
+  if(myAccount && myAccount.indexNumber){
+    document.getElementById('linkIndexCard').classList.add('hidden');
+    document.getElementById('dashIndexInput').value = myAccount.indexNumber;
+    loadDashboard();
+  } else {
+    document.getElementById('linkIndexCard').classList.remove('hidden');
+  }
+}
+
+async function adminSearchStudent(){
+  const idx = document.getElementById('adminSearchIndexInput').value.trim();
+  if(!idx){ alert('Please enter an index number to search.'); return; }
+  document.getElementById('dashIndexInput').value = idx;
+  loadDashboard(true); // skipLock: admin lookups never lock this device
+}
+
+async function linkIndexNumber(){
+  const indexNumber = document.getElementById('linkIndexInput').value.trim();
+  const name = document.getElementById('linkNameInput').value.trim();
+  const msg = document.getElementById('linkIndexMsg');
+  if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+  if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
+
+  msg.innerHTML = '<div class="msg ok">Linking...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const accounts = data.studentAccounts || [];
+    const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
+    const record = { email: studentCurrentEmail, indexNumber, name, linkedAt: new Date().toISOString() };
+    if(existingIdx >= 0) accounts[existingIdx] = record;
+    else accounts.push(record);
+    data.studentAccounts = accounts;
+    await saveSupabaseData(data);
+
+    document.getElementById('linkIndexCard').classList.add('hidden');
+    document.getElementById('dashIndexInput').value = indexNumber;
+    loadDashboard();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not link account: ${escapeHtml(e.message)}</div>`;
+  }
 }
 
 async function fetchJsonBinRecords(){
@@ -230,7 +456,7 @@ async function isDeviceLockEnabled(){
 
 const LOCK_KEY = "assessment_locked_index"; // shared with the Assessment Portal's lock, so a device stays tied to one student everywhere
 
-async function loadDashboard(){
+async function loadDashboard(skipLock){
   const idxInput = document.getElementById('dashIndexInput');
   const idx = idxInput.value.trim();
   const msg = document.getElementById('dashMsg');
@@ -241,8 +467,8 @@ async function loadDashboard(){
     return;
   }
 
-  const lockEnabled = await isDeviceLockEnabled();
-  const lockedIndex = localStorage.getItem(LOCK_KEY);
+  const lockEnabled = skipLock ? false : await isDeviceLockEnabled();
+  const lockedIndex = skipLock ? null : localStorage.getItem(LOCK_KEY);
   if(lockEnabled && lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
     msg.innerHTML = "<div class=\"msg err\">This device is already locked to a different index number and cannot be switched.</div>";
     return;
@@ -344,19 +570,103 @@ async function loadDashboard(){
       idxInput.disabled = true;
       document.getElementById('dashLoadBtn').disabled = true;
     }
+
+    loadCourseOptionsForStudents();
+    const reportEmailInput = document.getElementById('reportEmailInput');
+    if(reportEmailInput && !reportEmailInput.value && studentCurrentEmail && studentCurrentEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()){
+      reportEmailInput.value = studentCurrentEmail;
+    }
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not load dashboard: ${escapeHtml(e.message)}</div>`;
   }
 }
 
+// ===== Course dropdown for Report an Issue =====
+async function loadCourseOptionsForStudents(){
+  const select = document.getElementById('reportCourseSelect');
+  try{
+    const bin = await fetchBin();
+    const courses = bin.courses || [];
+    select.innerHTML = '<option value="">Select your course...</option>' +
+      courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  }catch(e){
+    select.innerHTML = '<option value="">Could not load courses</option>';
+  }
+}
 
-window.addEventListener('DOMContentLoaded', () => {
+// ===== Issue report submission =====
+async function submitIssueReport(){
+  const course = document.getElementById('reportCourseSelect').value;
+  const indexNumber = document.getElementById('dashIndexInput').value.trim();
+  const email = document.getElementById('reportEmailInput').value.trim();
+  const issue = document.getElementById('reportIssueInput').value.trim();
+  const msg = document.getElementById('reportSubmitMsg');
+  const btn = document.getElementById('reportSubmitBtn');
+
+  if(!course){
+    msg.innerHTML = '<div class="msg err">Please select your course.</div>';
+    return;
+  }
+  if(!indexNumber){
+    msg.innerHTML = '<div class="msg err">Your index number isn\'t linked yet — please sign in and link your index number first.</div>';
+    return;
+  }
+  if(!email || !email.includes('@')){
+    msg.innerHTML = '<div class="msg err">Please enter a valid email address.</div>';
+    return;
+  }
+  if(!issue){
+    msg.innerHTML = '<div class="msg err">Please describe your issue.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Submitting...</div>';
+
+  const report = {
+    course, indexNumber, email, issue,
+    submittedAt: new Date().toISOString()
+  };
+
+  try{
+    const bin = await fetchBin();
+    const reports = bin.reports || [];
+    reports.push(report);
+    bin.reports = reports;
+    await saveBin(bin);
+
+    if(window.emailjs){
+      try{
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          course: course,
+          issue: issue,
+          student_email: email,
+          student_index: indexNumber
+        });
+      }catch(emailErr){
+        console.error("Email send failed:", emailErr);
+      }
+    }
+
+    msg.innerHTML = '<div class="msg ok">Your report has been submitted. The lecturer will reply to your email if a meeting is needed.</div>';
+    document.getElementById('reportCourseSelect').value = '';
+    document.getElementById('reportIssueInput').value = '';
+    loadDashboard();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not submit report: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+
+window.addEventListener('DOMContentLoaded', async () => {
   const footerYearEl = document.getElementById('footerYear');
   if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
-  const lockedIndex = localStorage.getItem(LOCK_KEY);
-  if(lockedIndex){
-    document.getElementById('dashIndexInput').value = lockedIndex;
-    loadDashboard();
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session){
+    await onStudentSignedIn();
   }
 });
 </script>

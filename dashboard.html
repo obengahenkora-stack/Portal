@@ -237,12 +237,16 @@ const EMAILJS_TEMPLATE_ID = "template_xtvjkab";
 const EMAILJS_PUBLIC_KEY = "YAoDPw-tkurcPjVrU";
 if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 
-// ===== Supabase configuration (profile, blog, rosters, attendance) =====
+// ===== Supabase configuration (profile, blog, rosters, attendance — SHARED data storage) =====
 const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
 const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
 const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+
+// ===== Student Auth (SEPARATE project — email confirmation OFF, dedicated to student sign-ups at scale) =====
+const STUDENT_AUTH_URL = "https://qqnsbuirelhwfrshafay.supabase.co";
+const STUDENT_AUTH_KEY = "sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ";
+const supabaseClient = window.supabase.createClient(STUDENT_AUTH_URL, STUDENT_AUTH_KEY, {
   auth: { persistSession: true, autoRefreshToken: true }
 });
 

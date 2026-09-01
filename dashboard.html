@@ -167,6 +167,10 @@
     <button class="secondary" onclick="studentSignOut()">Sign Out</button>
   </div>
 
+  <div class="hidden" id="editDetailsLink" style="text-align:right;margin:-10px 0 16px;">
+    <a href="javascript:void(0)" onclick="showEditDetailsForm()" style="font-size:0.8rem;color:var(--gold-dark);">Edit My Details &rarr;</a>
+  </div>
+
   <div class="card hidden" id="adminSearchCard">
     <h2>Admin: Search Any Student</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Look up any student's scores, attendance, and reports by index number.</p>
@@ -179,6 +183,14 @@
     <h2>All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
     <label>Filter by Name, Index Number, or Email</label>
     <input type="text" id="adminRegisteredFilter" placeholder="Type to filter..." oninput="renderRegisteredStudents()">
+    <label>Filter by Level</label>
+    <select id="adminRegisteredLevelFilter" onchange="renderRegisteredStudents()">
+      <option value="">All Levels</option>
+      <option value="100">Level 100</option>
+      <option value="200">Level 200</option>
+      <option value="300">Level 300</option>
+      <option value="400">Level 400</option>
+    </select>
     <div id="adminRegisteredList" style="max-height:400px;overflow-y:auto;"><div class="empty">Loading...</div></div>
   </div>
 
@@ -187,6 +199,9 @@
   <div id="dashMsg" class="hidden"></div>
 
   <div id="dashResults" class="hidden">
+    <div class="hidden" id="adminHideResultsWrap" style="text-align:right;margin-bottom:12px;">
+      <button class="secondary" onclick="hideAdminViewedStudent()">&larr; Hide / Back to List</button>
+    </div>
     <div class="card" id="dashOverviewCard">
       <h2>Overview</h2>
       <div class="overview-grid" id="dashOverview">
@@ -408,17 +423,33 @@ async function onStudentSignedIn(){
   if(myAccount && myAccount.indexNumber){
     document.getElementById('linkIndexCard').classList.add('hidden');
     document.getElementById('dashIndexInput').value = myAccount.indexNumber;
+    document.getElementById('linkIndexInput').value = myAccount.indexNumber;
+    document.getElementById('linkNameInput').value = myAccount.name || '';
+    document.getElementById('linkLevelInput').value = myAccount.level || '';
+    document.getElementById('editDetailsLink').classList.remove('hidden');
     loadDashboard();
   } else {
     document.getElementById('linkIndexCard').classList.remove('hidden');
   }
 }
 
+function showEditDetailsForm(){
+  document.getElementById('linkIndexCard').classList.remove('hidden');
+  document.getElementById('editDetailsLink').classList.add('hidden');
+}
+
 async function adminSearchStudent(){
   const idx = document.getElementById('adminSearchIndexInput').value.trim();
   if(!idx){ alert('Please enter an index number to search.'); return; }
   document.getElementById('dashIndexInput').value = idx;
+  document.getElementById('adminHideResultsWrap').classList.remove('hidden');
   loadDashboard(true); // skipLock: admin lookups never lock this device
+}
+
+function hideAdminViewedStudent(){
+  document.getElementById('dashResults').classList.add('hidden');
+  document.getElementById('adminHideResultsWrap').classList.add('hidden');
+  document.getElementById('adminSearchIndexInput').value = '';
 }
 
 let registeredStudentsCache = [];
@@ -438,13 +469,18 @@ async function loadRegisteredStudents(){
 function renderRegisteredStudents(){
   const container = document.getElementById('adminRegisteredList');
   const filterVal = (document.getElementById('adminRegisteredFilter').value || '').trim().toLowerCase();
+  const levelVal = document.getElementById('adminRegisteredLevelFilter').value;
 
-  const filtered = filterVal
-    ? registeredStudentsCache.filter(a =>
-        (a.name || '').toLowerCase().includes(filterVal) ||
-        (a.indexNumber || '').toLowerCase().includes(filterVal) ||
-        (a.email || '').toLowerCase().includes(filterVal))
-    : registeredStudentsCache;
+  let filtered = registeredStudentsCache;
+  if(filterVal){
+    filtered = filtered.filter(a =>
+      (a.name || '').toLowerCase().includes(filterVal) ||
+      (a.indexNumber || '').toLowerCase().includes(filterVal) ||
+      (a.email || '').toLowerCase().includes(filterVal));
+  }
+  if(levelVal){
+    filtered = filtered.filter(a => String(a.level || '') === levelVal);
+  }
 
   document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length;
 
@@ -457,7 +493,7 @@ function renderRegisteredStudents(){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
       <div>
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(a.indexNumber)} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(a.indexNumber)}${a.level ? ' &middot; Level ' + escapeHtml(a.level) : ''} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
     </div>
@@ -467,6 +503,7 @@ function renderRegisteredStudents(){
 async function linkIndexNumber(){
   const indexNumber = document.getElementById('linkIndexInput').value.trim();
   const name = document.getElementById('linkNameInput').value.trim();
+  const level = document.getElementById('linkLevelInput').value;
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
@@ -476,7 +513,7 @@ async function linkIndexNumber(){
     const data = await fetchSupabaseData();
     const accounts = data.studentAccounts || [];
     const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
-    const record = { email: studentCurrentEmail, indexNumber, name, linkedAt: new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: new Date().toISOString() };
     if(existingIdx >= 0) accounts[existingIdx] = record;
     else accounts.push(record);
     data.studentAccounts = accounts;

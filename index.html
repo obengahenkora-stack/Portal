@@ -40,9 +40,17 @@
   body{
     margin:0;
     font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-color:var(--bg);
+    background-position: -1px -1px;
     color:var(--ink);
     min-height:100vh;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    body{ background-attachment: fixed; }
   }
   .hero{
     background:var(--navy-dark);
@@ -76,6 +84,8 @@
     color:rgba(255,255,255,0.7); text-transform:uppercase; margin-bottom:18px;
     display:flex; align-items:center; gap:10px; flex-wrap:wrap; row-gap:8px;
   }
+  .hero-eyebrow::before{ content:"[ "; color:var(--accent); font-weight:700; }
+  .hero-eyebrow::after{ content:" ]"; color:var(--accent); font-weight:700; }
   .hero-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; }
   .live-dot{
     width:8px; height:8px; border-radius:50%; background:var(--red); display:inline-block;
@@ -92,11 +102,12 @@
   .section-index{
     display:flex; align-items:center; gap:14px; max-width:760px; margin:0 auto; padding:0 24px;
   }
-  .section-index .num{ font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:0.05em; white-space:nowrap; }
+  .section-index .num{ font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:0.05em; white-space:nowrap; font-weight:600; }
+  .section-index .num::before{ content:"// "; opacity:0.6; }
   .section-index .rule{ flex:1; height:1px; background:var(--line); }
   .pull-quote{
-    max-width:700px; margin:40px auto; padding:64px 40px; text-align:center;
-    background:var(--contrast); border:none; border-top:6px solid var(--red);
+    max-width:700px; margin:40px auto; padding:56px 40px; text-align:center;
+    background:var(--contrast); border:1px solid var(--ink); border-top:none;
   }
   .pull-quote p{
     font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-style:italic; font-weight:400;
@@ -110,11 +121,11 @@
   .closing-cta h2::before{ background:var(--red); width:32px; height:3px; }
   .cta-row{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .cta-link{
-    font-family:'IBM Plex Sans',sans-serif; font-size:0.85rem; font-weight:500; color:var(--ink);
-    text-decoration:none; border:1px solid var(--red); padding:12px 22px;
+    font-family:'IBM Plex Mono',sans-serif; font-size:0.78rem; font-weight:600; color:var(--ink);
+    text-decoration:none; border:1px solid var(--ink); padding:12px 22px; letter-spacing:0.03em; text-transform:uppercase;
     transition:background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .cta-link:hover{ background:var(--red); border-color:var(--red); color:#fff; }
+  .cta-link:hover{ background:var(--ink); border-color:var(--ink); color:#fff; }
   .site-footer{ background:var(--navy-dark); color:rgba(255,255,255,0.75); padding:64px 24px 32px; }
   .footer-brand{
     font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-size:clamp(1.6rem,5vw,2.6rem);
@@ -149,11 +160,11 @@
   h1{
     font-family:'Fraunces',sans-serif;
     font-optical-sizing:auto;
-    font-size:clamp(1.9rem, 5vw, 3.2rem);
-    font-weight:500;
+    font-size:clamp(2.1rem, 5.5vw, 3.6rem);
+    font-weight:600;
     margin:0 0 12px 0;
-    letter-spacing:-0.02em;
-    line-height:0.98;
+    letter-spacing:-0.03em;
+    line-height:0.96;
     color:#fff;
   }
   .title{
@@ -205,16 +216,16 @@
   h2{
     font-family:'Fraunces',sans-serif;
     font-optical-sizing:auto;
-    font-size:1.3rem;
-    font-weight:500;
+    font-size:1.35rem;
+    font-weight:600;
     color:var(--ink);
-    letter-spacing:0;
+    letter-spacing:-0.01em;
     margin-bottom:18px;margin-top:0;
     display:flex;align-items:center;gap:10px;
   }
   h2::before{
     content:"";
-    width:20px;height:2px;background:var(--accent);display:inline-block;
+    width:22px;height:3px;background:var(--accent);display:inline-block;
   }
   .tabs{
     display:flex;flex-wrap:wrap;gap:20px;row-gap:8px;margin:0 auto 0;max-width:760px;
@@ -225,32 +236,33 @@
   .tab{
     padding:14px 0;text-align:center;background:transparent;border:none;
     border-bottom:2px solid transparent;
-    cursor:pointer;font-weight:500;color:var(--muted);font-size:0.85rem;letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.78rem;letter-spacing:0.03em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;
     transition:color 0.15s ease, border-color 0.15s ease;
     flex:none;
   }
-  .tab.active{color:var(--ink);border-bottom:3px solid var(--red);font-weight:600;}
+  .tab.active{color:var(--ink);border-bottom:3px solid var(--red);font-weight:700;}
   .tab:hover:not(.active){color:var(--ink);}
   .card{
-    background:transparent;
-    border:none;
-    border-top:1px solid var(--line);
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-top:2px solid var(--ink);
     border-radius:0;
-    padding:32px 0;
-    margin-bottom:0;
+    padding:28px 24px;
+    margin-bottom:20px;
     box-shadow:none;
-    transition:none;
+    transition:border-color 0.15s ease;
   }
+  .card:hover{ border-color:var(--accent); border-top-color:var(--ink); }
   .card p{line-height:1.7;color:var(--ink);white-space:pre-wrap;}
   label{display:block;font-size:0.72rem;font-weight:600;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;}
   input[type=text], input[type=password], textarea{
-    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
+    width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:2px;
     font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;
     background:#f8f6f0;color:var(--ink);
   }
   textarea{min-height:120px;resize:vertical;}
-  input:focus, textarea:focus{outline:2px solid var(--gold);outline-offset:1px;background:#fff;}
-  button{background:var(--accent);color:#fff;border:none;padding:11px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.88rem;letter-spacing:0.01em;font-family:'IBM Plex Sans',sans-serif;transition:background 0.15s ease, transform 0.1s ease;}
+  input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;background:#fff;}
+  button{background:var(--accent);color:#fff;border:none;padding:11px 24px;border-radius:2px;font-weight:700;cursor:pointer;font-size:0.82rem;letter-spacing:0.04em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;transition:background 0.15s ease, transform 0.1s ease;}
   button:hover{background:var(--accent-dark);}
   button:active{ transform:translateY(1px); }
   button:disabled{opacity:0.5;cursor:not-allowed;}
@@ -318,8 +330,27 @@
   .calc-result-num{font-family:'Fraunces',sans-serif;font-size:1.3rem;font-weight:800;color:var(--navy);}
   .calc-result-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px;}
 
+  .widget-fab{
+    position:fixed; bottom:24px; right:24px; z-index:55;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--navy);color:#fff;border:none;
+    font-size:1.5rem;box-shadow:0 6px 20px rgba(11,37,69,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.25s ease, background 0.2s ease;
+  }
+  .widget-fab:hover{ background:var(--navy-dark); }
+  .widget-fab.open{ transform:rotate(45deg); }
+  .widget-menu-item{
+    transition:transform 0.25s ease, opacity 0.2s ease;
+    transform:scale(0.4) translateY(20px);
+    opacity:0; pointer-events:none;
+  }
+  .widget-menu-item.open{
+    transform:scale(1) translateY(0);
+    opacity:1; pointer-events:auto;
+  }
   .calc-widget-toggle{
-    position:fixed; bottom:24px; right:24px; z-index:50;
+    position:fixed; bottom:94px; right:24px; z-index:50;
     width:58px;height:58px;border-radius:50%;
     background:var(--navy);color:#fff;border:none;
     font-size:1.5rem;box-shadow:0 6px 20px rgba(11,37,69,0.35);
@@ -328,7 +359,7 @@
   }
   .calc-widget-toggle:hover{ background:var(--navy-dark); transform:scale(1.06); }
   .formula-widget-toggle{
-    position:fixed; bottom:94px; right:24px; z-index:50;
+    position:fixed; bottom:164px; right:24px; z-index:50;
     width:56px;height:56px;border-radius:50%;
     background:var(--gold);color:#fff;border:none;
     font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
@@ -362,7 +393,7 @@
   .formula-eq{ font-family:'IBM Plex Mono',monospace; font-size:0.85rem; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; margin-bottom:6px; }
   .formula-legend{ font-size:0.75rem; color:var(--muted); line-height:1.5; }
   .game-widget-toggle{
-    position:fixed; bottom:304px; right:24px; z-index:50;
+    position:fixed; bottom:374px; right:24px; z-index:50;
     width:58px;height:58px;border-radius:50%;
     background:var(--red);color:#fff;border:none;
     font-size:1.5rem;box-shadow:0 6px 20px rgba(179,38,30,0.35);
@@ -371,7 +402,7 @@
   }
   .game-widget-toggle:hover{ background:var(--red-dark); transform:scale(1.06); }
   .flashcard-widget-toggle{
-    position:fixed; bottom:234px; right:24px; z-index:50;
+    position:fixed; bottom:304px; right:24px; z-index:50;
     width:56px;height:56px;border-radius:50%;
     background:var(--navy);color:#fff;border:none;
     font-size:1.4rem;box-shadow:0 6px 20px rgba(13,13,11,0.35);
@@ -407,7 +438,7 @@
   .flashcard-nav-row button{ flex:1; }
 
   .timer-widget-toggle{
-    position:fixed; bottom:164px; right:24px; z-index:50;
+    position:fixed; bottom:234px; right:24px; z-index:50;
     width:56px;height:56px;border-radius:50%;
     background:var(--gold);color:#fff;border:none;
     font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
@@ -437,7 +468,7 @@
   .timer-session-count{ font-size:0.75rem; color:var(--muted); }
 
   .assist-widget-toggle{
-    position:fixed; bottom:24px; left:24px; z-index:50;
+    position:fixed; bottom:444px; right:24px; z-index:50;
     width:58px;height:58px;border-radius:50%;
     background:var(--gold);color:#fff;border:none;
     font-size:1.5rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
@@ -445,18 +476,19 @@
     padding:0;transition:transform 0.2s ease, background 0.2s ease;
   }
   .assist-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
+
   .assist-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .assist-widget-panel{
-    position:fixed; bottom:0; left:0; z-index:70;
+    position:fixed; bottom:0; right:0; z-index:70;
     width:380px; max-width:94vw; max-height:85vh; overflow-y:hidden;
-    background:var(--card); border:1px solid var(--line); border-radius:0 16px 0 0; box-shadow:6px -4px 30px rgba(0,0,0,0.15);
+    background:var(--card); border:1px solid var(--line); border-radius:16px 0 0 0; box-shadow:-6px -4px 30px rgba(0,0,0,0.15);
   }
   .assist-widget-panel:not(.hidden){ display:flex; flex-direction:column; }
-  @media (min-width:640px){ .assist-widget-panel{ bottom:24px; left:24px; border-radius:16px; } }
+  @media (min-width:640px){ .assist-widget-panel{ bottom:24px; right:24px; border-radius:16px; } }
   .assist-widget-header{
     display:flex;justify-content:space-between;align-items:center;
     background:var(--gold); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
-    flex-shrink:0; border-radius:0 16px 0 0;
+    flex-shrink:0; border-radius:16px 0 0 0;
   }
   @media (min-width:640px){ .assist-widget-header{ border-radius:16px 16px 0 0; } }
   .assist-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
@@ -1112,13 +1144,6 @@ async function checkSessionTimeout(){
 }
 setInterval(checkSessionTimeout, 60000);
 
-// ===== Header name swap for lecturers =====
-function applyLecturerHeaderName(){
-  if(currentUserRole === 'lecturer' && currentUserName){
-    const nameEl = document.getElementById('heroName');
-    if(nameEl) nameEl.textContent = currentUserName;
-  }
-}
 
 async function signUpUser(){
   const email = document.getElementById('authEmailInput').value.trim();
@@ -1167,7 +1192,6 @@ async function onEditAuthReady(showToast){
     document.getElementById('noRoleCard').classList.add('hidden');
     document.getElementById('editCard').classList.remove('hidden');
     if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
-    applyLecturerHeaderName();
     return;
   }
 
@@ -1176,7 +1200,6 @@ async function onEditAuthReady(showToast){
     document.getElementById('noRoleCard').classList.remove('hidden');
     document.getElementById('editCard').classList.add('hidden');
     if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
-    applyLecturerHeaderName();
   } else {
     document.getElementById('loginCard').classList.remove('hidden');
     document.getElementById('noRoleCard').classList.add('hidden');
@@ -2101,6 +2124,22 @@ function loadFactOfDay(){
 function toggleCalcWidget(show){
   document.getElementById('calcWidgetOverlay').classList.toggle('hidden', !show);
   document.getElementById('calcWidgetPanel').classList.toggle('hidden', !show);
+  if(show) closeWidgetMenu();
+}
+
+// ===== Widget Speed-Dial Menu =====
+let widgetMenuOpen = false;
+
+function toggleWidgetMenu(){
+  widgetMenuOpen = !widgetMenuOpen;
+  document.getElementById('widgetMenuFab').classList.toggle('open', widgetMenuOpen);
+  document.querySelectorAll('.widget-menu-item').forEach(el => el.classList.toggle('open', widgetMenuOpen));
+}
+
+function closeWidgetMenu(){
+  widgetMenuOpen = false;
+  document.getElementById('widgetMenuFab').classList.remove('open');
+  document.querySelectorAll('.widget-menu-item').forEach(el => el.classList.remove('open'));
 }
 
 // ===== Games: Engineering Quiz, True/False Blitz, Term Scramble =====
@@ -2177,6 +2216,7 @@ function toggleGameWidget(show){
   document.getElementById('gameWidgetPanel').classList.toggle('hidden', !show);
   if(show){
     switchGameTab('play');
+    closeWidgetMenu();
   } else if(gameState.timer){
     clearInterval(gameState.timer);
   }
@@ -2224,10 +2264,13 @@ let flashcardFlipped = false;
 function toggleFlashcardWidget(show){
   document.getElementById('flashcardWidgetOverlay').classList.toggle('hidden', !show);
   document.getElementById('flashcardWidgetPanel').classList.toggle('hidden', !show);
-  if(show && flashcardOrder.length === 0){
-    flashcardOrder = FLASHCARD_DATA.map((_, i) => i);
-    flashcardIndex = 0;
-    renderFlashcard();
+  if(show){
+    closeWidgetMenu();
+    if(flashcardOrder.length === 0){
+      flashcardOrder = FLASHCARD_DATA.map((_, i) => i);
+      flashcardIndex = 0;
+      renderFlashcard();
+    }
   }
 }
 
@@ -2281,6 +2324,7 @@ let timerState = {
 function toggleTimerWidget(show){
   document.getElementById('timerWidgetOverlay').classList.toggle('hidden', !show);
   document.getElementById('timerWidgetPanel').classList.toggle('hidden', !show);
+  if(show) closeWidgetMenu();
 }
 
 // ===== Student Assistant Widget =====
@@ -2291,6 +2335,7 @@ async function toggleAssistWidget(show){
   if(show){
     document.getElementById('assistInput').focus();
     populateAssistCourseSelect();
+    closeWidgetMenu();
   }
 }
 
@@ -2761,7 +2806,7 @@ const FORMULA_DATA = [
 function toggleFormulaWidget(show){
   document.getElementById('formulaWidgetOverlay').classList.toggle('hidden', !show);
   document.getElementById('formulaWidgetPanel').classList.toggle('hidden', !show);
-  if(show) renderFormulaSheet();
+  if(show){ renderFormulaSheet(); closeWidgetMenu(); }
 }
 
 function renderFormulaSheet(){
@@ -3526,8 +3571,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     <div id="flowResult"></div>
   </div>
 </div>
-<button id="calcWidgetToggle" class="calc-widget-toggle" onclick="toggleCalcWidget(true)" title="Student Toolkit">
+<button id="calcWidgetToggle" class="calc-widget-toggle widget-menu-item" onclick="toggleCalcWidget(true)" title="Student Toolkit">
   🧮
+</button>
+
+<!-- Widget Menu FAB -->
+<button id="widgetMenuFab" class="widget-fab" onclick="toggleWidgetMenu()" title="Tools">
+  🧰
 </button>
 
 <!-- Game Widget -->
@@ -3602,7 +3652,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>
 </div>
-<button id="gameWidgetToggle" class="game-widget-toggle" onclick="toggleGameWidget(true)" title="Play & Win">
+<button id="gameWidgetToggle" class="game-widget-toggle widget-menu-item" onclick="toggleGameWidget(true)" title="Play & Win">
   🎮
 </button>
 
@@ -3626,7 +3676,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>
 </div>
-<button id="flashcardWidgetToggle" class="flashcard-widget-toggle" onclick="toggleFlashcardWidget(true)" title="Flashcards">
+<button id="flashcardWidgetToggle" class="flashcard-widget-toggle widget-menu-item" onclick="toggleFlashcardWidget(true)" title="Flashcards">
   🗂️
 </button>
 
@@ -3642,7 +3692,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="formula-body" id="formulaBody"></div>
 </div>
-<button id="formulaWidgetToggle" class="formula-widget-toggle" onclick="toggleFormulaWidget(true)" title="Formula Sheet">
+<button id="formulaWidgetToggle" class="formula-widget-toggle widget-menu-item" onclick="toggleFormulaWidget(true)" title="Formula Sheet">
   📐
 </button>
 
@@ -3663,7 +3713,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     <div class="timer-session-count" id="timerSessionCount">Session 1 of 4 &middot; 25 min focus / 5 min break</div>
   </div>
 </div>
-<button id="timerWidgetToggle" class="timer-widget-toggle" onclick="toggleTimerWidget(true)" title="Study Timer">
+<button id="timerWidgetToggle" class="timer-widget-toggle widget-menu-item" onclick="toggleTimerWidget(true)" title="Study Timer">
   ⏱️
 </button>
 
@@ -3688,7 +3738,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     <button onclick="sendAssistMessage()">Ask</button>
   </div>
 </div>
-<button id="assistWidgetToggle" class="assist-widget-toggle" onclick="toggleAssistWidget(true)" title="Student Assistant">
+<button id="assistWidgetToggle" class="assist-widget-toggle widget-menu-item" onclick="toggleAssistWidget(true)" title="Student Assistant">
   🤖
 </button>
 

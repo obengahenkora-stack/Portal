@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.puter.com/v2/"></script>
 <style>
   :root{
     --navy:#0d0d0b;
@@ -434,6 +435,43 @@
   .timer-controls{ display:flex; gap:8px; justify-content:center; margin-bottom:16px; }
   .timer-controls button{ flex:1; }
   .timer-session-count{ font-size:0.75rem; color:var(--muted); }
+
+  .assist-widget-toggle{
+    position:fixed; bottom:374px; right:24px; z-index:50;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--gold);color:#fff;border:none;
+    font-size:1.4rem;box-shadow:0 6px 20px rgba(63,122,50,0.35);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;transition:transform 0.2s ease, background 0.2s ease;
+  }
+  .assist-widget-toggle:hover{ background:var(--gold-dark); transform:scale(1.06); }
+  .assist-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
+  .assist-widget-panel{
+    position:fixed; bottom:0; right:0; z-index:70;
+    width:380px; max-width:94vw; height:100%; max-height:100vh;
+    background:var(--card); border-left:1px solid var(--line); box-shadow:-6px 0 30px rgba(0,0,0,0.15);
+    display:flex; flex-direction:column;
+  }
+  @media (min-width:640px){ .assist-widget-panel{ bottom:24px; right:24px; height:auto; max-height:85vh; border-radius:16px; border:1px solid var(--line); } }
+  .assist-widget-header{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--gold); color:#fff; padding:16px 20px; font-weight:700; font-family:'Fraunces',sans-serif; font-size:0.95rem;
+    flex-shrink:0;
+  }
+  @media (min-width:640px){ .assist-widget-header{ border-radius:16px 16px 0 0; } }
+  .assist-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
+  .assist-widget-disclaimer{ font-size:0.72rem; color:var(--muted); padding:10px 16px; border-bottom:1px solid var(--line); background:rgba(63,122,50,0.05); flex-shrink:0; }
+  .assist-course-wrap{ padding:12px 16px 0; flex-shrink:0; }
+  .assist-course-wrap select{ width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:0.85rem; margin-bottom:12px; background:#f8f6f0; color:var(--ink); }
+  .assist-chat-area{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; min-height:200px; }
+  .assist-bubble{ max-width:88%; padding:10px 14px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
+  .assist-bubble.user{ align-self:flex-end; background:var(--navy-dark); color:#fff; border-bottom-right-radius:2px; }
+  .assist-bubble.bot{ align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-bottom-left-radius:2px; }
+  .assist-bubble.bot a{ color:var(--gold-dark); font-weight:600; }
+  .assist-input-row{ display:flex; gap:8px; padding:14px 16px; border-top:1px solid var(--line); flex-shrink:0; }
+  .assist-input-row input{ margin-bottom:0; flex:1; }
+  .assist-input-row button{ padding:11px 18px; }
+
   .game-widget-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:60; }
   .game-widget-panel{
     position:fixed; bottom:0; right:0; z-index:70;
@@ -570,7 +608,6 @@
   <a href="lecture-hall.html" class="tab" style="text-decoration:none;">Lecture Hall</a>
   <a href="portal.html" class="tab" style="text-decoration:none;">Faculty Console</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">Students Dashboard</a>
-  <a href="assistant.html" class="tab" style="text-decoration:none;">Student Assistant</a>
 </div>
 
 <div class="wrap">
@@ -2246,6 +2283,197 @@ function toggleTimerWidget(show){
   document.getElementById('timerWidgetPanel').classList.toggle('hidden', !show);
 }
 
+// ===== Student Assistant Widget =====
+
+async function toggleAssistWidget(show){
+  document.getElementById('assistWidgetOverlay').classList.toggle('hidden', !show);
+  document.getElementById('assistWidgetPanel').classList.toggle('hidden', !show);
+  if(show){
+    document.getElementById('assistInput').focus();
+    populateAssistCourseSelect();
+  }
+}
+
+async function populateAssistCourseSelect(){
+  const select = document.getElementById('assistCourseSelect');
+  try{
+    const data = await fetchSupabaseData();
+    const courseSet = new Set();
+    (data.courseList || []).forEach(c => { if(c) courseSet.add(c); });
+    Object.keys(data.rosters || {}).forEach(c => { if(c) courseSet.add(c); });
+    (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
+    (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
+    (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
+    (data.videos || []).forEach(v => { if(v.course) courseSet.add(v.course); });
+    const courses = [...courseSet].sort();
+    const current = select.value;
+    select.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    select.value = current;
+  }catch(e){ /* leave default "All Courses" option in place */ }
+}
+
+function appendAssistBubble(text, who){
+  const area = document.getElementById('assistChatArea');
+  const bubble = document.createElement('div');
+  bubble.className = `assist-bubble ${who}`;
+  bubble.innerHTML = text;
+  area.appendChild(bubble);
+  area.scrollTop = area.scrollHeight;
+}
+
+const ASSIST_STOP_WORDS = new Set(['a','an','the','is','are','was','were','what','which','who','when','where','how','do','does','did','for','on','in','of','to','and','or','any','about','has','have','with','we','i','our','my']);
+
+function assistExtractKeywords(text){
+  return (text.toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length > 1 && !ASSIST_STOP_WORDS.has(w));
+}
+
+function assistScoreText(itemText, keywords){
+  const itemWords = new Set((itemText.toLowerCase().match(/[a-z0-9]+/g) || []));
+  let score = 0;
+  keywords.forEach(k => { if(itemWords.has(k)) score++; });
+  return score;
+}
+
+let assistConversationHistory = [];
+
+async function assistGatherContext(query, selectedCourse){
+  const keywords = assistExtractKeywords(query);
+  const data = await fetchSupabaseData();
+  const candidates = [];
+
+  (data.resources || []).forEach(r => {
+    if(selectedCourse && r.course !== selectedCourse) return;
+    const score = assistScoreText(`${r.course} ${r.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Lecture Note', text: `[${r.course}] "${r.title}" (downloadable file: ${r.url})` });
+  });
+
+  (data.announcements || []).forEach(a => {
+    if(selectedCourse && a.course !== selectedCourse) return;
+    const score = assistScoreText(`${a.course} ${a.text}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Announcement', text: `[${a.course}] Announcement: ${a.text}` });
+  });
+
+  (data.syllabi || []).forEach(s => {
+    if(selectedCourse && s.course !== selectedCourse) return;
+    const score = assistScoreText(`${s.course} ${s.content || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Syllabus', text: `[${s.course}] Syllabus: ${(s.content || '').slice(0, 500)}` });
+  });
+
+  (data.blogPosts || []).forEach(p => {
+    const score = assistScoreText(`${p.title} ${p.body || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Blog Post', text: `Blog post "${p.title}": ${(p.body || '').slice(0, 400)}` });
+  });
+
+  (data.videos || []).forEach(v => {
+    if(selectedCourse && v.course !== selectedCourse) return;
+    const score = assistScoreText(`${v.course} ${v.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Video', text: `[${v.course}] Video: "${v.title}"` });
+  });
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, 6).map(c => c.text).join('\n');
+}
+
+async function assistLocalSearchFallback(query, selectedCourse){
+  const keywords = assistExtractKeywords(query);
+  if(keywords.length === 0){
+    return `I couldn't reach the AI assistant, and that question is too general for me to search on directly. Try a more specific term, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+  }
+
+  const data = await fetchSupabaseData();
+  const candidates = [];
+
+  (data.resources || []).forEach(r => {
+    if(selectedCourse && r.course !== selectedCourse) return;
+    const score = assistScoreText(`${r.course} ${r.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Lecture Note', label: `${r.course}: ${r.title}`, link: r.url, linkText: 'Download' });
+  });
+
+  (data.announcements || []).forEach(a => {
+    if(selectedCourse && a.course !== selectedCourse) return;
+    const score = assistScoreText(`${a.course} ${a.text}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Announcement', label: `[${a.course}] ${a.text.slice(0, 90)}${a.text.length > 90 ? '...' : ''}`, link: 'lecture-hall.html', linkText: 'View in Lecture Hall' });
+  });
+
+  (data.syllabi || []).forEach(s => {
+    if(selectedCourse && s.course !== selectedCourse) return;
+    const score = assistScoreText(`${s.course} ${s.content || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Course Syllabus', label: s.course, link: `course.html?course=${encodeURIComponent(s.course)}`, linkText: 'View Course' });
+  });
+
+  (data.blogPosts || []).forEach(p => {
+    const score = assistScoreText(`${p.title} ${p.body || ''}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Blog Post', label: p.title, link: 'lecture-hall.html', linkText: 'Read in Lecture Hall' });
+  });
+
+  (data.videos || []).forEach(v => {
+    if(selectedCourse && v.course !== selectedCourse) return;
+    const score = assistScoreText(`${v.course} ${v.title}`, keywords);
+    if(score > 0) candidates.push({ score, type: 'Video', label: `${v.course}: ${v.title}`, link: 'videos.html', linkText: 'Watch' });
+  });
+
+  candidates.sort((a, b) => b.score - a.score);
+  const top = candidates.slice(0, 5);
+
+  if(top.length === 0){
+    const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
+    return `The AI assistant is temporarily unavailable, and I couldn't find anything matching that${scopeNote} in a direct search either. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+  }
+
+  return `The AI assistant is temporarily unavailable, so here's what I found via direct search instead:<br><br>` + top.map(c => `
+    <div style="margin-bottom:8px;">
+      <span style="font-size:0.68rem;font-weight:700;color:var(--gold-dark);text-transform:uppercase;">${escapeHtml(c.type)}</span><br>
+      ${escapeHtml(c.label)}<br>
+      <a href="${escapeHtml(c.link)}" target="_blank">${escapeHtml(c.linkText)} &rarr;</a>
+    </div>
+  `).join('');
+}
+
+async function sendAssistMessage(){
+  const input = document.getElementById('assistInput');
+  const query = input.value.trim();
+  if(!query) return;
+  appendAssistBubble(escapeHtml(query), 'user');
+  input.value = '';
+  appendAssistBubble('Thinking...', 'bot');
+
+  const selectedCourse = document.getElementById('assistCourseSelect').value;
+
+  try{
+    const context = await assistGatherContext(query, selectedCourse);
+
+    const courseNote = selectedCourse ? `The student has selected the course: ${selectedCourse}.` : `No specific course is selected.`;
+    const contextBlock = context
+      ? `Here is relevant material found on the course website for this question:\n${context}`
+      : `No specific matching material was found on the course website for this question — answer using your own general knowledge, and mention that you couldn't find anything specific in the site's lecture notes/announcements for this.`;
+
+    let promptText = `You are a helpful study assistant embedded in a Civil Engineering course website. You help students understand course material, lecture notes, and announcements. Be concise, clear, and encouraging. ${courseNote}\n\n${contextBlock}\n\nConversation so far:\n`;
+    assistConversationHistory.slice(-6).forEach(turn => {
+      promptText += `${turn.role === 'user' ? 'Student' : 'Assistant'}: ${turn.text}\n`;
+    });
+    promptText += `Student: ${query}\nAssistant:`;
+
+    const response = await puter.ai.chat(promptText, { model: "openai/gpt-5.4-nano" });
+    const replyText = (typeof response === 'string') ? response : (response && response.message && response.message.content) || (response && response.toString()) || "I'm not sure how to respond to that.";
+
+    assistConversationHistory.push({ role: 'user', text: query });
+    assistConversationHistory.push({ role: 'assistant', text: replyText });
+
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+    appendAssistBubble(escapeHtml(replyText).replace(/\n/g, '<br>'), 'bot');
+  }catch(e){
+    const area = document.getElementById('assistChatArea');
+    area.removeChild(area.lastChild);
+    try{
+      const fallbackHtml = await assistLocalSearchFallback(query, selectedCourse);
+      appendAssistBubble(fallbackHtml, 'bot');
+    }catch(e2){
+      appendAssistBubble('Something went wrong reaching the AI assistant, and the backup search also failed. Please try again in a moment.', 'bot');
+    }
+  }
+}
+
 function formatTimerDisplay(seconds){
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
@@ -3437,6 +3665,31 @@ window.addEventListener('DOMContentLoaded', async () => {
 </div>
 <button id="timerWidgetToggle" class="timer-widget-toggle" onclick="toggleTimerWidget(true)" title="Study Timer">
   ⏱️
+</button>
+
+<!-- Student Assistant Widget -->
+<div id="assistWidgetOverlay" class="assist-widget-overlay hidden" onclick="toggleAssistWidget(false)"></div>
+<div id="assistWidgetPanel" class="assist-widget-panel hidden">
+  <div class="assist-widget-header">
+    <span>Student Assistant</span>
+    <button onclick="toggleAssistWidget(false)" class="assist-widget-close">&times;</button>
+  </div>
+  <div class="assist-widget-disclaimer">This is a real AI conversation, grounded in your actual courses, lecture notes, and announcements. It remembers your earlier questions in this session.</div>
+  <div class="assist-course-wrap">
+    <select id="assistCourseSelect">
+      <option value="">All Courses</option>
+    </select>
+  </div>
+  <div class="assist-chat-area" id="assistChatArea">
+    <div class="assist-bubble bot">Hi! Pick a course above (or leave it on "All Courses"), then ask me anything about your lecture notes, announcements, or coursework. I'll look up your actual course material and hold a real conversation — feel free to ask follow-up questions.</div>
+  </div>
+  <div class="assist-input-row">
+    <input type="text" id="assistInput" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') sendAssistMessage();">
+    <button onclick="sendAssistMessage()">Ask</button>
+  </div>
+</div>
+<button id="assistWidgetToggle" class="assist-widget-toggle" onclick="toggleAssistWidget(true)" title="Student Assistant">
+  🤖
 </button>
 
 

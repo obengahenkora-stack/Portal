@@ -168,7 +168,40 @@
   </div>
 
   <div class="hidden" id="editDetailsLink" style="text-align:right;margin:-10px 0 16px;">
-    <a href="javascript:void(0)" onclick="showEditDetailsForm()" style="font-size:0.8rem;color:var(--gold-dark);">Edit My Details &rarr;</a>
+    <a href="javascript:void(0)" onclick="toggleProfileSection()" style="font-size:0.8rem;color:var(--gold-dark);">My Profile &rarr;</a>
+  </div>
+
+  <div class="card hidden" id="profileSection">
+    <h2>My Profile</h2>
+
+    <label>Your Name</label>
+    <input type="text" id="profileNameInput" placeholder="e.g. Kwame Mensah">
+    <label>Your Index Number</label>
+    <input type="text" id="profileIndexInput" placeholder="e.g. UEB0700123">
+    <label>Your Level</label>
+    <select id="profileLevelInput">
+      <option value="">Select your level...</option>
+      <option value="100">Level 100</option>
+      <option value="200">Level 200</option>
+      <option value="300">Level 300</option>
+      <option value="400">Level 400</option>
+    </select>
+    <button onclick="saveProfileDetails()">Save Details</button>
+    <div id="profileDetailsMsg"></div>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">
+      <label>Change Email</label>
+      <input type="text" id="profileNewEmailInput" placeholder="new-email@school.edu">
+      <button onclick="changeStudentEmail()">Update Email</button>
+      <div id="profileEmailMsg"></div>
+    </div>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line);">
+      <label>Change Password</label>
+      <input type="password" id="profileNewPasswordInput" placeholder="New password (min 6 characters)">
+      <button onclick="changeStudentPassword()">Update Password</button>
+      <div id="profilePasswordMsg"></div>
+    </div>
   </div>
 
   <div class="card hidden" id="adminSearchCard">
@@ -190,6 +223,7 @@
       <option value="200">Level 200</option>
       <option value="300">Level 300</option>
       <option value="400">Level 400</option>
+      <option value="missing">Missing Level Only</option>
     </select>
     <div id="adminRegisteredList" style="max-height:400px;overflow-y:auto;"><div class="empty">Loading...</div></div>
   </div>
@@ -421,11 +455,19 @@ async function onStudentSignedIn(){
   const myAccount = accounts.find(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
 
   if(myAccount && myAccount.indexNumber){
-    document.getElementById('linkIndexCard').classList.add('hidden');
+    studentCurrentAccount = myAccount;
     document.getElementById('dashIndexInput').value = myAccount.indexNumber;
     document.getElementById('linkIndexInput').value = myAccount.indexNumber;
     document.getElementById('linkNameInput').value = myAccount.name || '';
     document.getElementById('linkLevelInput').value = myAccount.level || '';
+
+    if(!myAccount.level){
+      // Registered before the Level field existed — prompt them to add it now instead of relying on the small edit link.
+      document.getElementById('linkIndexCard').classList.remove('hidden');
+      document.getElementById('linkIndexMsg').innerHTML = '<div class="msg ok">One more thing — please select your level below to finish setting up your account.</div>';
+    } else {
+      document.getElementById('linkIndexCard').classList.add('hidden');
+    }
     document.getElementById('editDetailsLink').classList.remove('hidden');
     loadDashboard();
   } else {
@@ -433,9 +475,92 @@ async function onStudentSignedIn(){
   }
 }
 
-function showEditDetailsForm(){
-  document.getElementById('linkIndexCard').classList.remove('hidden');
-  document.getElementById('editDetailsLink').classList.add('hidden');
+let studentCurrentAccount = null;
+
+function toggleProfileSection(){
+  const section = document.getElementById('profileSection');
+  const showing = section.classList.contains('hidden');
+  section.classList.toggle('hidden', !showing);
+  if(showing && studentCurrentAccount){
+    document.getElementById('profileNameInput').value = studentCurrentAccount.name || '';
+    document.getElementById('profileIndexInput').value = studentCurrentAccount.indexNumber || '';
+    document.getElementById('profileLevelInput').value = studentCurrentAccount.level || '';
+    document.getElementById('profileNewEmailInput').value = '';
+    document.getElementById('profileNewPasswordInput').value = '';
+  }
+}
+
+async function saveProfileDetails(){
+  const indexNumber = document.getElementById('profileIndexInput').value.trim();
+  const name = document.getElementById('profileNameInput').value.trim();
+  const level = document.getElementById('profileLevelInput').value;
+  const msg = document.getElementById('profileDetailsMsg');
+
+  if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    const accounts = data.studentAccounts || [];
+    const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
+    const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
+    if(existingIdx >= 0) accounts[existingIdx] = record;
+    else accounts.push(record);
+    data.studentAccounts = accounts;
+    await saveSupabaseData(data);
+    studentCurrentAccount = record;
+
+    msg.innerHTML = '<div class="msg ok">Saved.</div>';
+    document.getElementById('dashIndexInput').value = indexNumber;
+    loadDashboard();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function changeStudentEmail(){
+  const newEmail = document.getElementById('profileNewEmailInput').value.trim();
+  const msg = document.getElementById('profileEmailMsg');
+  if(!newEmail || !newEmail.includes('@')){ msg.innerHTML = '<div class="msg err">Please enter a valid email address.</div>'; return; }
+
+  msg.innerHTML = '<div class="msg ok">Updating...</div>';
+  try{
+    const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+    if(error) throw error;
+
+    // Keep the linked student record's email in sync with the new sign-in email.
+    const data = await fetchSupabaseData();
+    const accounts = data.studentAccounts || [];
+    const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
+    if(existingIdx >= 0){
+      accounts[existingIdx].email = newEmail;
+      data.studentAccounts = accounts;
+      await saveSupabaseData(data);
+    }
+
+    msg.innerHTML = '<div class="msg ok">Email updated. Use your new email next time you sign in.</div>';
+    studentCurrentEmail = newEmail;
+    document.getElementById('studentWhoAmI').textContent = studentCurrentEmail;
+    document.getElementById('profileNewEmailInput').value = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not update email: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function changeStudentPassword(){
+  const newPassword = document.getElementById('profileNewPasswordInput').value;
+  const msg = document.getElementById('profilePasswordMsg');
+  if(!newPassword || newPassword.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+
+  msg.innerHTML = '<div class="msg ok">Updating...</div>';
+  try{
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    if(error) throw error;
+    msg.innerHTML = '<div class="msg ok">Password updated.</div>';
+    document.getElementById('profileNewPasswordInput').value = '';
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not update password: ${escapeHtml(e.message)}</div>`;
+  }
 }
 
 async function adminSearchStudent(){
@@ -478,11 +603,14 @@ function renderRegisteredStudents(){
       (a.indexNumber || '').toLowerCase().includes(filterVal) ||
       (a.email || '').toLowerCase().includes(filterVal));
   }
-  if(levelVal){
+  if(levelVal === 'missing'){
+    filtered = filtered.filter(a => !a.level);
+  } else if(levelVal){
     filtered = filtered.filter(a => String(a.level || '') === levelVal);
   }
 
-  document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length;
+  const missingCount = registeredStudentsCache.filter(a => !a.level).length;
+  document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length + (missingCount > 0 ? ` (${missingCount} missing level)` : '');
 
   if(filtered.length === 0){
     container.innerHTML = '<div class="empty">No registered students match.</div>';
@@ -493,7 +621,7 @@ function renderRegisteredStudents(){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
       <div>
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(a.indexNumber)}${a.level ? ' &middot; Level ' + escapeHtml(a.level) : ''} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
     </div>
@@ -518,8 +646,10 @@ async function linkIndexNumber(){
     else accounts.push(record);
     data.studentAccounts = accounts;
     await saveSupabaseData(data);
+    studentCurrentAccount = record;
 
     document.getElementById('linkIndexCard').classList.add('hidden');
+    document.getElementById('editDetailsLink').classList.remove('hidden');
     document.getElementById('dashIndexInput').value = indexNumber;
     loadDashboard();
   }catch(e){

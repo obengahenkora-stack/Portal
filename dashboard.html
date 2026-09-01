@@ -150,6 +150,14 @@
     <input type="text" id="linkIndexInput" placeholder="e.g. UEB0700123">
     <label>Your Name (optional)</label>
     <input type="text" id="linkNameInput" placeholder="e.g. Kwame Mensah">
+    <label>Your Level</label>
+    <select id="linkLevelInput">
+      <option value="">Select your level...</option>
+      <option value="100">Level 100</option>
+      <option value="200">Level 200</option>
+      <option value="300">Level 300</option>
+      <option value="400">Level 400</option>
+    </select>
     <button onclick="linkIndexNumber()">Link Account</button>
     <div id="linkIndexMsg"></div>
   </div>
@@ -165,6 +173,13 @@
     <label>Student Index Number</label>
     <input type="text" id="adminSearchIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') adminSearchStudent()">
     <button onclick="adminSearchStudent()">Search</button>
+  </div>
+
+  <div class="card hidden" id="adminRegisteredCard">
+    <h2>All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
+    <label>Filter by Name, Index Number, or Email</label>
+    <input type="text" id="adminRegisteredFilter" placeholder="Type to filter..." oninput="renderRegisteredStudents()">
+    <div id="adminRegisteredList" style="max-height:400px;overflow-y:auto;"><div class="empty">Loading...</div></div>
   </div>
 
   <input type="hidden" id="dashIndexInput">
@@ -381,6 +396,8 @@ async function onStudentSignedIn(){
 
   if(studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
     document.getElementById('adminSearchCard').classList.remove('hidden');
+    document.getElementById('adminRegisteredCard').classList.remove('hidden');
+    loadRegisteredStudents();
     return;
   }
 
@@ -402,6 +419,49 @@ async function adminSearchStudent(){
   if(!idx){ alert('Please enter an index number to search.'); return; }
   document.getElementById('dashIndexInput').value = idx;
   loadDashboard(true); // skipLock: admin lookups never lock this device
+}
+
+let registeredStudentsCache = [];
+
+async function loadRegisteredStudents(){
+  const container = document.getElementById('adminRegisteredList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const data = await fetchSupabaseData();
+    registeredStudentsCache = (data.studentAccounts || []).slice().sort((a, b) => new Date(b.linkedAt || 0) - new Date(a.linkedAt || 0));
+    renderRegisteredStudents();
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load registered students.</div>';
+  }
+}
+
+function renderRegisteredStudents(){
+  const container = document.getElementById('adminRegisteredList');
+  const filterVal = (document.getElementById('adminRegisteredFilter').value || '').trim().toLowerCase();
+
+  const filtered = filterVal
+    ? registeredStudentsCache.filter(a =>
+        (a.name || '').toLowerCase().includes(filterVal) ||
+        (a.indexNumber || '').toLowerCase().includes(filterVal) ||
+        (a.email || '').toLowerCase().includes(filterVal))
+    : registeredStudentsCache;
+
+  document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length;
+
+  if(filtered.length === 0){
+    container.innerHTML = '<div class="empty">No registered students match.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(a => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
+      <div>
+        <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
+        <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(a.indexNumber)} &middot; ${escapeHtml(a.email)}</div>
+      </div>
+      <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
+    </div>
+  `).join('');
 }
 
 async function linkIndexNumber(){

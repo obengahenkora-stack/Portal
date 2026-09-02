@@ -399,6 +399,16 @@
       <div id="backupMsg"></div>
     </div>
 
+    <div class="card hidden" id="restoreCard">
+      <label>Restore from Backup</label>
+      <div class="hint">Upload a previously downloaded backup file, then choose exactly which parts to restore. Only the categories you check will be overwritten with the backup's data — everything else on the live site stays untouched.</div>
+      <input type="file" id="restoreFileInput" accept=".json" onchange="handleRestoreFileSelect()">
+      <div id="restoreFileInfo"></div>
+      <div id="restoreCategoryList" class="hidden" style="margin:14px 0;"></div>
+      <button id="restoreBtn" class="hidden" onclick="performRestore()">Restore Selected</button>
+      <div id="restoreMsg"></div>
+    </div>
+
     <div class="card hidden" id="digestCard">
       <label>Weekly Digest Email</label>
       <div class="hint">Sends a summary of new issue reports, new blog comments, and at-risk attendance (below 75%) from the last 7 days to your email. This is sent on demand — there's no way for a static site to send this automatically on a schedule, so click it whenever you'd like an update.</div>
@@ -934,6 +944,7 @@ async function onAuthReady(showToast){
   if(isAdmin()){
     document.getElementById('deleteCourseCard').classList.remove('hidden');
     document.getElementById('backupCard').classList.remove('hidden');
+    document.getElementById('restoreCard').classList.remove('hidden');
     document.getElementById('digestCard').classList.remove('hidden');
     document.getElementById('settingsCard').classList.remove('hidden');
     document.getElementById('teamAccessCard').classList.remove('hidden');
@@ -1549,6 +1560,122 @@ async function deleteCourse(){
     loadRecords();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Delete failed: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+// ===== Restore from Backup =====
+const RESTORE_CATEGORY_LABELS = {
+  jsonBinData: {
+    records: 'Assessment Scores',
+    courses: 'Course List (Assessment side)',
+    reports: 'Issue Reports',
+    settings: 'Settings',
+    portalDataOverflow: 'Overflow Data (internal)'
+  },
+  supabaseData: {
+    profile: 'Profile Info',
+    blogPosts: 'Blog Posts',
+    resources: 'Lecture Notes',
+    comments: 'Comments',
+    rosters: 'Class Rosters',
+    attendance: 'Attendance Records',
+    announcements: 'Announcements',
+    videos: 'Videos',
+    syllabi: 'Course Syllabi',
+    gameScores: 'Game Scores',
+    deptNotices: 'Department Notices',
+    officeHours: 'Office Hours Slots',
+    courseList: 'Course List (Lecture Hall side)',
+    teamMembers: 'Team Members',
+    studentAccounts: 'Student Accounts (legacy — now uses a database table, restoring this has no effect)'
+  }
+};
+
+let pendingRestoreBackup = null;
+
+function handleRestoreFileSelect(){
+  const fileInput = document.getElementById('restoreFileInput');
+  const info = document.getElementById('restoreFileInfo');
+  const categoryList = document.getElementById('restoreCategoryList');
+  const restoreBtn = document.getElementById('restoreBtn');
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed.jsonBinData && !parsed.supabaseData){
+        info.innerHTML = '<div class="msg err">This doesn\'t look like a valid backup file.</div>';
+        categoryList.classList.add('hidden');
+        restoreBtn.classList.add('hidden');
+        return;
+      }
+      pendingRestoreBackup = parsed;
+      info.innerHTML = `<div class="msg ok">Backup from ${parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString() : 'unknown date'} loaded. Select what to restore below.</div>`;
+
+      let html = '';
+      ['jsonBinData', 'supabaseData'].forEach(section => {
+        const sectionData = parsed[section] || {};
+        const keys = Object.keys(sectionData).filter(k => RESTORE_CATEGORY_LABELS[section][k]);
+        if(keys.length === 0) return;
+        html += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:12px 0 6px;">${section === 'jsonBinData' ? 'From Records Storage' : 'From Site Storage'}</div>`;
+        keys.forEach(k => {
+          html += `
+            <label style="display:flex;align-items:center;gap:8px;font-weight:400;text-transform:none;letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;margin-bottom:8px;">
+              <input type="checkbox" class="restore-check" data-section="${section}" data-key="${k}" style="width:auto;margin:0;">
+              ${escapeHtml(RESTORE_CATEGORY_LABELS[section][k])}
+            </label>
+          `;
+        });
+      });
+      categoryList.innerHTML = html;
+      categoryList.classList.remove('hidden');
+      restoreBtn.classList.remove('hidden');
+    }catch(err){
+      info.innerHTML = `<div class="msg err">Could not read this file: ${escapeHtml(err.message)}</div>`;
+      categoryList.classList.add('hidden');
+      restoreBtn.classList.add('hidden');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function performRestore(){
+  if(!isAdmin()){ alert('Only the Main Instructor can restore backups.'); return; }
+  if(!pendingRestoreBackup){ alert('Please choose a backup file first.'); return; }
+
+  const checks = Array.from(document.querySelectorAll('.restore-check:checked'));
+  if(checks.length === 0){ alert('Please select at least one category to restore.'); return; }
+
+  const labels = checks.map(c => RESTORE_CATEGORY_LABELS[c.dataset.section][c.dataset.key]);
+  if(!confirm(`This will overwrite the following on the live site with data from the backup:\n\n${labels.join('\n')}\n\nEverything else stays untouched. Continue?`)) return;
+
+  const msg = document.getElementById('restoreMsg');
+  const btn = document.getElementById('restoreBtn');
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Restoring...</div>';
+
+  try{
+    const jsonBinKeys = checks.filter(c => c.dataset.section === 'jsonBinData').map(c => c.dataset.key);
+    const supabaseKeys = checks.filter(c => c.dataset.section === 'supabaseData').map(c => c.dataset.key);
+
+    if(jsonBinKeys.length > 0){
+      const bin = await fetchBin();
+      jsonBinKeys.forEach(k => { bin[k] = pendingRestoreBackup.jsonBinData[k]; });
+      await saveBin(bin);
+    }
+    if(supabaseKeys.length > 0){
+      const data = await fetchSupabaseData();
+      supabaseKeys.forEach(k => { data[k] = pendingRestoreBackup.supabaseData[k]; });
+      await saveSupabaseData(data);
+    }
+
+    msg.innerHTML = `<div class="msg ok">Restored: ${labels.join(', ')}.</div>`;
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not restore: ${escapeHtml(e.message)}</div>`;
   }finally{
     btn.disabled = false;
   }

@@ -264,6 +264,8 @@
     transition:border-color 0.15s ease;
   }
   .card:hover{ border-color:var(--accent); border-top-color:var(--ink); }
+  .sub-section{ border-top:1px solid var(--line); }
+  .sub-section:hover{ border-top-color:var(--line); }
   .card p{line-height:1.7;color:var(--ink);white-space:pre-wrap;}
   label{display:block;font-size:0.72rem;font-weight:600;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;}
   input[type=text], input[type=password], textarea{
@@ -689,7 +691,7 @@
         <img class="profile-sidebar-pic" id="sidebarProfilePic" src="" alt="" style="display:none;">
         <div class="profile-sidebar-pic" id="sidebarProfilePicPlaceholder">NO</div>
         <div class="profile-sidebar-nav">
-          <div class="tab active" id="subTabAbout" onclick="switchSubTab('about')">About</div>
+          <div class="tab" id="subTabAbout" onclick="switchSubTab('about')">About</div>
           <div class="tab" id="subTabContact" onclick="switchSubTab('contact')">Contact</div>
           <div class="tab" id="subTabOfficeHours" onclick="switchSubTab('officehours')">Office Hours</div>
           <div class="tab" id="subTabPubs" onclick="switchSubTab('pubs')">Publications</div>
@@ -699,7 +701,10 @@
       </div>
 
       <div class="profile-content">
-        <div class="card sub-section" id="subAbout">
+        <div class="card" id="profileEmptyHint" style="text-align:center;color:var(--muted);font-size:0.9rem;">
+          Select a section above to view it.
+        </div>
+        <div class="card sub-section hidden" id="subAbout">
           <h2>About</h2>
           <p id="bioDisplay">Loading...</p>
         </div>
@@ -1615,6 +1620,8 @@ async function deleteOfficeHourSlot(id){
 }
 
 function switchSubTab(sub){
+  const emptyHint = document.getElementById('profileEmptyHint');
+  if(emptyHint) emptyHint.classList.add('hidden');
   const subs = ['about','contact','officehours','pubs','faq','posts'];
   subs.forEach(s => {
     document.getElementById('sub' + s.charAt(0).toUpperCase() + s.slice(1)).classList.toggle('hidden', s!==sub);

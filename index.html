@@ -1551,23 +1551,40 @@ async function openBookOfficeHour(slotId){
   if(!indexNum) return;
   const reason = prompt('Reason for meeting (optional):') || '';
 
+  const maxAttempts = 5;
   try{
-    const data = await fetchSupabaseData();
-    const slots = data.officeHours || [];
-    const slot = slots.find(s => s.id === slotId);
-    if(!slot || slot.booked){
-      alert('Sorry, that slot was just booked by someone else. Please pick another.');
+    let saved = false;
+    let finalSlot = null;
+    for(let attempt = 1; attempt <= maxAttempts && !saved; attempt++){
+      const data = await fetchSupabaseData();
+      const slots = data.officeHours || [];
+      const slot = slots.find(s => s.id === slotId);
+      if(!slot || slot.booked){
+        alert('Sorry, that slot was just booked by someone else. Please pick another.');
+        loadOfficeHours();
+        return;
+      }
+      slot.booked = true;
+      slot.studentName = name.trim();
+      slot.indexNumber = indexNum.trim();
+      slot.reason = reason.trim();
+      slot.bookedAt = new Date().toISOString();
+      data.officeHours = slots;
+      await saveSupabaseData(data);
+
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 250));
+      const verifyData = await fetchSupabaseData();
+      const verifySlot = (verifyData.officeHours || []).find(s => s.id === slotId);
+      saved = !!(verifySlot && verifySlot.booked && verifySlot.indexNumber === indexNum.trim());
+      finalSlot = verifySlot || slot;
+      if(!saved) await new Promise(r => setTimeout(r, 250 * attempt));
+    }
+    if(!saved){
+      alert('Could not confirm your booking after several attempts — please try again.');
       loadOfficeHours();
       return;
     }
-    slot.booked = true;
-    slot.studentName = name.trim();
-    slot.indexNumber = indexNum.trim();
-    slot.reason = reason.trim();
-    slot.bookedAt = new Date().toISOString();
-    data.officeHours = slots;
-    await saveSupabaseData(data);
-    alert(`Booked! ${formatOhDate(slot.date)}, ${slot.startTime}–${slot.endTime}.`);
+    alert(`Booked! ${formatOhDate(finalSlot.date)}, ${finalSlot.startTime}–${finalSlot.endTime}.`);
     loadOfficeHours();
   }catch(e){
     alert('Could not book that slot. Please try again.');
@@ -3142,18 +3159,31 @@ async function submitGameScore(){
   }
 
   msg.innerHTML = '<div class="msg ok">Submitting...</div>';
+  const scoreEntry = {
+    name, indexNumber: indexNum,
+    score: gameState.score,
+    total: gameState.questions.length,
+    gameType: gameState.type,
+    playedAt: new Date().toISOString()
+  };
+
+  const maxAttempts = 5;
   try{
-    const data = await fetchSupabaseData();
-    const scores = data.gameScores || [];
-    scores.push({
-      name, indexNumber: indexNum,
-      score: gameState.score,
-      total: gameState.questions.length,
-      gameType: gameState.type,
-      playedAt: new Date().toISOString()
-    });
-    data.gameScores = scores;
-    await saveSupabaseData(data);
+    let saved = false;
+    for(let attempt = 1; attempt <= maxAttempts && !saved; attempt++){
+      const data = await fetchSupabaseData();
+      const scores = data.gameScores || [];
+      if(!scores.some(s => s.playedAt === scoreEntry.playedAt && s.indexNumber === scoreEntry.indexNumber)){
+        scores.push(scoreEntry);
+        data.gameScores = scores;
+        await saveSupabaseData(data);
+      }
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 250));
+      const verifyData = await fetchSupabaseData();
+      saved = (verifyData.gameScores || []).some(s => s.playedAt === scoreEntry.playedAt && s.indexNumber === scoreEntry.indexNumber);
+      if(!saved) await new Promise(r => setTimeout(r, 250 * attempt));
+    }
+    if(!saved) throw new Error("Could not confirm your score saved after several attempts. Please try submitting again.");
     msg.innerHTML = '<div class="msg ok">Score submitted! Check the Leaderboard tab.</div>';
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not submit: ${escapeHtml(e.message)}</div>`;

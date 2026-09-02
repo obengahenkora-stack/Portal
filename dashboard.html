@@ -46,7 +46,7 @@
   }
   .hero-tabs a, .hero-tabs .tab-static{
     flex:1 1 auto;min-width:90px;padding:10px 14px;text-align:center;border-radius:8px;background:transparent;
-    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.88rem;font-family:'IBM Plex Sans',sans-serif;
+    cursor:pointer;font-weight:600;color:var(--muted);font-size:0.72rem;font-family:'IBM Plex Sans',sans-serif;
     text-decoration:none;
   }
   .hero-tabs .active{ background:var(--navy); color:#fff; }
@@ -95,7 +95,7 @@
     .wrap{ padding:0 16px 32px; }
     .card{ padding:20px; }
     .hero-tabs{ flex-wrap:wrap; }
-    .hero-tabs a, .hero-tabs .tab-static{ font-size:0.9rem; padding:10px 12px; }
+    .hero-tabs a, .hero-tabs .tab-static{ font-size:0.72rem; padding:10px 12px; }
     h2{ font-size:1.05rem; }
     body{ font-size:1rem; }
     table{ font-size:0.88rem; }
@@ -148,7 +148,7 @@
     <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">One-time step — this connects your account to your student records.</p>
     <label>Your Index Number</label>
     <input type="text" id="linkIndexInput" placeholder="e.g. UEB0700123">
-    <label>Your Name (optional)</label>
+    <label>Your Name</label>
     <input type="text" id="linkNameInput" placeholder="e.g. Kwame Mensah">
     <label>Your Level</label>
     <select id="linkLevelInput">
@@ -213,18 +213,28 @@
   </div>
 
   <div class="card hidden" id="adminRegisteredCard">
-    <h2>All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="margin:0;">All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
+      <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="hideRegisteredStudentsList()">Hide List</button>
+    </div>
     <label>Filter by Name, Index Number, or Email</label>
     <input type="text" id="adminRegisteredFilter" placeholder="Type to filter..." oninput="renderRegisteredStudents()">
     <label>Filter by Level</label>
     <select id="adminRegisteredLevelFilter" onchange="renderRegisteredStudents()">
-      <option value="">All Levels</option>
+      <option value="" selected disabled>Select a level to view students...</option>
+      <option value="all">Show All Levels</option>
       <option value="100">Level 100</option>
       <option value="200">Level 200</option>
       <option value="300">Level 300</option>
       <option value="400">Level 400</option>
       <option value="missing">Missing Level Only</option>
     </select>
+
+    <div id="adminBulkActions" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
+      <button id="adminMigrateBtn" class="secondary" style="font-size:0.78rem;" onclick="migrateSelectedLevel()">Migrate to Next Level</button>
+      <button id="adminDeleteLevelBtn" class="secondary" style="font-size:0.78rem;border-color:var(--danger);color:var(--danger);" onclick="deleteSelectedLevel()">Delete All in This Level</button>
+    </div>
+
     <div id="adminRegisteredList" style="max-height:400px;overflow-y:auto;"><div class="empty">Loading...</div></div>
   </div>
 
@@ -401,6 +411,69 @@ async function saveBin(binData){
   throw new Error(`Could not save to storage (${detail})`);
 }
 
+// ===== Student Accounts Database Table (replaces the old shared-JSON-file approach) =====
+const STUDENT_TABLE_URL = `${SUPABASE_URL}/rest/v1/student_accounts`;
+const DB_HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` };
+const DB_WRITE_HEADERS = { ...DB_HEADERS, "Content-Type": "application/json" };
+
+function dbRowToRecord(row){
+  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', linkedAt: row.linked_at };
+}
+
+async function dbFetchAllStudents(){
+  const res = await fetch(`${STUDENT_TABLE_URL}?select=*`, { headers: DB_HEADERS, cache: "no-store" });
+  if(!res.ok) throw new Error("Could not load student records");
+  const rows = await res.json();
+  return rows.map(dbRowToRecord);
+}
+
+async function dbFindStudentByEmail(email){
+  const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}&select=*`, { headers: DB_HEADERS, cache: "no-store" });
+  if(!res.ok) throw new Error("Could not look up student record");
+  const rows = await res.json();
+  return rows.length ? dbRowToRecord(rows[0]) : null;
+}
+
+// Insert-or-update in one atomic operation — this is what actually eliminates the race
+// condition, since the database only ever touches this one student's row, never anyone else's.
+async function dbUpsertStudent(record){
+  const res = await fetch(`${STUDENT_TABLE_URL}?on_conflict=email`, {
+    method: "POST",
+    headers: { ...DB_WRITE_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify({
+      email: record.email,
+      index_number: record.indexNumber,
+      name: record.name,
+      level: record.level,
+      linked_at: record.linkedAt
+    })
+  });
+  if(!res.ok){
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Could not save student record (${detail || res.status})`);
+  }
+  return true;
+}
+
+async function dbMigrateLevel(fromLevel, toLevel){
+  const res = await fetch(`${STUDENT_TABLE_URL}?level=eq.${encodeURIComponent(fromLevel)}`, {
+    method: "PATCH",
+    headers: { ...DB_WRITE_HEADERS, "Prefer": "return=representation" },
+    body: JSON.stringify({ level: toLevel })
+  });
+  if(!res.ok) throw new Error("Could not migrate level");
+  return await res.json();
+}
+
+async function dbDeleteLevel(level){
+  const res = await fetch(`${STUDENT_TABLE_URL}?level=eq.${encodeURIComponent(level)}`, {
+    method: "DELETE",
+    headers: { ...DB_HEADERS, "Prefer": "return=representation" }
+  });
+  if(!res.ok) throw new Error("Could not delete students at this level");
+  return await res.json();
+}
+
 // ===== Student Account Sign-In / Sign-Up / Index Linking =====
 const ADMIN_EMAIL = "obengahenkora@gmail.com";
 let studentCurrentEmail = null;
@@ -450,9 +523,7 @@ async function onStudentSignedIn(){
     return;
   }
 
-  const data = await fetchSupabaseData();
-  const accounts = data.studentAccounts || [];
-  const myAccount = accounts.find(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
+  const myAccount = await dbFindStudentByEmail(studentCurrentEmail);
 
   if(myAccount && myAccount.indexNumber){
     studentCurrentAccount = myAccount;
@@ -497,17 +568,13 @@ async function saveProfileDetails(){
   const msg = document.getElementById('profileDetailsMsg');
 
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+  if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
+  if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const data = await fetchSupabaseData();
-    const accounts = data.studentAccounts || [];
-    const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
     const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
-    if(existingIdx >= 0) accounts[existingIdx] = record;
-    else accounts.push(record);
-    data.studentAccounts = accounts;
-    await saveSupabaseData(data);
+    await dbUpsertStudent(record);
     studentCurrentAccount = record;
 
     msg.innerHTML = '<div class="msg ok">Saved.</div>';
@@ -579,12 +646,70 @@ function hideAdminViewedStudent(){
 
 let registeredStudentsCache = [];
 
+function hideRegisteredStudentsList(){
+  document.getElementById('adminRegisteredFilter').value = '';
+  const levelSelect = document.getElementById('adminRegisteredLevelFilter');
+  levelSelect.selectedIndex = 0; // back to the disabled "Select a level..." placeholder
+  document.getElementById('adminBulkActions').classList.add('hidden');
+  document.getElementById('adminRegisteredList').innerHTML = '<div class="empty">Select a level above to view students.</div>';
+}
+
+// Safe bulk-save: retries with fresh data + verification, same protection as individual saves.
+async function migrateSelectedLevel(){
+  const levelVal = document.getElementById('adminRegisteredLevelFilter').value;
+  const nextLevelMap = { '100': '200', '200': '300', '300': '400' };
+  const nextLevel = nextLevelMap[levelVal];
+  if(!nextLevel) return;
+
+  const affected = registeredStudentsCache.filter(a => String(a.level || '') === levelVal);
+  if(affected.length === 0){ alert('No students at this level to migrate.'); return; }
+
+  if(!confirm(`Migrate all ${affected.length} Level ${levelVal} student(s) to Level ${nextLevel}? This cannot be undone.`)) return;
+
+  const btn = document.getElementById('adminMigrateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Migrating...';
+  try{
+    await dbMigrateLevel(levelVal, nextLevel);
+    alert(`Migrated ${affected.length} student(s) to Level ${nextLevel}.`);
+    loadRegisteredStudents();
+  }catch(e){
+    alert('Could not migrate: ' + e.message);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function deleteSelectedLevel(){
+  const levelVal = document.getElementById('adminRegisteredLevelFilter').value;
+  const affected = registeredStudentsCache.filter(a => String(a.level || '') === levelVal);
+  if(affected.length === 0){ alert('No students at this level to delete.'); return; }
+
+  if(!confirm(`Permanently delete all ${affected.length} Level ${levelVal} student registration(s)? This removes their linked account data and cannot be undone.`)) return;
+  if(!confirm(`Are you absolutely sure? This will permanently remove ${affected.length} student(s) from the system.`)) return;
+
+  const btn = document.getElementById('adminDeleteLevelBtn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting...';
+  try{
+    await dbDeleteLevel(levelVal);
+    alert(`Deleted ${affected.length} Level ${levelVal} student(s).`);
+    document.getElementById('adminRegisteredLevelFilter').selectedIndex = 0;
+    document.getElementById('adminBulkActions').classList.add('hidden');
+    loadRegisteredStudents();
+  }catch(e){
+    alert('Could not delete: ' + e.message);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 async function loadRegisteredStudents(){
   const container = document.getElementById('adminRegisteredList');
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
-    const data = await fetchSupabaseData();
-    registeredStudentsCache = (data.studentAccounts || []).slice().sort((a, b) => new Date(b.linkedAt || 0) - new Date(a.linkedAt || 0));
+    const accounts = await dbFetchAllStudents();
+    registeredStudentsCache = accounts.slice().sort((a, b) => new Date(b.linkedAt || 0) - new Date(a.linkedAt || 0));
     renderRegisteredStudents();
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load registered students.</div>';
@@ -596,6 +721,32 @@ function renderRegisteredStudents(){
   const filterVal = (document.getElementById('adminRegisteredFilter').value || '').trim().toLowerCase();
   const levelVal = document.getElementById('adminRegisteredLevelFilter').value;
 
+  const missingCount = registeredStudentsCache.filter(a => !a.level).length;
+  document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length + (missingCount > 0 ? ` (${missingCount} missing level)` : '');
+
+  const bulkActions = document.getElementById('adminBulkActions');
+  const nextLevelMap = { '100': '200', '200': '300', '300': '400' };
+  const isSpecificLevel = ['100','200','300','400'].includes(levelVal);
+  if(isSpecificLevel){
+    bulkActions.classList.remove('hidden');
+    const migrateBtn = document.getElementById('adminMigrateBtn');
+    const nextLevel = nextLevelMap[levelVal];
+    if(nextLevel){
+      migrateBtn.classList.remove('hidden');
+      migrateBtn.textContent = `Migrate All Level ${levelVal} \u2192 Level ${nextLevel}`;
+    } else {
+      migrateBtn.classList.add('hidden'); // Level 400 has no next level
+    }
+    document.getElementById('adminDeleteLevelBtn').textContent = `Delete All Level ${levelVal} Students`;
+  } else {
+    bulkActions.classList.add('hidden');
+  }
+
+  if(!levelVal){
+    container.innerHTML = '<div class="empty">Select a level above to view students.</div>';
+    return;
+  }
+
   let filtered = registeredStudentsCache;
   if(filterVal){
     filtered = filtered.filter(a =>
@@ -605,12 +756,9 @@ function renderRegisteredStudents(){
   }
   if(levelVal === 'missing'){
     filtered = filtered.filter(a => !a.level);
-  } else if(levelVal){
+  } else if(levelVal !== 'all'){
     filtered = filtered.filter(a => String(a.level || '') === levelVal);
   }
-
-  const missingCount = registeredStudentsCache.filter(a => !a.level).length;
-  document.getElementById('adminRegisteredCount').textContent = registeredStudentsCache.length + (missingCount > 0 ? ` (${missingCount} missing level)` : '');
 
   if(filtered.length === 0){
     container.innerHTML = '<div class="empty">No registered students match.</div>';
@@ -628,24 +776,24 @@ function renderRegisteredStudents(){
   `).join('');
 }
 
+// ===== Race-condition-safe save for studentAccounts =====
+// Since many students can register at nearly the same moment, a plain
+// fetch -> modify -> save cycle can lose a registration if two saves overlap.
+// This retries with a fresh fetch and verifies the record actually landed.
 async function linkIndexNumber(){
   const indexNumber = document.getElementById('linkIndexInput').value.trim();
   const name = document.getElementById('linkNameInput').value.trim();
   const level = document.getElementById('linkLevelInput').value;
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+  if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
+  if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
   try{
-    const data = await fetchSupabaseData();
-    const accounts = data.studentAccounts || [];
-    const existingIdx = accounts.findIndex(a => (a.email || '').toLowerCase() === studentCurrentEmail.toLowerCase());
     const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: new Date().toISOString() };
-    if(existingIdx >= 0) accounts[existingIdx] = record;
-    else accounts.push(record);
-    data.studentAccounts = accounts;
-    await saveSupabaseData(data);
+    await dbUpsertStudent(record);
     studentCurrentAccount = record;
 
     document.getElementById('linkIndexCard').classList.add('hidden');
@@ -860,11 +1008,22 @@ async function submitIssueReport(){
   };
 
   try{
-    const bin = await fetchBin();
-    const reports = bin.reports || [];
-    reports.push(report);
-    bin.reports = reports;
-    await saveBin(bin);
+    const maxAttempts = 4;
+    let saved = false;
+    for(let attempt = 1; attempt <= maxAttempts && !saved; attempt++){
+      const bin = await fetchBin();
+      const reports = bin.reports || [];
+      if(!reports.some(r => r.submittedAt === report.submittedAt && r.indexNumber === report.indexNumber)){
+        reports.push(report);
+        bin.reports = reports;
+        await saveBin(bin);
+      }
+      await new Promise(r => setTimeout(r, 200 + Math.random() * 250));
+      const verifyBin = await fetchBin();
+      saved = (verifyBin.reports || []).some(r => r.submittedAt === report.submittedAt && r.indexNumber === report.indexNumber);
+      if(!saved) await new Promise(r => setTimeout(r, 250 * attempt));
+    }
+    if(!saved) throw new Error("Could not confirm your report saved after several attempts. Please try again.");
 
     if(window.emailjs){
       try{

@@ -242,6 +242,22 @@ async function verifyCheckinSaved(idx){
   return record.present.some(p => String(p).trim().toLowerCase() === idx.toLowerCase());
 }
 
+// Retries the write+verify cycle multiple times with increasing random delays, so that
+// even with hundreds of students checking in within the same minute, each one's check-in
+// eventually lands even if it gets overwritten by a collision on the first few attempts.
+async function safeCheckinWrite(idx){
+  const maxAttempts = 6;
+  let alreadyIn = false;
+  for(let attempt = 1; attempt <= maxAttempts; attempt++){
+    alreadyIn = await attemptCheckinWrite(idx);
+    await new Promise(r => setTimeout(r, 200 + Math.random() * 300));
+    const confirmed = await verifyCheckinSaved(idx);
+    if(confirmed) return alreadyIn;
+    await new Promise(r => setTimeout(r, 250 * attempt + Math.random() * 300));
+  }
+  throw new Error("Check-in could not be confirmed after several attempts — please tap Check In again.");
+}
+
 async function submitCheckin(){
   const idx = document.getElementById('checkinIndexInput').value.trim();
   const msg = document.getElementById('checkinMsg');
@@ -268,21 +284,7 @@ async function submitCheckin(){
   msg.innerHTML = '<div class="msg ok">Checking in...</div>';
 
   try{
-    let alreadyIn = await attemptCheckinWrite(idx);
-
-    // Verify the write actually stuck; if another student's simultaneous save overwrote it, retry once.
-    let confirmed = await verifyCheckinSaved(idx);
-    if(!confirmed){
-      await new Promise(r => setTimeout(r, 400 + Math.random() * 400)); // small random delay to reduce repeat collisions
-      alreadyIn = await attemptCheckinWrite(idx);
-      confirmed = await verifyCheckinSaved(idx);
-    }
-
-    if(!confirmed){
-      msg.innerHTML = '<div class="msg err">Check-in did not save due to a lot of people checking in at once. Please tap Check In again.</div>';
-      btn.disabled = false;
-      return;
-    }
+    const alreadyIn = await safeCheckinWrite(idx);
 
     if(!isStaffDevice && !localStorage.getItem(LOCK_KEY)){
       localStorage.setItem(LOCK_KEY, idx);

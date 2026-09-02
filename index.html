@@ -34,6 +34,33 @@
     --danger:#b3261e;
     --ok:#3f7a32;
   }
+  html[data-theme="dark"]{
+    --gold:#5fa350;
+    --gold-dark:#7fc26e;
+    --bg:#121212;
+    --card:#1c1c1a;
+    --ink:#f0ede6;
+    --muted:#a8a297;
+    --accent:#5fa350;
+    --accent-dark:#7fc26e;
+    --line:#34322c;
+    --contrast:#232320;
+    --contrast-ink:#f0ede6;
+    --red:#e0564e;
+    --red-dark:#f27871;
+    --danger:#e0564e;
+    --ok:#5fa350;
+  }
+  html[data-theme="dark"] body{ background-color:var(--bg); }
+  .theme-toggle{
+    position:fixed; top:20px; left:20px; z-index:56;
+    width:44px;height:44px;border-radius:50%;
+    background:var(--card);color:var(--ink);border:1px solid var(--line);
+    font-size:1.1rem;box-shadow:0 4px 14px rgba(0,0,0,0.15);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;
+  }
+  html[data-theme="dark"] .hero #profilePic{ filter:none; }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   html{ font-size:17px; }
@@ -106,7 +133,7 @@
     text-decoration:none; border:1px solid var(--ink); padding:12px 22px; letter-spacing:0.03em; text-transform:uppercase;
     transition:background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .cta-link:hover{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .cta-link:hover{ background:var(--navy); border-color:var(--navy); color:#fff; }
   .site-footer{ background:var(--navy-dark); color:rgba(255,255,255,0.75); padding:64px 24px 32px; }
   .footer-brand{
     font-family:'Fraunces',sans-serif; font-optical-sizing:auto; font-size:clamp(1.6rem,5vw,2.6rem);
@@ -271,10 +298,10 @@
   input[type=text], input[type=password], textarea{
     width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:2px;
     font-size:0.95rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;
-    background:#f8f6f0;color:var(--ink);
+    background:var(--card);color:var(--ink);
   }
   textarea{min-height:120px;resize:vertical;}
-  input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;background:#fff;}
+  input:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--bg);}
   button{background:var(--accent);color:#fff;border:none;padding:11px 24px;border-radius:2px;font-weight:700;cursor:pointer;font-size:0.82rem;letter-spacing:0.04em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;transition:background 0.15s ease, transform 0.1s ease;}
   button:hover{background:var(--accent-dark);}
   button:active{ transform:translateY(1px); }
@@ -298,7 +325,7 @@
   }
   .stats-strip{
     max-width:760px;margin:-28px auto 24px;position:relative;z-index:2;
-    background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
+    background:var(--card);border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,0.08);
     display:flex;flex-wrap:wrap;
   }
   .stat-item{flex:1;min-width:120px;text-align:center;padding:18px 10px;border-right:1px solid var(--line);}
@@ -510,7 +537,7 @@
   .assist-widget-close{ background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer; padding:0; line-height:1; }
   .assist-widget-disclaimer{ font-size:0.72rem; color:var(--muted); padding:10px 16px; border-bottom:1px solid var(--line); background:rgba(63,122,50,0.05); flex-shrink:0; }
   .assist-course-wrap{ padding:12px 16px 0; flex-shrink:0; }
-  .assist-course-wrap select{ width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:0.85rem; margin-bottom:12px; background:#f8f6f0; color:var(--ink); }
+  .assist-course-wrap select{ width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:0.85rem; margin-bottom:12px; background:var(--card); color:var(--ink); }
   .assist-chat-area{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; min-height:200px; }
   .assist-bubble{ max-width:88%; padding:10px 14px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
   .assist-bubble.user{ align-self:flex-end; background:var(--navy-dark); color:#fff; border-bottom-right-radius:2px; }
@@ -574,7 +601,7 @@
   .calc-widget-body{ padding:20px; }
   .calc-widget-body select{
     width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;
-    font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:#f8f6f0;color:var(--ink);
+    font-size:0.9rem;font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;background:var(--card);color:var(--ink);
   }
   .calc-tool-tab{
     flex:1;text-align:center;padding:8px 4px;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.6);
@@ -584,7 +611,7 @@
   .grade-row{ display:flex; gap:6px; margin-bottom:8px; }
   .grade-row input{
     padding:8px 8px;border:1px solid var(--line);border-radius:6px;font-size:0.78rem;
-    background:#f8f6f0;color:var(--ink);margin-bottom:0;
+    background:var(--card);color:var(--ink);margin-bottom:0;
   }
 
   .datetime-display{
@@ -613,6 +640,12 @@
 
 </style>
 
+<script>
+  (function(){
+    var saved = localStorage.getItem('siteTheme');
+    if(saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>
 </head>
 <body>
 
@@ -929,7 +962,6 @@
 
 <footer class="site-footer reveal">
   <div class="wrap" style="padding:0 24px;">
-    <div class="footer-brand">ENGR. OBENG-AHENKORA</div>
     <div class="footer-row">
       <div class="footer-col">
         <div class="footer-col-label">Contact</div>
@@ -2173,6 +2205,27 @@ function closeWidgetMenu(){
   widgetMenuOpen = false;
   document.getElementById('widgetMenuFab').classList.remove('open');
   document.querySelectorAll('.widget-menu-item').forEach(el => el.classList.remove('open'));
+}
+
+// ===== Dark / Light Mode =====
+function toggleTheme(){
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  if(isDark){
+    html.removeAttribute('data-theme');
+    localStorage.setItem('siteTheme', 'light');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('siteTheme', 'dark');
+  }
+  updateThemeToggleIcon();
+}
+
+function updateThemeToggleIcon(){
+  const btn = document.getElementById('themeToggle');
+  if(!btn) return;
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  btn.textContent = isDark ? '☀️' : '🌙';
 }
 
 // ===== Games: Engineering Quiz, True/False Blitz, Term Scramble =====
@@ -3452,6 +3505,7 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 
 window.addEventListener('DOMContentLoaded', async () => {
+  updateThemeToggleIcon();
   updateLiveDateTime();
   loadProfile();
   await onEditAuthReady(false);
@@ -3613,6 +3667,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   🧰
 </button>
 
+<!-- Theme Toggle -->
+<button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+  🌙
+</button>
+
 <!-- Game Widget -->
 <div id="gameWidgetOverlay" class="game-widget-overlay hidden" onclick="toggleGameWidget(false)"></div>
 <div id="gameWidgetPanel" class="game-widget-panel hidden">
@@ -3673,7 +3732,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   <div class="game-widget-body hidden" id="gameTabContentLeaderboard">
     <label>Filter by Game</label>
-    <select id="leaderboardGameFilter" onchange="loadLeaderboard()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.9rem;margin-bottom:14px;background:#f8f6f0;color:var(--ink);">
+    <select id="leaderboardGameFilter" onchange="loadLeaderboard()" style="width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;font-size:0.9rem;margin-bottom:14px;background:var(--card);color:var(--ink);">
       <option value="quiz">Engineering Quiz</option>
       <option value="truefalse">True or False Blitz</option>
       <option value="scramble">Term Scramble</option>
@@ -3721,7 +3780,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     <button onclick="toggleFormulaWidget(false)" class="formula-widget-close">&times;</button>
   </div>
   <div class="formula-search-wrap">
-    <input type="text" id="formulaSearchInput" placeholder="Search formulas..." oninput="renderFormulaSheet()" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.88rem;background:#f8f6f0;color:var(--ink);">
+    <input type="text" id="formulaSearchInput" placeholder="Search formulas..." oninput="renderFormulaSheet()" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:0.88rem;background:var(--card);color:var(--ink);">
   </div>
   <div class="formula-body" id="formulaBody"></div>
 </div>

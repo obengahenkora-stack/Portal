@@ -394,7 +394,7 @@
 
     <div class="card hidden" id="backupCard">
       <label>Data Backup</label>
-      <div class="hint">Downloads everything — scores, courses, reports, settings, blog posts, profile, attendance, and rosters — as one JSON file you can keep safe.</div>
+      <div class="hint">Downloads everything — scores, courses, reports, settings, blog posts, profile (including your photo), attendance, rosters, team members, and every registered student's index number/name/level — as one JSON file you can keep safe. Student passwords are never included; those stay securely managed by the sign-in system and can't be exported.</div>
       <button onclick="downloadBackup()">Download Full Backup</button>
       <div id="backupMsg"></div>
     </div>
@@ -1632,6 +1632,19 @@ function handleRestoreFileSelect(){
         });
       });
       categoryList.innerHTML = html;
+
+      // Student database records — a special case since it's an array of rows, not a keyed object.
+      const dbRows = parsed.studentAccountsDb;
+      if(Array.isArray(dbRows) && dbRows.length > 0){
+        categoryList.innerHTML += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:12px 0 6px;">From Student Database</div>`;
+        categoryList.innerHTML += `
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;text-transform:none;letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;margin-bottom:8px;">
+            <input type="checkbox" id="restoreStudentDbCheck" style="width:auto;margin:0;">
+            Registered Students (${dbRows.length} record${dbRows.length === 1 ? '' : 's'} — index number, name, level; passwords are never included)
+          </label>
+        `;
+      }
+
       categoryList.classList.remove('hidden');
       restoreBtn.classList.remove('hidden');
     }catch(err){
@@ -1648,9 +1661,13 @@ async function performRestore(){
   if(!pendingRestoreBackup){ alert('Please choose a backup file first.'); return; }
 
   const checks = Array.from(document.querySelectorAll('.restore-check:checked'));
-  if(checks.length === 0){ alert('Please select at least one category to restore.'); return; }
+  const studentDbCheck = document.getElementById('restoreStudentDbCheck');
+  const restoringStudentDb = studentDbCheck && studentDbCheck.checked;
+
+  if(checks.length === 0 && !restoringStudentDb){ alert('Please select at least one category to restore.'); return; }
 
   const labels = checks.map(c => RESTORE_CATEGORY_LABELS[c.dataset.section][c.dataset.key]);
+  if(restoringStudentDb) labels.push(`Registered Students (${pendingRestoreBackup.studentAccountsDb.length} records)`);
   if(!confirm(`This will overwrite the following on the live site with data from the backup:\n\n${labels.join('\n')}\n\nEverything else stays untouched. Continue?`)) return;
 
   const msg = document.getElementById('restoreMsg');
@@ -1672,6 +1689,20 @@ async function performRestore(){
       supabaseKeys.forEach(k => { data[k] = pendingRestoreBackup.supabaseData[k]; });
       await saveSupabaseData(data);
     }
+    if(restoringStudentDb){
+      const rows = pendingRestoreBackup.studentAccountsDb;
+      for(const row of rows){
+        await fetch(`${SUPABASE_URL}/rest/v1/student_accounts?on_conflict=email`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+          },
+          body: JSON.stringify(row)
+        });
+      }
+    }
 
     msg.innerHTML = `<div class="msg ok">Restored: ${labels.join(', ')}.</div>`;
   }catch(e){
@@ -1686,15 +1717,19 @@ async function downloadBackup(){
   const msg = document.getElementById('backupMsg');
   msg.innerHTML = '<div class="msg ok">Preparing backup...</div>';
   try{
-    const [jsonBinData, supabaseData] = await Promise.all([
+    const [jsonBinData, supabaseData, studentAccountsDb] = await Promise.all([
       fetchBin().catch(() => ({})),
-      fetchSupabaseData().catch(() => ({}))
+      fetchSupabaseData().catch(() => ({})),
+      fetch(`${SUPABASE_URL}/rest/v1/student_accounts?select=*`, {
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+      }).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);
 
     const fullBackup = {
       exportedAt: new Date().toISOString(),
       jsonBinData,   // records, courses, reports, settings (or overflow)
-      supabaseData   // profile, blogPosts, resources, comments, rosters, attendance
+      supabaseData,  // profile (incl. photo), blogPosts, resources, comments, rosters, attendance, team members, and everything else in the shared file
+      studentAccountsDb  // student records from the database table (index number, name, level — never includes passwords, those are never exportable)
     };
 
     const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });

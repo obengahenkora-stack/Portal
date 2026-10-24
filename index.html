@@ -715,6 +715,23 @@ body{ font-family:'Inter Tight','Inter',-apple-system,'Segoe UI',sans-serif; bac
 .cta-link{ border-radius:0; }
 
 
+
+/* ===== Landing cover (like the reference site) ===== */
+.land-nav{ display:none; justify-content:center; gap:26px; margin-top:34px; flex-wrap:wrap; }
+.land-nav .tab{ padding:4px 0; border:none; background:none; color:var(--ink); font:400 .8rem 'Inter Tight',sans-serif; text-transform:none; letter-spacing:0; cursor:pointer; text-decoration:none; }
+.land-nav .tab::before{ content:"[\00a0"; opacity:0; } .land-nav .tab::after{ content:"\00a0]"; opacity:0; }
+.land-nav .tab:hover::before,.land-nav .tab:hover::after{ opacity:1; }
+.land-nav .tab.active{ border:none; }
+body.landing .land-nav{ display:flex; }
+body.landing > *:not(.hero):not(.theme-toggle):not(script):not(style){ display:none!important; }
+body.landing .hero{ min-height:100vh; padding:0 24px; }
+body.landing .hero-eyebrow,body.landing .hero .social-links{ display:none; }
+body.landing .hero h1,body.landing .hero #nameDisplay{ margin-bottom:12px; }
+body:not(.landing) .hero{ min-height:0; padding:76px 24px 0; }
+body:not(.landing) .hero h1,body:not(.landing) .hero .title,body:not(.landing) .hero-eyebrow{ display:none; }
+body:not(.landing) .marquee{ margin-top:18px; }
+.hero-text > .land-nav{ --i:4; }
+.tb-left{ cursor:pointer; }
 /* ===== Stepped "12 fps" motion (matches marcvendrell.cat) ===== */
 :root{ --drop:4px; --f:.0833s; }
 @keyframes block-in{ 0%{opacity:0;transform:translateY(var(--drop))} .1%{opacity:.55;transform:translateY(calc(.45*var(--drop)))} 33.3%{opacity:.88;transform:translateY(calc(.12*var(--drop)))} 66.7%,100%{opacity:1;transform:none} }
@@ -741,7 +758,8 @@ body.leaving .hero,body.leaving .marquee,body.leaving #oyinSections,body.leaving
   })();
 </script>
 </head>
-<body>
+<body class="landing">
+<script>try{ if(sessionStorage.getItem("portalEntered")==="1") document.body.classList.remove("landing"); }catch(e){}</script>
 <header class="topbar"><div class="tb-left">Obeng-Ahenkora <span id="tbCrumb">/ Home</span></div>
 <div class="tabs">
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
@@ -1398,6 +1416,7 @@ async function onEditAuthReady(showToast){
 }
 
 function switchTab(tab){
+  if(document.body.classList.contains('landing') && window.__enter){ window.__enter(tab); return; }
   var vm=document.getElementById('viewMode');
   if(window.__sinkThen && vm && tab!==window.__curTab){ window.__curTab=tab; window.__sinkThen(function(){ switchTabNow(tab); }); }
   else { window.__curTab=tab; switchTabNow(tab); }
@@ -4057,6 +4076,21 @@ if ('serviceWorker' in navigator) {
   tick(); setInterval(tick,30000);
   var names={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Cloudy',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',61:'Rain',63:'Rain',65:'Heavy rain',80:'Showers',81:'Showers',82:'Heavy showers',95:'Storm',96:'Storm',99:'Storm'};
   try{ fetch('https://api.open-meteo.com/v1/forecast?latitude=7.33&longitude=-2.33&current=temperature_2m,weather_code').then(function(r){return r.json();}).then(function(d){ var c=d.current; wx=Math.round(c.temperature_2m)+'\u00b0C '+(names[c.weather_code]||''); tick(); }).catch(function(){}); }catch(e){}
+
+
+  /* landing cover: clone the menu under the name, enter/leave with the sink-out transition */
+  (function(){
+    var src=document.querySelector('.topbar .tabs'), ht=document.querySelector('.hero-text'); if(!src||!ht) return;
+    var nav=document.createElement('nav'); nav.className='land-nav';
+    [].forEach.call(src.children,function(c){ var k=c.cloneNode(true); k.removeAttribute('id'); k.classList.remove('active'); nav.appendChild(k); });
+    ht.appendChild(nav);
+    window.__enter=function(tab){
+      sinkThen(function(){ document.body.classList.remove('landing'); try{ sessionStorage.setItem('portalEntered','1'); }catch(e){} switchTabNow(tab||'view'); window.scrollTo(0,0); });
+    };
+    var back=document.querySelector('.tb-left');
+    if(back) back.addEventListener('click',function(){ sinkThen(function(){ document.body.classList.add('landing'); try{ sessionStorage.removeItem('portalEntered'); }catch(e){} window.scrollTo(0,0); window.__curTab=undefined; }); });
+    nav.querySelectorAll('a.tab').forEach(function(a){ a.addEventListener('click',function(e){ if(e.metaKey||e.ctrlKey) return; e.preventDefault(); sinkThen(function(){ location.href=a.getAttribute('href'); }); }); });
+  })();
 
   /* stepped reveal for rows / list */
   var items=[].slice.call(document.querySelectorAll('.pro-row,.step,.process h2'));

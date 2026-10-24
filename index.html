@@ -873,7 +873,7 @@ html{ scroll-behavior:auto; }
       <div class="pro-label">( Quote of the Day )</div>
       <div class="pro-text in" id="quoteBox">
         <span class="quote-text" id="quoteText">&nbsp;</span>
-        <span class="quote-meta"><span id="quoteNum"></span><button type="button" id="quoteShuffle" aria-label="Show another quote">Shuffle &#8635;</button></span>
+        <span class="quote-meta"><span id="quoteNum"></span></span>
       </div><div></div>
     </div>
   </section>
@@ -4262,7 +4262,7 @@ if ('serviceWorker' in navigator) {
   /* ---- quote of the day, auto-reshuffling ---- */
   (function(){
     var Q=window.PORTAL_QUOTES||['Small steps every day build the strongest foundations.','Consistency beats intensity over a whole semester.'];
-    var qt=document.getElementById('quoteText'), qn=document.getElementById('quoteNum'), btn=document.getElementById('quoteShuffle'); if(!qt) return;
+    var qt=document.getElementById('quoteText'), qn=document.getElementById('quoteNum'); if(!qt) return;
     var d=new Date(), day=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5);
     var idx=(day*7+d.getFullYear())%Q.length, timer=null;
     function show(i,first){
@@ -4274,7 +4274,6 @@ if ('serviceWorker' in navigator) {
     function next(){ var j; do{ j=Math.floor(Math.random()*Q.length); }while(j===idx && Q.length>1); show(j); }
     function start(){ clearInterval(timer); timer=setInterval(function(){ if(!document.hidden) next(); },12000); }
     show(idx,true); start();
-    btn.addEventListener('click',function(){ next(); start(); });
   })();
 })();
 </script>

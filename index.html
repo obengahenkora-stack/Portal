@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.puter.com/v2/"></script>
 <style>
@@ -638,6 +638,122 @@
   }
 
 
+
+/* ===== Oyin-inspired editorial theme (cream + oxblood, Inter, mono labels) ===== */
+:root{ --bg:#f1ede4; --card:#f1ede4; --ink:#111; --muted:#7a7468; --line:#d9d3c5;
+  --accent:#5e1a17; --accent-dark:#43120f; --gold:#5e1a17; --gold-dark:#43120f;
+  --red:#5e1a17; --red-dark:#43120f; --contrast:#e8e2d4; }
+html[data-theme="dark"]{ --bg:#141211; --card:#141211; --ink:#f1ede4; --muted:#a39c8e; --line:#332e2a;
+  --accent:#c9625a; --accent-dark:#e0847d; --gold:#c9625a; --gold-dark:#e0847d;
+  --red:#c9625a; --red-dark:#e0847d; --contrast:#1e1b19; }
+body{ font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif; background:var(--bg); }
+.hero{ border-bottom:none; min-height:78vh; display:flex; flex-direction:column; justify-content:center; padding:72px 36px 40px; }
+.hero-inner{ max-width:1200px; flex-direction:column-reverse; align-items:center; text-align:center; gap:28px; }
+.hero-text{ width:100%; }
+.hero h1, .hero #nameDisplay{ font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-0.045em;
+  font-size:clamp(2.6rem,9vw,7.2rem); line-height:0.95; margin:10px 0 18px; color:var(--ink); }
+.hero .title{ font-family:'IBM Plex Mono',monospace; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+.hero #profilePic, .hero #profilePicPlaceholder{ width:88px; height:88px; border:none; box-shadow:none; }
+.hero-eyebrow{ justify-content:space-between; width:100%; font-size:0.66rem; }
+.hero .social-links{ justify-content:center; }
+.tabs{ position:sticky; top:14px; z-index:50; max-width:640px; width:calc(100% - 32px); margin:0 auto 40px;
+  background:#111; border:none; border-radius:10px; padding:0 22px; justify-content:center; gap:22px; }
+.tab{ color:#bdb6a8; font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.08em; padding:14px 0; }
+.tab:hover:not(.active){ color:#fff; }
+.tab.active{ color:#fff; border-bottom:2px solid #c9625a; }
+.section-index .num, .fact-label{ font-family:'IBM Plex Mono',monospace; letter-spacing:0.1em; }
+.section-index .num::before{ content:"( "; } .section-index .num::after{ content:" )"; }
+.cta-link:hover{ background:var(--accent); border-color:var(--accent); }
+.marquee{ background:var(--accent); color:#f1ede4; }
+.site-footer{ background:#111; }
+
+/* ===== Oyin-style animations ===== */
+.hero{ background:#5e1a17; color:#f1ede4; min-height:100vh; padding:0; overflow:hidden; align-items:stretch; }
+.hero-inner{ position:relative; z-index:2; max-width:none; width:100%; flex:1; padding:96px 6vw 80px; flex-direction:column-reverse; align-items:flex-start; justify-content:center; text-align:left; gap:24px; }
+.hero-text{ max-width:620px; }
+.hero h1, .hero #nameDisplay{ color:#f1ede4; font-weight:500; letter-spacing:-0.03em; font-size:clamp(2.2rem,6vw,4.6rem); line-height:1; }
+.hero .title, .hero-eyebrow, .hero-eyebrow-coords{ color:rgba(241,237,228,.7); }
+.hero a{ color:#f1ede4; }
+.hero-eyebrow{ justify-content:flex-start; width:auto; }
+.hero-eyebrow-coords{ margin-left:0; }
+.hero .social-links{ justify-content:flex-start; }
+.hero #profilePic,.hero #profilePicPlaceholder{ border:2px solid rgba(241,237,228,.5); width:72px; height:72px; }
+#fabricCanvas{ position:absolute; top:0; right:0; width:62%; height:100%; z-index:1; pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28%); mask-image:linear-gradient(90deg,transparent 0,#000 28%); }
+@media (max-width:760px){ #fabricCanvas{ width:100%; opacity:.45; } }
+.hero-scroll{ position:absolute; left:6vw; bottom:28px; z-index:2; font:500 .62rem 'IBM Plex Mono',monospace; letter-spacing:.12em; text-transform:uppercase; color:rgba(241,237,228,.65); }
+.hero-scroll::after{ content:""; display:inline-block; width:36px; height:1px; background:currentColor; margin-left:12px; vertical-align:middle; transform-origin:left; animation:scrollLine 2s ease-in-out infinite; }
+@keyframes scrollLine{ 0%{transform:scaleX(0)} 60%{transform:scaleX(1)} 100%{transform:scaleX(1);opacity:0} }
+.hero-text > *{ opacity:0; transform:translateY(30px); }
+body.intro-done .hero-text > *{ animation:heroUp .9s cubic-bezier(.22,1,.36,1) forwards; }
+body.intro-done .hero-text > *:nth-child(2){ animation-delay:.12s } body.intro-done .hero-text > *:nth-child(3){ animation-delay:.24s } body.intro-done .hero-text > *:nth-child(4){ animation-delay:.36s } body.intro-done .hero-text > *:nth-child(1){ animation-delay:0s }
+@keyframes heroUp{ to{ opacity:1; transform:none } }
+.marquee{ position:relative; z-index:2; }
+
+/* intro */
+#introOverlay{ position:fixed; inset:0; z-index:1000; background:#f1ede4; color:#111; display:flex; align-items:center; justify-content:center; transition:transform 1s cubic-bezier(.77,0,.18,1); }
+#introOverlay.out{ transform:translateY(-100%); }
+#introOverlay .ig{ position:absolute; left:0; right:0; height:1px; background:#bdb6a8; transform:scaleX(0); transform-origin:left; animation:igDraw 1s cubic-bezier(.22,1,.36,1) forwards; }
+#introOverlay .il{ position:absolute; left:36px; font:500 .55rem 'IBM Plex Mono',monospace; letter-spacing:.12em; color:#8a8476; margin-top:-14px; opacity:0; animation:igFade .6s .5s forwards; }
+#introOverlay .ic{ position:absolute; font:500 .62rem 'IBM Plex Mono',monospace; letter-spacing:.12em; }
+@keyframes igDraw{ to{ transform:scaleX(1) } } @keyframes igFade{ to{ opacity:1 } }
+#introWord{ font:800 clamp(5rem,24vw,19rem)/1 'Inter',sans-serif; letter-spacing:-.05em; display:flex; overflow:hidden; padding:0 .04em .12em; }
+#introWord span{ display:inline-block; transform:translateY(110%); animation:chUp .9s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes chUp{ to{ transform:none } }
+body.intro-lock{ overflow:hidden; }
+
+/* prologue + hover images */
+.prologue{ max-width:1100px; margin:0 auto; padding:110px 28px 40px; }
+.pro-row{ display:grid; grid-template-columns:minmax(120px,1fr) 2.2fr 1fr; gap:24px; margin-bottom:64px; }
+.pro-label{ font:500 .66rem 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding-top:.7em; }
+.pro-text{ font-size:clamp(1.15rem,2.1vw,1.55rem); line-height:1.45; font-weight:400; letter-spacing:-.01em; }
+.pro-text .ln{ display:block; overflow:hidden; }
+.pro-text .ln > span{ display:block; transform:translateY(105%); transition:transform .9s cubic-bezier(.22,1,.36,1); }
+.pro-text.in .ln > span{ transform:none; }
+.hv{ border-bottom:1px solid var(--muted); cursor:default; white-space:nowrap; }
+.hv-thumb{ display:inline-block; width:1.5em; height:.95em; border-radius:2px; vertical-align:-.1em; margin:0 .2em; }
+.pro-hint{ font:500 .58rem 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:14px; display:block; }
+@media (max-width:760px){ .pro-row{ grid-template-columns:1fr; gap:8px; margin-bottom:44px } }
+.polaroid{ position:absolute; width:150px; background:#faf7f0; padding:8px 8px 22px; box-shadow:0 8px 24px rgba(0,0,0,.22); border-radius:2px; }
+.polaroid .pi{ height:150px; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px; font:700 1.05rem/1.15 'Inter',sans-serif; letter-spacing:-.02em; color:#fff; }
+.polaroid .pc{ position:absolute; left:10px; bottom:6px; font:500 .5rem 'IBM Plex Mono',monospace; letter-spacing:.1em; color:#8a8476; }
+.hv-float{ position:fixed; left:0; top:0; width:0; height:0; z-index:90; pointer-events:none; }
+.hv-float .polaroid{ left:-75px; top:-110px; opacity:0; transform:scale(.6) rotate(0); transition:opacity .3s, transform .45s cubic-bezier(.22,1,.36,1); }
+.hv-float .polaroid.on{ opacity:1; transform:scale(1) rotate(var(--r)) translate(var(--tx),var(--ty)); }
+
+/* pinned scatter */
+.scatter{ position:relative; height:380vh; }
+.scatter-stick{ position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.scatter-center{ position:relative; z-index:3; text-align:center; max-width:320px; opacity:0; transition:opacity .4s; }
+.scatter-center h3{ font:500 1.5rem/1.2 'Inter',sans-serif; letter-spacing:-.02em; margin:0 0 10px; }
+.scatter-center p{ color:var(--muted); font-size:.9rem; margin:0 0 18px; }
+.scatter-center a{ display:inline-block; font:600 .68rem 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; text-decoration:none; color:#fff; background:#111; padding:12px 20px; border-radius:6px; }
+.scatter .polaroid{ left:50%; top:50%; margin:-90px 0 0 -75px; will-change:transform; }
+
+/* process */
+.process{ max-width:1100px; margin:0 auto; padding:80px 28px 100px; }
+.process h2{ font:500 clamp(1.6rem,3.6vw,2.6rem)/1.15 'Inter',sans-serif; letter-spacing:-.025em; max-width:640px; margin:0 0 56px; border:none; padding:0; }
+.process h2::before{ display:none; }
+.step{ display:grid; grid-template-columns:90px 1fr 1.4fr; gap:24px; padding:30px 0; border-top:1px solid var(--line); position:relative; opacity:0; transform:translateY(34px); transition:opacity .8s, transform .8s cubic-bezier(.22,1,.36,1); }
+.step.in{ opacity:1; transform:none; }
+.step::before{ content:""; position:absolute; top:-1px; left:0; height:1px; width:0; background:var(--accent); transition:width 1.2s cubic-bezier(.22,1,.36,1) .1s; }
+.step.in::before{ width:100%; }
+.step .n{ font:500 .72rem 'IBM Plex Mono',monospace; color:var(--muted); letter-spacing:.1em; }
+.step .t{ font:500 clamp(1.4rem,3vw,2.2rem)/1.1 'Inter',sans-serif; letter-spacing:-.025em; transition:transform .4s cubic-bezier(.22,1,.36,1), color .3s; }
+.step:hover .t{ transform:translateX(10px); color:var(--accent); }
+.step .d{ color:var(--muted); line-height:1.55; max-width:420px; }
+@media (max-width:760px){ .step{ grid-template-columns:44px 1fr; } .step .d{ grid-column:2 } }
+
+/* nav pill hide/show */
+.tabs{ transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .3s; }
+.tabs.nav-hide{ transform:translateY(-140%); opacity:0; }
+body.tab-other #oyinSections{ display:none; }
+
+@media (prefers-reduced-motion: reduce){
+  #introOverlay{ display:none } .hero-text > *{ opacity:1; transform:none; animation:none!important }
+  .pro-text .ln > span{ transform:none } .step{ opacity:1; transform:none } .scatter{ height:auto } .scatter-stick{ position:static; height:auto; padding:40px 0; flex-wrap:wrap; gap:14px }
+  .scatter .polaroid{ position:relative; left:auto; top:auto; margin:0; transform:none!important } .scatter-center{ opacity:1 }
+}
 </style>
 
 <script>
@@ -648,8 +764,19 @@
 </script>
 </head>
 <body>
+<div id="introOverlay" aria-hidden="true">
+  <div class="ig" style="top:34%"></div><span class="il" style="top:34%">CAP HEIGHT</span>
+  <div class="ig" style="top:44%;animation-delay:.12s"></div><span class="il" style="top:44%">X HEIGHT</span>
+  <div class="ig" style="top:62%;animation-delay:.24s"></div><span class="il" style="top:62%">BASELINE</span>
+  <div class="ig" style="top:70%;animation-delay:.36s"></div><span class="il" style="top:70%">DESCENDER</span>
+  <span class="ic" style="top:26px;left:36px">INTER</span><span class="ic" style="top:26px;right:36px">EXTRABOLD 800</span>
+  <span class="ic" style="bottom:26px;left:36px">CIVIL ENGINEERING</span><span class="ic" style="bottom:26px;right:36px">AA BB CC 0123</span>
+  <div id="introWord"></div>
+</div>
 
 <div class="hero">
+  <canvas id="fabricCanvas"></canvas>
+  <div class="hero-scroll">Scroll</div>
   <div class="hero-inner">
     <img class="profile-pic" id="profilePic" src="" alt="Profile photo" style="display:none;">
     <div class="profile-pic" id="profilePicPlaceholder">NO</div>
@@ -683,6 +810,48 @@
   <a href="dashboard.html" class="tab" style="text-decoration:none;">Students Dashboard</a>
 </div>
 
+
+<div id="oyinSections">
+  <section class="prologue">
+    <div class="pro-row">
+      <div class="pro-label">( Prologue )</div>
+      <div class="pro-text" data-lines="1">
+        <span class="ln"><span>Welcome. This is the home of my courses, where every</span></span>
+        <span class="ln"><span><span class="hv" data-c="0">lecture</span><i class="hv-thumb" style="background:#5e1a17"></i>, <span class="hv" data-c="1">assessment</span><i class="hv-thumb" style="background:#2c5aa0"></i> and</span></span>
+        <span class="ln"><span><span class="hv" data-c="2">attendance</span><i class="hv-thumb" style="background:#3f7a32"></i> record lives in one place, so you</span></span>
+        <span class="ln"><span>can study with clarity and be taken seriously.</span></span>
+      </div><div></div>
+    </div>
+    <div class="pro-row">
+      <div class="pro-label">( The Programme )</div>
+      <div class="pro-text">
+        <span class="ln"><span>I teach <span class="hv" data-c="3">structures</span><i class="hv-thumb" style="background:#c47a2c"></i> and <span class="hv" data-c="4">quantities</span><i class="hv-thumb" style="background:#7a4a8a"></i>, and</span></span>
+        <span class="ln"><span>build tools like the <span class="hv" data-c="5">formula sheet</span><i class="hv-thumb" style="background:#1f6f7a"></i> and the</span></span>
+        <span class="ln"><span><span class="hv" data-c="6">study assistant</span><i class="hv-thumb" style="background:#b3401e"></i> to connect it all to practice.</span></span>
+        <span class="pro-hint">Hover the underlined words to see the tools</span>
+      </div><div></div>
+    </div>
+  </section>
+
+  <section class="scatter" id="scatterSec">
+    <div class="scatter-stick">
+      <div class="scatter-center" id="scatterCenter">
+        <h3>Everything you need, in one place.</h3>
+        <p>Notes, practice, check-ins and help, all a tap away.</p>
+        <a href="lecture-hall.html">Enter the Lecture Hall</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="process">
+    <h2>Whether you are a first-year or a final-year student, the way in stays the same.</h2>
+    <div class="step"><div class="n">01</div><div class="t">Browse</div><div class="d">Find your course in the Lecture Hall and see its outline, notes and announcements.</div></div>
+    <div class="step"><div class="n">02</div><div class="t">Study</div><div class="d">Read the notes, watch the videos and keep the formula sheet close.</div></div>
+    <div class="step"><div class="n">03</div><div class="t">Practice</div><div class="d">Test yourself with quiz games and flashcards, then review the correct answers.</div></div>
+    <div class="step"><div class="n">04</div><div class="t">Check in</div><div class="d">Mark attendance and follow your scores from your Students Dashboard.</div></div>
+    <div class="step"><div class="n">05</div><div class="t">Ask</div><div class="d">Book office hours or chat with the study assistant when you are stuck.</div></div>
+  </section>
+</div>
 <div class="wrap">
   <div class="section-index" style="margin-bottom:20px;">
     <span class="num">Field Notes</span>
@@ -1259,6 +1428,7 @@ async function onEditAuthReady(showToast){
 }
 
 function switchTab(tab){
+  document.body.classList.toggle('tab-other', tab!=='view');
   document.getElementById('viewMode').classList.toggle('hidden', tab!=='view');
   document.getElementById('editMode').classList.toggle('hidden', tab!=='edit');
   document.getElementById('departmentMode').classList.toggle('hidden', tab!=='department');
@@ -3873,6 +4043,124 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+</script>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var seen=false; try{ seen = sessionStorage.getItem('introSeen')==='1'; }catch(e){}
+
+  /* ---- intro ---- */
+  var ov=document.getElementById('introOverlay'), word=document.getElementById('introWord');
+  function finishIntro(){ document.body.classList.remove('intro-lock'); document.body.classList.add('intro-done'); }
+  if(reduce || seen){ ov.style.display='none'; finishIntro(); }
+  else{
+    document.body.classList.add('intro-lock');
+    'Nana'.split('').forEach(function(ch,i){ var s=document.createElement('span'); s.textContent=ch; s.style.animationDelay=(0.35+i*0.08)+'s'; word.appendChild(s); });
+    setTimeout(function(){ ov.classList.add('out'); finishIntro(); try{sessionStorage.setItem('introSeen','1');}catch(e){} }, 2300);
+    setTimeout(function(){ ov.style.display='none'; }, 3500);
+  }
+
+  /* ---- fabric canvas ---- */
+  var cv=document.getElementById('fabricCanvas'), cx=cv.getContext('2d'), W=0,H=0,dpr=1, mx=.5,my=.5, scrollK=0;
+  function size(){ dpr=Math.min(window.devicePixelRatio||1,2); W=cv.clientWidth; H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; cx.setTransform(dpr,0,0,dpr,0,0); }
+  size(); window.addEventListener('resize',size);
+  window.addEventListener('mousemove',function(e){ mx=e.clientX/innerWidth; my=e.clientY/innerHeight; },{passive:true});
+  function disp(x,y,t){
+    var u=x/W, v=y/H;
+    var a=Math.sin(u*5.2+v*2.4+t*.5)*14 + Math.sin(u*9.5-v*4.1+t*.7)*7 + Math.sin(v*12+u*3+t*.4)*4;
+    var bx=u-(.55+(mx-.5)*.25), by=v-(.5+(my-.5)*.25);
+    var bulge=Math.exp(-(bx*bx+by*by)*7)*(34+scrollK*40);
+    return a*(1+scrollK*1.5)+bulge*Math.sin(u*3+t*.3+1);
+  }
+  var t0=performance.now();
+  function frame(now){
+    var t=(now-t0)/1000, gap=4;
+    cx.clearRect(0,0,W,H);
+    if(H>0){
+      cx.lineWidth=1.6;
+      for(var y=-20;y<H+20;y+=gap){
+        cx.beginPath(); var prev=0;
+        for(var x=0;x<=W;x+=10){
+          var d=disp(x,y,t); var py=y+d; if(x===0) cx.moveTo(x,py); else cx.lineTo(x,py);
+          prev=d;
+        }
+        var shade=.35+.45*Math.abs(Math.sin(y*.012+prev*.05));
+        cx.strokeStyle='rgba('+(150+shade*90|0)+','+(140+shade*80|0)+','+(125+shade*70|0)+','+(.55+shade*.4)+')';
+        cx.stroke();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  if(!reduce) requestAnimationFrame(frame); else { size(); frame(performance.now()); }
+
+  /* ---- cards ---- */
+  var cards=[
+    {t:'Lecture Notes',c:'#5e1a17'},{t:'Quiz Games',c:'#2c5aa0'},{t:'Attendance',c:'#3f7a32'},{t:'Structures',c:'#c47a2c'},
+    {t:'Quantities',c:'#7a4a8a'},{t:'Formula Sheet',c:'#1f6f7a'},{t:'Study Assistant',c:'#b3401e'},{t:'Office Hours',c:'#4a4a4a'},
+    {t:'Flashcards',c:'#8a2f4a'},{t:'Study Timer',c:'#2d6a4f'}
+  ];
+  function mkPol(c,i){ var d=document.createElement('div'); d.className='polaroid'; d.innerHTML='<div class="pi" style="background:'+c.c+'">'+c.t+'</div><div class="pc">N° 0'+(i+1)+'</div>'; return d; }
+
+  /* ---- hover reveal ---- */
+  var fl=document.createElement('div'); fl.className='hv-float'; document.body.appendChild(fl);
+  var fx=0,fy=0,tx=0,ty=0,active=0,stackTimer=null;
+  document.querySelectorAll('.hv').forEach(function(w){
+    w.addEventListener('mouseenter',function(){
+      var c=cards[+w.dataset.c % cards.length], p=mkPol(c,+w.dataset.c);
+      p.style.setProperty('--r',(Math.random()*16-8)+'deg'); p.style.setProperty('--tx',(Math.random()*30-15)+'px'); p.style.setProperty('--ty',(Math.random()*30-15)+'px');
+      fl.appendChild(p); requestAnimationFrame(function(){ p.classList.add('on'); }); active++;
+      while(fl.children.length>4) fl.removeChild(fl.firstChild);
+    });
+    w.addEventListener('mouseleave',function(){
+      active--; if(active<=0){ var kids=[].slice.call(fl.children); kids.forEach(function(k){ k.classList.remove('on'); }); setTimeout(function(){ if(active<=0) fl.innerHTML=''; },400); }
+    });
+  });
+  window.addEventListener('mousemove',function(e){ tx=e.clientX; ty=e.clientY-20; },{passive:true});
+  (function follow(){ fx+=(tx-fx)*.14; fy+=(ty-fy)*.14; fl.style.transform='translate('+fx+'px,'+fy+'px)'; requestAnimationFrame(follow); })();
+
+  /* ---- line reveals + steps ---- */
+  var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); },{threshold:.25});
+  document.querySelectorAll('.pro-text').forEach(function(el){
+    el.querySelectorAll('.ln > span').forEach(function(sp,i){ sp.style.transitionDelay=(i*.09)+'s'; });
+    io.observe(el);
+  });
+  document.querySelectorAll('.step').forEach(function(el,i){ el.style.transitionDelay=(i%5*.06)+'s'; io.observe(el); });
+
+  /* ---- pinned scatter ---- */
+  var sec=document.getElementById('scatterSec'), stick=sec.querySelector('.scatter-stick'), center=document.getElementById('scatterCenter');
+  var pols=cards.map(function(c,i){ var p=mkPol(c,i); stick.appendChild(p); return p; });
+  var rots=pols.map(function(_,i){ return (i*37%21)-10; });
+  function ease(x){ return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2; }
+  function layout(){
+    if(reduce) return;
+    var r=sec.getBoundingClientRect(), total=sec.offsetHeight-innerHeight;
+    var p=Math.min(1,Math.max(0,-r.top/total));
+    var n=pols.length, R=Math.min(innerWidth,innerHeight)*(innerWidth<760?.36:.4);
+    var gather=Math.min(1,p/.45), spread=ease(Math.min(1,Math.max(0,(p-.45)/.5)));
+    pols.forEach(function(el,i){
+      var vis=Math.min(1,Math.max(0,gather*n-i)); /* cards drop in one by one */
+      var ang=(i/n)*Math.PI*2-Math.PI/2;
+      var ex=Math.cos(ang)*R*(innerWidth<760?.85:1.35), ey=Math.sin(ang)*R*1.1;
+      var x=ex*spread, y=ey*spread - (1-vis)*80;
+      var rot=rots[i]*(1-spread*.5)+spread*(Math.cos(ang)*6);
+      var sc=.55+.45*Math.min(1,.4+spread)+ (vis*.0);
+      el.style.opacity=vis;
+      el.style.transform='translate('+x+'px,'+y+'px) rotate('+rot+'deg) scale('+sc+')';
+      el.style.zIndex=i;
+    });
+    center.style.opacity= spread>.6 ? 1 : 0;
+  }
+  window.addEventListener('scroll',layout,{passive:true}); window.addEventListener('resize',layout); layout();
+
+  /* ---- fabric reacts to scroll; nav hide/show ---- */
+  var lastY=scrollY, tabs=document.querySelector('.tabs');
+  window.addEventListener('scroll',function(){
+    var y=scrollY; scrollK=Math.min(1,y/innerHeight);
+    if(tabs){ if(y>lastY+6 && y>innerHeight) tabs.classList.add('nav-hide'); else if(y<lastY-6) tabs.classList.remove('nav-hide'); }
+    lastY=y;
+  },{passive:true});
+})();
 </script>
 </body>
 </html>

@@ -795,6 +795,11 @@ html{ scroll-behavior:auto; }
 .prologue{ padding-top:56px; }
 .pro-text{ font-size:clamp(1.05rem,1.8vw,1.4rem); }
 @media (max-width:760px){ .pro-row{ grid-template-columns:1fr; } .pro-text .ln{ display:inline; } .pro-text .ln > span{ display:inline; transform:none; } }
+.quote-text{ display:block; font-size:clamp(1.15rem,2.2vw,1.7rem); line-height:1.4; letter-spacing:-.015em; font-weight:500; min-height:3.9em; transition:opacity .45s ease, transform .45s ease; }
+.quote-text.swap{ opacity:0; transform:translateY(8px); }
+.quote-meta{ display:flex; align-items:center; gap:16px; margin-top:12px; font:500 .62rem 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.quote-meta button{ background:transparent; border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:6px 14px; font:inherit; cursor:pointer; }
+.quote-meta button:hover{ border-color:var(--accent); color:var(--accent); }
 </style>
 
 <script>
@@ -852,6 +857,7 @@ html{ scroll-behavior:auto; }
 </div>
 
 
+<script src="quotes.js"></script>
 <div id="oyinSections">
   <section class="prologue" id="proSection">
     <div class="pro-row">
@@ -864,12 +870,10 @@ html{ scroll-behavior:auto; }
       </div><div></div>
     </div>
     <div class="pro-row">
-      <div class="pro-label" id="toolsLabel">( Tools &amp; Courses )</div>
-      <div class="pro-text" id="toolsText">
-        <span class="ln"><span>I teach <span class="hv" data-c="0">structures</span><i class="hv-thumb" style="background:#c47a2c"></i> and <span class="hv" data-c="0">quantities</span><i class="hv-thumb" style="background:#7a4a8a"></i>, and</span></span>
-        <span class="ln"><span>build tools like the <span class="hv" data-c="3">formula sheet</span><i class="hv-thumb" style="background:#1f6f7a"></i> and the</span></span>
-        <span class="ln"><span><span class="hv" data-c="4">study assistant</span><i class="hv-thumb" style="background:#b3401e"></i> to connect it all to practice.</span></span>
-        <span class="pro-hint">Hover the underlined words to see the tools</span>
+      <div class="pro-label">( Quote of the Day )</div>
+      <div class="pro-text in" id="quoteBox">
+        <span class="quote-text" id="quoteText">&nbsp;</span>
+        <span class="quote-meta"><span id="quoteNum"></span><button type="button" id="quoteShuffle" aria-label="Show another quote">Shuffle &#8635;</button></span>
       </div><div></div>
     </div>
   </section>
@@ -1094,10 +1098,6 @@ html{ scroll-behavior:auto; }
       <input type="text" id="welcomeLabelInput" placeholder="Welcome">
       <label>Home page: Welcome paragraph (put [square brackets] around words that should show a hover card)</label>
       <textarea id="welcomeTextInput" placeholder="Welcome. This is the home of my courses, where every [lecture], [assessment] and [attendance] record lives in one place."></textarea>
-      <label>Home page: second label</label>
-      <input type="text" id="toolsLabelInput" placeholder="Tools &amp; Courses">
-      <label>Home page: second paragraph</label>
-      <textarea id="toolsTextInput" placeholder="I teach structures and quantities, and build tools like the [formula sheet] and the [study assistant]."></textarea>
       <label>Home page: card section heading</label>
       <input type="text" id="fanHeadingInput" placeholder="Everything you need, in one place.">
       <label>Home page: card section text</label>
@@ -1973,16 +1973,16 @@ function homeParagraph(text){
 function applyHomeContent(profile){
   var g=function(id){ return document.getElementById(id); };
   var set=function(id,v){ if(v && g(id)) g(id).textContent=v; };
-  ['welcomeLabel','toolsLabel'].forEach(function(k){ if(profile[k]) g(k).textContent='( '+profile[k]+' )'; });
+  if(profile.welcomeLabel) g('welcomeLabel').textContent='( '+profile.welcomeLabel+' )';
   set('fanHeading',profile.fanHeading); set('fanText',profile.fanText); set('processHeading',profile.processHeading);
-  ['welcomeText','toolsText'].forEach(function(k){ if(profile[k]){ g(k).innerHTML=homeParagraph(profile[k]); g(k).classList.remove('in'); } });
+  if(profile.welcomeText){ g('welcomeText').innerHTML=homeParagraph(profile.welcomeText); g('welcomeText').classList.remove('in'); }
   if(profile.steps){
     var old=[].slice.call(document.querySelectorAll('#processSec .step')), rows=profile.steps.split('\n').filter(function(l){return l.trim();});
     rows.slice(0,old.length).forEach(function(l,i){ var p=l.split('|'); var el=old[i]; el.querySelector('.t').textContent=(p[0]||'').trim(); el.querySelector('.d').textContent=(p[1]||'').trim(); });
   }
   // fill editor boxes with the visible text so editing starts from what is live
   var val=function(id,v){ if(g(id)) g(id).value=v||''; };
-  ['welcomeLabel','welcomeText','toolsLabel','toolsText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ val(k+'Input',profile[k]); });
+  ['welcomeLabel','welcomeText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ val(k+'Input',profile[k]); });
   if(window.__homeBind) window.__homeBind();
 }
 
@@ -2217,7 +2217,7 @@ async function saveProfile(){
   const closingHeading = document.getElementById('closingHeadingInput').value.trim();
   const closingText = document.getElementById('closingTextInput').value.trim();
   const homeFields = {};
-  ['welcomeLabel','welcomeText','toolsLabel','toolsText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ homeFields[k]=document.getElementById(k+'Input').value.trim(); });
+  ['welcomeLabel','welcomeText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ homeFields[k]=document.getElementById(k+'Input').value.trim(); });
   const deptName = document.getElementById('deptNameInput').value.trim();
   const deptFacebook = document.getElementById('deptFacebookInput').value.trim();
   const deptX = document.getElementById('deptXInput').value.trim();
@@ -4258,6 +4258,24 @@ if ('serviceWorker' in navigator) {
     if(tabs){ if(y>lastY+6 && y>innerHeight) tabs.classList.add('nav-hide'); else if(y<lastY-6) tabs.classList.remove('nav-hide'); }
     lastY=y;
   }
+
+  /* ---- quote of the day, auto-reshuffling ---- */
+  (function(){
+    var Q=window.PORTAL_QUOTES||['Small steps every day build the strongest foundations.','Consistency beats intensity over a whole semester.'];
+    var qt=document.getElementById('quoteText'), qn=document.getElementById('quoteNum'), btn=document.getElementById('quoteShuffle'); if(!qt) return;
+    var d=new Date(), day=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5);
+    var idx=(day*7+d.getFullYear())%Q.length, timer=null;
+    function show(i,first){
+      idx=(i+Q.length)%Q.length;
+      function put(){ qt.textContent='“'+Q[idx]+'”'; qn.textContent='No. '+(idx+1)+' / '+Q.length; qt.classList.remove('swap'); }
+      if(first||reduce){ put(); return; }
+      qt.classList.add('swap'); setTimeout(put,450);
+    }
+    function next(){ var j; do{ j=Math.floor(Math.random()*Q.length); }while(j===idx && Q.length>1); show(j); }
+    function start(){ clearInterval(timer); timer=setInterval(function(){ if(!document.hidden) next(); },12000); }
+    show(idx,true); start();
+    btn.addEventListener('click',function(){ next(); start(); });
+  })();
 })();
 </script>
 </body>

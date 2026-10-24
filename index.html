@@ -853,10 +853,10 @@ html{ scroll-behavior:auto; }
 
 
 <div id="oyinSections">
-  <section class="prologue">
+  <section class="prologue" id="proSection">
     <div class="pro-row">
-      <div class="pro-label">( Prologue )</div>
-      <div class="pro-text" data-lines="1">
+      <div class="pro-label" id="welcomeLabel">( Welcome )</div>
+      <div class="pro-text" id="welcomeText" data-lines="1">
         <span class="ln"><span>Welcome. This is the home of my courses, where every</span></span>
         <span class="ln"><span><span class="hv" data-c="0">lecture</span><i class="hv-thumb" style="background:#5e1a17"></i>, <span class="hv" data-c="1">assessment</span><i class="hv-thumb" style="background:#2c5aa0"></i> and</span></span>
         <span class="ln"><span><span class="hv" data-c="2">attendance</span><i class="hv-thumb" style="background:#3f7a32"></i> record lives in one place, so you</span></span>
@@ -864,8 +864,8 @@ html{ scroll-behavior:auto; }
       </div><div></div>
     </div>
     <div class="pro-row">
-      <div class="pro-label">( The Programme )</div>
-      <div class="pro-text">
+      <div class="pro-label" id="toolsLabel">( Tools &amp; Courses )</div>
+      <div class="pro-text" id="toolsText">
         <span class="ln"><span>I teach <span class="hv" data-c="0">structures</span><i class="hv-thumb" style="background:#c47a2c"></i> and <span class="hv" data-c="0">quantities</span><i class="hv-thumb" style="background:#7a4a8a"></i>, and</span></span>
         <span class="ln"><span>build tools like the <span class="hv" data-c="3">formula sheet</span><i class="hv-thumb" style="background:#1f6f7a"></i> and the</span></span>
         <span class="ln"><span><span class="hv" data-c="4">study assistant</span><i class="hv-thumb" style="background:#b3401e"></i> to connect it all to practice.</span></span>
@@ -877,15 +877,15 @@ html{ scroll-behavior:auto; }
   <section class="scatter" id="scatterSec">
     <div class="scatter-stick">
       <div class="scatter-center" id="scatterCenter">
-        <h3>Everything you need, in one place.</h3>
-        <p>Notes, practice, check-ins and help, all a tap away.</p>
+        <h3 id="fanHeading">Everything you need, in one place.</h3>
+        <p id="fanText">Notes, practice, check-ins and help, all a tap away.</p>
         <a href="lecture-hall.html">Enter the Lecture Hall</a>
       </div>
     </div>
   </section>
 
-  <section class="process">
-    <h2>Whether you are a first-year or a final-year student, the way in stays the same.</h2>
+  <section class="process" id="processSec">
+    <h2 id="processHeading">Whether you are a first-year or a final-year student, the way in stays the same.</h2>
     <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter')location.href='lecture-hall.html'"><div class="n">01</div><div class="t">Browse</div><div class="d">Find your course in the Lecture Hall and see its outline, notes and announcements.</div></div>
     <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter')location.href='lecture-hall.html'"><div class="n">02</div><div class="t">Study</div><div class="d">Read the notes, watch the videos and keep the formula sheet close.</div></div>
     <div class="step" role="link" tabindex="0" onclick="toggleGameWidget(true)" onkeydown="if(event.key==='Enter')toggleGameWidget(true)"><div class="n">03</div><div class="t">Practice</div><div class="d">Test yourself with quiz games and flashcards, then review the correct answers.</div></div>
@@ -1088,6 +1088,24 @@ html{ scroll-behavior:auto; }
 
       <label>FAQ (one per line: Question | Answer)</label>
       <textarea id="faqInput" placeholder="What is the grading policy? | Grades are based on 40% coursework, 60% final exam.&#10;How do I contact you? | Use the Report an Issue section in the Students Dashboard."></textarea>
+
+
+      <label>Home page: Welcome label</label>
+      <input type="text" id="welcomeLabelInput" placeholder="Welcome">
+      <label>Home page: Welcome paragraph (put [square brackets] around words that should show a hover card)</label>
+      <textarea id="welcomeTextInput" placeholder="Welcome. This is the home of my courses, where every [lecture], [assessment] and [attendance] record lives in one place."></textarea>
+      <label>Home page: second label</label>
+      <input type="text" id="toolsLabelInput" placeholder="Tools &amp; Courses">
+      <label>Home page: second paragraph</label>
+      <textarea id="toolsTextInput" placeholder="I teach structures and quantities, and build tools like the [formula sheet] and the [study assistant]."></textarea>
+      <label>Home page: card section heading</label>
+      <input type="text" id="fanHeadingInput" placeholder="Everything you need, in one place.">
+      <label>Home page: card section text</label>
+      <input type="text" id="fanTextInput" placeholder="Notes, practice, check-ins and help, all a tap away.">
+      <label>Home page: steps heading</label>
+      <input type="text" id="processHeadingInput" placeholder="Whether you are a first-year or a final-year student, the way in stays the same.">
+      <label>Home page: five steps (one per line: Title | description)</label>
+      <textarea id="stepsInput" style="min-height:130px;" placeholder="Browse | Find your course in the Lecture Hall.&#10;Study | Read the notes and watch the videos.&#10;Practice | Test yourself with quizzes and flashcards.&#10;Check in | Mark attendance and follow your scores.&#10;Ask | Book office hours or chat with the assistant."></textarea>
 
       <label>Verified Badge Text (top of hero)</label>
       <input type="text" id="heroBadgeInput" placeholder="Verified Faculty Profile">
@@ -1946,6 +1964,28 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+
+function homeParagraph(text){
+  var i=0, HOME_THUMBS=['#5e1a17','#2c5aa0','#3f7a32','#1f6f7a','#b3401e','#8a2f4a','#2d6a4f'];
+  var html=escapeHtml(text).replace(/\[([^\]]+)\]/g,function(_,w){ var k=i++; return '<span class="hv" data-c="'+(k%8)+'">'+w+'</span><i class="hv-thumb" style="background:'+HOME_THUMBS[k%HOME_THUMBS.length]+'"></i>'; });
+  return '<span class="ln"><span>'+html.replace(/\n/g,'<br>')+'</span></span>';
+}
+function applyHomeContent(profile){
+  var g=function(id){ return document.getElementById(id); };
+  var set=function(id,v){ if(v && g(id)) g(id).textContent=v; };
+  ['welcomeLabel','toolsLabel'].forEach(function(k){ if(profile[k]) g(k).textContent='( '+profile[k]+' )'; });
+  set('fanHeading',profile.fanHeading); set('fanText',profile.fanText); set('processHeading',profile.processHeading);
+  ['welcomeText','toolsText'].forEach(function(k){ if(profile[k]){ g(k).innerHTML=homeParagraph(profile[k]); g(k).classList.remove('in'); } });
+  if(profile.steps){
+    var old=[].slice.call(document.querySelectorAll('#processSec .step')), rows=profile.steps.split('\n').filter(function(l){return l.trim();});
+    rows.slice(0,old.length).forEach(function(l,i){ var p=l.split('|'); var el=old[i]; el.querySelector('.t').textContent=(p[0]||'').trim(); el.querySelector('.d').textContent=(p[1]||'').trim(); });
+  }
+  // fill editor boxes with the visible text so editing starts from what is live
+  var val=function(id,v){ if(g(id)) g(id).value=v||''; };
+  ['welcomeLabel','welcomeText','toolsLabel','toolsText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ val(k+'Input',profile[k]); });
+  if(window.__homeBind) window.__homeBind();
+}
+
 async function loadProfile(){
   try{
     const data = await fetchSupabaseData();
@@ -1999,6 +2039,7 @@ async function loadProfile(){
     const heroBadgeText = profile.heroBadge || "Verified Faculty Profile";
     document.getElementById('heroBadgeDisplay').textContent = heroBadgeText;
     document.getElementById('heroBadgeInput').value = profile.heroBadge || "";
+    applyHomeContent(profile);
 
     const marqueeLines = (profile.marqueeText || "Structural Analysis\nQuantity Surveying\nResearch Methods\nCivil & Environmental Engineering").split('\n').filter(l => l.trim());
     const marqueeSpans = marqueeLines.map(l => `<span>${escapeHtml(l)}</span>`).join('');
@@ -2175,6 +2216,8 @@ async function saveProfile(){
   const newsletterText = document.getElementById('newsletterTextInput').value.trim();
   const closingHeading = document.getElementById('closingHeadingInput').value.trim();
   const closingText = document.getElementById('closingTextInput').value.trim();
+  const homeFields = {};
+  ['welcomeLabel','welcomeText','toolsLabel','toolsText','fanHeading','fanText','processHeading','steps'].forEach(function(k){ homeFields[k]=document.getElementById(k+'Input').value.trim(); });
   const deptName = document.getElementById('deptNameInput').value.trim();
   const deptFacebook = document.getElementById('deptFacebookInput').value.trim();
   const deptX = document.getElementById('deptXInput').value.trim();
@@ -2190,7 +2233,8 @@ async function saveProfile(){
     data.profile = {
       name, title, photoData, bio, contact, social, publications, faq,
       heroBadge, marqueeText, pullQuote, newsletterHeading, newsletterText, closingHeading, closingText,
-      deptName, deptFacebook, deptX, deptTiktok
+      deptName, deptFacebook, deptX, deptTiktok,
+      ...homeFields
     };
     await saveSupabaseData(data);
     msg.innerHTML = '<div class="msg ok">Saved. Your changes are now live.</div>';
@@ -4141,7 +4185,8 @@ if ('serviceWorker' in navigator) {
   /* ---- hover reveal ---- */
   var fl=document.createElement('div'); fl.className='hv-float'; document.body.appendChild(fl);
   var fx=0,fy=0,tx=0,ty=0,active=0,stackTimer=null;
-  document.querySelectorAll('.hv').forEach(function(w){
+  function bindHv(){ document.querySelectorAll('.hv').forEach(function(w){
+    if(w.__b) return; w.__b=1;
     w.addEventListener('mouseenter',function(){
       var c=cards[+w.dataset.c % cards.length], p=mkPol(c,+w.dataset.c);
       p.style.setProperty('--r',(Math.random()*16-8)+'deg'); p.style.setProperty('--tx',(Math.random()*30-15)+'px'); p.style.setProperty('--ty',(Math.random()*30-15)+'px');
@@ -4151,17 +4196,23 @@ if ('serviceWorker' in navigator) {
     w.addEventListener('mouseleave',function(){
       active--; if(active<=0){ var kids=[].slice.call(fl.children); kids.forEach(function(k){ k.classList.remove('on'); }); setTimeout(function(){ if(active<=0) fl.innerHTML=''; },400); }
     });
-  });
+  }); }
+  bindHv();
   window.addEventListener('mousemove',function(e){ tx=e.clientX; ty=e.clientY-20; },{passive:true});
   (function follow(){ requestAnimationFrame(follow); if(active<=0 && !fl.children.length) return; fx+=(tx-fx)*.2; fy+=(ty-fy)*.2; fl.style.transform='translate3d('+fx+'px,'+fy+'px,0)'; })();
 
   /* ---- line reveals + steps ---- */
   var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); },{threshold:.25});
+  function bindReveal(){
   document.querySelectorAll('.pro-text').forEach(function(el){
     el.querySelectorAll('.ln > span').forEach(function(sp,i){ sp.style.transitionDelay=(i*.09)+'s'; });
     io.observe(el);
   });
   document.querySelectorAll('.step').forEach(function(el,i){ el.style.transitionDelay=(i%5*.06)+'s'; io.observe(el); });
+
+  }
+  bindReveal();
+  window.__homeBind=function(){ bindHv(); bindReveal(); };
 
   /* ---- pinned scatter ---- */
   var sec=document.getElementById('scatterSec'), stick=sec.querySelector('.scatter-stick'), center=document.getElementById('scatterCenter');

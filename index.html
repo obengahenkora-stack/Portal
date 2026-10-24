@@ -749,6 +749,43 @@ body:not(.landing) .marquee{ margin-top:18px; }
 body.leaving .hero,body.leaving .marquee,body.leaving #oyinSections,body.leaving .wrap,body.leaving #viewMode,body.leaving #departmentMode{ animation:page-sink-out .1667s steps(2) forwards!important; }
 .topbar .tab::before,.topbar .tab::after{ transition:none; }
 @media (prefers-reduced-motion: reduce){ *{ animation:none!important; } .pro-row,.step,.process h2{ opacity:1!important; } }
+
+/* ===== Colour layer ===== */
+:root{ --bg:#f4fbf9; --card:#f4fbf9; --ink:#0b2a3a; --muted:#5f7684; --line:#d3e8e1; --contrast:#e5f5f0;
+  --c1:#0ea5e9; --c2:#22c55e; --c3:#8b5cf6; --c4:#f43f5e; --c5:#f59e0b;
+  --accent:#0b2a3a; --accent-dark:#000; --gold:#f59e0b; --gold-dark:#d98206; --red:#0ea5e9; --red-dark:#0284c7; }
+html[data-theme="dark"]{ --bg:#08161d; --card:#08161d; --ink:#e8f6f2; --muted:#8fb0ba; --line:#1c3540; --contrast:#0f2630;
+  --c1:#38bdf8; --c2:#4ade80; --c3:#a78bfa; --c4:#fb7185; --c5:#fbbf24;
+  --accent:#38bdf8; --accent-dark:#7dd3fc; --gold:#fbbf24; --gold-dark:#fcd34d; --red:#38bdf8; --red-dark:#7dd3fc; }
+html[data-theme="dark"] button{ color:#08161d; }
+.topbar{ background:var(--bg); }
+.tb-left span{ color:var(--c1); } .tb-right{ color:var(--c3); }
+.topbar .tab::before,.topbar .tab::after,.land-nav .tab::before,.land-nav .tab::after{ color:var(--c1); }
+.topbar .tab:hover,.land-nav .tab:hover{ color:var(--c1); }
+.topbar .tab.active{ color:var(--c1); }
+.hero h1::before,.hero h1::after{ color:var(--c1); font-weight:400; }
+.hero .title{ color:var(--c3); }
+.live-dot{ background:var(--c1); }
+body.landing .hero{ background:radial-gradient(55% 50% at 14% 18%,rgba(14,165,233,.26),transparent 70%),radial-gradient(50% 45% at 88% 22%,rgba(139,92,246,.20),transparent 70%),radial-gradient(55% 50% at 72% 92%,rgba(34,197,94,.18),transparent 70%),radial-gradient(40% 40% at 12% 90%,rgba(244,63,94,.14),transparent 70%),var(--bg); }
+html[data-theme="dark"] body.landing .hero{ background:radial-gradient(55% 50% at 14% 18%,rgba(56,189,248,.16),transparent 70%),radial-gradient(50% 45% at 88% 22%,rgba(167,139,250,.14),transparent 70%),radial-gradient(55% 50% at 72% 92%,rgba(74,222,128,.12),transparent 70%),radial-gradient(40% 40% at 12% 90%,rgba(251,113,133,.12),transparent 70%),var(--bg); }
+.marquee{ border-color:var(--line); }
+.marquee-track span{ color:var(--c4); } .marquee-track span:nth-child(4n+2){ color:var(--c1); } .marquee-track span:nth-child(4n+3){ color:var(--c3); } .marquee-track span:nth-child(4n){ color:var(--c5); }
+.marquee-track span::after{ color:var(--c2); }
+.pro-head h2{ background:linear-gradient(90deg,var(--c1),var(--c5) 45%,var(--c4)); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+.pro-head .sm{ color:var(--c3); }
+.meta dt{ color:var(--c4); }
+.hv{ border-bottom:2px solid var(--c2); background:linear-gradient(transparent 62%,rgba(34,197,94,.30) 62%); }
+#quoteBox{ border-left:4px solid var(--c3); padding-left:20px; }
+.quote-meta{ color:var(--c1); }
+.process h2{ color:var(--c3); }
+.step{ border-bottom-color:var(--line); }
+.step .n{ color:var(--c1); }
+.step:nth-of-type(1) .n{ color:var(--c1); } .step:nth-of-type(2) .n{ color:var(--c2); } .step:nth-of-type(3) .n{ color:var(--c3); } .step:nth-of-type(4) .n{ color:var(--c4); } .step:nth-of-type(5) .n{ color:var(--c5); }
+.step:nth-of-type(1):hover{ background:var(--c1); } .step:nth-of-type(2):hover{ background:var(--c2); } .step:nth-of-type(3):hover{ background:var(--c3); } .step:nth-of-type(4):hover{ background:var(--c4); } .step:nth-of-type(5):hover{ background:var(--c5); }
+.step:hover,.step:hover .t,.step:hover .n,.step:hover .d{ color:#fff!important; opacity:1!important; }
+.step:nth-of-type(2):hover,.step:nth-of-type(2):hover .t,.step:nth-of-type(2):hover .n,.step:nth-of-type(2):hover .d{ color:#0b2a3a!important; }
+html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[data-theme="dark"] .step:hover .n,html[data-theme="dark"] .step:hover .d{ color:#08161d!important; }
+.theme-toggle{ border-color:var(--c2); }
 </style>
 
 <script>

@@ -763,6 +763,35 @@ async function loadRegisteredStudents(){
   }
 }
 
+async function adminEditStudent(email){
+  if(!isAdminUser()){ alert('Only the admin can edit student details.'); return; }
+  const s = registeredStudentsCache.find(x => x.email === email); if(!s) return;
+  const name = prompt('Student name:', s.name || ''); if(name === null) return;
+  const idx = prompt('Index number:', s.indexNumber || ''); if(idx === null || !idx.trim()){ alert('Index number cannot be empty.'); return; }
+  const level = prompt('Level (100, 200, 300 or 400):', s.level || ''); if(level === null) return;
+  if(level.trim() && !['100','200','300','400'].includes(level.trim())){ alert('Level must be 100, 200, 300 or 400.'); return; }
+  try{
+    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}`, {
+      method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ name: name.trim(), index_number: idx.trim(), level: level.trim() })
+    });
+    if(!res.ok) throw new Error('save failed (' + res.status + ')');
+    loadRegisteredStudents();
+  }catch(e){ alert('Could not update: ' + e.message); }
+}
+
+async function adminDeleteStudent(email){
+  if(!isAdminUser()){ alert('Only the admin can delete students.'); return; }
+  const s = registeredStudentsCache.find(x => x.email === email); if(!s) return;
+  if(!confirm('Delete ' + (s.name || s.email) + ' (' + s.indexNumber + ')? Their index link is removed and they will need to link again. This cannot be undone.')) return;
+  try{
+    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}`, { method: 'DELETE', headers: { ...DB_HEADERS, 'Prefer': 'return=representation' } });
+    if(!res.ok) throw new Error('delete failed (' + res.status + ')');
+    loadRegisteredStudents();
+  }catch(e){ alert('Could not delete: ' + e.message); }
+}
+function isAdminUser(){ return !!studentCurrentEmail && studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase(); }
+
 function renderRegisteredStudents(){
   const container = document.getElementById('adminRegisteredList');
   const filterVal = (document.getElementById('adminRegisteredFilter').value || '').trim().toLowerCase();
@@ -818,7 +847,11 @@ function renderRegisteredStudents(){
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
         <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
-      <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
+        <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" data-email="${escapeHtml(a.email)}" onclick="adminEditStudent(this.dataset.email)">Edit</button>
+        <button class="secondary" style="padding:6px 14px;font-size:0.75rem;border-color:var(--danger);color:var(--danger);" data-email="${escapeHtml(a.email)}" onclick="adminDeleteStudent(this.dataset.email)">Delete</button>
+      </div>
     </div>
   `).join('');
 }

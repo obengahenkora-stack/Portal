@@ -723,7 +723,7 @@ body{ font-family:'Inter Tight','Inter',-apple-system,'Segoe UI',sans-serif; bac
 .land-nav .tab:hover::before,.land-nav .tab:hover::after{ opacity:1; }
 .land-nav .tab.active{ border:none; }
 body.landing .land-nav{ display:flex; }
-body.landing > *:not(.hero):not(.theme-toggle):not(script):not(style){ display:none!important; }
+body.landing > *:not(.hero):not(#deptChooser):not(.theme-toggle):not(script):not(style){ display:none!important; }
 body.landing .hero{ min-height:100vh; padding:0 24px; }
 body.landing .hero-eyebrow,body.landing .hero .social-links{ display:none; }
 body.landing .hero h1,body.landing .hero #nameDisplay{ margin-bottom:12px; }
@@ -1480,7 +1480,16 @@ async function onEditAuthReady(showToast){
   }
 }
 
+function openDeptChooser(){
+  var o=document.getElementById('deptChooser'); if(o){ o.style.display='flex'; return; }
+  o=document.createElement('div'); o.id='deptChooser';
+  o.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(10,20,30,.55);padding:20px';
+  o.innerHTML='<div style="background:var(--bg,#fff);color:var(--ink,#111);max-width:460px;width:100%;padding:28px;border:1px solid rgba(128,128,128,.4)"><div style="font:400 .68rem \'IBM Plex Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.65">Department</div><h3 style="margin:8px 0 18px;font-size:1.4rem">Which department?</h3><a class="cta-link" style="display:block;margin-bottom:10px" href="https://cesauenr.com">Civil Engineering</a><a class="cta-link" style="display:block;margin-bottom:16px" href="https://eesauenr.com">Environmental Engineering</a><button type="button" style="background:none;border:0;cursor:pointer;opacity:.7;font:inherit" onclick="document.getElementById(\'deptChooser\').style.display=\'none\'">Cancel</button></div>';
+  o.addEventListener('click',function(e){ if(e.target===o) o.style.display='none'; });
+  document.body.appendChild(o);
+}
 function switchTab(tab){
+  if(tab==='department'){ openDeptChooser(); return; }
   if(document.body.classList.contains('landing') && window.__enter){ window.__enter(tab); return; }
   var vm=document.getElementById('viewMode');
   if(window.__sinkThen && vm && tab!==window.__curTab){ window.__curTab=tab; window.__sinkThen(function(){ switchTabNow(tab); }); }

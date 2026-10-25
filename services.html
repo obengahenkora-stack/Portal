@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0b">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif}
+.cvl{display:grid;grid-template-columns:minmax(160px,260px) 1fr;gap:16px;padding:12px 0;border-bottom:1px solid rgba(128,128,128,.3);font-size:.95rem;line-height:1.45}
+.cta-link{border:1px solid currentColor;padding:12px 20px;font:500 .72rem 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:inherit}
+#enquiryForm input,#enquiryForm select,#enquiryForm textarea{width:100%;box-sizing:border-box;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px 60px}
+@media(max-width:600px){.cvl{grid-template-columns:1fr;gap:2px}}
+</style>
+<script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<link rel="stylesheet" href="theme.css">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+<div class="hero">
+  <h1>Services</h1>
+  <p>Construction consultancy, training and works. Tell me about your project and I will reply by email.</p>
+</div>
+<div class="hero-tabs">
+  <a href="index.html">Home</a>
+  <a href="lecture-hall.html">Lecture Hall</a>
+  <a href="dashboard.html">Students Dashboard</a>
+  <a href="portal.html">Staff</a>
+</div>
+<div class="wrap">
+<div id="servicesRow" style="margin-bottom:40px"><h2 style="margin:0 0 14px">What I offer</h2>
+      <div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Quantity surveying and cost consultancy</span><span>Bills of quantities, cost estimates, cost planning, valuations and final accounts.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Procurement and tender advisory</span><span>Choosing the procurement method, tender documents, bid evaluation and contract administration.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Construction materials pricing</span><span>Price benchmarks and trend reports for construction materials on the Ghanaian market.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Site health and safety</span><span>Safety audits, safety plans and worker training for construction sites of any kind.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Project management and feasibility</span><span>Feasibility studies, supervision and monitoring of construction projects of any type.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Training and workshops</span><span>Short courses on estimating, procurement and safety for professionals and teams.</span></div><div class="cvl"><span class="y" style="text-transform:none;letter-spacing:0;font:600 .95rem Inter,system-ui,sans-serif;color:inherit">Construction works</span><span>Construction works of every kind: buildings, roads, drainage, water and civil works, delivered with proper estimating and quality control.</span></div></div>
+    </div>
+    <div id="enquiryRow"><h2 style="margin:0 0 14px">Request a service</h2>
+      <div>
+        <form id="enquiryForm" onsubmit="return sendEnquiry(event)" style="display:grid;gap:10px;max-width:560px">
+          <input id="enqName" required placeholder="Your name" style="padding:11px 12px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit">
+          <input id="enqEmail" type="email" required placeholder="Your email" style="padding:11px 12px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit">
+          <input id="enqPhone" placeholder="Phone (optional)" style="padding:11px 12px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit">
+          <select id="enqService" style="padding:11px 12px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit"><option>Quantity surveying and cost consultancy</option><option>Procurement and tender advisory</option><option>Construction materials pricing</option><option>Site health and safety</option><option>Project management and feasibility</option><option>Training and workshops</option><option>Construction works</option><option>Other</option></select>
+          <textarea id="enqMsg" required rows="4" placeholder="Tell me about your project" style="padding:11px 12px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit"></textarea>
+          <input id="enqHp" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          <button type="submit" class="cta-link" id="enqBtn" style="cursor:pointer;justify-self:start;background:transparent">Send enquiry</button>
+          <div id="enqOut" style="font-size:.9rem"></div>
+        </form>
+      </div>
+    </div>
+  
+</div>
+<script>
+function sendEnquiry(e){
+  e.preventDefault();
+  var g=function(i){return document.getElementById(i).value.trim();}, out=document.getElementById('enqOut'), btn=document.getElementById('enqBtn');
+  if(g('enqHp')) return false;
+  if(!window.emailjs){ out.textContent='Email service not loaded. Please write to nana.obeng-ahenkora@uenr.edu.gh.'; return false; }
+  btn.disabled=true; out.textContent='Sending...';
+  emailjs.init({publicKey:'YAoDPw-tkurcPjVrU'});
+  emailjs.send('service_cs5nqqo','template_xtvjkab',{
+    course:'SERVICE ENQUIRY: '+g('enqService'),
+    issue:g('enqMsg')+'\n\nFrom: '+g('enqName')+(g('enqPhone')?' | Phone: '+g('enqPhone'):''),
+    student_email:g('enqEmail'),
+    student_index:g('enqName')
+  }).then(function(){ out.textContent='Thank you. Your enquiry has been sent and I will reply by email.'; document.getElementById('enquiryForm').reset(); })
+  .catch(function(){ out.textContent='Could not send. Please email nana.obeng-ahenkora@uenr.edu.gh directly.'; })
+  .finally(function(){ btn.disabled=false; });
+  return false;
+}
+
+</script>
+<script src="theme.js"></script>
+</body>
+</html>

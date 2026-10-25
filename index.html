@@ -809,6 +809,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
 <header class="topbar"><div class="tb-left">Obeng-Ahenkora <span id="tbCrumb">/ Home</span></div>
 <div class="tabs">
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
+  <a href="services.html" class="tab" style="text-decoration:none;">Services</a>
   <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
   <a href="lecture-hall.html" class="tab" style="text-decoration:none;">Lecture Hall</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">Students Dashboard</a>
@@ -873,7 +874,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
       <div class="pro-head"><span class="sm">Membership</span></div>
       <div class="pro-text cvlist" id="cvMemberships" style="max-width:none;"></div>
     </div>
-  </section>
+      </section>
 
   <section class="process" id="processSec">
     <h2 id="processHeading">Explore</h2>
@@ -2000,6 +2001,7 @@ function renderCv(profile){
     }).join('');
   });
 }
+
 function openProfileTab(t){ switchSubTab(t); var v=document.getElementById('viewMode'); if(v) v.scrollIntoView({behavior:'smooth'}); }
 
 function applyHomeContent(profile){

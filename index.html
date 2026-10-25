@@ -4,26 +4,26 @@
 <meta name="description" content="Construction cost, procurement, safety and research. Publications, services and student resources.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Obeng-Ahenkora">
-<meta property="og:title" content="Engr. Nana Kwame Obeng-Ahenkora, Ph.D.">
+<meta property="og:title" content="Nana Kwame Obeng-Ahenkora, Ph.D.">
 <meta property="og:description" content="Construction cost, procurement, safety and research. Publications, services and student resources.">
 <meta property="og:url" content="https://obeng-ahenkora.xyz/">
 <meta property="og:image" content="https://obeng-ahenkora.xyz/og-home.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Engr. Nana Kwame Obeng-Ahenkora, Ph.D.">
+<meta name="twitter:title" content="Nana Kwame Obeng-Ahenkora, Ph.D.">
 <meta name="twitter:description" content="Construction cost, procurement, safety and research. Publications, services and student resources.">
 <meta name="twitter:image" content="https://obeng-ahenkora.xyz/og-home.png">
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Engr. Nana Kwame Obeng-Ahenkora, Ph.D</title>
+<title>Nana Kwame Obeng-Ahenkora, Ph.D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter+Tight:wght@400;500;600&family=Inter:wght@400;500;600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -680,7 +680,10 @@ body{ font-family:'Inter Tight','Inter',-apple-system,'Segoe UI',sans-serif; bac
 .hero{ background:var(--bg); color:var(--ink); min-height:62vh; padding:52px 24px 0; display:flex; align-items:center; justify-content:center; border:none; text-align:center; }
 .hero-inner{ display:block; max-width:960px; padding:0; margin:0 auto; text-align:center; }
 .hero-text{ max-width:none; }
-.hero #profilePic,.hero #profilePicPlaceholder{ display:none!important; }
+.hero #profilePicPlaceholder{ display:none!important; }
+.hero #profilePic{ width:168px; height:168px; border-radius:50%; object-fit:cover; border:4px solid #fff; box-shadow:0 0 0 3px var(--c1,#0ea5e9),0 10px 30px rgba(15,42,58,.25); margin:0 auto 18px; animation:block-in .25s steps(1) both; animation-delay:.1s; }
+.hero-inner{ flex-direction:column; align-items:center; text-align:center; }
+@media (min-width:900px){ .hero #profilePic{ width:200px; height:200px; } }
 .hero h1,.hero #nameDisplay{ font:400 clamp(2.1rem,6.4vw,5rem)/1.04 'Inter Tight','Inter',sans-serif; letter-spacing:-.04em; color:var(--ink); margin:0 0 14px; }
 .hero h1::before{ content:"[\00a0"; color:var(--muted); font-weight:300; } .hero h1::after{ content:"\00a0]"; color:var(--muted); font-weight:300; }
 .hero .title{ font:400 .95rem 'Inter Tight',sans-serif; color:var(--ink); letter-spacing:-.01em; margin:0; }
@@ -817,6 +820,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
     if(saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
 </script>
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body class="landing">
 <script>try{ if(sessionStorage.getItem("portalEntered")==="1") document.body.classList.remove("landing"); }catch(e){}</script>
@@ -825,7 +829,6 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
   <a href="services.html" class="tab" style="text-decoration:none;">Services</a>
   <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
-  <a href="lecture-hall.html" class="tab" style="text-decoration:none;">Lecture Hall</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">Students Dashboard</a>
   <a href="portal.html" class="tab tab-staff" style="text-decoration:none;">Staff</a>
 </div>
@@ -842,8 +845,8 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
         <span id="heroBadgeDisplay">Verified Faculty Profile</span>
         <span class="hero-eyebrow-coords">7.3349&deg;N, 2.3268&deg;W &nbsp;&mdash;&nbsp; UENR</span>
       </div>
-      <h1 id="nameDisplay">Engr. Nana Kwame Obeng-Ahenkora</h1>
-      <p class="title" id="titleDisplay">Ph.D &nbsp;|&nbsp; Dept. of Civil &amp; Environmental Engineering</p>
+      <h1 id="nameDisplay">Nana Kwame Obeng-Ahenkora</h1>
+      <p class="title" id="titleDisplay">Ph.D | PE IET-GH | MGIOC | An Academic | Construction Professional | SM-CIArb | Mentor</p>
       <div class="social-links" id="socialLinksDisplay"></div>
     </div>
   </div>
@@ -893,7 +896,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
   <section class="process" id="processSec">
     <h2 id="processHeading">Explore</h2>
     <div class="step" role="link" tabindex="0" onclick="openProfileTab('pubs')" onkeydown="if(event.key==='Enter'){openProfileTab('pubs')}"><div class="n">01</div><div class="t">Publications</div><div class="d">Journal articles on construction materials, procurement, pricing and safety.</div></div>
-    <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter'){location.href='lecture-hall.html'}"><div class="n">02</div><div class="t">Lecture Hall</div><div class="d">Course outlines, notes, videos and announcements for my students.</div></div>
+    <div class="step" role="link" tabindex="0" onclick="location.href='dashboard.html'" onkeydown="if(event.key==='Enter'){location.href='dashboard.html'}"><div class="n">02</div><div class="t">Lecture Hall</div><div class="d">Course outlines, notes, videos and announcements for my students.</div></div>
     <div class="step" role="link" tabindex="0" onclick="location.href='dashboard.html'" onkeydown="if(event.key==='Enter'){location.href='dashboard.html'}"><div class="n">03</div><div class="t">Students Dashboard</div><div class="d">Mark attendance and follow your scores.</div></div>
     <div class="step" role="link" tabindex="0" onclick="openProfileTab('officehours')" onkeydown="if(event.key==='Enter'){openProfileTab('officehours')}"><div class="n">04</div><div class="t">Office Hours</div><div class="d">See when I am available to meet.</div></div>
     <div class="step" role="link" tabindex="0" onclick="openProfileTab('contact')" onkeydown="if(event.key==='Enter'){openProfileTab('contact')}"><div class="n">05</div><div class="t">Contact</div><div class="d">Email, postal address and academic profiles.</div></div>
@@ -1071,7 +1074,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
       <button class="secondary" onclick="signOutUser()" style="margin-bottom:14px;">Sign Out</button>
 
       <label>Full Name / Title (shown as the main heading)</label>
-      <input type="text" id="nameInput" placeholder="e.g. Engr. Nana Kwame Obeng-Ahenkora">
+      <input type="text" id="nameInput" placeholder="e.g. Nana Kwame Obeng-Ahenkora">
 
       <label>Credentials / Position (shown under your name)</label>
       <input type="text" id="titleInput" placeholder="e.g. Ph.D | Dept. of Civil & Environmental Engineering">
@@ -1213,11 +1216,11 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
         <div class="footer-col-content">
           <a href="portal.html">Staff</a><br>
           <a href="blog.html">Blog</a><br>
-          <a href="lecture-hall.html">Lecture Hall</a>
+          <a href="dashboard.html">Students Dashboard</a>
         </div>
       </div>
     </div>
-    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
   </div>
 </footer>
 
@@ -2041,8 +2044,8 @@ async function loadProfile(){
     const profile = data.profile || {};
 
     // name and title (header)
-    const defaultName = "Engr. Nana Kwame Obeng-Ahenkora";
-    const defaultTitle = "Ph.D | Dept. of Civil & Environmental Engineering";
+    const defaultName = "Nana Kwame Obeng-Ahenkora";
+    const defaultTitle = "Ph.D | PE IET-GH | MGIOC | An Academic | Construction Professional | SM-CIArb | Mentor";
     document.getElementById('nameDisplay').textContent = profile.name || defaultName;
     document.getElementById('titleDisplay').textContent = profile.title || defaultTitle;
     document.getElementById('nameInput').value = profile.name || defaultName;
@@ -2829,7 +2832,7 @@ async function assistGatherContext(query, selectedCourse){
 async function assistLocalSearchFallback(query, selectedCourse){
   const keywords = assistExtractKeywords(query);
   if(keywords.length === 0){
-    return `I couldn't reach the AI assistant, and that question is too general for me to search on directly. Try a more specific term, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+    return `I couldn't reach the AI assistant, and that question is too general for me to search on directly. Try a more specific term, or browse <a href="dashboard.html">Students Dashboard</a> directly.`;
   }
 
   const data = await fetchSupabaseData();
@@ -2869,7 +2872,7 @@ async function assistLocalSearchFallback(query, selectedCourse){
 
   if(top.length === 0){
     const scopeNote = selectedCourse ? ` for ${escapeHtml(selectedCourse)}` : '';
-    return `The AI assistant is temporarily unavailable, and I couldn't find anything matching that${scopeNote} in a direct search either. Try different keywords, a different course, or browse <a href="lecture-hall.html">Lecture Hall</a> directly.`;
+    return `The AI assistant is temporarily unavailable, and I couldn't find anything matching that${scopeNote} in a direct search either. Try different keywords, a different course, or browse <a href="dashboard.html">Students Dashboard</a> directly.`;
   }
 
   return `The AI assistant is temporarily unavailable, so here's what I found via direct search instead:<br><br>` + top.map(c => `

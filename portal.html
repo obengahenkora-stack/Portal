@@ -3,7 +3,7 @@
 <head>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0b">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -208,6 +208,7 @@
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body>
 
@@ -217,12 +218,11 @@
   <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
   <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
   <h1>Faculty Console</h1>
-  <p class="hero-sub" id="heroName">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
+  <p class="hero-sub" id="heroName">Nana Kwame Obeng-Ahenkora, Ph.D</p>
 </div>
 
 <div class="hero-tabs">
   <a href="index.html">Home</a>
-  <a href="lecture-hall.html">Lecture Hall</a>
   <div class="tab-static" id="navPortal" onclick="switchTab('hub')">Faculty Console</div>
   <a href="dashboard.html">Students Dashboard</a>
 </div>
@@ -300,6 +300,24 @@
       <button id="uploadBtn" onclick="uploadScores()">Upload Pasted Scores</button>
       <button class="secondary" onclick="clearAllData()" style="margin-left:8px;">Clear All Data</button>
       <div id="uploadMsg"></div>
+    </div>
+
+    <div class="card hidden" id="lectureMaterialsCard">
+      <label>Lecture Hall: upload materials for students</label>
+      <div class="hint">What you add here appears straight away in the Lecture Hall and on each student's dashboard. You can only post to courses assigned to you.</div>
+      <select id="lmCourse" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:10px;background:rgba(0,0,0,0.2);color:var(--ink);"></select>
+      <select id="lmType" onchange="lmTypeChange()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:10px;background:rgba(0,0,0,0.2);color:var(--ink);">
+        <option value="note">Lecture note / file</option><option value="announcement">Announcement</option><option value="video">Video link (YouTube / Vimeo)</option>
+      </select>
+      <input type="text" id="lmTitle" placeholder="Title, e.g. Week 3 - Structural Loads">
+      <div id="lmFileWrap"><input type="file" id="lmFile"></div>
+      <textarea id="lmText" class="hidden" placeholder="Write the announcement..."></textarea>
+      <input type="text" id="lmUrl" class="hidden" placeholder="https://www.youtube.com/watch?v=...">
+      <button id="lmBtn" onclick="lmSubmit()">Post to Lecture Hall</button>
+      <div id="lmMsg"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
+      <label>Your recent posts</label>
+      <div id="lmList"><div class="hint">Loading...</div></div>
     </div>
 
     <div class="card hidden" id="gradebookCard">
@@ -585,7 +603,7 @@
 
 <footer class="site-footer">
   <div class="wrap" style="padding:24px;">
-    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
   </div>
 </footer>
 
@@ -989,6 +1007,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
+  lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
   if(dateInput && !dateInput.value){ dateInput.value = new Date().toISOString().split('T')[0]; }
@@ -1936,6 +1955,77 @@ async function sendWeeklyDigest(){
   }
 }
 
+
+// ===== Lecture Hall uploads by staff =====
+const LM_CLOUD = "https://api.cloudinary.com/v1_1/v9y3judf/auto/upload", LM_PRESET = "portal_uploads";
+function lmTypeChange(){ var t=document.getElementById('lmType').value; document.getElementById('lmFileWrap').classList.toggle('hidden',t!=='note'); document.getElementById('lmText').classList.toggle('hidden',t!=='announcement'); document.getElementById('lmUrl').classList.toggle('hidden',t!=='video'); document.getElementById('lmTitle').classList.toggle('hidden',t==='announcement'); }
+async function lmInit(){
+  document.getElementById('lectureMaterialsCard').classList.remove('hidden'); lmTypeChange();
+  try{
+    var d=await fetchSupabaseData(), set={};
+    (d.courseList||[]).forEach(function(c){ if(c) set[c]=1; });
+    Object.keys(d.rosters||{}).forEach(function(c){ set[c]=1; });
+    (d.resources||[]).forEach(function(r){ if(r.course) set[r.course]=1; });
+    var list=visibleCourses(Object.keys(set)).sort();
+    var sel=document.getElementById('lmCourse');
+    sel.innerHTML = list.length ? '<option value="">Select a course...</option>'+list.map(function(c){return '<option>'+escapeHtml(c)+'</option>';}).join('') : '<option value="">No courses assigned to you yet. Ask the Main Instructor.</option>';
+    if(isAdmin()) sel.innerHTML += '<option value="__new__">+ New course...</option>';
+  }catch(e){}
+  lmList();
+}
+function lmMine(x){ return isAdmin() || (x.uploadedBy||'')===currentUserEmail; }
+async function lmSubmit(){
+  var msg=document.getElementById('lmMsg'), btn=document.getElementById('lmBtn');
+  var course=document.getElementById('lmCourse').value, type=document.getElementById('lmType').value;
+  if(course==='__new__'){ course=(prompt('New course name (e.g. CIVL 368)')||'').trim(); }
+  var title=document.getElementById('lmTitle').value.trim(), text=document.getElementById('lmText').value.trim(), url=document.getElementById('lmUrl').value.trim(), file=document.getElementById('lmFile').files[0];
+  if(!course){ msg.innerHTML='<div class="msg err">Choose a course.</div>'; return; }
+  if(!isAdmin() && visibleCourses([course]).length===0){ msg.innerHTML='<div class="msg err">That course is not assigned to you.</div>'; return; }
+  if(type==='note' && (!title||!file)){ msg.innerHTML='<div class="msg err">Add a title and choose a file.</div>'; return; }
+  if(type==='announcement' && !text){ msg.innerHTML='<div class="msg err">Write the announcement.</div>'; return; }
+  if(type==='video' && (!title||!url)){ msg.innerHTML='<div class="msg err">Add a title and a video link.</div>'; return; }
+  btn.disabled=true; msg.innerHTML='<div class="msg ok">Posting...</div>';
+  try{
+    var fileUrl='';
+    if(type==='note'){
+      var fd=new FormData(); fd.append('file',file); fd.append('upload_preset',LM_PRESET);
+      var r=await fetch(LM_CLOUD,{method:'POST',body:fd});
+      if(!r.ok){ var dt='HTTP '+r.status; try{ var eb=await r.json(); dt=(eb.error&&eb.error.message)||dt; }catch(e){} throw new Error(dt); }
+      fileUrl=(await r.json()).secure_url;
+    }
+    var vType='file', vUrl=url;
+    if(type==='video'){
+      var yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/), vm=url.match(/vimeo\.com\/(\d+)/);
+      if(yt){ vType='youtube'; vUrl='https://www.youtube.com/embed/'+yt[1]; } else if(vm){ vType='vimeo'; vUrl='https://player.vimeo.com/video/'+vm[1]; }
+    }
+    var data=await fetchSupabaseData(), now=new Date().toISOString(), by=currentUserEmail;
+    if(type==='note'){ data.resources=(data.resources||[]).concat([{id:'res_'+Date.now(),course:course,title:title,fileName:file.name,url:fileUrl,uploadedAt:now,uploadedBy:by}]); }
+    if(type==='announcement'){ data.announcements=(data.announcements||[]).concat([{id:'ann_'+Date.now(),course:course,text:text,date:now,uploadedBy:by}]); }
+    if(type==='video'){ data.videos=(data.videos||[]).concat([{id:'vid_'+Date.now(),course:course,title:title,url:vUrl,type:vType,addedAt:now,uploadedBy:by}]); }
+    var cl=data.courseList||[]; if(cl.indexOf(course)<0){ cl.push(course); data.courseList=cl; }
+    await saveSupabaseData(data);
+    msg.innerHTML='<div class="msg ok">Posted. Students can see it now.</div>';
+    ['lmTitle','lmText','lmUrl','lmFile'].forEach(function(i){ document.getElementById(i).value=''; });
+    lmList();
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not post: '+escapeHtml(e.message)+'</div>'; }
+  finally{ btn.disabled=false; }
+}
+async function lmList(){
+  var box=document.getElementById('lmList');
+  try{
+    var d=await fetchSupabaseData(), items=[];
+    (d.resources||[]).forEach(function(x){ items.push({k:'resources',id:x.id,c:x.course,t:x.title,when:x.uploadedAt,tag:'Note',o:x}); });
+    (d.announcements||[]).forEach(function(x){ items.push({k:'announcements',id:x.id,c:x.course,t:(x.text||'').slice(0,70),when:x.date,tag:'Announcement',o:x}); });
+    (d.videos||[]).forEach(function(x){ items.push({k:'videos',id:x.id,c:x.course,t:x.title,when:x.addedAt,tag:'Video',o:x}); });
+    items=items.filter(function(i){ return lmMine(i.o) && (isAdmin() || visibleCourses([i.c]).length); }).sort(function(a,b){ return new Date(b.when)-new Date(a.when); }).slice(0,15);
+    box.innerHTML = items.length ? items.map(function(i){ return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><span><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+' &middot; '+escapeHtml(i.t)+'</span><button class="secondary" style="padding:4px 10px;font-size:0.72rem;" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
+  }catch(e){ box.innerHTML='<div class="hint">Could not load.</div>'; }
+}
+async function lmDelete(k,id){
+  if(!confirm('Delete this post?')) return;
+  try{ var d=await fetchSupabaseData(); d[k]=(d[k]||[]).filter(function(x){ return !(x.id===id && lmMine(x)); }); await saveSupabaseData(d); lmList(); }
+  catch(e){ alert('Could not delete.'); }
+}
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str;
@@ -2204,7 +2294,7 @@ async function loadHeroProfile(){
     const data = await fetchSupabaseData();
     const profile = data.profile || {};
     const nameEl = document.getElementById('heroName');
-    if(nameEl) nameEl.textContent = profile.name || "Engr. Nana Kwame Obeng-Ahenkora, Ph.D";
+    if(nameEl) nameEl.textContent = profile.name || "Nana Kwame Obeng-Ahenkora, Ph.D";
     const picImg = document.getElementById('heroProfilePic');
     const picPlaceholder = document.getElementById('heroProfilePicPlaceholder');
     if(profile.photoData){

@@ -4,14 +4,14 @@
 <meta name="description" content="Check your scores, attendance and reports in one place.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Obeng-Ahenkora">
-<meta property="og:title" content="Students Dashboard | Engr. Obeng-Ahenkora">
+<meta property="og:title" content="Students Dashboard | Obeng-Ahenkora">
 <meta property="og:description" content="Check your scores, attendance and reports in one place.">
 <meta property="og:url" content="https://obeng-ahenkora.xyz/dashboard.html">
 <meta property="og:image" content="https://obeng-ahenkora.xyz/og-dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Students Dashboard | Engr. Obeng-Ahenkora">
+<meta name="twitter:title" content="Students Dashboard | Obeng-Ahenkora">
 <meta name="twitter:description" content="Check your scores, attendance and reports in one place.">
 <meta name="twitter:image" content="https://obeng-ahenkora.xyz/og-dashboard.png">
 
@@ -20,7 +20,7 @@
 <title>Students Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2545">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -121,6 +121,7 @@
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body>
 
@@ -131,7 +132,6 @@
 
 <div class="hero-tabs">
   <a href="index.html">Home</a>
-  <a href="lecture-hall.html">Lecture Hall</a>
   <a href="portal.html">Faculty Console</a>
   <div class="tab-static active">Students Dashboard</div>
 </div>
@@ -292,6 +292,13 @@
       </div>
     </div>
 
+    <div class="card" id="dashLectureHall">
+      <h2>Lecture Hall</h2>
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Notes, announcements, videos and syllabus from your lecturers.</div>
+      <select id="dlhCourse" onchange="renderDashHall()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:12px;"></select>
+      <div id="dlhBody"><div class="empty">Loading...</div></div>
+    </div>
+
     <div class="card">
       <h2>My Scores</h2>
       <div id="dashScores"><div class="empty">No data.</div></div>
@@ -324,7 +331,7 @@
 </div>
 
 <footer style="background:var(--navy-dark); color:rgba(255,255,255,0.35); padding:32px 24px; margin-top:40px; text-align:center; font-size:0.75rem;">
-  &copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.
+  &copy; <span id="footerYear"></span> Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.
 </footer>
 
 <script>
@@ -382,6 +389,45 @@ async function resetStudentPassword(){
   if(!email){ msg.innerHTML='<div class="msg err">Type your email above first, then click Forgot password.</div>'; return; }
   var r=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   msg.innerHTML=r.error?'<div class="msg err">'+escapeHtml(r.error.message)+'</div>':'<div class="msg ok">Reset link sent. Check your inbox (and spam), then open the link.</div>';
+}
+
+// ===== Lecture Hall inside the dashboard =====
+let _dlhData=null, _dlhMine=[];
+function _cbase(n){var s=String(n||'').trim();var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i);return (m?m[1].trim():s);}
+function _same(a,b){return _cbase(a).toLowerCase()===_cbase(b).toLowerCase();}
+function initDashHall(supa,mine){
+  _dlhData=supa||{};
+  _dlhMine=[...new Set((mine||[]).map(_cbase))];
+  const all=new Set();
+  (_dlhData.courseList||[]).forEach(c=>c&&all.add(_cbase(c)));
+  Object.keys(_dlhData.rosters||{}).forEach(c=>all.add(_cbase(c)));
+  ['resources','announcements','videos'].forEach(k=>(_dlhData[k]||[]).forEach(x=>x.course&&all.add(_cbase(x.course))));
+  Object.keys(_dlhData.syllabi||{}).forEach(c=>all.add(_cbase(c)));
+  const others=[...all].filter(c=>!_dlhMine.some(m=>m.toLowerCase()===c.toLowerCase())).sort();
+  const sel=document.getElementById('dlhCourse');
+  let h='<option value="">My courses'+(_dlhMine.length?'':' (none found yet, showing everything)')+'</option>';
+  if(_dlhMine.length) h+='<optgroup label="My courses">'+_dlhMine.sort().map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
+  if(others.length) h+='<optgroup label="Other courses">'+others.map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
+  sel.innerHTML=h;
+  renderDashHall();
+}
+function renderDashHall(){
+  const box=document.getElementById('dlhBody'); if(!box||!_dlhData) return;
+  const sel=document.getElementById('dlhCourse').value;
+  const match=c=>sel?_same(c,sel):(_dlhMine.length?_dlhMine.some(m=>_same(m,c)):true);
+  const fd=t=>{try{return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
+  const ann=(_dlhData.announcements||[]).filter(a=>match(a.course)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const res=(_dlhData.resources||[]).filter(r=>match(r.course)).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const vid=(_dlhData.videos||[]).filter(v=>match(v.course)).sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
+  const syl=_dlhData.syllabi||{}; const syKeys=Object.keys(syl).filter(k=>match(k));
+  const H=t=>'<div style="font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px;">'+t+'</div>';
+  const row=(a,b,c)=>'<div style="padding:10px 0;border-bottom:1px dashed var(--line);">'+a+b+(c||'')+'</div>';
+  let h='';
+  h+=H('Announcements')+(ann.length?ann.slice(0,8).map(a=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(a.course)+' &middot; '+fd(a.date)+'</div>','<div style="font-size:0.92rem;white-space:pre-wrap;">'+escapeHtml(a.text)+'</div>')).join(''):'<div class="empty">No announcements.</div>');
+  h+=H('Lecture notes')+(res.length?res.map(r=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(r.course)+' &middot; '+fd(r.uploadedAt)+'</div>','<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;"><span style="font-weight:600;font-size:0.92rem;">'+escapeHtml(r.title)+'</span><a href="'+escapeHtml(r.url)+'" target="_blank" rel="noopener" style="white-space:nowrap;font-weight:700;font-size:0.82rem;">Download</a></div>')).join(''):'<div class="empty">No notes yet.</div>');
+  h+=H('Videos')+(vid.length?vid.map(v=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(v.course)+' &middot; '+fd(v.addedAt)+'</div>','<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;"><span style="font-weight:600;font-size:0.92rem;">'+escapeHtml(v.title)+'</span><a href="'+escapeHtml(v.url)+'" target="_blank" rel="noopener" style="white-space:nowrap;font-weight:700;font-size:0.82rem;">Watch</a></div>')).join(''):'<div class="empty">No videos yet.</div>');
+  if(syKeys.length) h+=H('Syllabus')+syKeys.map(k=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(k)+'</div>','<div style="white-space:pre-wrap;font-size:0.9rem;max-height:220px;overflow:auto;">'+escapeHtml(syl[k])+'</div>')).join('');
+  box.innerHTML=h;
 }
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -1037,6 +1083,7 @@ async function loadDashboard(skipLock){
     const myCourses = Object.keys(rosters).filter(course =>
       (rosters[course] || []).some(s => (s.indexNumber||'').toLowerCase() === idx.toLowerCase())
     );
+    try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
       attContainer.innerHTML = '<div class="empty">No attendance record found for this index number.</div>';

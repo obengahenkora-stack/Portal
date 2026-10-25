@@ -72,7 +72,9 @@ function sendEnquiry(e){
   if(!window.emailjs){ out.textContent='Email service not loaded. Please write to nana.obeng-ahenkora@uenr.edu.gh.'; return false; }
   btn.disabled=true; out.textContent='Sending...';
   emailjs.init({publicKey:'YAoDPw-tkurcPjVrU'});
-  emailjs.send('service_cs5nqqo','template_xtvjkab',{
+  var ENQUIRY_TEMPLATE_ID='template_4pm3q05'; /* replace with your new enquiry template ID */
+  emailjs.send('service_cs5nqqo',ENQUIRY_TEMPLATE_ID,{
+    service:g('enqService'), from_name:g('enqName'), from_email:g('enqEmail'), phone:g('enqPhone')||'not given', message:g('enqMsg'), reply_to:g('enqEmail'),
     course:'SERVICE ENQUIRY: '+g('enqService'),
     issue:g('enqMsg')+'\n\nFrom: '+g('enqName')+(g('enqPhone')?' | Phone: '+g('enqPhone'):''),
     student_email:g('enqEmail'),

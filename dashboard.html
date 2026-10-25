@@ -251,9 +251,11 @@
     <select id="adminRegisteredYearFilter" onchange="renderRegisteredStudents()"><option value="">All years</option></select>
 
     <div id="adminMovePanel" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:0;"><input type="checkbox" id="adminSelectAll" onchange="toggleSelectAllShown(this.checked)" style="width:auto;margin:0;"> Select all shown</label>
       <span id="adminMoveLabel" style="font-size:0.82rem;"></span>
       <select id="adminMoveTarget" style="width:auto;"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
-      <button class="secondary" id="adminMoveBtn" style="font-size:0.78rem;" onclick="moveShownStudents()">Move these students</button>
+      <button class="secondary" id="adminMoveBtn" style="font-size:0.78rem;" onclick="moveShownStudents()">Move selected</button>
+      <button class="secondary" id="adminDeleteSelBtn" style="font-size:0.78rem;border-color:var(--danger);color:var(--danger);" onclick="deleteSelectedStudents()">Delete selected</button>
     </div>
 
     <div id="adminBulkActions" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
@@ -803,22 +805,44 @@ async function adminDeleteStudent(email){
 function isAdminUser(){ return !!studentCurrentEmail && studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase(); }
 
 function studentYear(a){ var m=String(a.indexNumber||'').trim().match(/(\d{2})\D*$/); return m?m[1]:''; }
-var _shownStudents=[];
+var _shownStudents=[], _sel=new Set();
+function updateSelUi(){
+  var n=_shownStudents.filter(function(s){return _sel.has(s.email);}).length;
+  var l=document.getElementById('adminMoveLabel'); if(l) l.textContent=n+' of '+_shownStudents.length+' selected. Move to:';
+  var all=document.getElementById('adminSelectAll'); if(all) all.checked=_shownStudents.length>0 && n===_shownStudents.length;
+}
+function toggleStudent(email,on){ if(on) _sel.add(email); else _sel.delete(email); updateSelUi(); }
+function toggleSelectAllShown(on){
+  _shownStudents.forEach(function(s){ if(on) _sel.add(s.email); else _sel.delete(s.email); });
+  document.querySelectorAll('#adminRegisteredList input.stuSel').forEach(function(c){ c.checked=on; });
+  updateSelUi();
+}
+function selectedShown(){ return _shownStudents.filter(function(s){return _sel.has(s.email);}); }
+async function bulkByEmail(list,method,body){
+  for(var i=0;i<list.length;i+=40){
+    var chunk=list.slice(i,i+40).map(function(s){ return '"'+String(s.email).replace(/"/g,'')+'"'; }).join(',');
+    var opts={method:method,headers:Object.assign({},method==='PATCH'?DB_WRITE_HEADERS:DB_HEADERS,{'Prefer':'return=representation'})};
+    if(body) opts.body=JSON.stringify(body);
+    var res=await fetch(STUDENT_TABLE_URL+'?email=in.('+encodeURIComponent(chunk)+')',opts);
+    if(!res.ok) throw new Error('failed ('+res.status+')');
+  }
+}
 async function moveShownStudents(){
-  var target=document.getElementById('adminMoveTarget').value, list=_shownStudents;
-  if(!list.length){ alert('No students shown.'); return; }
-  if(!confirm('Move these '+list.length+' student(s) to Level '+target+'?')) return;
+  var target=document.getElementById('adminMoveTarget').value, list=selectedShown();
+  if(!list.length){ alert('Tick the students you want to move first.'); return; }
+  if(!confirm('Move '+list.length+' selected student(s) to Level '+target+'?')) return;
   var btn=document.getElementById('adminMoveBtn'); btn.disabled=true; btn.textContent='Moving...';
-  try{
-    for(var i=0;i<list.length;i+=40){
-      var chunk=list.slice(i,i+40).map(function(s){ return '"'+String(s.email).replace(/"/g,'')+'"'; }).join(',');
-      var res=await fetch(STUDENT_TABLE_URL+'?email=in.('+encodeURIComponent(chunk)+')',{method:'PATCH',headers:Object.assign({},DB_WRITE_HEADERS,{'Prefer':'return=representation'}),body:JSON.stringify({level:target})});
-      if(!res.ok) throw new Error('save failed ('+res.status+')');
-    }
-    alert('Moved '+list.length+' student(s) to Level '+target+'.');
-    loadRegisteredStudents();
-  }catch(e){ alert('Could not move: '+e.message); }
-  finally{ btn.disabled=false; btn.textContent='Move these students'; }
+  try{ await bulkByEmail(list,'PATCH',{level:target}); list.forEach(function(s){_sel.delete(s.email);}); alert('Moved '+list.length+' student(s) to Level '+target+'.'); loadRegisteredStudents(); }
+  catch(e){ alert('Could not move: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Move selected'; }
+}
+async function deleteSelectedStudents(){
+  var list=selectedShown();
+  if(!list.length){ alert('Tick the students you want to delete first.'); return; }
+  if(!confirm('Permanently delete '+list.length+' selected student(s)? This cannot be undone.')) return;
+  if(!confirm('Are you sure? '+list.length+' student record(s) will be removed.')) return;
+  try{ await bulkByEmail(list,'DELETE'); list.forEach(function(s){_sel.delete(s.email);}); loadRegisteredStudents(); }
+  catch(e){ alert('Could not delete: '+e.message); }
 }
 
 function renderRegisteredStudents(){
@@ -874,7 +898,7 @@ function renderRegisteredStudents(){
   if(yearVal) filtered = filtered.filter(function(a){ return studentYear(a)===yearVal; });
   _shownStudents = filtered.slice();
   var mp=document.getElementById('adminMovePanel');
-  if(filtered.length){ mp.classList.remove('hidden'); document.getElementById('adminMoveLabel').textContent='Move the '+filtered.length+' student(s) shown'+(yearVal?' (year '+yearVal+')':'')+' to:'; }
+  if(filtered.length){ mp.classList.remove('hidden'); updateSelUi(); }
   else mp.classList.add('hidden');
 
   if(filtered.length === 0){
@@ -883,8 +907,9 @@ function renderRegisteredStudents(){
   }
 
   container.innerHTML = filtered.map(a => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);">
-      <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);">
+      <input type="checkbox" class="stuSel" style="width:auto;margin:0;" data-email="${escapeHtml(a.email)}" ${_sel.has(a.email)?'checked':''} onchange="toggleStudent(this.dataset.email,this.checked)">
+      <div style="flex:1;">
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
         <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>

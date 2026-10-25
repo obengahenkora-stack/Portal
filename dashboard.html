@@ -247,6 +247,15 @@
       <option value="missing">Missing Level Only</option>
     </select>
 
+    <label>Filter by Year (last 2 digits of the index number, e.g. 24)</label>
+    <select id="adminRegisteredYearFilter" onchange="renderRegisteredStudents()"><option value="">All years</option></select>
+
+    <div id="adminMovePanel" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
+      <span id="adminMoveLabel" style="font-size:0.82rem;"></span>
+      <select id="adminMoveTarget" style="width:auto;"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <button class="secondary" id="adminMoveBtn" style="font-size:0.78rem;" onclick="moveShownStudents()">Move these students</button>
+    </div>
+
     <div id="adminBulkActions" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
       <button id="adminMigrateBtn" class="secondary" style="font-size:0.78rem;" onclick="migrateSelectedLevel()">Migrate to Next Level</button>
       <button id="adminDeleteLevelBtn" class="secondary" style="font-size:0.78rem;border-color:var(--danger);color:var(--danger);" onclick="deleteSelectedLevel()">Delete All in This Level</button>
@@ -337,9 +346,10 @@ const SUPABASE_FILE = "site-data.json";
 // ===== Student Auth (SEPARATE project — email confirmation OFF, dedicated to student sign-ups at scale) =====
 const STUDENT_AUTH_URL = "https://qqnsbuirelhwfrshafay.supabase.co";
 const STUDENT_AUTH_KEY = "sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ";
-const supabaseClient = window.supabase.createClient(STUDENT_AUTH_URL, STUDENT_AUTH_KEY, {
+var supabaseClient = null;
+try{ supabaseClient = window.supabase.createClient(STUDENT_AUTH_URL, STUDENT_AUTH_KEY, {
   auth: { persistSession: true, autoRefreshToken: true }
-});
+}); }catch(e){ console.warn('Supabase client unavailable', e); }
 
 
 // ===== Password recovery: handle the link from the reset email =====
@@ -792,6 +802,25 @@ async function adminDeleteStudent(email){
 }
 function isAdminUser(){ return !!studentCurrentEmail && studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase(); }
 
+function studentYear(a){ var m=String(a.indexNumber||'').trim().match(/(\d{2})\D*$/); return m?m[1]:''; }
+var _shownStudents=[];
+async function moveShownStudents(){
+  var target=document.getElementById('adminMoveTarget').value, list=_shownStudents;
+  if(!list.length){ alert('No students shown.'); return; }
+  if(!confirm('Move these '+list.length+' student(s) to Level '+target+'?')) return;
+  var btn=document.getElementById('adminMoveBtn'); btn.disabled=true; btn.textContent='Moving...';
+  try{
+    for(var i=0;i<list.length;i+=40){
+      var chunk=list.slice(i,i+40).map(function(s){ return '"'+String(s.email).replace(/"/g,'')+'"'; }).join(',');
+      var res=await fetch(STUDENT_TABLE_URL+'?email=in.('+encodeURIComponent(chunk)+')',{method:'PATCH',headers:Object.assign({},DB_WRITE_HEADERS,{'Prefer':'return=representation'}),body:JSON.stringify({level:target})});
+      if(!res.ok) throw new Error('save failed ('+res.status+')');
+    }
+    alert('Moved '+list.length+' student(s) to Level '+target+'.');
+    loadRegisteredStudents();
+  }catch(e){ alert('Could not move: '+e.message); }
+  finally{ btn.disabled=false; btn.textContent='Move these students'; }
+}
+
 function renderRegisteredStudents(){
   const container = document.getElementById('adminRegisteredList');
   const filterVal = (document.getElementById('adminRegisteredFilter').value || '').trim().toLowerCase();
@@ -820,6 +849,7 @@ function renderRegisteredStudents(){
 
   if(!levelVal){
     container.innerHTML = '<div class="empty">Select a level above to view students.</div>';
+    document.getElementById('adminMovePanel').classList.add('hidden');
     return;
   }
 
@@ -835,6 +865,17 @@ function renderRegisteredStudents(){
   } else if(levelVal !== 'all'){
     filtered = filtered.filter(a => String(a.level || '') === levelVal);
   }
+
+  // year filter (built from the index numbers in this level)
+  var yearSel=document.getElementById('adminRegisteredYearFilter'), yearVal=yearSel.value;
+  var years=[...new Set(filtered.map(studentYear).filter(Boolean))].sort();
+  yearSel.innerHTML='<option value="">All years</option>'+years.map(function(y){return '<option value="'+y+'"'+(y===yearVal?' selected':'')+'>20'+y+' (index ends '+y+')</option>';}).join('');
+  if(yearVal && years.indexOf(yearVal)<0){ yearVal=''; }
+  if(yearVal) filtered = filtered.filter(function(a){ return studentYear(a)===yearVal; });
+  _shownStudents = filtered.slice();
+  var mp=document.getElementById('adminMovePanel');
+  if(filtered.length){ mp.classList.remove('hidden'); document.getElementById('adminMoveLabel').textContent='Move the '+filtered.length+' student(s) shown'+(yearVal?' (year '+yearVal+')':'')+' to:'; }
+  else mp.classList.add('hidden');
 
   if(filtered.length === 0){
     container.innerHTML = '<div class="empty">No registered students match.</div>';

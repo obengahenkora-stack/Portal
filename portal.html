@@ -1958,6 +1958,8 @@ async function sendWeeklyDigest(){
 
 // ===== Lecture Hall uploads by staff =====
 const LM_CLOUD = "https://api.cloudinary.com/v1_1/v9y3judf/auto/upload", LM_PRESET = "portal_uploads";
+function lmBase(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():s; }
+function lmAllowed(c){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var b=lmBase(c).toLowerCase(); return currentUserCourses.some(function(x){ return lmBase(x).toLowerCase()===b; }); }
 function lmTypeChange(){ var t=document.getElementById('lmType').value; document.getElementById('lmFileWrap').classList.toggle('hidden',t!=='note'); document.getElementById('lmText').classList.toggle('hidden',t!=='announcement'); document.getElementById('lmUrl').classList.toggle('hidden',t!=='video'); document.getElementById('lmTitle').classList.toggle('hidden',t==='announcement'); }
 async function lmInit(){
   document.getElementById('lectureMaterialsCard').classList.remove('hidden'); lmTypeChange();
@@ -1966,7 +1968,7 @@ async function lmInit(){
     (d.courseList||[]).forEach(function(c){ if(c) set[c]=1; });
     Object.keys(d.rosters||{}).forEach(function(c){ set[c]=1; });
     (d.resources||[]).forEach(function(r){ if(r.course) set[r.course]=1; });
-    var list=visibleCourses(Object.keys(set)).sort();
+    var seen={}, list=[]; Object.keys(set).forEach(function(c){ var b=lmBase(c); if(!seen[b.toLowerCase()] && lmAllowed(c)){ seen[b.toLowerCase()]=1; list.push(b); } }); list.sort();
     var sel=document.getElementById('lmCourse');
     sel.innerHTML = list.length ? '<option value="">Select a course...</option>'+list.map(function(c){return '<option>'+escapeHtml(c)+'</option>';}).join('') : '<option value="">No courses assigned to you yet. Ask the Main Instructor.</option>';
     if(isAdmin()) sel.innerHTML += '<option value="__new__">+ New course...</option>';
@@ -1980,7 +1982,7 @@ async function lmSubmit(){
   if(course==='__new__'){ course=(prompt('New course name (e.g. CIVL 368)')||'').trim(); }
   var title=document.getElementById('lmTitle').value.trim(), text=document.getElementById('lmText').value.trim(), url=document.getElementById('lmUrl').value.trim(), file=document.getElementById('lmFile').files[0];
   if(!course){ msg.innerHTML='<div class="msg err">Choose a course.</div>'; return; }
-  if(!isAdmin() && visibleCourses([course]).length===0){ msg.innerHTML='<div class="msg err">That course is not assigned to you.</div>'; return; }
+  if(!lmAllowed(course)){ msg.innerHTML='<div class="msg err">That course is not assigned to you.</div>'; return; }
   if(type==='note' && (!title||!file)){ msg.innerHTML='<div class="msg err">Add a title and choose a file.</div>'; return; }
   if(type==='announcement' && !text){ msg.innerHTML='<div class="msg err">Write the announcement.</div>'; return; }
   if(type==='video' && (!title||!url)){ msg.innerHTML='<div class="msg err">Add a title and a video link.</div>'; return; }
@@ -2017,7 +2019,7 @@ async function lmList(){
     (d.resources||[]).forEach(function(x){ items.push({k:'resources',id:x.id,c:x.course,t:x.title,when:x.uploadedAt,tag:'Note',o:x}); });
     (d.announcements||[]).forEach(function(x){ items.push({k:'announcements',id:x.id,c:x.course,t:(x.text||'').slice(0,70),when:x.date,tag:'Announcement',o:x}); });
     (d.videos||[]).forEach(function(x){ items.push({k:'videos',id:x.id,c:x.course,t:x.title,when:x.addedAt,tag:'Video',o:x}); });
-    items=items.filter(function(i){ return lmMine(i.o) && (isAdmin() || visibleCourses([i.c]).length); }).sort(function(a,b){ return new Date(b.when)-new Date(a.when); }).slice(0,15);
+    items=items.filter(function(i){ return lmMine(i.o) && lmAllowed(i.c); }).sort(function(a,b){ return new Date(b.when)-new Date(a.when); }).slice(0,15);
     box.innerHTML = items.length ? items.map(function(i){ return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><span><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+' &middot; '+escapeHtml(i.t)+'</span><button class="secondary" style="padding:4px 10px;font-size:0.72rem;" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
   }catch(e){ box.innerHTML='<div class="hint">Could not load.</div>'; }
 }

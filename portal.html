@@ -719,9 +719,13 @@ async function resolveCurrentUserRole(){
     const me = members.find(m => (m.email || '').toLowerCase() === email);
     currentUserRole = me ? me.role : null;
     currentUserName = me ? me.name : null;
+    currentUserCourses = (me && Array.isArray(me.courses)) ? me.courses : null;
   }catch(e){ currentUserRole = null; currentUserName = null; }
 }
 let currentUserName = null;
+let currentUserCourses = null; // null = sees all courses; array = only the assigned ones
+function visibleCourses(list){ if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
+async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; } }catch(e){} }
 
 // ===== Welcome toast =====
 function showWelcomeToast(name){
@@ -882,13 +886,39 @@ async function loadTeamMemberList(){
         <div>
           <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(m.name)}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${escapeHtml(m.email)} — ${roleLabels[m.role] || m.role}</div>
+          <div style="font-size:0.75rem;color:var(--c1,#0ea5e9);">${m.role==='admin' ? 'All courses' : (Array.isArray(m.courses) ? (m.courses.length ? 'Courses: ' + escapeHtml(m.courses.join(', ')) : 'No courses assigned') : 'All courses (not restricted)')}</div>
         </div>
-        <button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.email).replace(/'/g,"\\'")}')">Remove</button>
+        <div style="display:flex;gap:6px;">${m.role==='admin' ? '' : `<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" data-email="${escapeHtml(m.email)}" onclick="assignCourses(this.dataset.email)">Assign courses</button>`}<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.email).replace(/'/g,"\\'")}')">Remove</button></div>
       </div>
     `).join('');
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load team members.</div>';
   }
+}
+
+async function assignCourses(email){
+  const data = await fetchSupabaseData();
+  const m = (data.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
+  if(!m) return;
+  const all = Object.keys(data.rosters||{}).sort();
+  const have = Array.isArray(m.courses) ? m.courses.map(c=>c.toLowerCase()) : [];
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = '<div style="background:#fff;color:#111;max-width:420px;width:100%;padding:24px;border-radius:8px;max-height:80vh;overflow:auto;font-family:system-ui,sans-serif"><h3 style="margin:0 0 6px">Courses for ' + escapeHtml(m.name) + '</h3><p style="margin:0 0 12px;font-size:.85rem;color:#555">They will only see the ticked courses in Attendance. Courses come from the rosters you have uploaded.</p><div id="asgList">' +
+    (all.length ? all.map(c => '<label style="display:flex;gap:8px;align-items:center;padding:6px 0"><input type="checkbox" value="' + escapeHtml(c) + '" ' + (have.indexOf(c.toLowerCase())>=0 ? 'checked' : '') + ' style="width:auto;margin:0"> ' + escapeHtml(c) + '</label>').join('') : '<div style="color:#777">No rosters uploaded yet.</div>') +
+    '</div><label style="display:flex;gap:8px;align-items:center;padding:10px 0 0;font-size:.85rem"><input type="checkbox" id="asgAll" ' + (Array.isArray(m.courses) ? '' : 'checked') + ' style="width:auto;margin:0"> Not restricted (sees all courses)</label><div style="margin-top:14px;display:flex;gap:8px"><button id="asgSave">Save</button><button class="secondary" id="asgCancel">Cancel</button></div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('asgCancel').onclick = () => ov.remove();
+  document.getElementById('asgSave').onclick = async () => {
+    const fresh = await fetchSupabaseData();
+    const mm = (fresh.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
+    if(!mm) { ov.remove(); return; }
+    if(document.getElementById('asgAll').checked){ delete mm.courses; }
+    else { mm.courses = [...ov.querySelectorAll('#asgList input:checked')].map(i => i.value); }
+    await saveSupabaseData(fresh);
+    ov.remove();
+    loadTeamMemberList();
+  };
 }
 
 async function removeTeamMember(email){
@@ -1850,7 +1880,7 @@ async function sendWeeklyDigest(){
     const rosters = supabaseData.rosters || {};
     const attendanceRecords = supabaseData.attendance || [];
     const atRisk = [];
-    Object.keys(rosters).forEach(course => {
+    visibleCourses(Object.keys(rosters)).forEach(course => {
       const courseSessions = attendanceRecords.filter(a => a.course === course);
       if(courseSessions.length < 3) return;
       (rosters[course] || []).forEach(s => {
@@ -2181,7 +2211,7 @@ async function loadCleanupCourseOptions(){
   try{
     const data = await fetchSupabaseData();
     const rosters = data.rosters || {};
-    const courses = Object.keys(rosters);
+    const courses = visibleCourses(Object.keys(rosters));
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     document.getElementById('cleanupCourseSelect').innerHTML = options;
   }catch(e){}
@@ -2236,7 +2266,7 @@ async function loadAttendanceCourseOptions(){
   try{
     const data = await fetchSupabaseData();
     const rosters = data.rosters || {};
-    const courses = Object.keys(rosters);
+    const courses = visibleCourses(Object.keys(rosters));
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     document.getElementById('attendanceCourseSelect').innerHTML = options;
     document.getElementById('attendanceSummaryCourseSelect').innerHTML = options;
@@ -2247,7 +2277,7 @@ async function loadAttendanceSummaryCourseOptions(){
   try{
     const data = await fetchSupabaseData();
     const rosters = data.rosters || {};
-    const courses = Object.keys(rosters);
+    const courses = visibleCourses(Object.keys(rosters));
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     const summarySelect = document.getElementById('attendanceSummaryCourseSelect');
     if(summarySelect) summarySelect.innerHTML = options;
@@ -2285,6 +2315,7 @@ async function uploadRoster(){
     data.rosters = data.rosters || {};
     data.rosters[course] = roster;
     await saveSupabaseData(data);
+    await grantMeCourse(course);
     msg.innerHTML = `<div class="msg ok">Saved roster for "${escapeHtml(course)}" — ${roster.length} student(s).</div>`;
     document.getElementById('rosterInput').value = '';
     loadAttendanceCourseOptions();
@@ -2300,6 +2331,7 @@ async function saveRosterData(course, roster, msgEl){
   data.rosters = data.rosters || {};
   data.rosters[course] = roster;
   await saveSupabaseData(data);
+  await grantMeCourse(course);
   msgEl.innerHTML = `<div class="msg ok">Saved roster for "${escapeHtml(course)}" — ${roster.length} student(s).</div>`;
   loadAttendanceCourseOptions();
 }

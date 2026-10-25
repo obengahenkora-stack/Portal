@@ -76,6 +76,20 @@
   <a href="dashboard.html">Students Dashboard</a>
 </div>
 
+<div class="wrap" style="padding-bottom:0">
+  <div id="studentIntro" style="border-left:4px solid var(--c3,#7c3aed);padding:4px 0 4px 20px;margin:8px 0 24px">
+    <div style="font:400 .65rem 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.65">Quote of the Day</div>
+    <div id="quoteText" style="font-size:clamp(1.1rem,2vw,1.5rem);line-height:1.35;margin:6px 0;min-height:3.2em">&nbsp;</div>
+    <div id="quoteNum" style="font:400 .62rem 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.6"></div>
+    <p style="margin-top:14px;font-size:.92rem;opacity:.8">How to use this page: <b>1.</b> Browse your course. <b>2.</b> Study the notes and videos. <b>3.</b> Practise with the quiz widget. <b>4.</b> Mark attendance in the Students Dashboard. <b>5.</b> Book office hours when stuck.</p>
+  </div>
+</div>
+<script src="quotes.js"></script>
+<script>
+(function(){var Q=window.PORTAL_QUOTES||['Small steps every day build the strongest foundations.'];var qt=document.getElementById('quoteText'),qn=document.getElementById('quoteNum');if(!qt)return;var d=new Date(),day=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5),idx=(day*7+d.getFullYear())%Q.length;
+function show(i){idx=(i+Q.length)%Q.length;qt.textContent='\u201C'+Q[idx]+'\u201D';qn.textContent='No. '+(idx+1)+' / '+Q.length;}
+show(idx);setInterval(function(){if(document.hidden)return;show(Math.floor(Math.random()*Q.length));},12000);})();
+</script>
 <div class="wrap">
   <div class="sub-tabs">
     <div class="sub-tab active" id="subTabCourses" onclick="switchHallTab('courses')">Courses</div>

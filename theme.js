@@ -20,10 +20,10 @@
     if(wrap) wrap.parentNode.insertBefore(head,wrap);
 
     /* ---- top bar ---- */
-    var map={ 'lecture-hall.html':'Lecture Hall','blog.html':'Lecture Hall','announcements.html':'Lecture Hall','videos.html':'Lecture Hall','course.html':'Lecture Hall','portal.html':'Faculty Console','dashboard.html':'Students Dashboard' };
-    var crumbMap={ 'lecture-hall.html':'Lecture Hall','blog.html':'Blog','announcements.html':'Announcements','videos.html':'Videos','course.html':'Course','portal.html':'Faculty Console','dashboard.html':'Students Dashboard' };
+    var map={ 'lecture-hall.html':'Lecture Hall','blog.html':'Lecture Hall','announcements.html':'Lecture Hall','videos.html':'Lecture Hall','course.html':'Lecture Hall','portal.html':'Staff','dashboard.html':'Students Dashboard' };
+    var crumbMap={ 'lecture-hall.html':'Lecture Hall','blog.html':'Blog','announcements.html':'Announcements','videos.html':'Videos','course.html':'Course','portal.html':'Staff','dashboard.html':'Students Dashboard' };
     var current=map[file]||'';
-    var items=[['Home','index.html'],['Lecture Hall','lecture-hall.html'],['Faculty Console','portal.html'],['Students Dashboard','dashboard.html']];
+    var items=[['Home','index.html'],['Lecture Hall','lecture-hall.html'],['Students Dashboard','dashboard.html'],['Staff','portal.html']];
     var top=document.createElement('header'); top.className='topbar';
     var left=document.createElement('div'); left.className='tb-left';
     left.innerHTML='Obeng-Ahenkora <span>/ '+(crumbMap[file]||'')+'</span>';

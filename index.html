@@ -786,6 +786,15 @@ html[data-theme="dark"] body.landing .hero{ background:radial-gradient(55% 50% a
 .step:nth-of-type(2):hover,.step:nth-of-type(2):hover .t,.step:nth-of-type(2):hover .n,.step:nth-of-type(2):hover .d{ color:#0b2a3a!important; }
 html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[data-theme="dark"] .step:hover .n,html[data-theme="dark"] .step:hover .d{ color:#08161d!important; }
 .theme-toggle{ border-color:var(--c2); }
+
+/* ===== CV-first layout: hide non-CV sections (kept in DOM so profile loading is safe) ===== */
+.wrap > .section-index:first-child, .facts-grid, .pull-quote, .newsletter-card, #subTabFaq, #subTabPosts, #subTabAbout, #deptEmbeds{display:none!important}
+.closing-cta + .marquee{display:none!important}
+.cvl{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:16px;padding:7px 0;border-bottom:1px solid var(--line,rgba(128,128,128,.25));font-size:.95rem;line-height:1.4}
+.cvl .y{font:400 .7rem 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--c1,var(--muted));padding-top:3px}
+.cvl.one{grid-template-columns:1fr}
+.tab-staff{opacity:.55;font-size:.8em}
+@media(max-width:600px){.cvl{grid-template-columns:1fr;gap:2px}}
 </style>
 
 <script>
@@ -802,8 +811,8 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
   <div class="tab active" id="tabView" onclick="switchTab('view')">Home</div>
   <div class="tab" id="tabDepartment" onclick="switchTab('department')">Department</div>
   <a href="lecture-hall.html" class="tab" style="text-decoration:none;">Lecture Hall</a>
-  <a href="portal.html" class="tab" style="text-decoration:none;">Faculty Console</a>
   <a href="dashboard.html" class="tab" style="text-decoration:none;">Students Dashboard</a>
+  <a href="portal.html" class="tab tab-staff" style="text-decoration:none;">Staff</a>
 </div>
 <div class="tb-right" id="tbClock">&nbsp;</div></header>
 <div class="hero">
@@ -841,29 +850,38 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
       <div class="pro-head">
         <h2 id="welcomeLabel">Welcome</h2>
         <dl class="meta">
-          <dt>Department</dt><dd>Civil &amp; Environmental Engineering</dd>
+          <dt>Position</dt><dd>Lecturer</dd>
           <dt>Institution</dt><dd>UENR, Sunyani</dd>
-          <dt>Offers</dt><dd>Notes, quizzes, attendance, office hours</dd>
+          <dt>Field</dt><dd>Construction Management</dd>
         </dl>
       </div>
-      <div class="pro-text" id="welcomeText"><span class="ln"><span>Welcome to my academic portal. Your <span class="hv">lecture notes</span>, <span class="hv">assessments</span> and <span class="hv">attendance</span> records are all here in one place.</span></span></div>
+      <div class="pro-text" id="welcomeText"><span class="ln"><span>I am a Lecturer at the University of Energy and Natural Resources (UENR), Sunyani, with a Ph.D. in Construction Management. My teaching and research focus on construction materials, procurement and pricing, site safety and sustainable construction in Ghana.</span></span></div>
     </div>
-    <div class="pro-row">
-      <div class="pro-head"><span class="sm">Quote of the Day</span></div>
-      <div class="pro-text" id="quoteBox" style="max-width:none;">
-        <span class="quote-text" id="quoteText">&nbsp;</span>
-        <span class="quote-meta"><span id="quoteNum"></span></span>
-      </div>
+        <div class="pro-row" id="cvInterestsRow">
+      <div class="pro-head"><span class="sm">Research interests</span></div>
+      <div class="pro-text cvlist" id="cvInterests" style="max-width:none;"></div>
+    </div>
+      <div class="pro-row" id="cvEducationRow">
+      <div class="pro-head"><span class="sm">Education</span></div>
+      <div class="pro-text cvlist" id="cvEducation" style="max-width:none;"></div>
+    </div>
+      <div class="pro-row" id="cvExperienceRow">
+      <div class="pro-head"><span class="sm">Experience</span></div>
+      <div class="pro-text cvlist" id="cvExperience" style="max-width:none;"></div>
+    </div>
+      <div class="pro-row" id="cvMembershipsRow">
+      <div class="pro-head"><span class="sm">Membership</span></div>
+      <div class="pro-text cvlist" id="cvMemberships" style="max-width:none;"></div>
     </div>
   </section>
 
   <section class="process" id="processSec">
-    <h2 id="processHeading">Where to start</h2>
-    <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter')location.href='lecture-hall.html'"><div class="n">01</div><div class="t">Browse</div><div class="d">Find your course in the Lecture Hall and see its outline, notes and announcements.</div></div>
-    <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter')location.href='lecture-hall.html'"><div class="n">02</div><div class="t">Study</div><div class="d">Read the notes, watch the videos and keep the formula sheet close.</div></div>
-    <div class="step" role="link" tabindex="0" onclick="toggleGameWidget(true)" onkeydown="if(event.key==='Enter')toggleGameWidget(true)"><div class="n">03</div><div class="t">Practice</div><div class="d">Test yourself with quiz games and flashcards, then review the correct answers.</div></div>
-    <div class="step" role="link" tabindex="0" onclick="location.href='dashboard.html'" onkeydown="if(event.key==='Enter')location.href='dashboard.html'"><div class="n">04</div><div class="t">Check in</div><div class="d">Mark attendance and follow your scores from your Students Dashboard.</div></div>
-    <div class="step" role="link" tabindex="0" onclick="toggleAssistWidget(true)" onkeydown="if(event.key==='Enter')toggleAssistWidget(true)"><div class="n">05</div><div class="t">Ask</div><div class="d">Book office hours or chat with the study assistant when you are stuck.</div></div>
+    <h2 id="processHeading">Explore</h2>
+    <div class="step" role="link" tabindex="0" onclick="openProfileTab('pubs')" onkeydown="if(event.key==='Enter'){openProfileTab('pubs')}"><div class="n">01</div><div class="t">Publications</div><div class="d">Journal articles on construction materials, procurement, pricing and safety.</div></div>
+    <div class="step" role="link" tabindex="0" onclick="location.href='lecture-hall.html'" onkeydown="if(event.key==='Enter'){location.href='lecture-hall.html'}"><div class="n">02</div><div class="t">Lecture Hall</div><div class="d">Course outlines, notes, videos and announcements for my students.</div></div>
+    <div class="step" role="link" tabindex="0" onclick="location.href='dashboard.html'" onkeydown="if(event.key==='Enter'){location.href='dashboard.html'}"><div class="n">03</div><div class="t">Students Dashboard</div><div class="d">Mark attendance and follow your scores.</div></div>
+    <div class="step" role="link" tabindex="0" onclick="openProfileTab('officehours')" onkeydown="if(event.key==='Enter'){openProfileTab('officehours')}"><div class="n">04</div><div class="t">Office Hours</div><div class="d">See when I am available to meet.</div></div>
+    <div class="step" role="link" tabindex="0" onclick="openProfileTab('contact')" onkeydown="if(event.key==='Enter'){openProfileTab('contact')}"><div class="n">05</div><div class="t">Contact</div><div class="d">Email, postal address and academic profiles.</div></div>
   </section>
 </div>
 
@@ -1073,6 +1091,15 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
       <label>Home page: five steps (one per line: Title | description)</label>
       <textarea id="stepsInput" style="min-height:130px;" placeholder="Browse | Find your course in the Lecture Hall.&#10;Study | Read the notes and watch the videos.&#10;Practice | Test yourself with quizzes and flashcards.&#10;Check in | Mark attendance and follow your scores.&#10;Ask | Book office hours or chat with the assistant."></textarea>
 
+      <label>CV: research interests (one per line)</label>
+      <textarea id="cvInterestsInput"></textarea>
+      <label>CV: education (one per line: Years | Degree, Institution)</label>
+      <textarea id="cvEducationInput"></textarea>
+      <label>CV: experience (one per line: Years | Role, Institution)</label>
+      <textarea id="cvExperienceInput"></textarea>
+      <label>CV: memberships (one per line: Abbrev | Description)</label>
+      <textarea id="cvMembershipsInput"></textarea>
+
       <label>Verified Badge Text (top of hero)</label>
       <input type="text" id="heroBadgeInput" placeholder="Verified Faculty Profile">
 
@@ -1124,9 +1151,10 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
     <h2 id="closingHeadingDisplay" style="font-size:2rem;">Let's build what's next.</h2>
     <p id="closingTextDisplay" style="color:var(--muted);font-size:0.95rem;margin-top:-8px;margin-bottom:28px;max-width:480px;">For students, colleagues, and collaborators working across civil engineering teaching and research.</p>
     <div class="cta-row">
-      <a href="dashboard.html" class="cta-link">Check My Results</a>
-      <a href="blog.html" class="cta-link">Read Engineering Notes</a>
-      <a href="lecture-hall.html" class="cta-link">Browse Lecture Hall</a>
+      <a href="mailto:nana.obeng-ahenkora@uenr.edu.gh" class="cta-link">Email Me</a>
+      <a href="https://scholar.google.com/citations?user=IOzCS30AAAAJ" target="_blank" rel="noopener" class="cta-link">Google Scholar</a>
+      <a href="https://orcid.org/0000-0003-3610-8956" target="_blank" rel="noopener" class="cta-link">ORCID</a>
+      <a href="https://www.researchgate.net/profile/Nana-Obeng-Ahenkora" target="_blank" rel="noopener" class="cta-link">ResearchGate</a>
     </div>
   </div>
 </div>
@@ -1168,7 +1196,7 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
       <div class="footer-col">
         <div class="footer-col-label">Site</div>
         <div class="footer-col-content">
-          <a href="portal.html">Faculty Console</a><br>
+          <a href="portal.html">Staff</a><br>
           <a href="blog.html">Blog</a><br>
           <a href="lecture-hall.html">Lecture Hall</a>
         </div>
@@ -1330,7 +1358,7 @@ const PULL_QUOTE_POOL = [
 ];
 
 const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabaseClient = null; try{ supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn("Supabase client unavailable", e); }
 let currentUserRole = null;
 let currentUserEmail = null;
 function isOwner(){ return currentUserRole === 'owner'; }
@@ -1943,6 +1971,28 @@ function homeParagraph(text){
   var html=escapeHtml(text).replace(/\[([^\]]+)\]/g,function(_,w){ var k=i++; return '<span class="hv" data-c="'+(k%8)+'">'+w+'</span><i class="hv-thumb" style="background:'+HOME_THUMBS[k%HOME_THUMBS.length]+'"></i>'; });
   return '<span class="ln"><span>'+html.replace(/\n/g,'<br>')+'</span></span>';
 }
+
+var CV_DEF={
+ cvInterests:"Construction Management\nConstruction Materials and Pricing\nProcurement Methods\nSite Health and Safety\nSustainable Construction",
+ cvEducation:"2022 - 2025 | PhD Construction Management, AAMUSTED, Kumasi\n2015 - 2017 | MPhil Construction Technology, University of Education, Kumasi\n2010 - 2014 | BSc Quantity Surveying and Construction Economics, KNUST, Kumasi",
+ cvExperience:"Oct 2023 - Present | Lecturer, University of Energy and Natural Resources\nFeb 2021 - Sep 2023 | Assistant Lecturer, UENR\n2020 - 2021 | Assistant Lecturer (Part-Time), UENR\n2017 - 2019 | Teaching Assistant, Sunyani Technical University\n2015 - 2017 | Site Supervisor, TMJ Ventures Limited, Kumasi",
+ cvMemberships:"PE.IET-GH | Professional Engineer, Institution of Engineering and Technology (Ghana)\nMGIOC | Corporate Member, Ghana Institute of Construction\nSM-CIOB | Student Member, Chartered Institute of Building"
+};
+var CV_PUBS="Obeng-Ahenkora, N. K., Danso, H., & Kheni, N. A. (2025). Principal component analysis of factors influencing the choice of procurement methods for the procurement of construction materials in Ghana. Engineering, Construction and Architectural Management. https://doi.org/10.1108/ECAM-05-2024-0630\nAckerson, N. O. B., Yeboah, S. I. I. K., Nyantakyi, E. K., Ahmed, M., Mensah, J., Amankwah-Minkah, A., & Obeng-Ahenkora, N. K. (2024). Investigating the quality of harvested rainwater and the perception of users and non-users in Sunyani, Ghana. Water Conservation Science and Engineering, 9(2), 80.\nDanso, H., Obeng-Ahenkora, N. K., & Manu, D. (2021). Prices trend of selected building and construction materials on Ghanaian construction market: 2011-2016. International Journal of Construction Management, 21(3), 284-291.\nObeng-Ahenkora, N. K., & Danso, H. (2020). Principal component analysis of factors influencing pricing decisions of building materials in Ghana. International Journal of Construction Management, 20(2), 122-129.\nNyantakyi, E. K., Obiri-Yeboah, A., Obeng-Ahenkora, N. K., Domfeh, M. K., & Mohammed, G. A. (2020). Investigating occupational health and safety of workers on selected construction sites in the Sunyani Municipality, Ghana. Journal of Safety Engineering, 9(1), 1-8. https://doi.org/10.5923/j.safety.20200901.01\nNyantakyi, E. K., Obeng-Ahenkora, N. K., Obiri-Yeboah, A., Mohammed, G. A., & Osei, R. K. (2020). Differential pricing of concrete products within the Ghanaian construction industry. Journal of Construction Engineering and Management, 9(5), 135-141.\nAgyeman, S., Obeng-Ahenkora, N. K., Assiamah, S., & Twumasi, G. (2019). Exploiting recycled plastic waste as an alternative binder for paving blocks production. Case Studies in Construction Materials, 11, e00246.\nDanso, H., & Obeng-Ahenkora, N. K. (2018). Major determinants of prices increase of building materials on Ghanaian construction market. Open Journal of Civil Engineering, 8(2), 142-154.";
+var CV_CONTACT="nana.obeng-ahenkora@uenr.edu.gh\nobengahenkora@gmail.com\nP.O. Box 1067, Sunyani, Ghana\nORCID: https://orcid.org/0000-0003-3610-8956\nResearchGate: https://www.researchgate.net/profile/Nana-Obeng-Ahenkora\nGoogle Scholar: https://scholar.google.com/citations?user=IOzCS30AAAAJ";
+function renderCv(profile){
+  ['cvInterests','cvEducation','cvExperience','cvMemberships'].forEach(function(k){
+    var txt=profile[k]||CV_DEF[k], el=document.getElementById(k), inp=document.getElementById(k+'Input');
+    if(inp) inp.value=profile[k]||'';
+    if(!el) return;
+    el.innerHTML=txt.split('\n').filter(function(l){return l.trim();}).map(function(l){
+      var p=l.split('|'); if(p.length<2) return '<div class="cvl one"><span>'+escapeHtml(l.trim())+'</span></div>';
+      return '<div class="cvl"><span class="y">'+escapeHtml(p[0].trim())+'</span><span>'+escapeHtml(p.slice(1).join('|').trim())+'</span></div>';
+    }).join('');
+  });
+}
+function openProfileTab(t){ switchSubTab(t); var v=document.getElementById('viewMode'); if(v) v.scrollIntoView({behavior:'smooth'}); }
+
 function applyHomeContent(profile){
   var g=function(id){ return document.getElementById(id); };
   var set=function(id,v){ if(v && g(id)) g(id).textContent=v; };
@@ -1956,6 +2006,7 @@ function applyHomeContent(profile){
   // fill editor boxes with the visible text so editing starts from what is live
   var val=function(id,v){ if(g(id)) g(id).value=v||''; };
   ['welcomeLabel','welcomeText','processHeading','steps'].forEach(function(k){ val(k+'Input',profile[k]); });
+  renderCv(profile);
   if(window.__homeBind) window.__homeBind();
 }
 
@@ -1972,14 +2023,14 @@ async function loadProfile(){
     document.getElementById('nameInput').value = profile.name || defaultName;
     document.getElementById('titleInput').value = profile.title || defaultTitle;
 
-    document.getElementById('bioDisplay').textContent = profile.bio || "No bio added yet.";
+    document.getElementById('bioDisplay').textContent = profile.bio || "Lecturer in Construction Management, University of Energy and Natural Resources (UENR), Sunyani.";
 
-    const contactLines = (profile.contact || "").split('\n').filter(l => l.trim());
+    const contactLines = (profile.contact || CV_CONTACT).split('\n').filter(l => l.trim());
     document.getElementById('contactDisplay').innerHTML = contactLines.length
       ? contactLines.map(l => `<div class="contact-line">${escapeHtml(l)}</div>`).join('')
       : "No contact info added yet.";
 
-    const pubLines = (profile.publications || "").split('\n').filter(l => l.trim());
+    const pubLines = (profile.publications || CV_PUBS).split('\n').filter(l => l.trim());
     document.getElementById('pubDisplay').innerHTML = pubLines.length
       ? pubLines.map(l => `<li>${escapeHtml(l)}</li>`).join('')
       : "<li>No publications added yet.</li>";
@@ -2014,7 +2065,7 @@ async function loadProfile(){
     document.getElementById('heroBadgeInput').value = profile.heroBadge || "";
     applyHomeContent(profile);
 
-    const marqueeLines = (profile.marqueeText || "Structural Analysis\nQuantity Surveying\nResearch Methods\nCivil & Environmental Engineering").split('\n').filter(l => l.trim());
+    const marqueeLines = (profile.marqueeText || "Construction Management\nConstruction Materials\nProcurement\nSustainable Construction\nSite Safety").split('\n').filter(l => l.trim());
     const marqueeSpans = marqueeLines.map(l => `<span>${escapeHtml(l)}</span>`).join('');
     const marqueeTrack1 = document.getElementById('marqueeTrack1');
     if(marqueeTrack1) marqueeTrack1.innerHTML = marqueeSpans + marqueeSpans;
@@ -2029,9 +2080,9 @@ async function loadProfile(){
     document.getElementById('newsletterTextDisplay').textContent = profile.newsletterText || "Enter your email to be notified whenever a new post is published on Engineering Notes.";
     document.getElementById('newsletterTextInput').value = profile.newsletterText || "";
 
-    document.getElementById('closingHeadingDisplay').textContent = profile.closingHeading || "Let's build what's next.";
+    document.getElementById('closingHeadingDisplay').textContent = profile.closingHeading || "Get in touch.";
     document.getElementById('closingHeadingInput').value = profile.closingHeading || "";
-    document.getElementById('closingTextDisplay').textContent = profile.closingText || "For students, colleagues, and collaborators working across civil engineering teaching and research.";
+    document.getElementById('closingTextDisplay').textContent = profile.closingText || "For research collaboration, supervision enquiries and speaking invitations.";
     document.getElementById('closingTextInput').value = profile.closingText || "";
 
     // Department section
@@ -2190,7 +2241,7 @@ async function saveProfile(){
   const closingHeading = document.getElementById('closingHeadingInput').value.trim();
   const closingText = document.getElementById('closingTextInput').value.trim();
   const homeFields = {};
-  ['welcomeLabel','welcomeText','processHeading','steps'].forEach(function(k){ homeFields[k]=document.getElementById(k+'Input').value.trim(); });
+  ['welcomeLabel','welcomeText','processHeading','steps','cvInterests','cvEducation','cvExperience','cvMemberships'].forEach(function(k){ homeFields[k]=document.getElementById(k+'Input').value.trim(); });
   const deptName = document.getElementById('deptNameInput').value.trim();
   const deptFacebook = document.getElementById('deptFacebookInput').value.trim();
   const deptX = document.getElementById('deptXInput').value.trim();

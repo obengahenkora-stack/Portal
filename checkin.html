@@ -47,6 +47,8 @@
   .success-icon{ font-size:3rem; margin-bottom:10px; }
   .hidden{ display:none; }
 </style>
+<script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="card">
@@ -312,5 +314,6 @@ async function submitCheckin(){
 
 window.addEventListener('DOMContentLoaded', verifyAndShowForm);
 </script>
+<script src="theme.js"></script>
 </body>
 </html>

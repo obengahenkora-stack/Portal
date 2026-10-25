@@ -1035,8 +1035,8 @@ async function onAuthReady(showToast){
 var _gb={cols:[],rows:[]};
 async function loadGradebookCourses(){
   try{
-    const [recs,data]=await Promise.all([fetchAllRecords(),fetchSupabaseData()]);
-    const set=new Set(recs.map(r=>r.course||'General')); Object.keys(data.rosters||{}).forEach(c=>set.add(c));
+    const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
+    const set=new Set(recs.map(r=>r.course||'General')); visibleCourses(Object.keys(data.rosters||{})).forEach(c=>set.add(c));
     const sel=document.getElementById('gradebookCourse'), cur=sel.value;
     sel.innerHTML='<option value="">Select a course...</option>'+[...set].sort().map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     sel.value=cur;
@@ -1046,7 +1046,7 @@ async function renderGradebook(){
   const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
   if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; return; }
   box.innerHTML='<div class="empty">Loading...</div>';
-  const [recs,data]=await Promise.all([fetchAllRecords(),fetchSupabaseData()]);
+  const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
   const cr=recs.filter(r=>(r.course||'General')===course);
   const cols=[]; cr.forEach(r=>{ const a=r.assessmentName||'Untitled'; if(cols.indexOf(a)<0) cols.push(a); });
   const roster=(data.rosters||{})[course]||[];
@@ -1065,6 +1065,18 @@ function downloadGradebook(){
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'Gradebook');
   XLSX.writeFile(wb,(_gb.course||'class')+'-gradebook-'+new Date().toISOString().split('T')[0]+'.xlsx');
 }
+async function fetchVisibleRecords(){
+  const all = await fetchAllRecords();
+  if(isAdmin() || !Array.isArray(currentUserCourses)) return all;
+  const ok = new Set(visibleCourses([...new Set(all.map(r => r.course || 'General'))]).map(c => String(c).toLowerCase()));
+  return all.filter(r => ok.has(String(r.course || 'General').toLowerCase()));
+}
+function courseGuard(existing, newRecords){
+  if(isAdmin() || !Array.isArray(currentUserCourses)) return '';
+  const known = new Set(existing.map(r => String(r.course || 'General').toLowerCase()));
+  const bad = [...new Set(newRecords.map(r => r.course || 'General'))].filter(c => known.has(String(c).toLowerCase()) && !visibleCourses([c]).length);
+  return bad.length ? 'You are not assigned to: ' + bad.join(', ') + '. Ask the owner to assign it to you.' : '';
+}
 async function fetchAllRecords(){
   const bin = await fetchBin();
   return bin.records || [];
@@ -1080,7 +1092,7 @@ async function loadRecords(){
   const container = document.getElementById('recordsTable');
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
 
     // populate course filter options
     const filterSelect = document.getElementById('courseFilter');
@@ -1145,10 +1157,13 @@ async function uploadScores(){
 
   try{
     const existing = await fetchAllRecords();
+    const _guard = courseGuard(existing, newRecords);
+    if(_guard) throw new Error(_guard);
     const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
     const _n=new Set(newRecords.map(_k));
     const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
     await saveAllRecords(combined);
+    for(const _c of [...new Set(newRecords.map(r => r.course || 'General'))]) await grantMeCourse(_c);
     msg.innerHTML = `<div class="msg ok">Uploaded ${newRecords.length} record(s) for "${assessmentName}". Total now: ${combined.length}.</div>`;
     document.getElementById('csvInput').value = '';
     loadRecords(); loadGradebookCourses(); renderGradebook();
@@ -1183,7 +1198,7 @@ function parseCsvLine(line){
 
 async function loadExportCourseOptions(){
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
     const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
     const select = document.getElementById('exportCourseSelect');
     if(select){
@@ -1197,7 +1212,7 @@ async function downloadScoresExcel(){
   const courseFilter = document.getElementById('exportCourseSelect').value;
   msg.innerHTML = '<div class="msg ok">Preparing file...</div>';
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
     const filtered = courseFilter ? records.filter(r => r.course === courseFilter) : records;
     if(filtered.length === 0){
       msg.innerHTML = '<div class="msg err">No records to export.</div>';
@@ -1228,7 +1243,7 @@ async function loadFillAssessmentOptions(){
     return;
   }
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
     const assessments = [...new Set(records.filter(r => r.course === course).map(r => r.assessmentName).filter(Boolean))].sort();
     select.innerHTML = assessments.length
       ? assessments.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('')
@@ -1241,7 +1256,7 @@ async function loadFillAssessmentOptions(){
 // Populate the course dropdown for the Fill Sheet card whenever courses are loaded elsewhere too
 async function loadFillCourseOptions(){
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
     const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
     const select = document.getElementById('fillCourseSelect');
     if(select){
@@ -1274,7 +1289,7 @@ async function fillOfficialSheet(){
   msg.innerHTML = '<div class="msg ok">Reading file...</div>';
 
   try{
-    const records = await fetchAllRecords();
+    const records = await fetchVisibleRecords();
     const scoreMap = {};
     records
       .filter(r => r.course === course && r.assessmentName === assessmentName)
@@ -1609,10 +1624,13 @@ async function uploadScoresFromFile(){
 
   try{
     const existing = await fetchAllRecords();
+    const _guard = courseGuard(existing, newRecords);
+    if(_guard) throw new Error(_guard);
     const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
     const _n=new Set(newRecords.map(_k));
     const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
     await saveAllRecords(combined);
+    for(const _c of [...new Set(newRecords.map(r => r.course || 'General'))]) await grantMeCourse(_c);
     let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}".`;
     if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
     note += ` Total now: ${combined.length}.`;
@@ -1627,6 +1645,7 @@ async function uploadScoresFromFile(){
 }
 
 async function clearAllData(){
+  if(!isAdmin()){ alert('Only the owner or an admin can clear all data.'); return; }
   if(!confirm("This will permanently delete ALL uploaded records. Continue?")) return;
   const msg = document.getElementById('uploadMsg');
   try{
@@ -1655,6 +1674,7 @@ async function deleteCourse(){
   msg.innerHTML = '<div class="msg ok">Deleting...</div>';
 
   try{
+    if(!isAdmin() && !visibleCourses([course]).length) throw new Error('You are not assigned to this course.');
     const existing = await fetchAllRecords();
     const remaining = existing.filter(r => (r.course || 'General') !== course);
     const removedCount = existing.length - remaining.length;

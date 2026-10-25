@@ -675,6 +675,30 @@ async function saveQrSessions(qrData){
 const OWNER_EMAIL = "obengahenkora@gmail.com"; // permanent Owner — cannot be changed or removed via the UI
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ===== Password recovery: handle the link from the reset email =====
+function showRecoveryBox(){
+  if(document.getElementById('recoveryBox')) return;
+  var o=document.createElement('div'); o.id='recoveryBox';
+  o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
+  document.body.appendChild(o);
+  document.getElementById('recBtn').onclick=async function(){
+    var pw=document.getElementById('recNewPw').value, m=document.getElementById('recMsg');
+    if(pw.length<6){ m.textContent='Use at least 6 characters.'; return; }
+    m.textContent='Saving...';
+    var r=await supabaseClient.auth.updateUser({password:pw});
+    if(r.error){ m.textContent=r.error.message; return; }
+    m.textContent='Password updated. You can now sign in.';
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    setTimeout(function(){ location.reload(); },1500);
+  };
+}
+try{
+  supabaseClient.auth.onAuthStateChange(function(ev){ if(ev==='PASSWORD_RECOVERY') showRecoveryBox(); });
+  if(/type=recovery/.test(location.hash)) window.addEventListener('load',function(){ setTimeout(showRecoveryBox,600); });
+}catch(e){}
+
+
 let currentUserRole = null;   // 'owner' | 'admin' | 'lecturer' | 'ta' | null
 let currentUserEmail = null;
 
@@ -784,7 +808,7 @@ async function resetMyPassword(){
   const email = document.getElementById('authEmailInput').value.trim();
   const msg = document.getElementById('authMsg');
   if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first, then click Forgot Password.</div>'; return; }
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   msg.innerHTML = error
     ? `<div class="msg err">${escapeHtml(error.message)}</div>`
     : '<div class="msg ok">Password reset email sent — check your inbox.</div>';

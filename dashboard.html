@@ -141,6 +141,7 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="studentSignIn()">Sign In</button>
       <button class="secondary" onclick="studentSignUp()">Create Account</button>
+      <span onclick="resetStudentPassword()" style="align-self:center;font-size:0.8rem;color:var(--muted);text-decoration:underline;cursor:pointer;">Forgot password?</span>
     </div>
     <div id="studentAuthMsg" style="margin-top:10px;"></div>
   </div>
@@ -326,6 +327,36 @@ const supabaseClient = window.supabase.createClient(STUDENT_AUTH_URL, STUDENT_AU
   auth: { persistSession: true, autoRefreshToken: true }
 });
 
+
+// ===== Password recovery: handle the link from the reset email =====
+function showRecoveryBox(){
+  if(document.getElementById('recoveryBox')) return;
+  var o=document.createElement('div'); o.id='recoveryBox';
+  o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
+  document.body.appendChild(o);
+  document.getElementById('recBtn').onclick=async function(){
+    var pw=document.getElementById('recNewPw').value, m=document.getElementById('recMsg');
+    if(pw.length<6){ m.textContent='Use at least 6 characters.'; return; }
+    m.textContent='Saving...';
+    var r=await supabaseClient.auth.updateUser({password:pw});
+    if(r.error){ m.textContent=r.error.message; return; }
+    m.textContent='Password updated. You can now sign in.';
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    setTimeout(function(){ location.reload(); },1500);
+  };
+}
+try{
+  supabaseClient.auth.onAuthStateChange(function(ev){ if(ev==='PASSWORD_RECOVERY') showRecoveryBox(); });
+  if(/type=recovery/.test(location.hash)) window.addEventListener('load',function(){ setTimeout(showRecoveryBox,600); });
+}catch(e){}
+
+async function resetStudentPassword(){
+  var email=document.getElementById('studentAuthEmail').value.trim(), msg=document.getElementById('studentAuthMsg');
+  if(!email){ msg.innerHTML='<div class="msg err">Type your email above first, then click Forgot password.</div>'; return; }
+  var r=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  msg.innerHTML=r.error?'<div class="msg err">'+escapeHtml(r.error.message)+'</div>':'<div class="msg ok">Reset link sent. Check your inbox (and spam), then open the link.</div>';
+}
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = String(str || '');

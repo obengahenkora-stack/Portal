@@ -395,6 +395,9 @@ async function resetStudentPassword(){
 let _dlhData=null, _dlhMine=[];
 function _cbase(n){var s=String(n||'').trim();var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i);return (m?m[1].trim():s);}
 function _same(a,b){return _cbase(a).toLowerCase()===_cbase(b).toLowerCase();}
+function _clevel(c){var m=String(c||'').match(/(\d)\d{2}/);return m?m[1]+'00':'';}
+function _dlhLevel(){try{var l=String((studentCurrentAccount&&studentCurrentAccount.level)||'').match(/[1-9]00/);return l?l[0]:'';}catch(e){return '';}}
+function _dlhAllowed(c){ if(_dlhMine.some(m=>_same(m,c))) return true; if(typeof isAdminUser==='function' && isAdminUser()) return true; var L=_dlhLevel(); return !!L && _clevel(c)===L; }
 function initDashHall(supa,mine){
   _dlhData=supa||{};
   _dlhMine=[...new Set((mine||[]).map(_cbase))];
@@ -403,9 +406,9 @@ function initDashHall(supa,mine){
   Object.keys(_dlhData.rosters||{}).forEach(c=>all.add(_cbase(c)));
   ['resources','announcements','videos'].forEach(k=>(_dlhData[k]||[]).forEach(x=>x.course&&all.add(_cbase(x.course))));
   Object.keys(_dlhData.syllabi||{}).forEach(c=>all.add(_cbase(c)));
-  const others=[...all].filter(c=>!_dlhMine.some(m=>m.toLowerCase()===c.toLowerCase())).sort();
+  const others=[...all].filter(c=>!_dlhMine.some(m=>m.toLowerCase()===c.toLowerCase()) && _dlhAllowed(c)).sort();
   const sel=document.getElementById('dlhCourse');
-  let h='<option value="">My courses'+(_dlhMine.length?'':' (none found yet, showing everything)')+'</option>';
+  let h='<option value="">All for my level'+(_dlhLevel()?' ('+_dlhLevel()+')':'')+'</option>';
   if(_dlhMine.length) h+='<optgroup label="My courses">'+_dlhMine.sort().map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
   if(others.length) h+='<optgroup label="Other courses">'+others.map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
   sel.innerHTML=h;
@@ -414,7 +417,7 @@ function initDashHall(supa,mine){
 function renderDashHall(){
   const box=document.getElementById('dlhBody'); if(!box||!_dlhData) return;
   const sel=document.getElementById('dlhCourse').value;
-  const match=c=>sel?_same(c,sel):(_dlhMine.length?_dlhMine.some(m=>_same(m,c)):true);
+  const match=c=>sel?(_same(c,sel)&&_dlhAllowed(c)):_dlhAllowed(c);
   const fd=t=>{try{return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
   const ann=(_dlhData.announcements||[]).filter(a=>match(a.course)).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const res=(_dlhData.resources||[]).filter(r=>match(r.course)).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));

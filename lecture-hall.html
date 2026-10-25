@@ -241,7 +241,7 @@ async function loadCourses(){
     (data.resources || []).forEach(r => { if(r.course) courseSet.add(r.course); });
     (data.announcements || []).forEach(a => { if(a.course) courseSet.add(a.course); });
     (data.syllabi || []).forEach(s => { if(s.course) courseSet.add(s.course); });
-    const courses = [...courseSet].sort();
+    const courses = [...new Set([...courseSet].map(courseBase))].sort();
 
     if(courses.length === 0){
       container.innerHTML = '<div class="empty">No courses listed yet.</div>';
@@ -295,11 +295,18 @@ async function addCourse(){
   }
 }
 
+function courseBase(n){
+  var s=String(n||'').trim();
+  var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i);
+  return m ? m[1].trim() : s;
+}
+function sameCourse(a,b){ return courseBase(a).toLowerCase()===courseBase(b).toLowerCase(); }
+
 async function deleteCourse(name){
   if(!confirm(`Remove "${name}" from the course list? (This only removes the manual listing — any lecture notes, announcements, or videos already tagged with this course stay untouched and it may still appear if they exist.)`)) return;
   try{
     const data = await fetchSupabaseData();
-    data.courseList = (data.courseList || []).filter(c => c !== name);
+    data.courseList = (data.courseList || []).filter(c => !sameCourse(c, name));
     await saveSupabaseData(data);
     hallDataCache = data;
     loadCourses();
@@ -315,11 +322,11 @@ async function loadResourcesList(){
   try{
     const data = await getData();
     const resources = (data.resources || []).slice().sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-    const courses = [...new Set(resources.map(r => r.course))].sort();
+    const courses = [...new Set(resources.map(r => courseBase(r.course)))].sort();
     const currentFilter = filterSelect.value;
     filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     filterSelect.value = currentFilter;
-    const filtered = currentFilter ? resources.filter(r => r.course === currentFilter) : resources;
+    const filtered = currentFilter ? resources.filter(r => sameCourse(r.course, currentFilter)) : resources;
 
     if(filtered.length === 0){
       container.innerHTML = '<div class="empty">No lecture notes yet.</div>';
@@ -346,11 +353,11 @@ async function loadAnnouncementsList(){
   try{
     const data = await getData();
     const announcements = (data.announcements || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
-    const courses = [...new Set(announcements.map(a => a.course))].sort();
+    const courses = [...new Set(announcements.map(a => courseBase(a.course)))].sort();
     const currentFilter = filterSelect.value;
     filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     filterSelect.value = currentFilter;
-    const filtered = currentFilter ? announcements.filter(a => a.course === currentFilter) : announcements;
+    const filtered = currentFilter ? announcements.filter(a => sameCourse(a.course, currentFilter)) : announcements;
 
     if(filtered.length === 0){
       container.innerHTML = '<div class="empty">No announcements yet.</div>';
@@ -375,11 +382,11 @@ async function loadVideosList(){
   try{
     const data = await getData();
     const videos = (data.videos || []).slice().sort((a,b) => new Date(b.addedAt) - new Date(a.addedAt));
-    const courses = [...new Set(videos.map(v => v.course))].sort();
+    const courses = [...new Set(videos.map(v => courseBase(v.course)))].sort();
     const currentFilter = filterSelect.value;
     filterSelect.innerHTML = '<option value="">All Courses</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     filterSelect.value = currentFilter;
-    const filtered = currentFilter ? videos.filter(v => v.course === currentFilter) : videos;
+    const filtered = currentFilter ? videos.filter(v => sameCourse(v.course, currentFilter)) : videos;
 
     if(filtered.length === 0){
       container.innerHTML = '<div class="empty">No videos yet.</div>';

@@ -725,6 +725,8 @@ async function resolveCurrentUserRole(){
 let currentUserName = null;
 let currentUserCourses = null; // null = sees all courses; array = only the assigned ones
 function visibleCourses(list){ if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
+function _cb(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return (m?m[1].trim():s).toLowerCase(); }
+function reportVisible(r){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var mine=currentUserCourses.map(_cb); return mine.indexOf(_cb(r.course))>=0; }
 async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; } }catch(e){} }
 
 // ===== Welcome toast =====
@@ -1893,7 +1895,7 @@ async function sendWeeklyDigest(){
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const newReports = (jsonBinData.reports || []).filter(r => new Date(r.submittedAt) >= oneWeekAgo);
+    const newReports = (jsonBinData.reports || []).filter(r => reportVisible(r) && new Date(r.submittedAt) >= oneWeekAgo);
     const newComments = (supabaseData.comments || []).filter(c => new Date(c.createdAt) >= oneWeekAgo);
 
     // At-risk students: below 75%, across all courses with rosters
@@ -2123,7 +2125,7 @@ async function loadIssueReports(){
   if(clearBtn) clearBtn.style.display = isAdmin() ? 'inline-block' : 'none';
   try{
     const bin = await fetchBin();
-    const reports = bin.reports || [];
+    const reports = (bin.reports || []).filter(reportVisible);
     document.getElementById('reportCount').textContent = reports.length;
     if(reports.length === 0){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
@@ -2159,6 +2161,7 @@ async function saveReportReply(submittedAt){
     const bin = await fetchBin();
     const reports = bin.reports || [];
     const report = reports.find(r => r.submittedAt === submittedAt.replace(/\\'/g, "'"));
+    if(report && !reportVisible(report)){ alert('You are not assigned to this course.'); return; }
     if(report){
       report.reply = replyText;
       bin.reports = reports;

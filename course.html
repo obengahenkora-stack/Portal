@@ -257,6 +257,14 @@ async function saveSupabaseData(data){
   return true;
 }
 
+
+function courseBase(n){
+  var s=String(n||'').trim();
+  var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i);
+  return m ? m[1].trim() : s;
+}
+function sameCourse(a,b){ return courseBase(a).toLowerCase()===courseBase(b).toLowerCase(); }
+
 function getCourseFromUrl(){
   const params = new URLSearchParams(window.location.search);
   return params.get('course') || '';
@@ -278,7 +286,7 @@ async function loadCoursePage(){
 
     // Syllabus
     const syllabi = data.syllabi || {};
-    const syllabusText = syllabi[course];
+    const syllabusText = syllabi[course] || syllabi[Object.keys(syllabi).find(k => sameCourse(k, course))];
     document.getElementById('syllabusDisplay').innerHTML = syllabusText
       ? `<div class="syllabus-text">${escapeHtml(syllabusText)}</div>`
       : '<div class="empty">No syllabus added yet for this course.</div>';
@@ -286,7 +294,7 @@ async function loadCoursePage(){
     if(syllabusInput) syllabusInput.value = syllabusText || '';
 
     // Announcements
-    const announcements = (data.announcements || []).filter(a => a.course === course).sort((a,b) => new Date(b.date) - new Date(a.date));
+    const announcements = (data.announcements || []).filter(a => sameCourse(a.course, course)).sort((a,b) => new Date(b.date) - new Date(a.date));
     const annContainer = document.getElementById('courseAnnouncements');
     annContainer.innerHTML = announcements.length
       ? announcements.map(a => `
@@ -298,7 +306,7 @@ async function loadCoursePage(){
       : '<div class="empty">No announcements for this course yet.</div>';
 
     // Resources
-    const resources = (data.resources || []).filter(r => r.course === course).sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    const resources = (data.resources || []).filter(r => sameCourse(r.course, course)).sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     const resContainer = document.getElementById('courseResources');
     resContainer.innerHTML = resources.length
       ? resources.map(r => `

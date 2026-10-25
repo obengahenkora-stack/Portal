@@ -871,7 +871,16 @@ async function loadDashboard(skipLock){
       scoresContainer.innerHTML = '<div class="empty">No scores found for this index number.</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Level</th><th>Assessment</th><th>Score</th></tr>';
-      myRecords.forEach(r => {
+      // add 0 for assessments uploaded to a course the student is rostered in but has no score for
+      const _ros = supaData.rosters || {};
+      const _rows = myRecords.slice();
+      Object.keys(_ros).forEach(course => {
+        if(!(_ros[course]||[]).some(s => (s.indexNumber||'').toLowerCase() === idx.toLowerCase())) return;
+        const names = []; allRecords.filter(r => (r.course||'General') === course).forEach(r => { const a=r.assessmentName||'Untitled'; if(names.indexOf(a)<0) names.push(a); });
+        names.forEach(a => { if(!myRecords.some(m => (m.course||'General')===course && (m.assessmentName||'Untitled')===a)) _rows.push({course:course, level:'', assessmentName:a, score:'0'}); });
+      });
+      _rows.sort((x,y) => String(x.course).localeCompare(String(y.course)));
+      _rows.forEach(r => {
         html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.level)}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}</td></tr>`;
       });
       html += '</table>';

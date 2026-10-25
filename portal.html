@@ -302,6 +302,14 @@
       <div id="uploadMsg"></div>
     </div>
 
+    <div class="card hidden" id="gradebookCard">
+      <label>Gradebook (whole class, one column per assessment)</label>
+      <div class="hint">Upload the class roster once under Attendance. Every assessment you upload then becomes a column here. Students on the roster with no score for an assessment show 0.</div>
+      <select id="gradebookCourse" onchange="renderGradebook()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Select a course...</option></select>
+      <div id="gradebookTable" style="overflow-x:auto"></div>
+      <button onclick="downloadGradebook()" style="margin-top:12px">Download Gradebook (Excel)</button>
+    </div>
+
     <div class="card hidden" id="exportScoresCard">
       <label>Download Scores as Excel</label>
       <div class="hint">Exports currently uploaded scores as a .xlsx file.</div>
@@ -933,6 +941,7 @@ async function onAuthReady(showToast){
     document.getElementById('uploadCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
     document.getElementById('exportScoresCard').classList.remove('hidden');
+    document.getElementById('gradebookCard').classList.remove('hidden'); loadGradebookCourses();
     document.getElementById('fillSheetCard').classList.remove('hidden');
     document.getElementById('transferScoresCard').classList.remove('hidden');
     loadCourseManageList();
@@ -968,6 +977,40 @@ async function onAuthReady(showToast){
 
 // (old passcode-based changeMyPasscode removed — replaced by the Supabase Auth version above)
 
+
+var _gb={cols:[],rows:[]};
+async function loadGradebookCourses(){
+  try{
+    const [recs,data]=await Promise.all([fetchAllRecords(),fetchSupabaseData()]);
+    const set=new Set(recs.map(r=>r.course||'General')); Object.keys(data.rosters||{}).forEach(c=>set.add(c));
+    const sel=document.getElementById('gradebookCourse'), cur=sel.value;
+    sel.innerHTML='<option value="">Select a course...</option>'+[...set].sort().map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    sel.value=cur;
+  }catch(e){}
+}
+async function renderGradebook(){
+  const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
+  if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; return; }
+  box.innerHTML='<div class="empty">Loading...</div>';
+  const [recs,data]=await Promise.all([fetchAllRecords(),fetchSupabaseData()]);
+  const cr=recs.filter(r=>(r.course||'General')===course);
+  const cols=[]; cr.forEach(r=>{ const a=r.assessmentName||'Untitled'; if(cols.indexOf(a)<0) cols.push(a); });
+  const roster=(data.rosters||{})[course]||[];
+  const stu={}; roster.forEach(s=>{ stu[(s.indexNumber||'').toLowerCase()]={index:s.indexNumber,name:s.name||'',scores:{}}; });
+  cr.forEach(r=>{ const k=(r.indexNumber||'').toLowerCase(); if(!stu[k]) stu[k]={index:r.indexNumber,name:'',scores:{}}; stu[k].scores[r.assessmentName||'Untitled']=r.score; });
+  const rows=Object.keys(stu).sort().map(k=>{ const o=stu[k]; return {index:o.index,name:o.name,vals:cols.map(c=>o.scores.hasOwnProperty(c)?o.scores[c]:'0')}; });
+  _gb={cols:cols,rows:rows,course:course};
+  if(!rows.length){ box.innerHTML='<div class="empty">No students or scores for this course yet.</div>'; return; }
+  let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'</tr>';
+  rows.forEach(r=>{ h+='<tr><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map(v=>'<td>'+escapeHtml(v)+'</td>').join('')+'</tr>'; });
+  box.innerHTML=h+'</table>';
+}
+function downloadGradebook(){
+  if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
+  const aoa=[['IndexNumber','Name'].concat(_gb.cols)].concat(_gb.rows.map(r=>[r.index,r.name].concat(r.vals)));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'Gradebook');
+  XLSX.writeFile(wb,(_gb.course||'class')+'-gradebook-'+new Date().toISOString().split('T')[0]+'.xlsx');
+}
 async function fetchAllRecords(){
   const bin = await fetchBin();
   return bin.records || [];
@@ -1048,11 +1091,13 @@ async function uploadScores(){
 
   try{
     const existing = await fetchAllRecords();
-    const combined = existing.concat(newRecords);
+    const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
+    const _n=new Set(newRecords.map(_k));
+    const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
     await saveAllRecords(combined);
     msg.innerHTML = `<div class="msg ok">Uploaded ${newRecords.length} record(s) for "${assessmentName}". Total now: ${combined.length}.</div>`;
     document.getElementById('csvInput').value = '';
-    loadRecords();
+    loadRecords(); loadGradebookCourses(); renderGradebook();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
   }finally{
@@ -1510,14 +1555,16 @@ async function uploadScoresFromFile(){
 
   try{
     const existing = await fetchAllRecords();
-    const combined = existing.concat(newRecords);
+    const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
+    const _n=new Set(newRecords.map(_k));
+    const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
     await saveAllRecords(combined);
     let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}".`;
     if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
     note += ` Total now: ${combined.length}.`;
     msg.innerHTML = `<div class="msg ok">${note}</div>`;
     fileInput.value = '';
-    loadRecords();
+    loadRecords(); loadGradebookCourses(); renderGradebook();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
   }finally{

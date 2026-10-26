@@ -7,8 +7,8 @@ st.textContent=`
 .mo-reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .mo-reveal.in{opacity:1;transform:none}
 #moBg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
-body.landing #moBg{opacity:.55}
-body.landing > #moBg#moBg{display:block!important;z-index:3}
+body.landing #moBg{opacity:1}
+body.landing > #moBg#moBg{display:block!important;z-index:1}
 body.landing > #moGlow#moGlow{display:block!important}
 #moRing{position:fixed;pointer-events:none;z-index:2;border-radius:50%;border:2px dashed var(--c1,#0ea5e9);opacity:.7;display:none}
 #moRing2{position:fixed;pointer-events:none;z-index:2;border-radius:50%;border:2px solid transparent;border-top-color:var(--c3,#8b5cf6);border-bottom-color:var(--c2,#22c55e);opacity:.8;display:none}
@@ -41,7 +41,8 @@ size();addEventListener('resize',size);
 var N=innerWidth<640?9:18;
 for(var i=0;i<N;i++)sh.push({x:Math.random()*W,y:Math.random()*H,r:14+Math.random()*34,t:i%4,a:Math.random()*6,v:.12+Math.random()*.3,s:(Math.random()-.5)*.006});
 function col(){return document.documentElement.getAttribute('data-theme')==='dark'?'rgba(125,211,252,.35)':'rgba(14,100,160,.28)';}
-function draw(){
+function draw(now){
+  if(document.body.classList.contains('landing')&&window.__moLanding){window.__moLanding(now||performance.now());if(!RM)requestAnimationFrame(draw);return;}
   cx.clearRect(0,0,W,H);cx.strokeStyle=col();cx.lineWidth=1.4;
   sh.forEach(function(o){
     if(!RM){o.y-=o.v;o.a+=o.s;if(o.y<-60){o.y=H+60;o.x=Math.random()*W;}}
@@ -115,30 +116,41 @@ if(anchor){
   creds.forEach(function(c){var d=document.createElement('div');d.className='mo-card mo-reveal';d.tabIndex=0;d.innerHTML='<div class="mo-in"><div class="mo-f"><b>'+c[0]+'</b><span>'+c[1]+'</span></div><div class="mo-k">'+c[2]+'</div></div>';d.addEventListener('click',function(){d.classList.toggle('flip');});cc.appendChild(d);});
 }
 
-/* Landing: orbiting rings around the photo + pointer parallax */
+/* Landing: constellation network that reacts to the cursor + a skyline that builds itself */
 (function(){
-  var pic=document.getElementById('profilePic'),ph=document.getElementById('profilePicPlaceholder');
-  var r1=document.createElement('div');r1.id='moRing';var r2=document.createElement('div');r2.id='moRing2';
-  document.body.appendChild(r1);document.body.appendChild(r2);
-  var mx=0,my=0,cx2=0,cy2=0,t0=performance.now();
-  addEventListener('pointermove',function(e){mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;},{passive:true});
-  var hi=document.querySelector('.hero-inner');
-  function loop(now){
-    cx2+=(mx-cx2)*.06;cy2+=(my-cy2)*.06;
-    var el=(pic&&pic.style.display!=='none'&&pic.offsetWidth)?pic:ph;
-    if(el&&document.body.classList.contains('landing')){
-      var r=el.getBoundingClientRect();
-      if(r.width){
-        var d=r.width+26,t=(now-t0)/1000;
-        r1.style.cssText='left:'+(r.left+r.width/2-d/2)+'px;top:'+(r.top+r.height/2-d/2)+'px;width:'+d+'px;height:'+d+'px;transform:rotate('+(t*24)+'deg) scale('+(1+.03*Math.sin(t*2))+')';
-        var d2=r.width+52;
-        r2.style.cssText='left:'+(r.left+r.width/2-d2/2)+'px;top:'+(r.top+r.height/2-d2/2)+'px;width:'+d2+'px;height:'+d2+'px;transform:rotate('+(-t*40)+'deg)';
-      }
+  var pts=[],NP=innerWidth<640?38:80,mx=-999,my=-999,t0=performance.now();
+  for(var i=0;i<NP;i++)pts.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5});
+  addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;},{passive:true});
+  addEventListener('pointerleave',function(){mx=my=-999;});
+  var bld=[];var x=0;while(x<innerWidth+80){var w=34+Math.random()*60,h=50+Math.random()*130;bld.push({x:x,w:w,h:h,d:Math.random()*2.5});x+=w+6;}
+  function strokeCol(a){return document.documentElement.getAttribute('data-theme')==='dark'?'rgba(125,211,252,'+a+')':'rgba(14,100,160,'+a+')';}
+  var lc=document.getElementById('moBg');
+  window.__moLanding=function(now){
+    var t=(now-t0)/1000;
+    cx.clearRect(0,0,W,H);
+    // network
+    pts.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+      var dx=p.x-mx,dy=p.y-my,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<160&&d>1){p.x+=dx/d*1.4;p.y+=dy/d*1.4;}
+    });
+    cx.lineWidth=1;
+    for(var i=0;i<pts.length;i++){
+      var a=pts[i];
+      for(var j=i+1;j<pts.length;j++){var b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=dx*dx+dy*dy;if(d<19600){cx.strokeStyle=strokeCol((1-d/19600)*.5);cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();}}
+      var mdx=a.x-mx,mdy=a.y-my,md=mdx*mdx+mdy*mdy;if(md<32400){cx.strokeStyle=strokeCol((1-md/32400)*.8);cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(mx,my);cx.stroke();}
+      cx.fillStyle=strokeCol(.7);cx.beginPath();cx.arc(a.x,a.y,2.2,0,6.283);cx.fill();
     }
-    if(hi&&!RM)hi.style.transform='translate3d('+(cx2*-14)+'px,'+(cy2*-10)+'px,0)';
-    if(!RM)requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+    // skyline rises, then sways
+    bld.forEach(function(b){
+      var k=Math.max(0,Math.min(1,(t-.4-b.d*.35)/1.4)),e=1-Math.pow(1-k,3),h=b.h*e;
+      cx.fillStyle=strokeCol(.10);cx.fillRect(b.x,H-h,b.w,h);
+      cx.strokeStyle=strokeCol(.35);cx.strokeRect(b.x+.5,H-h+.5,b.w-1,h);
+      cx.fillStyle=strokeCol(.25);
+      for(var yy=H-h+12;yy<H-8;yy+=18)for(var xx=b.x+8;xx<b.x+b.w-10;xx+=14){if(((xx*7+yy*3+Math.floor(t*.8))%5)<3)cx.fillRect(xx,yy,6,8);}
+    });
+  };
 })();
 
 /* 3. Scroll reveals (also catches CV rows filled in after load) */

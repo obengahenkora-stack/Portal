@@ -7,7 +7,12 @@ st.textContent=`
 .mo-reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .mo-reveal.in{opacity:1;transform:none}
 #moBg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
-body.landing #moBg{opacity:.35}
+body.landing #moBg{opacity:.55}
+body.landing > #moBg#moBg{display:block!important;z-index:3}
+body.landing > #moGlow#moGlow{display:block!important}
+#moRing{position:fixed;pointer-events:none;z-index:2;border-radius:50%;border:2px dashed var(--c1,#0ea5e9);opacity:.7;display:none}
+#moRing2{position:fixed;pointer-events:none;z-index:2;border-radius:50%;border:2px solid transparent;border-top-color:var(--c3,#8b5cf6);border-bottom-color:var(--c2,#22c55e);opacity:.8;display:none}
+body.landing > #moRing#moRing,body.landing > #moRing2#moRing2{display:block!important}
 .mo-sec{max-width:1100px;margin:0 auto;padding:70px 24px 20px;position:relative;z-index:1}
 .mo-sec h2{font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:700;margin:0 0 6px;letter-spacing:-.02em;color:var(--ink)}
 .mo-sec p.sub{margin:0 0 22px;color:var(--muted);font-size:.95rem}
@@ -50,7 +55,7 @@ function draw(){
   if(!RM)requestAnimationFrame(draw);
 }
 draw();
-if(!RM&&matchMedia('(pointer:fine)').matches){var g=document.createElement('div');g.className='mo-glow';document.body.appendChild(g);addEventListener('pointermove',function(e){g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';},{passive:true});}
+if(!RM&&matchMedia('(pointer:fine)').matches){var g=document.createElement('div');g.className='mo-glow';g.id='moGlow';document.body.appendChild(g);addEventListener('pointermove',function(e){g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';},{passive:true});}
 
 /* 2. Expertise bubbles + credentials, inserted before the Explore section */
 var anchor=document.getElementById('processSec');
@@ -109,6 +114,32 @@ if(anchor){
   var cc=document.getElementById('moCards');
   creds.forEach(function(c){var d=document.createElement('div');d.className='mo-card mo-reveal';d.tabIndex=0;d.innerHTML='<div class="mo-in"><div class="mo-f"><b>'+c[0]+'</b><span>'+c[1]+'</span></div><div class="mo-k">'+c[2]+'</div></div>';d.addEventListener('click',function(){d.classList.toggle('flip');});cc.appendChild(d);});
 }
+
+/* Landing: orbiting rings around the photo + pointer parallax */
+(function(){
+  var pic=document.getElementById('profilePic'),ph=document.getElementById('profilePicPlaceholder');
+  var r1=document.createElement('div');r1.id='moRing';var r2=document.createElement('div');r2.id='moRing2';
+  document.body.appendChild(r1);document.body.appendChild(r2);
+  var mx=0,my=0,cx2=0,cy2=0,t0=performance.now();
+  addEventListener('pointermove',function(e){mx=(e.clientX/innerWidth-.5)*2;my=(e.clientY/innerHeight-.5)*2;},{passive:true});
+  var hi=document.querySelector('.hero-inner');
+  function loop(now){
+    cx2+=(mx-cx2)*.06;cy2+=(my-cy2)*.06;
+    var el=(pic&&pic.style.display!=='none'&&pic.offsetWidth)?pic:ph;
+    if(el&&document.body.classList.contains('landing')){
+      var r=el.getBoundingClientRect();
+      if(r.width){
+        var d=r.width+26,t=(now-t0)/1000;
+        r1.style.cssText='left:'+(r.left+r.width/2-d/2)+'px;top:'+(r.top+r.height/2-d/2)+'px;width:'+d+'px;height:'+d+'px;transform:rotate('+(t*24)+'deg) scale('+(1+.03*Math.sin(t*2))+')';
+        var d2=r.width+52;
+        r2.style.cssText='left:'+(r.left+r.width/2-d2/2)+'px;top:'+(r.top+r.height/2-d2/2)+'px;width:'+d2+'px;height:'+d2+'px;transform:rotate('+(-t*40)+'deg)';
+      }
+    }
+    if(hi&&!RM)hi.style.transform='translate3d('+(cx2*-14)+'px,'+(cy2*-10)+'px,0)';
+    if(!RM)requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
 
 /* 3. Scroll reveals (also catches CV rows filled in after load) */
 var io=('IntersectionObserver' in window)?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12}):null;

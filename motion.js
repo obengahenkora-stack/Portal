@@ -206,7 +206,7 @@ scan();var n=0,iv=setInterval(function(){scan();if(++n>20)clearInterval(iv);},50
       '› '+(navigator.language||'en')+' · '+dark+' mode · '+(first?'your first visit':'welcome back'),'',
       '@None of it left your browser. Welcome in'];
     var el=document.getElementById('moTxt'),li=0,ci=0,html='',done=false;
-    function close(){if(done)return;done=true;try{sessionStorage.setItem('moIntro','1');}catch(e){}ov.style.opacity=0;setTimeout(function(){ov.remove();},900);}
+    function close(){if(done)return;done=true;try{sessionStorage.setItem('moIntro','1');}catch(e){}ov.style.opacity=0;setTimeout(function(){ov.remove();},900);if(window.__moStartScene)window.__moStartScene();}
     ov.addEventListener('click',close);addEventListener('keydown',close,{once:true});
     function step(){
       if(done)return;
@@ -220,52 +220,65 @@ scan();var n=0,iv=setInterval(function(){scan();if(++n>20)clearInterval(iv);},50
   }catch(e){console.warn('intro',e);}
 })();
 
-/* ===== Scroll-driven build: one tower rises, then the camera pulls back on a whole city ===== */
+/* ===== Opening scene: scroll (or swipe) to build. Runs right after the typed intro. ===== */
 (function(){
   try{
-    var anchor2=document.getElementById('moSec');if(!anchor2)return;
     var css=document.createElement('style');
-    css.textContent='#moBuild{position:relative;height:320vh;background:#0b0d10;z-index:1}#moBuild .stk{position:sticky;top:0;height:100vh;overflow:hidden}#moBuild canvas{width:100%;height:100%;display:block}#moBuild .cap{position:absolute;left:24px;right:24px;top:70px;text-align:center;color:#9aa6b2;font:500 12px "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}#moBuild .big{position:absolute;left:24px;right:24px;bottom:12vh;text-align:center;color:#fff;font:700 clamp(1.6rem,5vw,3rem) Inter,system-ui,sans-serif;letter-spacing:-.02em;opacity:0;transition:opacity .5s}#moBuild .big small{display:block;margin-top:8px;font:400 .9rem Inter,sans-serif;color:#9aa6b2;letter-spacing:0}';
+    css.textContent='#moScene{position:fixed;inset:0;z-index:99998;background:#0b0d10;display:none;transition:opacity .9s}body.landing > #moScene#moScene{display:block!important}#moScene canvas{width:100%;height:100%;display:block}#moScene .cap{position:absolute;left:24px;right:24px;top:9vh;text-align:center;color:#9aa6b2;font:500 12px "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}#moScene .big{position:absolute;left:24px;right:24px;bottom:14vh;text-align:center;color:#fff;font:700 clamp(1.6rem,5vw,3rem) Inter,system-ui,sans-serif;letter-spacing:-.02em;opacity:0;transition:opacity .6s}#moScene .big small{display:block;margin-top:8px;font:400 .9rem Inter,sans-serif;color:#9aa6b2;letter-spacing:0}#moScene .skip{position:absolute;right:20px;bottom:22px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#e5e7eb;border-radius:999px;padding:10px 18px;font:500 13px Inter,sans-serif;cursor:pointer;pointer-events:auto}#moScene .bar{position:absolute;left:0;top:0;height:3px;background:#2dd4bf;width:0}';
     document.head.appendChild(css);
-    var sec=document.createElement('section');sec.id='moBuild';sec.innerHTML='<div class="stk"><canvas></canvas><div class="cap" id="moCap">Scroll to build</div><div class="big" id="moBig">Every project starts with a plan.<small>Let\'s build yours.</small></div></div>';
-    anchor2.parentNode.insertBefore(sec,anchor2);
-    var cv2=sec.querySelector('canvas'),c=cv2.getContext('2d'),cap=document.getElementById('moCap'),big=document.getElementById('moBig'),W2=0,H2=0,dpr=Math.min(window.devicePixelRatio||1,2);
-    function rs(){var r=cv2.getBoundingClientRect();W2=r.width;H2=r.height;cv2.width=W2*dpr;cv2.height=H2*dpr;c.setTransform(dpr,0,0,dpr,0,0);}
-    rs();addEventListener('resize',rs);
-    var G=7,hs=[];for(var i=0;i<G;i++){hs[i]=[];for(var j=0;j<G;j++){hs[i][j]=(i===3&&j===3)?9:1.5+Math.random()*5.5;}}
-    var ease=function(x){x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
-    function shade(hex,k){var n=parseInt(hex.slice(1),16),r=(n>>16)*k,g=((n>>8)&255)*k,b=(n&255)*k;return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';}
-    function box(cx0,cy0,tw,th,h,col,lit,t,seed){
-      var x=cx0,y=cy0;
-      c.fillStyle=shade(col,.55);c.beginPath();c.moveTo(x-tw/2,y);c.lineTo(x,y+th/2);c.lineTo(x,y+th/2-h);c.lineTo(x-tw/2,y-h);c.closePath();c.fill();
-      c.fillStyle=shade(col,.8);c.beginPath();c.moveTo(x+tw/2,y);c.lineTo(x,y+th/2);c.lineTo(x,y+th/2-h);c.lineTo(x+tw/2,y-h);c.closePath();c.fill();
-      c.fillStyle=shade(col,1.1);c.beginPath();c.moveTo(x,y-th/2-h);c.lineTo(x+tw/2,y-h);c.lineTo(x,y+th/2-h);c.lineTo(x-tw/2,y-h);c.closePath();c.fill();
-      if(lit>0&&h>th){var rows=Math.floor(h/(th*.8));for(var r=1;r<rows;r++){var on=((r*7+seed*3)%5)<3&&lit>r/rows*1.0;if(!on)continue;c.fillStyle='rgba(253,224,71,'+(.5+.4*Math.sin(t*2+r+seed))+')';var yy=y-r*(h/rows);c.fillRect(x+tw*.12,yy+tw*.06,tw*.16,th*.28);c.fillRect(x-tw*.28,yy+tw*.06,tw*.16,th*.28);}}
-    }
+    var G=7,hs=[],ease=function(x){x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
+    for(var i=0;i<G;i++){hs[i]=[];for(var j=0;j<G;j++){hs[i][j]=(i===3&&j===3)?9:1.5+Math.random()*5.5;}}
     var cols=['#38bdf8','#818cf8','#34d399','#f59e0b','#f472b6','#22d3ee','#a78bfa'];
-    function frame(){
-      if(cv2.clientWidth!==Math.round(W2)||cv2.width===0){if(cv2.clientWidth===0)return;rs();}
-      var r=sec.getBoundingClientRect(),total=sec.offsetHeight-innerHeight,p=Math.max(0,Math.min(1,-r.top/total)),t=performance.now()/1000;
+    function shade(hex,k){var n=parseInt(hex.slice(1),16),r=(n>>16)*k,g=((n>>8)&255)*k,b=(n&255)*k;return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';}
+    function drawCity(c,W2,H2,p,t){
       c.clearRect(0,0,W2,H2);
-      var zoom=1.2-.4*ease((p-.38)/.4),tw=Math.min(W2,H2*1.2)/ (G*1.05) *zoom,th=tw*.5;
-      var ox=W2/2,oy=H2*.62-(1-ease((p-.38)/.4))*H2*.05;
-      // ground grid
-      c.strokeStyle='rgba(125,211,252,.16)';c.lineWidth=1;
-      for(var a=0;a<=G;a++){var p1=iso(a,0),p2=iso(a,G);c.beginPath();c.moveTo(p1[0],p1[1]);c.lineTo(p2[0],p2[1]);c.stroke();var q1=iso(0,a),q2=iso(G,a);c.beginPath();c.moveTo(q1[0],q1[1]);c.lineTo(q2[0],q2[1]);c.stroke();}
+      var zoom=1.2-.4*ease((p-.38)/.4),tw=Math.min(W2*1.5,H2*1.2)/(G*1.05)*zoom,th=tw*.5,ox=W2/2,oy=H2*.62-(1-ease((p-.38)/.4))*H2*.05;
       function iso(i,j){return [ox+(i-j)*tw/2,oy+(i+j-G)*th/2];}
+      c.strokeStyle='rgba(125,211,252,.16)';c.lineWidth=1;
+      for(var a=0;a<=G;a++){var p1=iso(a,0),p2=iso(a,G),q1=iso(0,a),q2=iso(G,a);c.beginPath();c.moveTo(p1[0],p1[1]);c.lineTo(p2[0],p2[1]);c.moveTo(q1[0],q1[1]);c.lineTo(q2[0],q2[1]);c.stroke();}
+      function box(x,y,w,h2,h,col,lit,seed){
+        c.fillStyle=shade(col,.55);c.beginPath();c.moveTo(x-w/2,y);c.lineTo(x,y+h2/2);c.lineTo(x,y+h2/2-h);c.lineTo(x-w/2,y-h);c.closePath();c.fill();
+        c.fillStyle=shade(col,.8);c.beginPath();c.moveTo(x+w/2,y);c.lineTo(x,y+h2/2);c.lineTo(x,y+h2/2-h);c.lineTo(x+w/2,y-h);c.closePath();c.fill();
+        c.fillStyle=shade(col,1.1);c.beginPath();c.moveTo(x,y-h2/2-h);c.lineTo(x+w/2,y-h);c.lineTo(x,y+h2/2-h);c.lineTo(x-w/2,y-h);c.closePath();c.fill();
+        if(lit>0&&h>h2){var rows=Math.floor(h/(h2*.8));for(var r=1;r<rows;r++){if(!(((r*7+seed*3)%5)<3&&lit>r/rows))continue;c.fillStyle='rgba(253,224,71,'+(.5+.4*Math.sin(t*2+r+seed))+')';var yy=y-r*(h/rows);c.fillRect(x+w*.12,yy+w*.06,w*.16,h2*.28);c.fillRect(x-w*.28,yy+w*.06,w*.16,h2*.28);}}
+      }
       var tower=ease(p/.36);
-      for(var s=0;s<=2*(G-1);s++)for(var i=0;i<G;i++){var j=s-i;if(j<0||j>=G)continue;
-        var isT=(i===3&&j===3),h;
-        if(isT)h=hs[i][j]*tw*.27*tower;
-        else{var k=ease((p-.4-((i*G+j)/(G*G))*.25)/.25);h=hs[i][j]*tw*.24*k;}
-        if(h<1)continue;var pt=iso(i+.5,j+.5);
-        box(pt[0],pt[1],tw*.86,th*.86,h,isT?'#f59e0b':cols[(i*3+j)%cols.length],isT?Math.min(1,tower*1.2):Math.min(1,(p-.5)*2.2),t,i*G+j);}
-      cap.textContent=p<.36?'Scroll to build':p<.75?'One plan. Many projects.':'';
-      big.style.opacity=p>.8?1:0;
+      for(var s2=0;s2<=2*(G-1);s2++)for(var i2=0;i2<G;i2++){var j2=s2-i2;if(j2<0||j2>=G)continue;
+        var isT=(i2===3&&j2===3),h;
+        if(isT)h=hs[i2][j2]*tw*.27*tower;else h=hs[i2][j2]*tw*.24*ease((p-.4-((i2*G+j2)/(G*G))*.25)/.25);
+        if(h<1)continue;var pt=iso(i2+.5,j2+.5);
+        box(pt[0],pt[1],tw*.86,th*.86,h,isT?'#f59e0b':cols[(i2*3+j2)%cols.length],isT?Math.min(1,tower*1.2):Math.min(1,(p-.5)*2.2),i2*G+j2);}
     }
-    if(RM){frame();addEventListener('scroll',frame,{passive:true});}
-    else{(function loop(){frame();requestAnimationFrame(loop);})();}
-  }catch(e){console.warn('build',e);}
+    var started=false;
+    window.__moStartScene=function(){
+      if(started)return;started=true;
+      var ov=document.createElement('div');ov.id='moScene';
+      ov.innerHTML='<canvas></canvas><div class="bar"></div><div class="cap" id="moCap">Scroll to build</div><div class="big" id="moBig">Every project starts with a plan.<small>Welcome in.</small></div><button class="skip" id="moSkip">Skip to my work &darr;</button>';
+      document.body.appendChild(ov);
+      var cv=ov.querySelector('canvas'),c=cv.getContext('2d'),cap=ov.querySelector('#moCap'),big=ov.querySelector('#moBig'),bar=ov.querySelector('.bar'),W2=0,H2=0,dpr=Math.min(window.devicePixelRatio||1,2);
+      function rs(){W2=innerWidth;H2=innerHeight;cv.width=W2*dpr;cv.height=H2*dpr;c.setTransform(dpr,0,0,dpr,0,0);}
+      rs();addEventListener('resize',rs);
+      var p=0,target=0,done=false,idle=performance.now(),holdT=0;
+      function bump(d){target=Math.max(0,Math.min(1,target+d));idle=performance.now();}
+      function onWheel(e){e.preventDefault();bump(e.deltaY/1600);}
+      var ty=null;function ts(e){ty=e.touches[0].clientY;}function tm(e){if(ty===null)return;var y=e.touches[0].clientY;bump((ty-y)/(innerHeight*2.2));ty=y;e.preventDefault();}
+      function kd(e){if(e.key==='ArrowDown'||e.key===' '||e.key==='PageDown'){bump(.12);e.preventDefault();}else if(e.key==='ArrowUp'){bump(-.12);}else if(e.key==='Escape'){close();}}
+      ov.addEventListener('wheel',onWheel,{passive:false});ov.addEventListener('touchstart',ts,{passive:true});ov.addEventListener('touchmove',tm,{passive:false});addEventListener('keydown',kd);
+      function close(){if(done)return;done=true;removeEventListener('keydown',kd);removeEventListener('resize',rs);ov.style.opacity=0;setTimeout(function(){ov.remove();},950);}
+      ov.querySelector('#moSkip').addEventListener('click',close);
+      (function loop(now){
+        if(done)return;
+        if(now-idle>5000&&target<1)target=Math.min(1,target+.0018);
+        p+=(target-p)*.08;
+        drawCity(c,W2,H2,p,now/1000);
+        bar.style.width=(p*100)+'%';
+        cap.textContent=p<.36?'Scroll to build':p<.75?'One plan. Many projects.':'';
+        big.style.opacity=p>.8?1:0;
+        if(p>.985){holdT+=1;if(holdT>95)close();}else holdT=0;
+        requestAnimationFrame(loop);
+      })(performance.now());
+    };
+  }catch(e){console.warn('scene',e);}
 })();
 }catch(e){console.warn('motion.js',e);}
 })();

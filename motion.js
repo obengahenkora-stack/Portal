@@ -178,5 +178,94 @@ if(anchor){
 var io=('IntersectionObserver' in window)?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12}):null;
 function scan(){document.querySelectorAll('.pro-row,.step,.cvl,.mo-reveal').forEach(function(el){if(el.dataset.mo)return;el.dataset.mo=1;if(!io){el.classList.add('in');return;}if(!el.classList.contains('mo-reveal'))el.classList.add('mo-reveal');io.observe(el);});}
 scan();var n=0,iv=setInterval(function(){scan();if(++n>20)clearInterval(iv);},500);
+
+/* ===== Terminal intro (typed from what the visitor's browser reports) ===== */
+(function(){
+  try{
+    if(RM||!document.body.classList.contains('landing'))return;
+    try{if(sessionStorage.getItem('moIntro')==='1')return;}catch(e){}
+    var css=document.createElement('style');
+    css.textContent='#moIntro{position:fixed;inset:0;z-index:99999;background:#0b0d10;color:#9aa6b2;font:400 15px/1.7 "IBM Plex Mono",ui-monospace,Menlo,monospace;display:none;align-items:center;justify-content:center;transition:opacity .8s}body.landing > #moIntro#moIntro{display:flex!important}#moIntro .in{width:min(560px,86vw)}#moIntro .g{color:#2dd4bf}#moIntro .sk{position:fixed;bottom:28px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:.12em;color:#4b5663}#moIntro .cu{display:inline-block;width:8px;height:1em;background:#e5e7eb;vertical-align:-2px;animation:moCu 1s steps(1) infinite}@keyframes moCu{50%{opacity:0}}';
+    document.head.appendChild(css);
+    var ov=document.createElement('div');ov.id='moIntro';ov.innerHTML='<div class="in"><div id="moTxt"></div></div><div class="sk">TAP ANYWHERE TO SKIP</div>';document.body.appendChild(ov);
+    var ua=navigator.userAgent,os='your device',br='your browser';
+    if(/iPhone|iPad/.test(ua)){var m=ua.match(/OS (\d+)[_\d]*/);os='iOS '+(m?m[1]:'');}
+    else if(/Android/.test(ua)){var m2=ua.match(/Android (\d+)/);os='Android '+(m2?m2[1]:'');}
+    else if(/Windows/.test(ua))os='Windows';else if(/Mac OS X/.test(ua))os='macOS';else if(/Linux/.test(ua))os='Linux';
+    if(/Edg\//.test(ua))br='Edge';else if(/CriOS|Chrome\//.test(ua))br='Chrome';else if(/Firefox|FxiOS/.test(ua))br='Firefox';else if(/Safari\//.test(ua))br='Safari';
+    var gpu='';try{var gl=document.createElement('canvas').getContext('webgl');var ext=gl&&gl.getExtension('WEBGL_debug_renderer_info');gpu=ext?String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)):'';var gm=gpu.match(/(Apple GPU|Apple M\d\w*|Mali-[\w]+|Adreno[^,)]*|NVIDIA[^,)]*|Radeon[^,)]*|GeForce[^,)]*|Intel[^,)]*)/);gpu=gm?gm[1].replace(/\s+/g,' ').trim():'';}catch(e){}
+    var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g,' ');}catch(e){}
+    var d=new Date(),hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2),dayp=d.getHours()<12?'morning':d.getHours()<17?'afternoon':'evening';
+    var wd=d.toLocaleDateString(undefined,{weekday:'long'});
+    var dark=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',first=true;try{first=!localStorage.getItem('moSeen');localStorage.setItem('moSeen','1');}catch(e){}
+    var lines=['Hello. Here\'s what your browser just told me:','',
+      '› '+os+' · '+br,
+      '› '+(gpu?gpu+' · ':'')+(navigator.hardwareConcurrency||'?')+' cores',
+      '› '+screen.width+' × '+screen.height+' screen at '+(window.devicePixelRatio||1)+'×',
+      '› '+(tz?'Near '+tz+', by your clock · ':'')+hh+' on '+wd+' '+dayp,
+      '› '+(navigator.language||'en')+' · '+dark+' mode · '+(first?'your first visit':'welcome back'),'',
+      '@None of it left your browser. Welcome in'];
+    var el=document.getElementById('moTxt'),li=0,ci=0,html='',done=false;
+    function close(){if(done)return;done=true;try{sessionStorage.setItem('moIntro','1');}catch(e){}ov.style.opacity=0;setTimeout(function(){ov.remove();},900);}
+    ov.addEventListener('click',close);addEventListener('keydown',close,{once:true});
+    function step(){
+      if(done)return;
+      if(li>=lines.length){setTimeout(close,1100);return;}
+      var ln=lines[li],g=ln.charAt(0)==='@',t=g?ln.slice(1):ln;
+      if(ci<=t.length){var cur='<span class="cu"></span>';el.innerHTML=html+(g?'<span class="g">'+esc(t.slice(0,ci))+'</span>':esc(t.slice(0,ci)))+cur;ci++;setTimeout(step,li<1?38:16);}
+      else{html+=(g?'<span class="g">'+esc(t)+'</span>':esc(t))+'<br>';li++;ci=0;setTimeout(step,li===1?500:260);}
+    }
+    function esc(x){return x.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+    setTimeout(step,600);
+  }catch(e){console.warn('intro',e);}
+})();
+
+/* ===== Scroll-driven build: one tower rises, then the camera pulls back on a whole city ===== */
+(function(){
+  try{
+    var anchor2=document.getElementById('moSec');if(!anchor2)return;
+    var css=document.createElement('style');
+    css.textContent='#moBuild{position:relative;height:320vh;background:#0b0d10;z-index:1}#moBuild .stk{position:sticky;top:0;height:100vh;overflow:hidden}#moBuild canvas{width:100%;height:100%;display:block}#moBuild .cap{position:absolute;left:24px;right:24px;top:70px;text-align:center;color:#9aa6b2;font:500 12px "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}#moBuild .big{position:absolute;left:24px;right:24px;bottom:12vh;text-align:center;color:#fff;font:700 clamp(1.6rem,5vw,3rem) Inter,system-ui,sans-serif;letter-spacing:-.02em;opacity:0;transition:opacity .5s}#moBuild .big small{display:block;margin-top:8px;font:400 .9rem Inter,sans-serif;color:#9aa6b2;letter-spacing:0}';
+    document.head.appendChild(css);
+    var sec=document.createElement('section');sec.id='moBuild';sec.innerHTML='<div class="stk"><canvas></canvas><div class="cap" id="moCap">Scroll to build</div><div class="big" id="moBig">Every project starts with a plan.<small>Let\'s build yours.</small></div></div>';
+    anchor2.parentNode.insertBefore(sec,anchor2);
+    var cv2=sec.querySelector('canvas'),c=cv2.getContext('2d'),cap=document.getElementById('moCap'),big=document.getElementById('moBig'),W2=0,H2=0,dpr=Math.min(window.devicePixelRatio||1,2);
+    function rs(){var r=cv2.getBoundingClientRect();W2=r.width;H2=r.height;cv2.width=W2*dpr;cv2.height=H2*dpr;c.setTransform(dpr,0,0,dpr,0,0);}
+    rs();addEventListener('resize',rs);
+    var G=7,hs=[];for(var i=0;i<G;i++){hs[i]=[];for(var j=0;j<G;j++){hs[i][j]=(i===3&&j===3)?9:1.5+Math.random()*5.5;}}
+    var ease=function(x){x=Math.max(0,Math.min(1,x));return 1-Math.pow(1-x,3);};
+    function shade(hex,k){var n=parseInt(hex.slice(1),16),r=(n>>16)*k,g=((n>>8)&255)*k,b=(n&255)*k;return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';}
+    function box(cx0,cy0,tw,th,h,col,lit,t,seed){
+      var x=cx0,y=cy0;
+      c.fillStyle=shade(col,.55);c.beginPath();c.moveTo(x-tw/2,y);c.lineTo(x,y+th/2);c.lineTo(x,y+th/2-h);c.lineTo(x-tw/2,y-h);c.closePath();c.fill();
+      c.fillStyle=shade(col,.8);c.beginPath();c.moveTo(x+tw/2,y);c.lineTo(x,y+th/2);c.lineTo(x,y+th/2-h);c.lineTo(x+tw/2,y-h);c.closePath();c.fill();
+      c.fillStyle=shade(col,1.1);c.beginPath();c.moveTo(x,y-th/2-h);c.lineTo(x+tw/2,y-h);c.lineTo(x,y+th/2-h);c.lineTo(x-tw/2,y-h);c.closePath();c.fill();
+      if(lit>0&&h>th){var rows=Math.floor(h/(th*.8));for(var r=1;r<rows;r++){var on=((r*7+seed*3)%5)<3&&lit>r/rows*1.0;if(!on)continue;c.fillStyle='rgba(253,224,71,'+(.5+.4*Math.sin(t*2+r+seed))+')';var yy=y-r*(h/rows);c.fillRect(x+tw*.12,yy+tw*.06,tw*.16,th*.28);c.fillRect(x-tw*.28,yy+tw*.06,tw*.16,th*.28);}}
+    }
+    var cols=['#38bdf8','#818cf8','#34d399','#f59e0b','#f472b6','#22d3ee','#a78bfa'];
+    function frame(){
+      if(cv2.clientWidth!==Math.round(W2)||cv2.width===0){if(cv2.clientWidth===0)return;rs();}
+      var r=sec.getBoundingClientRect(),total=sec.offsetHeight-innerHeight,p=Math.max(0,Math.min(1,-r.top/total)),t=performance.now()/1000;
+      c.clearRect(0,0,W2,H2);
+      var zoom=1.2-.4*ease((p-.38)/.4),tw=Math.min(W2,H2*1.2)/ (G*1.05) *zoom,th=tw*.5;
+      var ox=W2/2,oy=H2*.62-(1-ease((p-.38)/.4))*H2*.05;
+      // ground grid
+      c.strokeStyle='rgba(125,211,252,.16)';c.lineWidth=1;
+      for(var a=0;a<=G;a++){var p1=iso(a,0),p2=iso(a,G);c.beginPath();c.moveTo(p1[0],p1[1]);c.lineTo(p2[0],p2[1]);c.stroke();var q1=iso(0,a),q2=iso(G,a);c.beginPath();c.moveTo(q1[0],q1[1]);c.lineTo(q2[0],q2[1]);c.stroke();}
+      function iso(i,j){return [ox+(i-j)*tw/2,oy+(i+j-G)*th/2];}
+      var tower=ease(p/.36);
+      for(var s=0;s<=2*(G-1);s++)for(var i=0;i<G;i++){var j=s-i;if(j<0||j>=G)continue;
+        var isT=(i===3&&j===3),h;
+        if(isT)h=hs[i][j]*tw*.27*tower;
+        else{var k=ease((p-.4-((i*G+j)/(G*G))*.25)/.25);h=hs[i][j]*tw*.24*k;}
+        if(h<1)continue;var pt=iso(i+.5,j+.5);
+        box(pt[0],pt[1],tw*.86,th*.86,h,isT?'#f59e0b':cols[(i*3+j)%cols.length],isT?Math.min(1,tower*1.2):Math.min(1,(p-.5)*2.2),t,i*G+j);}
+      cap.textContent=p<.36?'Scroll to build':p<.75?'One plan. Many projects.':'';
+      big.style.opacity=p>.8?1:0;
+    }
+    if(RM){frame();addEventListener('scroll',frame,{passive:true});}
+    else{(function loop(){frame();requestAnimationFrame(loop);})();}
+  }catch(e){console.warn('build',e);}
+})();
 }catch(e){console.warn('motion.js',e);}
 })();

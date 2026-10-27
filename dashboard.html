@@ -1085,8 +1085,10 @@ async function loadDashboard(skipLock){
     const attendanceRecords = supaData.attendance || [];
     const _nz = v => String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
     const _ix = _nz(idx);
+    let _acct = studentCurrentAccount;
+    if(skipLock){ try{ const _all = await dbFetchAllStudents(); const _k = String(idx||'').toLowerCase().replace(/[^a-z0-9]/g,''); const _kd = _k.replace(/\D/g,''); _acct = _all.find(a => String(a.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'') === _k) || _all.find(a => _kd.length>=5 && String(a.indexNumber||'').replace(/\D/g,'') === _kd) || null; }catch(e){ _acct = null; } }
     const _toks = v => String(v||'').toLowerCase().replace(/\((ms|mr)\)/g,'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort();
-    const _myToks = _toks((studentCurrentAccount&&studentCurrentAccount.name)||'');
+    const _myToks = _toks((_acct&&_acct.name)||'');
     const _sameName = n => { const t=_toks(n); return _myToks.length>=2 && t.length===_myToks.length && t.every((x,i)=>x===_myToks[i]); };
     const _dg = v => String(v==null?'':v).replace(/\D/g,'');
     const _isMe = v => { const raw = (typeof v==='object'&&v?(v.indexNumber||v.index||''):v); const a=_nz(raw); if(a && a===_ix) return true; const d=_dg(raw), m=_dg(idx); return d.length>=5 && d===m; };
@@ -1095,7 +1097,7 @@ async function loadDashboard(skipLock){
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
     )];
     // Late registrants: not on any roster for a course taught at their level -> still show that course's sessions
-    const _lv = _dlhLevel();
+    const _lv = (String((_acct&&_acct.level)||'').match(/[1-9]00/)||[''])[0];
     const _coveredBases = new Set(_core.map(c => _cbase(c).toLowerCase()));
     const _lateAdd = _lv ? [...new Set(attendanceRecords.map(a => a.course).filter(c => c && _clevel(c) === _lv && !_coveredBases.has(_cbase(c).toLowerCase())))] : [];
     const myCourses = _core.concat(_lateAdd);

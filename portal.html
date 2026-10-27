@@ -2381,13 +2381,15 @@ async function apParse(){
         const t=text.match(/^Attendance\s*[—–-]\s*(.+)$/);
         if(t && !course){ course=t[1].trim(); return; }
         if(/^Index/i.test(text)){ const d=text.match(/\d{4}-\d{2}-\d{2}/g); if(d && !dates.length) dates=d; return; }
-        const m=text.match(/^([A-Za-z]{2,5}\d{4,})\s+(.*)$/);
-        if(!m) return;
+        const body=text.replace(/[✓✗].*$/,'').trim();
+        const im=body.match(/(?:^|\s)([A-Za-z]{2,5}\d{4,})(?=\s|$)/);
+        if(!im) return;
         const marks=(text.match(/[✓✗]/g)||[]);
         if(!marks.length) return;
         const nd=Math.max(dates.length,1), step=Math.max(Math.floor(marks.length/nd),1);
         const per=[]; for(let k=0;k<nd;k++) per.push(marks[k*step]==='✓');
-        const name=m[2].replace(/[✓✗].*$/,'').trim();
+        const name=body.replace(im[1],'').replace(/\s+/g,' ').trim();
+        const m=[null,im[1]];
         if(!students.some(s=>s.idx.toLowerCase()===m[1].toLowerCase())) students.push({idx:m[1],name:name,per:per});
       });
     }

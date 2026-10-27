@@ -580,18 +580,21 @@ async function dbFindStudentByEmail(email){
 // Insert-or-update in one atomic operation — this is what actually eliminates the race
 // condition, since the database only ever touches this one student's row, never anyone else's.
 async function dbUpsertStudent(record){
-  const res = await fetch(`${STUDENT_TABLE_URL}?on_conflict=email`, {
-    method: "POST",
-    headers: { ...DB_WRITE_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
-    body: JSON.stringify({
-      email: record.email,
-      index_number: record.indexNumber,
-      name: record.name,
-      level: record.level,
-      department: record.department || null,
-      linked_at: record.linkedAt
-    })
-  });
+  const send = async (withDept) => {
+    const body = { email: record.email, index_number: record.indexNumber, name: record.name, level: record.level, linked_at: record.linkedAt };
+    if(withDept) body.department = record.department || null;
+    return fetch(`${STUDENT_TABLE_URL}?on_conflict=email`, {
+      method: "POST",
+      headers: { ...DB_WRITE_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
+      body: JSON.stringify(body)
+    });
+  };
+  let res = await send(true);
+  if(!res.ok){
+    const d1 = await res.clone().text().catch(() => '');
+    // Department column not created yet in the database: still save everything else.
+    if(/PGRST204|department/i.test(d1)) res = await send(false);
+  }
   if(!res.ok){
     const detail = await res.text().catch(() => '');
     throw new Error(`Could not save student record (${detail || res.status})`);
@@ -677,7 +680,7 @@ async function onStudentSignedIn(){
     document.getElementById('linkLevelInput').value = myAccount.level || '';
     document.getElementById('linkDeptInput').value = myAccount.department || '';
     document.getElementById('profileDeptInput').value = myAccount.department || '';
-    if(myAccount.hasDeptCol && !myAccount.department) showDeptGate();
+    if(!myAccount.department) showDeptGate();
 
     if(!myAccount.level){
       // Registered before the Level field existed — prompt them to add it now instead of relying on the small edit link.
@@ -710,7 +713,7 @@ async function saveDeptGate(){
       method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
       body: JSON.stringify({ department: v })
     });
-    if(!res.ok) throw new Error('save failed (' + res.status + ')');
+    if(!res.ok){ const t = await res.text().catch(()=>''); throw new Error(/PGRST204|department/i.test(t) ? 'The department field is not set up in the database yet. The administrator must run the department SQL once, then try again.' : 'save failed (' + res.status + ')'); }
     studentCurrentAccount.department = v;
     const g = document.getElementById('deptGate'); g.classList.add('hidden'); g.style.display = 'none';
     document.body.style.overflow = '';
@@ -1104,6 +1107,7 @@ async function isDeviceLockEnabled(){
 const LOCK_KEY = "assessment_locked_index"; // shared with the Assessment Portal's lock, so a device stays tied to one student everywhere
 
 async function loadDashboard(skipLock){
+  if(!skipLock && studentCurrentAccount && !studentCurrentAccount.department){ showDeptGate(); return; }
   const idxInput = document.getElementById('dashIndexInput');
   const idx = idxInput.value.trim();
   const msg = document.getElementById('dashMsg');

@@ -585,6 +585,23 @@
       <div id="rosterUploadMsg"></div>
     </div>
 
+    <div class="card hidden" id="attPdfCard">
+      <label>Import Attendance from PDF</label>
+      <div class="hint">Upload an attendance PDF exported from this portal. Choose the course and date, then import. It replaces that date's attendance in the system and (optionally) adds students missing from the roster, so late registrants show up on their dashboards.</div>
+      <label>PDF file</label>
+      <input type="file" id="apFile" accept="application/pdf" onchange="apParse()">
+      <div id="apInfo" style="margin-top:10px;"></div>
+      <div id="apForm" class="hidden">
+        <label>Course</label>
+        <input type="text" id="apCourse" list="apCourseList">
+        <datalist id="apCourseList"></datalist>
+        <label>Date to import</label>
+        <select id="apDate"></select>
+        <label style="display:flex;gap:8px;align-items:center;text-transform:none;margin-top:10px;"><input type="checkbox" id="apAddRoster" checked style="width:auto;"> Also add students missing from the roster</label>
+        <div style="margin-top:10px;"><button onclick="apImport()">Import &amp; Override</button></div>
+      </div>
+      <div id="apMsg" style="margin-top:12px;"></div>
+    </div>
     <div class="card hidden" id="attendanceDeleteCard">
       <label>Delete a Specific Attendance Session</label>
       <div class="hint">Pick a course and a date, then delete just that day's attendance. The roster and other dates stay intact.</div>
@@ -1018,7 +1035,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); try{delAttInit();}catch(e){}
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2333,6 +2350,96 @@ setInterval(updateLiveDateTime, 1000 * 30);
 // ===== Attendance Tracker =====
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
+
+let _apParsed = null;
+function apLoadLib(){
+  return new Promise((res,rej)=>{
+    if(window.pdfjsLib) return res();
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload=()=>{ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; res(); };
+    sc.onerror=()=>rej(new Error('Could not load the PDF reader. Check your internet connection.'));
+    document.head.appendChild(sc);
+  });
+}
+async function apParse(){
+  const f=document.getElementById('apFile').files[0], info=document.getElementById('apInfo'), msg=document.getElementById('apMsg');
+  msg.innerHTML=''; document.getElementById('apForm').classList.add('hidden'); _apParsed=null;
+  if(!f) return;
+  info.innerHTML='<div class="msg ok">Reading PDF...</div>';
+  try{
+    await apLoadLib();
+    const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+    let course='', dates=[], students=[];
+    for(let pn=1;pn<=doc.numPages;pn++){
+      const tc=await (await doc.getPage(pn)).getTextContent();
+      const rows={};
+      tc.items.forEach(i=>{ if(!i.str||!i.str.trim()) return; const y=Math.round(i.transform[5]/3); (rows[y]=rows[y]||[]).push(i); });
+      Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>{
+        const line=rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str.trim()).filter(Boolean);
+        const text=line.join(' ');
+        const t=text.match(/^Attendance\s*[—–-]\s*(.+)$/);
+        if(t && !course){ course=t[1].trim(); return; }
+        if(/^Index/i.test(text)){ const d=text.match(/\d{4}-\d{2}-\d{2}/g); if(d && !dates.length) dates=d; return; }
+        const m=text.match(/^([A-Za-z]{2,5}\d{4,})\s+(.*)$/);
+        if(!m) return;
+        const marks=(text.match(/[✓✗]/g)||[]);
+        if(!marks.length) return;
+        const nd=Math.max(dates.length,1), step=Math.max(Math.floor(marks.length/nd),1);
+        const per=[]; for(let k=0;k<nd;k++) per.push(marks[k*step]==='✓');
+        const name=m[2].replace(/[✓✗].*$/,'').trim();
+        if(!students.some(s=>s.idx.toLowerCase()===m[1].toLowerCase())) students.push({idx:m[1],name:name,per:per});
+      });
+    }
+    if(!students.length) throw new Error('No student rows found in this PDF.');
+    if(!dates.length) dates=[''];
+    _apParsed={course,dates,students};
+    document.getElementById('apCourse').value=course;
+    const cl=document.getElementById('apCourseList');
+    try{ const data=await fetchSupabaseData(); cl.innerHTML=visibleCourses(Object.keys(data.rosters||{})).map(c=>`<option value="${escapeHtml(c)}">`).join(''); }catch(e){}
+    document.getElementById('apDate').innerHTML=dates.map((d,i)=>`<option value="${i}">${escapeHtml(d||'(type date below)')} — ${students.filter(s=>s.per[i]).length} present</option>`).join('')+(dates.length>1?`<option value="all">All dates in the PDF</option>`:'');
+    info.innerHTML=`<div class="msg ok">Found ${students.length} students and ${dates.length} date column(s).</div>`;
+    document.getElementById('apForm').classList.remove('hidden');
+  }catch(e){ info.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function apImport(){
+  const msg=document.getElementById('apMsg');
+  if(!_apParsed){ msg.innerHTML='<div class="msg err">Choose a PDF first.</div>'; return; }
+  const course=document.getElementById('apCourse').value.trim();
+  const sel=document.getElementById('apDate').value;
+  if(!course){ msg.innerHTML='<div class="msg err">Enter the course.</div>'; return; }
+  const allowed=visibleCourses([course]);
+  if(!allowed.length){ msg.innerHTML='<div class="msg err">You are not assigned to this course.</div>'; return; }
+  const idxs = sel==='all' ? _apParsed.dates.map((d,i)=>i) : [parseInt(sel)];
+  const dateOf = i => _apParsed.dates[i];
+  if(idxs.some(i=>!/^\d{4}-\d{2}-\d{2}$/.test(dateOf(i)||''))){ msg.innerHTML='<div class="msg err">This PDF has no readable date.</div>'; return; }
+  const label = idxs.map(dateOf).join(', ');
+  if(!confirm(`Import attendance for "${course}" on ${label}? This REPLACES the existing attendance for that date.`)) return;
+  msg.innerHTML='<div class="msg ok">Importing...</div>';
+  try{
+    const data=await fetchSupabaseData();
+    data.attendance=data.attendance||[];
+    const nowIso=new Date().toISOString();
+    idxs.forEach(i=>{
+      const date=dateOf(i), sessionKey=`${course}__${date}`;
+      const present=_apParsed.students.filter(s=>s.per[i]).map(s=>s.idx);
+      const pos=data.attendance.findIndex(a=>a.sessionKey===sessionKey || (a.course===course && a.date===date));
+      const old=pos>=0?(data.attendance[pos].checkInTimes||{}):{};
+      const times={}; present.forEach(x=>{ times[x]=old[x]||nowIso; });
+      const rec={sessionKey,course,date,present,checkInTimes:times};
+      if(pos>=0) data.attendance[pos]=rec; else data.attendance.push(rec);
+    });
+    let added=0;
+    if(document.getElementById('apAddRoster').checked && canManageRosters()){
+      data.rosters=data.rosters||{};
+      const ros=data.rosters[course]=data.rosters[course]||[];
+      const have=new Set(ros.map(r=>String(r.indexNumber).trim().toLowerCase()));
+      _apParsed.students.forEach(s=>{ if(!have.has(s.idx.toLowerCase())){ ros.push({indexNumber:s.idx,name:s.name}); added++; } });
+    }
+    await saveSupabaseData(data);
+    msg.innerHTML=`<div class="msg ok">Imported ${idxs.length} session(s) for ${escapeHtml(course)}.${added?` Added ${added} student(s) to the roster.`:''} Students will see it on their dashboards now.</div>`;
+  }catch(e){ msg.innerHTML=`<div class="msg err">Could not import: ${escapeHtml(e.message)}</div>`; }
+}
 
 async function delAttInit(){
   try{

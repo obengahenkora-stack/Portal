@@ -1085,7 +1085,8 @@ async function loadDashboard(skipLock){
     const attendanceRecords = supaData.attendance || [];
     const _nz = v => String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
     const _ix = _nz(idx);
-    const _isMe = v => _nz(typeof v==='object'&&v?(v.indexNumber||v.index||''):v) === _ix;
+    const _dg = v => String(v==null?'':v).replace(/\D/g,'');
+    const _isMe = v => { const raw = (typeof v==='object'&&v?(v.indexNumber||v.index||''):v); const a=_nz(raw); if(a && a===_ix) return true; const d=_dg(raw), m=_dg(idx); return d.length>=5 && d===m; };
     const myCourses = [...new Set(
       Object.keys(rosters).filter(course => (rosters[course] || []).some(s => _isMe(s.indexNumber)))
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
@@ -1093,7 +1094,7 @@ async function loadDashboard(skipLock){
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
-      attContainer.innerHTML = '<div class="empty">No attendance record found for this index number.</div>';
+      attContainer.innerHTML = '<div class="empty">No attendance record found for index number <b>'+escapeHtml(String(idx))+'</b>. If this is not the index on the class list, update it under My Profile.</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
       myCourses.forEach(course => {

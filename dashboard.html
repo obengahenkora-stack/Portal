@@ -1083,9 +1083,12 @@ async function loadDashboard(skipLock){
     // ----- Attendance -----
     const rosters = supaData.rosters || {};
     const attendanceRecords = supaData.attendance || [];
-    const myCourses = Object.keys(rosters).filter(course =>
-      (rosters[course] || []).some(s => (s.indexNumber||'').toLowerCase() === idx.toLowerCase())
-    );
+    const _ix = String(idx||'').trim().toLowerCase();
+    const _isMe = v => String(v==null?'':(typeof v==='object'?(v.indexNumber||v.index||''):v)).trim().toLowerCase() === _ix;
+    const myCourses = [...new Set(
+      Object.keys(rosters).filter(course => (rosters[course] || []).some(s => _isMe(s.indexNumber)))
+      .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
+    )];
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
@@ -1095,7 +1098,7 @@ async function loadDashboard(skipLock){
       myCourses.forEach(course => {
         const courseSessions = attendanceRecords.filter(a => a.course === course);
         const totalSessions = courseSessions.length;
-        const attended = courseSessions.filter(a => (a.present||[]).some(p => p.toLowerCase() === idx.toLowerCase())).length;
+        const attended = courseSessions.filter(a => (a.present||[]).some(_isMe)).length;
         const pct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
         const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
         html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${totalSessions}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
@@ -1136,7 +1139,7 @@ async function loadDashboard(skipLock){
     myCourses.forEach(course => {
       const courseSessions = attendanceRecords.filter(a => a.course === course);
       totalSessions += courseSessions.length;
-      totalAttended += courseSessions.filter(a => (a.present||[]).some(p => p.toLowerCase() === idx.toLowerCase())).length;
+      totalAttended += courseSessions.filter(a => (a.present||[]).some(_isMe)).length;
     });
     const overallAttPct = totalSessions > 0 ? Math.round((totalAttended/totalSessions)*100) : null;
     document.getElementById('ovAttendance').textContent = overallAttPct !== null ? overallAttPct + '%' : '–';

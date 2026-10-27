@@ -585,6 +585,16 @@
       <div id="rosterUploadMsg"></div>
     </div>
 
+    <div class="card hidden" id="attendanceDeleteCard">
+      <label>Delete a Specific Attendance Session</label>
+      <div class="hint">Pick a course and a date, then delete just that day's attendance. The roster and other dates stay intact.</div>
+      <label>Course</label>
+      <select id="delAttCourse" onchange="delAttLoad()"><option value="">Select course...</option></select>
+      <label>Session date</label>
+      <select id="delAttDate"><option value="">Select a course first...</option></select>
+      <div style="margin-top:8px;"><button class="secondary" onclick="delAttRun()">Delete This Session</button></div>
+      <div id="delAttMsg" style="margin-top:12px;"></div>
+    </div>
     <div class="card hidden" id="attendanceCleanupCard">
       <label>End of Semester Cleanup</label>
       <div class="hint">Choose a course, then pick what to clear before starting a new semester.</div>
@@ -1008,6 +1018,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -1038,7 +1049,7 @@ async function onAuthReady(showToast){
     document.getElementById('attendanceCleanupCard').classList.remove('hidden');
     loadDeviceLockSetting();
     loadTeamMemberList();
-    loadCleanupCourseOptions();
+    loadCleanupCourseOptions(); try{delAttInit();}catch(e){}
   }
 
   if(!isAdmin() && !canUploadScores()){
@@ -2323,6 +2334,34 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
+async function delAttInit(){
+  try{
+    const data = await fetchSupabaseData();
+    const cs = visibleCourses([...new Set(Object.keys(data.rosters||{}).concat((data.attendance||[]).map(a=>a.course).filter(Boolean)))]);
+    document.getElementById('delAttCourse').innerHTML = '<option value="">Select course...</option>' + cs.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  }catch(e){}
+}
+async function delAttLoad(){
+  const c = document.getElementById('delAttCourse').value, sel = document.getElementById('delAttDate');
+  if(!c){ sel.innerHTML='<option value="">Select a course first...</option>'; return; }
+  try{
+    const data = await fetchSupabaseData();
+    const ss = (data.attendance||[]).filter(a=>a.course===c).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    sel.innerHTML = ss.length ? ss.map(a=>`<option value="${escapeHtml(a.date)}">${escapeHtml(a.date)} (${(a.present||[]).length} present)</option>`).join('') : '<option value="">No sessions recorded</option>';
+  }catch(e){ sel.innerHTML='<option value="">Could not load</option>'; }
+}
+async function delAttRun(){
+  const c = document.getElementById('delAttCourse').value, d = document.getElementById('delAttDate').value, msg = document.getElementById('delAttMsg');
+  if(!c || !d){ msg.innerHTML='<div class="msg err">Select a course and a date.</div>'; return; }
+  if(!confirm(`Delete the attendance for "${c}" on ${d}? This cannot be undone.`)) return;
+  try{
+    const data = await fetchSupabaseData();
+    data.attendance = (data.attendance||[]).filter(a=>!(a.course===c && a.date===d));
+    await saveSupabaseData(data);
+    msg.innerHTML = `<div class="msg ok">Deleted attendance for ${escapeHtml(c)} on ${escapeHtml(d)}.</div>`;
+    delAttLoad();
+  }catch(e){ msg.innerHTML = `<div class="msg err">Could not delete: ${escapeHtml(e.message)}</div>`; }
+}
 async function loadCleanupCourseOptions(){
   try{
     const data = await fetchSupabaseData();

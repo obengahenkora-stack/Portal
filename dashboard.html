@@ -1107,16 +1107,19 @@ async function loadDashboard(skipLock){
       attContainer.innerHTML = '<div class="empty">No attendance record found for index number <b>'+escapeHtml(String(idx))+'</b>. If this is not the index on the class list, update it under My Profile.</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
+      let _shown = 0;
       myCourses.forEach(course => {
         const courseSessions = attendanceRecords.filter(a => a.course === course);
         const totalSessions = courseSessions.length;
+        if(totalSessions === 0) return;
+        _shown++;
         const attended = courseSessions.filter(a => (a.present||[]).some(_isMe)).length;
         const pct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
         const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
         html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${totalSessions}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
       });
       html += '</table>';
-      attContainer.innerHTML = html;
+      attContainer.innerHTML = _shown ? html : '<div class="empty">No attendance sessions have been recorded for your courses yet.</div>';
     }
 
     // ----- Reports -----

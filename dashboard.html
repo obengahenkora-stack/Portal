@@ -397,7 +397,7 @@ function _cbase(n){var s=String(n||'').trim();var m=s.match(/^(.*\d)\s*[-_\/]?\s
 function _same(a,b){return _cbase(a).toLowerCase()===_cbase(b).toLowerCase();}
 function _clevel(c){var m=String(c||'').match(/(\d)\d{2}/);return m?m[1]+'00':'';}
 function _dlhLevel(){try{var l=String((studentCurrentAccount&&studentCurrentAccount.level)||'').match(/[1-9]00/);return l?l[0]:'';}catch(e){return '';}}
-function _dlhAllowed(c){ if(_dlhMine.some(m=>_same(m,c))) return true; if(typeof isAdminUser==='function' && isAdminUser()) return true; var L=_dlhLevel(); return !!L && _clevel(c)===L; }
+function _dlhAllowed(c){ if(_dlhMine.some(m=>_same(m,c))) return true; if(typeof isAdminUser==='function' && isAdminUser()) return true; return false; }
 function initDashHall(supa,mine){
   _dlhData=supa||{};
   _dlhMine=[...new Set((mine||[]).map(_cbase))];
@@ -408,7 +408,7 @@ function initDashHall(supa,mine){
   Object.keys(_dlhData.syllabi||{}).forEach(c=>all.add(_cbase(c)));
   const others=[...all].filter(c=>!_dlhMine.some(m=>m.toLowerCase()===c.toLowerCase()) && _dlhAllowed(c)).sort();
   const sel=document.getElementById('dlhCourse');
-  let h='<option value="">All for my level'+(_dlhLevel()?' ('+_dlhLevel()+')':'')+'</option>';
+  let h='<option value="">All my courses</option>';
   if(_dlhMine.length) h+='<optgroup label="My courses">'+_dlhMine.sort().map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
   if(others.length) h+='<optgroup label="Other courses">'+others.map(c=>'<option>'+escapeHtml(c)+'</option>').join('')+'</optgroup>';
   sel.innerHTML=h;
@@ -416,6 +416,7 @@ function initDashHall(supa,mine){
 }
 function renderDashHall(){
   const box=document.getElementById('dlhBody'); if(!box||!_dlhData) return;
+  if(!_dlhMine.length && !(typeof isAdminUser==='function' && isAdminUser())){ box.innerHTML='<div class="empty">You are not on any course list yet. Ask your lecturer to add you, then reload this page.</div>'; return; }
   const sel=document.getElementById('dlhCourse').value;
   const match=c=>sel?(_same(c,sel)&&_dlhAllowed(c)):_dlhAllowed(c);
   const fd=t=>{try{return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
@@ -1056,9 +1057,18 @@ async function loadDashboard(skipLock){
       fetchSupabaseData()
     ]);
 
+    const _nz = v => String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const _ix = _nz(idx);
+    let _acct = studentCurrentAccount;
+    if(skipLock){ try{ const _all = await dbFetchAllStudents(); const _k = String(idx||'').toLowerCase().replace(/[^a-z0-9]/g,''); const _kd = _k.replace(/\D/g,''); _acct = _all.find(a => String(a.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'') === _k) || _all.find(a => _kd.length>=5 && String(a.indexNumber||'').replace(/\D/g,'') === _kd) || null; }catch(e){ _acct = null; } }
+    const _toks = v => String(v||'').toLowerCase().replace(/\((ms|mr)\)/g,'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort();
+    const _myToks = _toks((_acct&&_acct.name)||'');
+    const _sameName = n => { const t=_toks(n); return _myToks.length>=2 && t.length===_myToks.length && t.every((x,i)=>x===_myToks[i]); };
+    const _dg = v => String(v==null?'':v).replace(/\D/g,'');
+    const _isMe = v => { const raw = (typeof v==='object'&&v?(v.indexNumber||v.index||''):v); const a=_nz(raw); if(a && a===_ix) return true; const d=_dg(raw), m=_dg(idx); return d.length>=5 && d===m; };
     // ----- Scores -----
     const allRecords = jsonBinData.records || [];
-    const myRecords = allRecords.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase());
+    const myRecords = allRecords.filter(r => _isMe(r.indexNumber));
     const scoresContainer = document.getElementById('dashScores');
     if(myRecords.length === 0){
       scoresContainer.innerHTML = '<div class="empty">No scores found for this index number.</div>';
@@ -1068,7 +1078,7 @@ async function loadDashboard(skipLock){
       const _ros = supaData.rosters || {};
       const _rows = myRecords.slice();
       Object.keys(_ros).forEach(course => {
-        if(!(_ros[course]||[]).some(s => (s.indexNumber||'').toLowerCase() === idx.toLowerCase())) return;
+        if(!(_ros[course]||[]).some(s => _isMe(s.indexNumber) || _sameName(s.name))) return;
         const names = []; allRecords.filter(r => (r.course||'General') === course).forEach(r => { const a=r.assessmentName||'Untitled'; if(names.indexOf(a)<0) names.push(a); });
         names.forEach(a => { if(!myRecords.some(m => (m.course||'General')===course && (m.assessmentName||'Untitled')===a)) _rows.push({course:course, level:'', assessmentName:a, score:'0'}); });
       });
@@ -1083,24 +1093,11 @@ async function loadDashboard(skipLock){
     // ----- Attendance -----
     const rosters = supaData.rosters || {};
     const attendanceRecords = supaData.attendance || [];
-    const _nz = v => String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
-    const _ix = _nz(idx);
-    let _acct = studentCurrentAccount;
-    if(skipLock){ try{ const _all = await dbFetchAllStudents(); const _k = String(idx||'').toLowerCase().replace(/[^a-z0-9]/g,''); const _kd = _k.replace(/\D/g,''); _acct = _all.find(a => String(a.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'') === _k) || _all.find(a => _kd.length>=5 && String(a.indexNumber||'').replace(/\D/g,'') === _kd) || null; }catch(e){ _acct = null; } }
-    const _toks = v => String(v||'').toLowerCase().replace(/\((ms|mr)\)/g,'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort();
-    const _myToks = _toks((_acct&&_acct.name)||'');
-    const _sameName = n => { const t=_toks(n); return _myToks.length>=2 && t.length===_myToks.length && t.every((x,i)=>x===_myToks[i]); };
-    const _dg = v => String(v==null?'':v).replace(/\D/g,'');
-    const _isMe = v => { const raw = (typeof v==='object'&&v?(v.indexNumber||v.index||''):v); const a=_nz(raw); if(a && a===_ix) return true; const d=_dg(raw), m=_dg(idx); return d.length>=5 && d===m; };
     const _core = [...new Set(
       Object.keys(rosters).filter(course => (rosters[course] || []).some(s => _isMe(s.indexNumber) || _sameName(s.name)))
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
     )];
-    // Late registrants: not on any roster for a course taught at their level -> still show that course's sessions
-    const _lv = (String((_acct&&_acct.level)||'').match(/[1-9]00/)||[''])[0];
-    const _coveredBases = new Set(_core.map(c => _cbase(c).toLowerCase()));
-    const _lateAdd = _lv ? [...new Set(attendanceRecords.map(a => a.course).filter(c => c && _clevel(c) === _lv && !_coveredBases.has(_cbase(c).toLowerCase())))] : [];
-    const myCourses = _core.concat(_lateAdd);
+    const myCourses = _core;
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
@@ -1124,7 +1121,7 @@ async function loadDashboard(skipLock){
 
     // ----- Reports -----
     const allReports = jsonBinData.reports || [];
-    const myReports = allReports.filter(r => (r.indexNumber||'').toLowerCase() === idx.toLowerCase())
+    const myReports = allReports.filter(r => _isMe(r.indexNumber))
       .sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
     const reportsContainer = document.getElementById('dashReports');
     if(myReports.length === 0){

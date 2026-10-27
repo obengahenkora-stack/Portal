@@ -397,7 +397,7 @@ function _cbase(n){var s=String(n||'').trim();var m=s.match(/^(.*\d)\s*[-_\/]?\s
 function _same(a,b){return _cbase(a).toLowerCase()===_cbase(b).toLowerCase();}
 function _clevel(c){var m=String(c||'').match(/(\d)\d{2}/);return m?m[1]+'00':'';}
 function _dlhLevel(){try{var l=String((studentCurrentAccount&&studentCurrentAccount.level)||'').match(/[1-9]00/);return l?l[0]:'';}catch(e){return '';}}
-function _dlhAllowed(c){ if(_dlhMine.some(m=>_same(m,c))) return true; if(typeof isAdminUser==='function' && isAdminUser()) return true; return false; }
+function _dlhAllowed(c){ if(_dlhMine.some(m=>_same(m,c))) return true; return false; }
 function initDashHall(supa,mine){
   _dlhData=supa||{};
   _dlhMine=[...new Set((mine||[]).map(_cbase))];
@@ -416,7 +416,7 @@ function initDashHall(supa,mine){
 }
 function renderDashHall(){
   const box=document.getElementById('dlhBody'); if(!box||!_dlhData) return;
-  if(!_dlhMine.length && !(typeof isAdminUser==='function' && isAdminUser())){ box.innerHTML='<div class="empty">You are not on any course list yet. Ask your lecturer to add you, then reload this page.</div>'; return; }
+  if(!_dlhMine.length){ box.innerHTML='<div class="empty">You are not on any course list yet. Ask your lecturer to add you, then reload this page.</div>'; return; }
   const sel=document.getElementById('dlhCourse').value;
   const match=c=>sel?(_same(c,sel)&&_dlhAllowed(c)):_dlhAllowed(c);
   const fd=t=>{try{return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};

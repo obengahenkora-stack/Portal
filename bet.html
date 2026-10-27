@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bet (Virtual Points)</title>
+<style>
+  :root { --bg:#0f1420; --card:#1a2133; --line:#2a3550; --text:#e8ecf5; --muted:#8b97b5; --accent:#2ecc71; --warn:#f5b041; --bad:#e74c3c; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap; }
+  header a { color:var(--muted); text-decoration:none; font-size:14px; }
+  h1 { font-size:18px; margin:0; }
+  .wrap { max-width:720px; margin:0 auto; padding:16px; }
+  .banner { background:#222c44; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; color:var(--muted); margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .teams { font-weight:600; }
+  .meta { color:var(--muted); font-size:12px; margin-top:2px; }
+  .score { font-size:20px; font-weight:700; margin-top:6px; }
+  .odds { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  button { font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:#222c44; color:var(--text); padding:9px 6px; }
+  button:hover { border-color:var(--accent); }
+  button.sel { background:var(--accent); color:#06210f; border-color:var(--accent); font-weight:700; }
+  button.primary { background:var(--accent); color:#06210f; border:none; font-weight:700; padding:10px 14px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  input { font:inherit; padding:10px; border-radius:8px; border:1px solid var(--line); background:#101727; color:var(--text); width:100%; }
+  .stake { display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .stake input { width:110px; }
+  .pill { font-size:12px; padding:3px 8px; border-radius:99px; background:#222c44; color:var(--muted); white-space:nowrap; }
+  .pill.live { background:var(--bad); color:#fff; }
+  .win { color:var(--accent); } .lose { color:var(--bad); }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { flex:1; }
+  .points { font-weight:700; color:var(--warn); }
+  .hidden { display:none; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { padding:8px 4px; border-bottom:1px solid var(--line); text-align:left; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Bet <span class="pill">virtual points only</span></h1>
+  <div>
+    <span id="who" class="hidden"></span>
+    <a href="/">← Back to site</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="banner">This is a game. Points have no cash value and nothing can be bought or withdrawn.</div>
+
+  <!-- Sign-in screen -->
+  <div id="login" class="card">
+    <h2 style="margin-top:0">Join the game</h2>
+    <p class="meta">Pick a nickname. You start with 1,000 free points.</p>
+    <input id="nick" maxlength="20" placeholder="Your nickname">
+    <div style="margin-top:10px"><button class="primary" onclick="signIn()">Start playing</button></div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="hidden">
+    <div class="card row">
+      <div>Your points: <span id="pts" class="points"></span></div>
+      <button onclick="resetAll()" style="font-size:12px">Reset game</button>
+    </div>
+
+    <div class="tabs">
+      <button id="t-matches" class="sel" onclick="tab('matches')">Matches</button>
+      <button id="t-mybets" onclick="tab('mybets')">My bets</button>
+      <button id="t-board" onclick="tab('board')">Leaderboard</button>
+    </div>
+
+    <div id="matches">
+      <div class="row" style="margin-bottom:10px">
+        <span id="status" class="meta"></span>
+        <button onclick="refresh()" style="font-size:12px">Refresh</button>
+      </div>
+      <div id="matchlist"></div>
+    </div>
+    <div id="mybets" class="hidden"></div>
+    <div id="board" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SETTINGS (everything you may want to change is here)
+   ============================================================ */
+// Paste your Cloudflare Worker address between the quotes, e.g.
+// "https://bet-scores.yourname.workers.dev"
+// While this is empty, the page runs in DEMO mode with sample matches.
+const WORKER_URL = "";
+
+const START_POINTS = 1000;
+const ODDS = [2.20, 3.20, 2.80];     // Home, Draw, Away (same for every match)
+const MIN_STAKE = 10;
+const STORAGE_KEY = "bet_game_v2";   // saved only in this browser for now
+const DEMO = !WORKER_URL;
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = load() || { user:null, points:START_POINTS, bets:[], demo:{} };
+let matches = [];
+let draft = {};
+
+const FINISHED = ["FT","AET","PEN"];
+const VOID = ["CANC","ABD","AWD","WO"];
+const LIVE = ["1H","HT","2H","ET","BT","P","SUSP","INT","LIVE"];
+const LABELS = ["Home","Draw","Away"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function load(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e){ return null; } }
+function save(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){} }
+
+/* ============================================================
+   MATCH DATA
+   ============================================================ */
+function sampleMatches(){
+  const h = 3600000, now = Date.now();
+  const list = [
+    ["Premier League","Arsenal","Chelsea"], ["Premier League","Liverpool","Man City"],
+    ["La Liga","Real Madrid","Barcelona"], ["Ghana Premier League","Hearts of Oak","Asante Kotoko"],
+    ["Serie A","Inter","AC Milan"]
+  ];
+  return list.map((m,i) => {
+    const r = state.demo[i+1];
+    return { id:i+1, league:m[0], home:m[1], away:m[2],
+      kickoff:new Date(now + (i+2)*h).toISOString(),
+      status: r ? "FT" : "NS", elapsed:null, hg: r?r.hg:null, ag: r?r.ag:null };
+  });
+}
+
+async function refresh(){
+  if(DEMO){
+    matches = sampleMatches();
+    $("status").textContent = "Demo mode: sample matches, not live.";
+  } else {
+    $("status").textContent = "Loading…";
+    try {
+      const r = await fetch(WORKER_URL);
+      const data = await r.json();
+      if(!r.ok || data.error) throw new Error(data.error || "Failed");
+      matches = data.matches;
+      $("status").textContent = "Updated " + new Date().toLocaleTimeString() + " · scores can be a few minutes behind";
+    } catch(e){
+      $("status").textContent = "Couldn't load scores right now. Try Refresh in a minute.";
+    }
+  }
+  settle(); render();
+}
+
+/* ============================================================
+   BETTING
+   ============================================================ */
+const canBet = m => (m.status === "NS" || m.status === "TBD") && new Date(m.kickoff) > Date.now();
+
+function pick(mid, idx){ draft[mid] = draft[mid] || {pick:null, stake:100}; draft[mid].pick = idx; renderMatches(); }
+function setStake(mid, v){ draft[mid] = draft[mid] || {pick:null, stake:100}; draft[mid].stake = Math.floor(Number(v)) || 0; }
+
+function placeBet(mid){
+  const d = draft[mid], m = matches.find(x => x.id === mid);
+  if(!m || !canBet(m)){ alert("Betting on this match is closed."); return; }
+  if(!d || d.pick === null){ alert("Choose Home, Draw or Away first."); return; }
+  if(d.stake < MIN_STAKE){ alert("Minimum stake is " + MIN_STAKE + " points."); return; }
+  if(d.stake > state.points){ alert("Not enough points."); return; }
+  state.points -= d.stake;
+  state.bets.push({ matchId:mid, home:m.home, away:m.away, league:m.league, pick:d.pick,
+    stake:d.stake, odds:ODDS[d.pick], status:"open", payout:0, placedAt:Date.now() });
+  delete draft[mid]; save(); render();
+}
+
+// Pays winners and refunds cancelled matches. Runs every time scores load.
+function settle(){
+  let changed = false;
+  state.bets.forEach(b => {
+    if(b.status !== "open") return;
+    const m = matches.find(x => x.id === b.matchId);
+    if(m && FINISHED.includes(m.status) && m.hg !== null && m.ag !== null){
+      const result = m.hg > m.ag ? 0 : (m.hg === m.ag ? 1 : 2);
+      if(b.pick === result){ b.status = "won"; b.payout = Math.round(b.stake * b.odds); state.points += b.payout; }
+      else { b.status = "lost"; }
+      changed = true;
+    } else if((m && VOID.includes(m.status)) || (!m && !DEMO && Date.now() - b.placedAt > 3*86400000)){
+      b.status = "refunded"; state.points += b.stake; changed = true;
+    }
+  });
+  if(changed) save();
+}
+
+// Demo only: ends a match with a random score so you can test the game.
+function demoFinish(mid){
+  state.demo[mid] = { hg: Math.floor(Math.random()*4), ag: Math.floor(Math.random()*4) };
+  save(); refresh();
+}
+function signIn(){
+  const n = $("nick").value.trim();
+  if(!n){ alert("Please type a nickname."); return; }
+  state.user = n; save(); render(); refresh();
+}
+function resetAll(){
+  if(!confirm("Reset your points and bets?")) return;
+  state = { user:state.user, points:START_POINTS, bets:[], demo:{} };
+  save(); refresh();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const rank = m => LIVE.includes(m.status) ? 0 : (m.status==="NS"||m.status==="TBD") ? 1 : FINISHED.includes(m.status) ? 2 : 3;
+function statusPill(m){
+  if(LIVE.includes(m.status)) return `<span class="pill live">${m.status==="HT" ? "Half-time" : "LIVE " + (m.elapsed ? m.elapsed + "'" : "")}</span>`;
+  if(FINISHED.includes(m.status)) return `<span class="pill">Finished</span>`;
+  if(m.status==="PST") return `<span class="pill">Postponed</span>`;
+  if(VOID.includes(m.status)) return `<span class="pill">Cancelled</span>`;
+  return `<span class="pill">${new Date(m.kickoff).toLocaleString([], {weekday:"short", hour:"2-digit", minute:"2-digit"})}</span>`;
+}
+function renderMatches(){
+  if(!matches.length){ $("matchlist").innerHTML = `<div class="card meta">No matches to show right now.</div>`; return; }
+  const sorted = matches.slice().sort((a,b) => rank(a)-rank(b) || new Date(a.kickoff)-new Date(b.kickoff));
+  $("matchlist").innerHTML = sorted.map(m => {
+    const d = draft[m.id] || {pick:null, stake:100};
+    const mine = state.bets.some(b => b.matchId === m.id && b.status === "open");
+    const showScore = m.hg !== null && m.ag !== null;
+    let body = showScore ? `<div class="score">${m.hg} – ${m.ag}</div>` : "";
+    if(canBet(m)){
+      body += `<div class="odds">${ODDS.map((o,i) =>
+        `<button class="${d.pick===i?'sel':''}" onclick="pick(${m.id},${i})">${LABELS[i]}<br>${o.toFixed(2)}</button>`).join("")}</div>
+        <div class="stake">
+          <input type="number" min="${MIN_STAKE}" value="${d.stake}" oninput="setStake(${m.id}, this.value)">
+          <button class="primary" onclick="placeBet(${m.id})">Place bet</button>
+          ${DEMO ? `<button style="margin-left:auto;font-size:12px" onclick="demoFinish(${m.id})" ${mine?'':'disabled'} title="Demo: ends the match with a random score">Demo: finish</button>` : ""}
+        </div>`;
+    } else if(!FINISHED.includes(m.status) && !VOID.includes(m.status)){
+      body += `<div class="meta" style="margin-top:8px">Betting closed</div>`;
+    }
+    return `<div class="card"><div class="row"><div class="teams">${esc(m.home)} vs ${esc(m.away)}</div>${statusPill(m)}</div>
+      <div class="meta">${esc(m.league)}</div>${body}</div>`;
+  }).join("");
+}
+function renderBets(){
+  if(!state.bets.length){ $("mybets").innerHTML = `<div class="card meta">No bets yet.</div>`; return; }
+  $("mybets").innerHTML = state.bets.slice().reverse().map(b => {
+    const st = b.status === "won" ? `<span class="win">Won +${b.payout}</span>`
+             : b.status === "lost" ? `<span class="lose">Lost −${b.stake}</span>`
+             : b.status === "refunded" ? `<span class="pill">Refunded</span>` : `<span class="pill">Open</span>`;
+    return `<div class="card row"><div><div class="teams">${esc(b.home)} vs ${esc(b.away)}</div>
+      <div class="meta">${LABELS[b.pick]} @ ${b.odds.toFixed(2)} · stake ${b.stake}</div></div><div>${st}</div></div>`;
+  }).join("");
+}
+function renderBoard(){
+  $("board").innerHTML = `<div class="card"><table>
+    <tr><th>#</th><th>Player</th><th>Points</th></tr>
+    <tr><td>1</td><td>${esc(state.user)} (you)</td><td class="points">${state.points}</td></tr></table>
+    <p class="meta">A shared leaderboard with other people needs the online sign-up step we'll add next.</p></div>`;
+}
+function tab(name){
+  ["matches","mybets","board"].forEach(t => {
+    $(t).classList.toggle("hidden", t !== name);
+    $("t-"+t).classList.toggle("sel", t === name);
+  });
+}
+function render(){
+  const on = !!state.user;
+  $("login").classList.toggle("hidden", on);
+  $("app").classList.toggle("hidden", !on);
+  $("who").classList.toggle("hidden", !on);
+  if(!on) return;
+  $("who").textContent = state.user + " · ";
+  $("pts").textContent = state.points.toLocaleString();
+  renderMatches(); renderBets(); renderBoard();
+}
+
+render();
+if(state.user) refresh();
+// Re-check scores every 5 minutes (skipped while someone is typing a stake).
+setInterval(() => { if(state.user && document.activeElement.tagName !== "INPUT") refresh(); }, 300000);
+</script>
+</body>
+</html>

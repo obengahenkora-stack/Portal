@@ -1090,10 +1090,15 @@ async function loadDashboard(skipLock){
     const _sameName = n => { const t=_toks(n); return _myToks.length>=2 && t.length===_myToks.length && t.every((x,i)=>x===_myToks[i]); };
     const _dg = v => String(v==null?'':v).replace(/\D/g,'');
     const _isMe = v => { const raw = (typeof v==='object'&&v?(v.indexNumber||v.index||''):v); const a=_nz(raw); if(a && a===_ix) return true; const d=_dg(raw), m=_dg(idx); return d.length>=5 && d===m; };
-    const myCourses = [...new Set(
+    const _core = [...new Set(
       Object.keys(rosters).filter(course => (rosters[course] || []).some(s => _isMe(s.indexNumber) || _sameName(s.name)))
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
     )];
+    // Late registrants: not on any roster for a course taught at their level -> still show that course's sessions
+    const _lv = _dlhLevel();
+    const _coveredBases = new Set(_core.map(c => _cbase(c).toLowerCase()));
+    const _lateAdd = _lv ? [...new Set(attendanceRecords.map(a => a.course).filter(c => c && _clevel(c) === _lv && !_coveredBases.has(_cbase(c).toLowerCase())))] : [];
+    const myCourses = _core.concat(_lateAdd);
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){

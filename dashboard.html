@@ -160,6 +160,20 @@
     <div id="studentAuthMsg" style="margin-top:10px;"></div>
   </div>
 
+  <div id="deptGate" class="hidden" style="position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.78);display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card,#fff);color:var(--ink,#111);max-width:440px;width:100%;border-radius:14px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <h2 style="margin:0 0 6px;">Choose your department</h2>
+      <p style="color:var(--muted);font-size:0.88rem;margin:0 0 14px;">You must select your department before you can continue.</p>
+      <select id="deptGateSelect">
+        <option value="">Select your department...</option>
+      <option value="Civil Engineering">Civil Engineering</option>
+      <option value="Environmental Engineering">Environmental Engineering</option>
+      </select>
+      <button style="margin-top:12px;width:100%;" onclick="saveDeptGate()">Save and continue</button>
+      <div id="deptGateMsg" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <div class="card hidden" id="linkIndexCard">
     <h2>Link Your Index Number</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">One-time step — this connects your account to your student records.</p>
@@ -174,6 +188,12 @@
       <option value="200">Level 200</option>
       <option value="300">Level 300</option>
       <option value="400">Level 400</option>
+    </select>
+    <label>Your Department</label>
+    <select id="linkDeptInput">
+      <option value="">Select your department...</option>
+      <option value="Civil Engineering">Civil Engineering</option>
+      <option value="Environmental Engineering">Environmental Engineering</option>
     </select>
     <button onclick="linkIndexNumber()">Link Account</button>
     <div id="linkIndexMsg"></div>
@@ -202,6 +222,12 @@
       <option value="200">Level 200</option>
       <option value="300">Level 300</option>
       <option value="400">Level 400</option>
+    </select>
+    <label>Your Department</label>
+    <select id="profileDeptInput">
+      <option value="">Select your department...</option>
+      <option value="Civil Engineering">Civil Engineering</option>
+      <option value="Environmental Engineering">Environmental Engineering</option>
     </select>
     <button onclick="saveProfileDetails()">Save Details</button>
     <div id="profileDetailsMsg"></div>
@@ -245,6 +271,14 @@
       <option value="300">Level 300</option>
       <option value="400">Level 400</option>
       <option value="missing">Missing Level Only</option>
+    </select>
+
+    <label>Filter by Department</label>
+    <select id="adminRegisteredDeptFilter" onchange="renderRegisteredStudents()">
+      <option value="">All departments</option>
+      <option value="Civil Engineering">Civil Engineering</option>
+      <option value="Environmental Engineering">Environmental Engineering</option>
+      <option value="missing">Department not set</option>
     </select>
 
     <label>Filter by Year (last 2 digits of the index number, e.g. 24)</label>
@@ -526,7 +560,7 @@ const DB_HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE
 const DB_WRITE_HEADERS = { ...DB_HEADERS, "Content-Type": "application/json" };
 
 function dbRowToRecord(row){
-  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', linkedAt: row.linked_at };
+  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
 }
 
 async function dbFetchAllStudents(){
@@ -554,6 +588,7 @@ async function dbUpsertStudent(record){
       index_number: record.indexNumber,
       name: record.name,
       level: record.level,
+      department: record.department || null,
       linked_at: record.linkedAt
     })
   });
@@ -640,6 +675,9 @@ async function onStudentSignedIn(){
     document.getElementById('linkIndexInput').value = myAccount.indexNumber;
     document.getElementById('linkNameInput').value = myAccount.name || '';
     document.getElementById('linkLevelInput').value = myAccount.level || '';
+    document.getElementById('linkDeptInput').value = myAccount.department || '';
+    document.getElementById('profileDeptInput').value = myAccount.department || '';
+    if(myAccount.hasDeptCol && !myAccount.department) showDeptGate();
 
     if(!myAccount.level){
       // Registered before the Level field existed — prompt them to add it now instead of relying on the small edit link.
@@ -657,6 +695,29 @@ async function onStudentSignedIn(){
 
 let studentCurrentAccount = null;
 
+function showDeptGate(){
+  const g = document.getElementById('deptGate');
+  g.classList.remove('hidden'); g.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+async function saveDeptGate(){
+  const v = document.getElementById('deptGateSelect').value;
+  const msg = document.getElementById('deptGateMsg');
+  if(!v){ msg.innerHTML = '<div class="msg err">Please choose Civil Engineering or Environmental Engineering.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(studentCurrentEmail)}`, {
+      method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ department: v })
+    });
+    if(!res.ok) throw new Error('save failed (' + res.status + ')');
+    studentCurrentAccount.department = v;
+    const g = document.getElementById('deptGate'); g.classList.add('hidden'); g.style.display = 'none';
+    document.body.style.overflow = '';
+    document.getElementById('profileDeptInput').value = v;
+  }catch(e){ msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
+}
+
 function toggleProfileSection(){
   const section = document.getElementById('profileSection');
   const showing = section.classList.contains('hidden');
@@ -665,6 +726,7 @@ function toggleProfileSection(){
     document.getElementById('profileNameInput').value = studentCurrentAccount.name || '';
     document.getElementById('profileIndexInput').value = studentCurrentAccount.indexNumber || '';
     document.getElementById('profileLevelInput').value = studentCurrentAccount.level || '';
+    document.getElementById('profileDeptInput').value = studentCurrentAccount.department || '';
     document.getElementById('profileNewEmailInput').value = '';
     document.getElementById('profileNewPasswordInput').value = '';
   }
@@ -674,15 +736,17 @@ async function saveProfileDetails(){
   const indexNumber = document.getElementById('profileIndexInput').value.trim();
   const name = document.getElementById('profileNameInput').value.trim();
   const level = document.getElementById('profileLevelInput').value;
+  const department = document.getElementById('profileDeptInput').value;
   const msg = document.getElementById('profileDetailsMsg');
 
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
+  if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
     await dbUpsertStudent(record);
     studentCurrentAccount = record;
 
@@ -832,10 +896,13 @@ async function adminEditStudent(email){
   const idx = prompt('Index number:', s.indexNumber || ''); if(idx === null || !idx.trim()){ alert('Index number cannot be empty.'); return; }
   const level = prompt('Level (100, 200, 300 or 400):', s.level || ''); if(level === null) return;
   if(level.trim() && !['100','200','300','400'].includes(level.trim())){ alert('Level must be 100, 200, 300 or 400.'); return; }
+  const deptIn = prompt('Department (Civil Engineering or Environmental Engineering):', s.department || 'Civil Engineering'); if(deptIn === null) return;
+  const dept = /env/i.test(deptIn) ? 'Environmental Engineering' : (/civ/i.test(deptIn) ? 'Civil Engineering' : '');
+  if(deptIn.trim() && !dept){ alert('Department must be Civil Engineering or Environmental Engineering.'); return; }
   try{
     const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}`, {
       method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ name: name.trim(), index_number: idx.trim(), level: level.trim() })
+      body: JSON.stringify({ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null })
     });
     if(!res.ok) throw new Error('save failed (' + res.status + ')');
     loadRegisteredStudents();
@@ -928,6 +995,9 @@ function renderRegisteredStudents(){
   }
 
   let filtered = registeredStudentsCache;
+  const deptVal = (document.getElementById('adminRegisteredDeptFilter')||{}).value || '';
+  if(deptVal === 'missing') filtered = filtered.filter(a => !a.department);
+  else if(deptVal) filtered = filtered.filter(a => a.department === deptVal);
   if(filterVal){
     filtered = filtered.filter(a =>
       (a.name || '').toLowerCase().includes(filterVal) ||
@@ -961,7 +1031,7 @@ function renderRegisteredStudents(){
       <input type="checkbox" class="stuSel" style="width:auto;margin:0;" data-email="${escapeHtml(a.email)}" ${_sel.has(a.email)?'checked':''} onchange="toggleStudent(this.dataset.email,this.checked)">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
         <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
@@ -980,15 +1050,17 @@ async function linkIndexNumber(){
   const indexNumber = document.getElementById('linkIndexInput').value.trim();
   const name = document.getElementById('linkNameInput').value.trim();
   const level = document.getElementById('linkLevelInput').value;
+  const department = document.getElementById('linkDeptInput').value;
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
+  if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, linkedAt: new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, hasDeptCol: true, linkedAt: new Date().toISOString() };
     await dbUpsertStudent(record);
     studentCurrentAccount = record;
 

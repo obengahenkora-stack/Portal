@@ -874,7 +874,7 @@ async function addTeamMember(){
     const members = data.teamMembers || [];
     const existingIndex = members.findIndex(m => (m.email || '').toLowerCase() === email);
     if(existingIndex >= 0){
-      members[existingIndex] = { email, name, role };
+      members[existingIndex] = Object.assign({}, members[existingIndex], { email, name, role });
     } else {
       members.push({ email, name, role });
     }
@@ -920,7 +920,8 @@ async function assignCourses(email){
   const data = await fetchSupabaseData();
   const m = (data.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
   if(!m) return;
-  const all = Object.keys(data.rosters||{}).sort();
+  const _s = {}; Object.keys(data.rosters||{}).forEach(c=>_s[c]=1); (data.courseList||[]).forEach(c=>{ if(c) _s[c]=1; }); ['resources','announcements','videos'].forEach(k=>(data[k]||[]).forEach(x=>{ if(x.course) _s[x.course]=1; })); (m.courses||[]).forEach(c=>_s[c]=1);
+  const all = Object.keys(_s).sort();
   const have = Array.isArray(m.courses) ? m.courses.map(c=>c.toLowerCase()) : [];
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';

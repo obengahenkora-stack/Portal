@@ -1083,8 +1083,9 @@ async function loadDashboard(skipLock){
     // ----- Attendance -----
     const rosters = supaData.rosters || {};
     const attendanceRecords = supaData.attendance || [];
-    const _ix = String(idx||'').trim().toLowerCase();
-    const _isMe = v => String(v==null?'':(typeof v==='object'?(v.indexNumber||v.index||''):v)).trim().toLowerCase() === _ix;
+    const _nz = v => String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const _ix = _nz(idx);
+    const _isMe = v => _nz(typeof v==='object'&&v?(v.indexNumber||v.index||''):v) === _ix;
     const myCourses = [...new Set(
       Object.keys(rosters).filter(course => (rosters[course] || []).some(s => _isMe(s.indexNumber)))
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))

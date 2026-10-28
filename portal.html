@@ -528,6 +528,27 @@
       </div>
     </div>
 
+    <div class="card hidden" id="rosterEditCard">
+      <label>Edit Class List (no re-upload needed)</label>
+      <div class="hint">Add a student to an existing class list, fix a name or index number, or remove someone. Changes save straight away. Newly added students count as absent until you mark them under Review &amp; Edit Saved Attendance.</div>
+      <label>Course</label>
+      <select id="reCourse" onchange="reLoad()"><option value="">Select course...</option></select>
+      <div id="reBody" class="hidden">
+        <div style="margin:12px 0 6px;padding:12px;border:1px dashed var(--line);border-radius:8px;">
+          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px;">Add a student</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="reNewIdx" placeholder="Index number (e.g. UEB0712924)" style="flex:1;min-width:150px;margin:0;">
+            <input type="text" id="reNewName" placeholder="Name" style="flex:1;min-width:150px;margin:0;">
+            <button onclick="reAdd()" style="padding:8px 14px;">Add to class list</button>
+          </div>
+        </div>
+        <input type="text" id="reSearch" placeholder="Search name or index..." oninput="reRender()" style="margin:10px 0 6px;">
+        <div id="reCount" style="font-weight:700;font-size:.85rem;margin-bottom:6px;"></div>
+        <div id="reList" style="max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px 10px;"></div>
+      </div>
+      <div id="reMsg" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card hidden" id="attendanceEditCard">
       <label>Review &amp; Edit Saved Attendance</label>
       <div class="hint">Open a saved session, fix anyone marked wrongly, correct an index number, or add a student who was missing. Save it and it becomes the final record. Do this before you export.</div>
@@ -1079,7 +1100,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} } try{delAttInit();}catch(e){}
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('attendanceEditCard').classList.remove('hidden'); document.getElementById('rosterEditCard').classList.remove('hidden'); try{aeInit();reInit();}catch(e){} } try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2394,6 +2415,85 @@ setInterval(updateLiveDateTime, 1000 * 30);
 // ===== Attendance Tracker =====
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
+
+let _re=null;
+async function reInit(){
+  try{
+    const data=await fetchSupabaseData();
+    const cs=visibleCourses(Object.keys(data.rosters||{}));
+    const sel=document.getElementById('reCourse'), cur=sel.value;
+    sel.innerHTML='<option value="">Select course...</option>'+cs.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(cur) sel.value=cur;
+  }catch(e){}
+}
+async function reLoad(){
+  const c=document.getElementById('reCourse').value, body=document.getElementById('reBody');
+  if(!c){ body.classList.add('hidden'); _re=null; return; }
+  try{
+    const data=await fetchSupabaseData();
+    _re={course:c,list:normRoster((data.rosters||{})[c]||[])};
+    body.classList.remove('hidden'); reRender();
+  }catch(e){ document.getElementById('reMsg').innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+function reRender(){
+  if(!_re) return;
+  const q=_aeNz(document.getElementById('reSearch').value);
+  const rows=_re.list.map((p,i)=>({p,i})).filter(x=>!q||_aeNz(x.p.indexNumber).includes(q)||_aeNz(x.p.name).includes(q));
+  document.getElementById('reCount').textContent=_re.list.length+' student(s) on this list';
+  document.getElementById('reList').innerHTML=rows.length?rows.map(x=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);">
+    <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;">${escapeHtml(x.p.name||'(no name)')}</div><div style="font-size:.75rem;color:var(--muted);">${escapeHtml(x.p.indexNumber)}</div></div>
+    <button class="secondary" style="padding:5px 10px;font-size:.72rem;" onclick="reEdit(${x.i})">Edit</button>
+    <button class="secondary" style="padding:5px 10px;font-size:.72rem;border-color:var(--danger);color:var(--danger);" onclick="reRemove(${x.i})">Remove</button></div>`).join(''):'<div class="empty">No match.</div>';
+}
+async function reSave(okText){
+  const msg=document.getElementById('reMsg');
+  if(!canManageRosters()){ msg.innerHTML='<div class="msg err">Only a lecturer or administrator can edit the class list.</div>'; return false; }
+  try{
+    const data=await fetchSupabaseData(); data.rosters=data.rosters||{};
+    data.rosters[_re.course]=normRoster(_re.list);
+    await saveSupabaseData(data);
+    msg.innerHTML=`<div class="msg ok">${okText}</div>`; return true;
+  }catch(e){ msg.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; return false; }
+}
+async function reAdd(){
+  if(!_re) return;
+  const idx=document.getElementById('reNewIdx').value.trim(), name=document.getElementById('reNewName').value.trim(), msg=document.getElementById('reMsg');
+  if(!idx){ msg.innerHTML='<div class="msg err">Enter the index number.</div>'; return; }
+  if(_re.list.some(x=>_aeNz(x.indexNumber)===_aeNz(idx))){ msg.innerHTML='<div class="msg err">That index number is already on the list.</div>'; return; }
+  _re.list.unshift({indexNumber:idx,name:name});
+  if(await reSave('Added '+escapeHtml(name||idx)+'. Mark them under Review &amp; Edit Saved Attendance when ready.')){ document.getElementById('reNewIdx').value=''; document.getElementById('reNewName').value=''; }
+  else _re.list.shift();
+  reRender();
+}
+async function reEdit(i){
+  const p=_re.list[i]; if(!p) return;
+  const idx=prompt('Index number:',p.indexNumber); if(idx===null) return;
+  const name=prompt('Name:',p.name); if(name===null) return;
+  if(!idx.trim()){ alert('Index number cannot be empty.'); return; }
+  if(_re.list.some((x,j)=>j!==i&&_aeNz(x.indexNumber)===_aeNz(idx))){ alert('Another student already has that index number.'); return; }
+  const old={indexNumber:p.indexNumber,name:p.name};
+  p.indexNumber=idx.trim(); p.name=name.trim();
+  if(_aeNz(old.indexNumber)!==_aeNz(p.indexNumber)){
+    // keep past attendance attached to this student
+    try{
+      const data=await fetchSupabaseData();
+      (data.attendance||[]).forEach(a=>{ if(a.course!==_re.course) return;
+        a.present=(a.present||[]).map(x=>_aeNz(x)===_aeNz(old.indexNumber)?p.indexNumber:x);
+        if(a.checkInTimes){ const t={}; Object.keys(a.checkInTimes).forEach(k=>{ t[_aeNz(k)===_aeNz(old.indexNumber)?p.indexNumber:k]=a.checkInTimes[k]; }); a.checkInTimes=t; } });
+      data.rosters=data.rosters||{}; data.rosters[_re.course]=normRoster(_re.list);
+      await saveSupabaseData(data);
+      document.getElementById('reMsg').innerHTML='<div class="msg ok">Updated, and past attendance moved to the new index number.</div>';
+    }catch(e){ Object.assign(p,old); document.getElementById('reMsg').innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
+  } else if(!(await reSave('Updated.'))){ Object.assign(p,old); }
+  reRender();
+}
+async function reRemove(i){
+  const p=_re.list[i]; if(!p) return;
+  if(!confirm(`Remove ${p.name||p.indexNumber} (${p.indexNumber}) from this class list? Their past attendance records stay in the sessions.`)) return;
+  _re.list.splice(i,1);
+  if(!(await reSave('Removed.'))) _re.list.splice(i,0,p);
+  reRender();
+}
 
 let _ae=null;
 const _aeNz=v=>String(v==null?'':v).trim().toLowerCase();

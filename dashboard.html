@@ -1198,7 +1198,15 @@ async function loadDashboard(skipLock){
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
-      attContainer.innerHTML = '<div class="empty">No attendance record found for index number <b>'+escapeHtml(String(idx))+'</b>. If this is not the index on the class list, update it under My Profile.</div>';
+      // look for likely matches (similar index, or at least two name words in common)
+      const _lev = (a,b)=>{ const m=a.length,n=b.length; if(Math.abs(m-n)>3) return 9; let prev=[...Array(n+1).keys()]; for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; } return prev[n]; };
+      const _sug=[], _seen={};
+      Object.keys(rosters).forEach(c=>(rosters[c]||[]).forEach(r=>{
+        const k=_nz(r.indexNumber); if(!k||_seen[k]) return;
+        const common=_toks(r.name).filter(t=>_myToks.indexOf(t)>=0).length;
+        if(_lev(k,_ix)<=2 || common>=2){ _seen[k]=1; _sug.push(escapeHtml((r.name||'')+' — '+r.indexNumber+' ('+c+')')); }
+      }));
+      attContainer.innerHTML = '<div class="empty">No attendance record found for index number <b>'+escapeHtml(String(idx))+'</b>. If this is not the index on the class list, update it under My Profile.'+(_sug.length?'<div style="margin-top:10px;text-align:left;"><b>Is one of these you?</b><br>'+_sug.slice(0,6).join('<br>')+'</div>':'')+'</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
       let _shown = 0;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ce-portal-v12';
+const CACHE_NAME = 'ce-portal-v13';
 const urlsToCache = [
   'index.html',
   'theme.css',
@@ -6,6 +6,7 @@ const urlsToCache = [
   'quotes.js',
   'motion.js',
   'services-motion.js',
+  'pw-tools.js',
   'blog.html','services.html',
   'portal.html',
   'manifest.json',

@@ -548,7 +548,8 @@
         <div id="checkInTimesList"><div class="empty">Select a session to view check-in times.</div></div>
       </div>
 
-      <button onclick="printAttendanceSummary()" style="margin-top:14px;">Print / Export as PDF</button>
+      <button onclick="printAttendanceSummary()" style="margin-top:14px;">Export as PDF</button>
+      <button class="secondary" onclick="exportAttendanceExcel()" style="margin-top:14px;margin-left:8px;">Export as Excel</button>
       <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
     </div>
 
@@ -725,11 +726,13 @@ function showRecoveryBox(){
   if(document.getElementById('recoveryBox')) return;
   var o=document.createElement('div'); o.id='recoveryBox';
   o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
-  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
+  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><input id="recNewPw2" type="password" placeholder="Confirm new password" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
   document.body.appendChild(o);
+  try{ PW.wrap(document.getElementById('recNewPw')); PW.wrap(document.getElementById('recNewPw2')); }catch(e){}
   document.getElementById('recBtn').onclick=async function(){
     var pw=document.getElementById('recNewPw').value, m=document.getElementById('recMsg');
     if(pw.length<6){ m.textContent='Use at least 6 characters.'; return; }
+    if(pw!==document.getElementById('recNewPw2').value){ m.textContent='The two passwords do not match.'; return; }
     m.textContent='Saving...';
     var r=await supabaseClient.auth.updateUser({password:pw});
     if(r.error){ m.textContent=r.error.message; return; }
@@ -826,6 +829,7 @@ async function signUpUser(){
   const msg = document.getElementById('authMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('authPasswordInput', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -869,11 +873,12 @@ async function changeMyPasscode(){
   const newPassword = document.getElementById('newOwnPasscodeInput').value.trim();
   const msg = document.getElementById('changePasscodeMsg');
   if(newPassword.length < 6){ msg.innerHTML = '<div class="msg err">Use a password of at least 6 characters.</div>'; return; }
+  if(!PW.matches('newOwnPasscodeInput', msg)) return;
   msg.innerHTML = '<div class="msg ok">Updating...</div>';
   const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
   msg.innerHTML = '<div class="msg ok">Password updated.</div>';
-  document.getElementById('newOwnPasscodeInput').value = '';
+  document.getElementById('newOwnPasscodeInput').value = ''; PW.reset('newOwnPasscodeInput');
 }
 
 async function addTeamMember(){
@@ -3020,6 +3025,37 @@ async function loadCheckInTimes(){
   }
 }
 
+async function exportAttendanceExcel(){
+  const course = document.getElementById('attendanceSummaryCourseSelect').value;
+  if(!course){ alert('Select a course first.'); return; }
+  if(!window.XLSX){ alert('The Excel library did not load. Check your internet connection and reload the page.'); return; }
+  try{
+    const data = await fetchSupabaseData();
+    const roster = (data.rosters && data.rosters[course]) || [];
+    const recs = (data.attendance || []).filter(a => a.course === course).sort((a,b) => new Date(a.date) - new Date(b.date));
+    if(!recs.length){ alert('No attendance sessions recorded for this course yet.'); return; }
+    const nz = v => String(v==null?'':v).trim().toLowerCase();
+    const people = roster.map(r => ({ idx: r.indexNumber, name: r.name || '' }));
+    const known = new Set(people.map(x => nz(x.idx)));
+    recs.forEach(a => (a.present||[]).forEach(i => { if(!known.has(nz(i))){ known.add(nz(i)); people.push({ idx: i, name: '' }); } }));
+    const dates = recs.map(a => a.date);
+    const aoa = [['Attendance — ' + course], ['Exported ' + new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})], [],
+      ['Index #','Name'].concat(dates, ['Attended','Total Sessions','%'])];
+    people.forEach(pp => {
+      const marks = recs.map(a => (a.present||[]).some(i => nz(i) === nz(pp.idx)));
+      const att = marks.filter(Boolean).length;
+      aoa.push([pp.idx, pp.name].concat(marks.map(m => m ? '✓' : '✗'), [att, recs.length, recs.length ? Math.round(att/recs.length*100) / 100 : 0]));
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:16},{wch:36}].concat(dates.map(() => ({wch:12})), [{wch:10},{wch:14},{wch:8}]);
+    const pctCol = 2 + dates.length + 2;
+    for(let r = 4; r < aoa.length; r++){ const c = ws[XLSX.utils.encode_cell({r:r,c:pctCol})]; if(c) c.z = '0%'; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    XLSX.writeFile(wb, 'Attendance - ' + course.replace(/[\\\/:*?"<>|]/g,'-') + '.xlsx');
+  }catch(e){ alert('Could not export: ' + e.message); }
+}
+
 function printAttendanceSummary(){
   const course = document.getElementById('attendanceSummaryCourseSelect').value;
   if(!course){
@@ -3203,5 +3239,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="theme.js"></script>
+<script src="pw-tools.js"></script>
+<script>try{PW.pair("newOwnPasscodeInput");}catch(e){}</script>
 </body>
 </html>

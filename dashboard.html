@@ -400,11 +400,13 @@ function showRecoveryBox(){
   if(document.getElementById('recoveryBox')) return;
   var o=document.createElement('div'); o.id='recoveryBox';
   o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
-  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
+  o.innerHTML='<div style="background:#fff;color:#111;max-width:400px;width:100%;padding:26px;border-radius:8px;font-family:system-ui,sans-serif"><h3 style="margin:0 0 10px">Set a new password</h3><input id="recNewPw" type="password" placeholder="New password (min 6 characters)" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><input id="recNewPw2" type="password" placeholder="Confirm new password" style="width:100%;box-sizing:border-box;padding:11px;margin-bottom:10px;border:1px solid #bbb;border-radius:6px;font-size:1rem"><button id="recBtn" style="padding:10px 18px;border:0;background:#111;color:#fff;border-radius:6px;cursor:pointer">Save password</button><div id="recMsg" style="margin-top:10px;font-size:.9rem"></div></div>';
   document.body.appendChild(o);
+  try{ PW.wrap(document.getElementById('recNewPw')); PW.wrap(document.getElementById('recNewPw2')); }catch(e){}
   document.getElementById('recBtn').onclick=async function(){
     var pw=document.getElementById('recNewPw').value, m=document.getElementById('recMsg');
     if(pw.length<6){ m.textContent='Use at least 6 characters.'; return; }
+    if(pw!==document.getElementById('recNewPw2').value){ m.textContent='The two passwords do not match.'; return; }
     m.textContent='Saving...';
     var r=await supabaseClient.auth.updateUser({password:pw});
     if(r.error){ m.textContent=r.error.message; return; }
@@ -631,6 +633,7 @@ async function studentSignUp(){
   const msg = document.getElementById('studentAuthMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('studentAuthPassword', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -731,7 +734,7 @@ function toggleProfileSection(){
     document.getElementById('profileLevelInput').value = studentCurrentAccount.level || '';
     document.getElementById('profileDeptInput').value = studentCurrentAccount.department || '';
     document.getElementById('profileNewEmailInput').value = '';
-    document.getElementById('profileNewPasswordInput').value = '';
+    document.getElementById('profileNewPasswordInput').value = ''; PW.reset('profileNewPasswordInput');
   }
 }
 
@@ -794,6 +797,7 @@ async function changeStudentPassword(){
   const newPassword = document.getElementById('profileNewPasswordInput').value;
   const msg = document.getElementById('profilePasswordMsg');
   if(!newPassword || newPassword.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.matches('profileNewPasswordInput', msg)) return;
 
   msg.innerHTML = '<div class="msg ok">Updating...</div>';
   try{
@@ -1365,5 +1369,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="theme.js"></script>
+<script src="pw-tools.js"></script>
+<script>try{PW.pair("profileNewPasswordInput");}catch(e){}</script>
 </body>
 </html>

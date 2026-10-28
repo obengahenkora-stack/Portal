@@ -1074,7 +1074,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} try{delAttInit();}catch(e){}
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} } try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2458,6 +2458,7 @@ function aeAdd(){
 }
 async function aeSave(){
   if(!_ae) return; const msg=document.getElementById('aeMsg');
+  if(!canManageRosters()){ msg.innerHTML='<div class="msg err">Only a lecturer or administrator can edit saved attendance.</div>'; return; }
   const present=_ae.people.filter(p=>p.present);
   if(!confirm(`Save ${present.length} of ${_ae.people.length} present for "${_ae.course}" on ${_ae.date} as the final record?`)) return;
   msg.innerHTML='<div class="msg ok">Saving...</div>';

@@ -602,6 +602,11 @@
         <div style="margin-top:10px;"><button onclick="apImport()">Import &amp; Override</button></div>
       </div>
       <div id="apMsg" style="margin-top:12px;"></div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+        <div class="hint">If a roster has names and index numbers in the wrong columns, or the same student twice, this fixes it.</div>
+        <button class="secondary" onclick="repairRosters()">Repair Rosters</button>
+        <div id="repairMsg" style="margin-top:10px;"></div>
+      </div>
     </div>
     <div class="card hidden" id="attendanceDeleteCard">
       <label>Delete a Specific Attendance Session</label>
@@ -2439,7 +2444,7 @@ async function apImport(){
     let added=0;
     if(document.getElementById('apAddRoster').checked && canManageRosters()){
       data.rosters=data.rosters||{};
-      const ros=data.rosters[course]=data.rosters[course]||[];
+      const ros=data.rosters[course]=normRoster(data.rosters[course]||[]);
       const have=new Set(ros.map(r=>String(r.indexNumber).trim().toLowerCase()));
       _apParsed.students.forEach(s=>{ if(!have.has(s.idx.toLowerCase())){ ros.push({indexNumber:s.idx,name:s.name}); added++; } });
     }
@@ -2565,12 +2570,13 @@ async function uploadRoster(){
     return;
   }
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
-  const roster = [];
+  let roster = [];
   for(const line of lines){
     const parts = line.split(',').map(p => p.trim());
     if(parts.length < 1 || !parts[0]) continue;
     roster.push({ indexNumber: parts[0], name: parts[1] || '' });
   }
+  roster = normRoster(roster);
   if(roster.length === 0){
     msg.innerHTML = '<div class="msg err">No valid student rows found. Use format: index, name</div>';
     return;
@@ -2595,7 +2601,43 @@ async function uploadRoster(){
   }
 }
 
+// ===== Roster clean-up: fixes swapped name/index columns, header rows and duplicates =====
+function _rIsIdx(x){ x=String(x||'').trim(); return !/\s/.test(x) && (x.match(/\d/g)||[]).length>=4; }
+function _rIsHeader(x){ return /^(names?|index(\s*(no\.?|number|#))?|student(\s*(name|id))?|#)$/i.test(String(x||'').trim()); }
+function normRoster(list){
+  const out=[], pos={};
+  (list||[]).forEach(r=>{
+    let a=String((r&&r.indexNumber)||'').trim(), n=String((r&&r.name)||'').trim();
+    if(_rIsHeader(a) || _rIsHeader(n)) return;
+    if(!_rIsIdx(a) && _rIsIdx(n)){ const t=a; a=n; n=t; }
+    if(!a) return;
+    const k=a.toLowerCase();
+    if(k in pos){ if(n.length>(out[pos[k]].name||'').length) out[pos[k]].name=n; return; }
+    pos[k]=out.length; out.push({indexNumber:a,name:n});
+  });
+  return out;
+}
+async function repairRosters(){
+  const msg=document.getElementById('repairMsg');
+  msg.innerHTML='<div class="msg ok">Checking rosters...</div>';
+  try{
+    const data=await fetchSupabaseData(); data.rosters=data.rosters||{};
+    const names=visibleCourses(Object.keys(data.rosters));
+    const lines=[]; let changed=0;
+    names.forEach(c=>{
+      const before=data.rosters[c]||[], after=normRoster(before);
+      const same=before.length===after.length && before.every((b,i)=>b.indexNumber===after[i].indexNumber && (b.name||'')===after[i].name);
+      if(!same){ data.rosters[c]=after; changed++; lines.push(`${escapeHtml(c)}: ${before.length} → ${after.length} students`); }
+    });
+    if(!changed){ msg.innerHTML='<div class="msg ok">All rosters already look correct.</div>'; return; }
+    await saveSupabaseData(data);
+    msg.innerHTML='<div class="msg ok">Repaired '+changed+' roster(s):<br>'+lines.join('<br>')+'</div>';
+    try{ loadAttendanceSummaryCourseOptions(); loadCleanupCourseOptions(); }catch(e){}
+  }catch(e){ msg.innerHTML=`<div class="msg err">Could not repair: ${escapeHtml(e.message)}</div>`; }
+}
+
 async function saveRosterData(course, roster, msgEl){
+  roster = normRoster(roster);
   const data = await fetchSupabaseData();
   data.rosters = data.rosters || {};
   data.rosters[course] = roster;

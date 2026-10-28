@@ -542,6 +542,10 @@
             <button onclick="reAdd()" style="padding:8px 14px;">Add to class list</button>
           </div>
         </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;">
+          <button class="secondary" onclick="reDownload('xlsx')" style="padding:8px 14px;">Download class list (Excel)</button>
+          <button class="secondary" onclick="reDownload('csv')" style="padding:8px 14px;">Download class list (CSV)</button>
+        </div>
         <input type="text" id="reSearch" placeholder="Search name or index..." oninput="reRender()" style="margin:10px 0 6px;">
         <div id="reCount" style="font-weight:700;font-size:.85rem;margin-bottom:6px;"></div>
         <div id="reList" style="max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px 10px;"></div>
@@ -2444,6 +2448,20 @@ function reRender(){
     <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;">${escapeHtml(x.p.name||'(no name)')}</div><div style="font-size:.75rem;color:var(--muted);">${escapeHtml(x.p.indexNumber)}</div></div>
     <button class="secondary" style="padding:5px 10px;font-size:.72rem;" onclick="reEdit(${x.i})">Edit</button>
     <button class="secondary" style="padding:5px 10px;font-size:.72rem;border-color:var(--danger);color:var(--danger);" onclick="reRemove(${x.i})">Remove</button></div>`).join(''):'<div class="empty">No match.</div>';
+}
+function reDownload(kind){
+  if(!_re){ alert('Select a course first.'); return; }
+  const rows=[['Index #','Name']].concat(_re.list.map(p=>[p.indexNumber,p.name||'']));
+  const base='Class list - '+_re.course.replace(/[\\\/:*?"<>|]/g,'-');
+  if(kind==='xlsx'){
+    if(!window.XLSX){ alert('The Excel library did not load. Reload the page and try again.'); return; }
+    const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:16},{wch:40}];
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Class list'); XLSX.writeFile(wb,base+'.xlsx');
+  } else {
+    const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=base+'.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
 }
 async function reSave(okText){
   const msg=document.getElementById('reMsg');

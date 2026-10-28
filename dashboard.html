@@ -1371,5 +1371,29 @@ if ('serviceWorker' in navigator) {
 <script src="theme.js"></script>
 <script src="pw-tools.js"></script>
 <script>try{PW.pair("profileNewPasswordInput");}catch(e){}</script>
+<div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:flex;gap:10px;align-items:center;">
+  <span id="whoDot" style="width:10px;height:10px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
+  <div style="min-width:0;"><div id="whoLine1" style="font-weight:700;">Not signed in</div><div id="whoLine2" style="color:var(--muted,#64748b);word-break:break-word;"></div></div>
+</div>
+<script>
+function _who(signed,l1,l2){
+  var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
+  d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
+  a.textContent=l1; b.textContent=l2||'';
+  var w=document.getElementById('whoBar'); if(w) w.title=(l1+' '+(l2||'')).trim();
+}
+function updateWhoBar(){
+  try{
+    if(!studentCurrentEmail){ _who(false,'Not signed in',''); return; }
+    var a=studentCurrentAccount;
+    if(a && a.indexNumber){
+      _who(true,'Signed in: '+(a.name||studentCurrentEmail), [a.indexNumber,(a.level?'Level '+a.level:''),a.department||''].filter(Boolean).join(' · '));
+    } else {
+      _who(true,'Signed in', studentCurrentEmail);
+    }
+  }catch(e){}
+}
+setInterval(updateWhoBar,1500);
+</script>
 </body>
 </html>

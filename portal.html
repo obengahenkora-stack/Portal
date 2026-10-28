@@ -523,6 +523,34 @@
       </div>
     </div>
 
+    <div class="card hidden" id="attendanceEditCard">
+      <label>Review &amp; Edit Saved Attendance</label>
+      <div class="hint">Open a saved session, fix anyone marked wrongly, correct an index number, or add a student who was missing. Save it and it becomes the final record. Do this before you export.</div>
+      <label>Course</label>
+      <select id="aeCourse" onchange="aeLoadDates(false)"><option value="">Select course...</option></select>
+      <label>Session date</label>
+      <select id="aeDate" onchange="aeLoad()"><option value="">Select a course first...</option></select>
+      <div id="aeBody" class="hidden">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 8px;">
+          <input type="text" id="aeSearch" placeholder="Search name or index..." oninput="aeRender()" style="flex:1;min-width:160px;margin:0;">
+          <button class="secondary" onclick="aeMarkAll(true)" style="padding:8px 12px;font-size:.78rem;">Mark all present</button>
+          <button class="secondary" onclick="aeMarkAll(false)" style="padding:8px 12px;font-size:.78rem;">Clear all</button>
+        </div>
+        <div id="aeCount" style="font-weight:700;font-size:.85rem;margin-bottom:6px;"></div>
+        <div id="aeList" style="max-height:380px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px 10px;"></div>
+        <div style="margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:8px;">
+          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px;">Add a student who is missing</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="aeNewIdx" placeholder="Index number (e.g. UEB0712924)" style="flex:1;min-width:150px;margin:0;">
+            <input type="text" id="aeNewName" placeholder="Name" style="flex:1;min-width:150px;margin:0;">
+            <button class="secondary" onclick="aeAdd()" style="padding:8px 14px;">Add as present</button>
+          </div>
+        </div>
+        <div style="margin-top:14px;"><button onclick="aeSave()">Save as Final</button></div>
+      </div>
+      <div id="aeMsg" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card" id="attendanceSummaryCard">
       <label>Attendance Summary</label>
       <select id="attendanceSummaryCourseSelect" onchange="loadAttendanceSummary()" style="margin-bottom:14px;">
@@ -963,7 +991,7 @@ async function assignCourses(email){
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
   ov.innerHTML = '<div style="background:#fff;color:#111;max-width:420px;width:100%;padding:24px;border-radius:8px;max-height:80vh;overflow:auto;font-family:system-ui,sans-serif"><h3 style="margin:0 0 6px">Courses for ' + escapeHtml(m.name) + '</h3><p style="margin:0 0 12px;font-size:.85rem;color:#555">They will only see the ticked courses in Attendance. Courses come from the rosters you have uploaded.</p><div id="asgList">' +
-    (all.length ? all.map(c => '<label style="display:flex;gap:8px;align-items:center;padding:6px 0"><input type="checkbox" value="' + escapeHtml(c) + '" ' + (have.indexOf(c.toLowerCase())>=0 ? 'checked' : '') + ' style="width:auto;margin:0"> ' + escapeHtml(c) + '</label>').join('') : '<div style="color:#777">No rosters uploaded yet.</div>') +
+    (all.length ? (function(){ var g={}, order=[]; all.forEach(function(c){ var b=lmBase(c), k=b.toLowerCase(); if(!g[k]){ g[k]={label:b,vars:[]}; order.push(k); } g[k].vars.push(c); }); return order.map(function(k){ var x=g[k], on=x.vars.some(function(v){ return have.indexOf(v.toLowerCase())>=0; }); return '<label style="display:flex;gap:8px;align-items:center;padding:6px 0"><input type="checkbox" value="' + escapeHtml(x.vars.join('||')) + '" ' + (on?'checked':'') + ' style="width:auto;margin:0"> ' + escapeHtml(x.label) + (x.vars.length>1?' <span style="color:#777;font-size:.75rem">(all groups)</span>':'') + '</label>'; }).join(''); })() : '<div style="color:#777">No rosters uploaded yet.</div>') +
     '</div><label style="display:flex;gap:8px;align-items:center;padding:10px 0 0;font-size:.85rem"><input type="checkbox" id="asgAll" ' + (Array.isArray(m.courses) ? '' : 'checked') + ' style="width:auto;margin:0"> Not restricted (sees all courses)</label><div style="margin-top:14px;display:flex;gap:8px"><button id="asgSave">Save</button><button class="secondary" id="asgCancel">Cancel</button></div></div>';
   document.body.appendChild(ov);
   document.getElementById('asgCancel').onclick = () => ov.remove();
@@ -972,7 +1000,7 @@ async function assignCourses(email){
     const mm = (fresh.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
     if(!mm) { ov.remove(); return; }
     if(document.getElementById('asgAll').checked){ delete mm.courses; }
-    else { mm.courses = [...ov.querySelectorAll('#asgList input:checked')].map(i => i.value); }
+    else { mm.courses = [...new Set([...ov.querySelectorAll('#asgList input:checked')].flatMap(i => i.value.split('||')))]; }
     await saveSupabaseData(fresh);
     ov.remove();
     loadTeamMemberList();
@@ -1023,6 +1051,7 @@ function toggleResultsVisibility(){
 
 async function onAuthReady(showToast){
   await resolveCurrentUserRole();
+  try{ updateWhoBar(); }catch(e){}
 
   if(!currentUserRole){
     if(currentUserEmail){
@@ -1045,7 +1074,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); try{delAttInit();}catch(e){}
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2361,6 +2390,106 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
+let _ae=null;
+const _aeNz=v=>String(v==null?'':v).trim().toLowerCase();
+async function aeInit(){
+  try{
+    const data=await fetchSupabaseData();
+    const cs=visibleCourses([...new Set(Object.keys(data.rosters||{}).concat((data.attendance||[]).map(a=>a.course).filter(Boolean)))]);
+    const sel=document.getElementById('aeCourse'); const cur=sel.value;
+    sel.innerHTML='<option value="">Select course...</option>'+cs.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if(cur) sel.value=cur;
+  }catch(e){}
+}
+async function aeLoadDates(keep){
+  const c=document.getElementById('aeCourse').value, sel=document.getElementById('aeDate');
+  if(keep!==true){ document.getElementById('aeBody').classList.add('hidden'); _ae=null; }
+  if(!c){ sel.innerHTML='<option value="">Select a course first...</option>'; return; }
+  try{
+    const data=await fetchSupabaseData();
+    const ss=(data.attendance||[]).filter(a=>a.course===c).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    sel.innerHTML=ss.length?'<option value="">Select a session...</option>'+ss.map(a=>`<option value="${escapeHtml(a.date)}">${escapeHtml(a.date)} (${(a.present||[]).length} present)</option>`).join(''):'<option value="">No sessions recorded</option>';
+  }catch(e){ sel.innerHTML='<option value="">Could not load</option>'; }
+}
+async function aeLoad(){
+  const c=document.getElementById('aeCourse').value, d=document.getElementById('aeDate').value, msg=document.getElementById('aeMsg');
+  msg.innerHTML=''; if(!c||!d){ document.getElementById('aeBody').classList.add('hidden'); return; }
+  try{
+    const data=await fetchSupabaseData();
+    const rec=(data.attendance||[]).find(a=>a.course===c&&a.date===d); if(!rec) return;
+    const presentSet=new Set((rec.present||[]).map(_aeNz));
+    const people=[], seen=new Set();
+    ((data.rosters&&data.rosters[c])||[]).forEach(r=>{ const k=_aeNz(r.indexNumber); if(!k||seen.has(k)) return; seen.add(k); people.push({orig:r.indexNumber,idx:r.indexNumber,name:r.name||'',present:presentSet.has(k),isNew:false}); });
+    (rec.present||[]).forEach(i=>{ const k=_aeNz(i); if(!seen.has(k)){ seen.add(k); people.push({orig:i,idx:i,name:'',present:true,isNew:false}); } });
+    _ae={course:c,date:d,people:people,times:rec.checkInTimes||{}};
+    document.getElementById('aeSearch').value='';
+    document.getElementById('aeBody').classList.remove('hidden');
+    aeRender();
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+function aeRender(){
+  if(!_ae) return;
+  const q=_aeNz(document.getElementById('aeSearch').value);
+  const rows=_ae.people.map((p,i)=>({p,i})).filter(x=>!q||_aeNz(x.p.idx).includes(q)||_aeNz(x.p.name).includes(q));
+  document.getElementById('aeCount').textContent=_ae.people.filter(p=>p.present).length+' of '+_ae.people.length+' present';
+  document.getElementById('aeList').innerHTML=rows.length?rows.map(x=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);">
+    <input type="checkbox" style="width:auto;margin:0;" ${x.p.present?'checked':''} onchange="aeToggle(${x.i},this.checked)">
+    <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;">${escapeHtml(x.p.name||'(no name)')}${x.p.isNew?' <span style="color:var(--ok);font-size:.7rem;">NEW</span>':''}</div><div style="font-size:.75rem;color:var(--muted);">${escapeHtml(x.p.idx)}</div></div>
+    <button class="secondary" style="padding:5px 10px;font-size:.72rem;" onclick="aeEdit(${x.i})">Edit</button></div>`).join(''):'<div class="empty">No match.</div>';
+}
+function aeToggle(i,v){ _ae.people[i].present=v; document.getElementById('aeCount').textContent=_ae.people.filter(p=>p.present).length+' of '+_ae.people.length+' present'; }
+function aeMarkAll(v){ if(!_ae) return; _ae.people.forEach(p=>p.present=v); aeRender(); }
+function aeEdit(i){
+  const p=_ae.people[i];
+  const idx=prompt('Index number:',p.idx); if(idx===null) return;
+  const name=prompt('Name:',p.name); if(name===null) return;
+  if(!idx.trim()){ alert('Index number cannot be empty.'); return; }
+  if(_ae.people.some((x,j)=>j!==i&&_aeNz(x.idx)===_aeNz(idx))){ alert('Another student already has that index number.'); return; }
+  p.idx=idx.trim(); p.name=name.trim(); aeRender();
+}
+function aeAdd(){
+  if(!_ae) return;
+  const idx=document.getElementById('aeNewIdx').value.trim(), name=document.getElementById('aeNewName').value.trim(), msg=document.getElementById('aeMsg');
+  if(!idx){ msg.innerHTML='<div class="msg err">Enter the index number.</div>'; return; }
+  const ex=_ae.people.find(x=>_aeNz(x.idx)===_aeNz(idx));
+  if(ex){ ex.present=true; if(name&&!ex.name) ex.name=name; msg.innerHTML='<div class="msg ok">That student is already listed — marked present.</div>'; }
+  else { _ae.people.unshift({orig:null,idx,name,present:true,isNew:true}); msg.innerHTML=''; }
+  document.getElementById('aeNewIdx').value=''; document.getElementById('aeNewName').value=''; aeRender();
+}
+async function aeSave(){
+  if(!_ae) return; const msg=document.getElementById('aeMsg');
+  const present=_ae.people.filter(p=>p.present);
+  if(!confirm(`Save ${present.length} of ${_ae.people.length} present for "${_ae.course}" on ${_ae.date} as the final record?`)) return;
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    const data=await fetchSupabaseData();
+    const course=_ae.course, date=_ae.date, nowIso=new Date().toISOString();
+    data.attendance=data.attendance||[];
+    // renamed index numbers: update every session of this course
+    const ren={}; _ae.people.forEach(p=>{ if(p.orig && _aeNz(p.orig)!==_aeNz(p.idx)) ren[_aeNz(p.orig)]=p.idx; });
+    if(Object.keys(ren).length){
+      data.attendance.forEach(a=>{ if(a.course!==course) return;
+        a.present=(a.present||[]).map(i=>ren[_aeNz(i)]||i);
+        if(a.checkInTimes){ const t={}; Object.keys(a.checkInTimes).forEach(k=>{ t[ren[_aeNz(k)]||k]=a.checkInTimes[k]; }); a.checkInTimes=t; }
+      });
+    }
+    const oldT={}; Object.keys(_ae.times||{}).forEach(k=>{ oldT[_aeNz(ren[_aeNz(k)]||k)]=_ae.times[k]; });
+    const times={}; present.forEach(p=>{ times[p.idx]=oldT[_aeNz(p.idx)]||nowIso; });
+    const rec={sessionKey:`${course}__${date}`,course,date,present:present.map(p=>p.idx),checkInTimes:times};
+    const pos=data.attendance.findIndex(a=>a.course===course&&a.date===date);
+    if(pos>=0) data.attendance[pos]=rec; else data.attendance.push(rec);
+    // roster: keep in sync (new students added, index/name corrections applied)
+    data.rosters=data.rosters||{};
+    data.rosters[course]=normRoster(_ae.people.map(p=>({indexNumber:p.idx,name:p.name})));
+    await saveSupabaseData(data);
+    _ae.people.forEach(p=>{ p.orig=p.idx; p.isNew=false; });
+    msg.innerHTML=`<div class="msg ok">Saved. ${present.length} of ${_ae.people.length} present — this is now the final record for ${escapeHtml(date)}. Reload the summary below to see it.</div>`;
+    aeRender(); aeLoadDatesKeep();
+    try{ loadAttendanceSummary(); }catch(e){}
+  }catch(e){ msg.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
+}
+async function aeLoadDatesKeep(){ const d=document.getElementById('aeDate').value; await aeLoadDates(true); document.getElementById('aeDate').value=d; }
+
 let _apParsed = null;
 function apLoadLib(){
   return new Promise((res,rej)=>{
@@ -3283,5 +3412,25 @@ if ('serviceWorker' in navigator) {
 <script src="theme.js"></script>
 <script src="pw-tools.js"></script>
 <script>try{PW.pair("newOwnPasscodeInput");}catch(e){}</script>
+<div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:flex;gap:10px;align-items:center;">
+  <span id="whoDot" style="width:10px;height:10px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
+  <div style="min-width:0;"><div id="whoLine1" style="font-weight:700;">Not signed in</div><div id="whoLine2" style="color:var(--muted,#64748b);word-break:break-word;"></div></div>
+</div>
+<script>
+function _who(signed,l1,l2){
+  var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
+  d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
+  a.textContent=l1; b.textContent=l2||'';
+  var w=document.getElementById('whoBar'); if(w) w.title=(l1+' '+(l2||'')).trim();
+}
+function updateWhoBar(){
+  try{
+    if(!currentUserEmail){ _who(false,'Not signed in',''); return; }
+    var roles={owner:'Owner',admin:'Admin',lecturer:'Lecturer',ta:'Teaching Assistant'};
+    var r=currentUserRole?roles[currentUserRole]||currentUserRole:'no role assigned yet';
+    _who(true,'Signed in: '+(currentUserName||currentUserEmail),r+' · '+currentUserEmail);
+  }catch(e){}
+}
+</script>
 </body>
 </html>

@@ -1224,6 +1224,15 @@ async function loadDashboard(skipLock){
       attContainer.innerHTML = _shown ? html : '<div class="empty">No attendance sessions have been recorded for your courses yet.</div>';
     }
 
+    if(skipLock){ // admin lookup: show what the page could see, to explain missing attendance
+      try{
+        const _dbg=document.createElement('div');
+        _dbg.style.cssText='margin-top:12px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px;font-size:.74rem;color:var(--muted);';
+        _dbg.innerHTML='<b>Admin check</b> &middot; index searched: '+escapeHtml(String(idx))+' &middot; account found: '+(_acct?escapeHtml((_acct.name||'')+' / '+(_acct.indexNumber||'')+' / Level '+(_acct.level||'?')):'no')+' &middot; class lists loaded: '+Object.keys(rosters).length+' &middot; attendance sessions loaded: '+attendanceRecords.length+' &middot; courses matched: '+myCourses.length;
+        attContainer.appendChild(_dbg);
+      }catch(e){}
+    }
+
     // ----- Reports -----
     const allReports = jsonBinData.reports || [];
     const myReports = allReports.filter(r => _isMe(r.indexNumber))

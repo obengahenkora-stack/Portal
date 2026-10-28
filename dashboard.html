@@ -475,11 +475,28 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+
+function _rIsIdx(x){ x=String(x||'').trim(); return !/\s/.test(x) && (x.match(/\d/g)||[]).length>=4; }
+function _rIsHeader(x){ return /^(names?|index(\s*(no\.?|number|#))?|student(\s*(name|id))?|#)$/i.test(String(x||'').trim()); }
+function normRoster(list){
+  const out=[], pos={};
+  (list||[]).forEach(r=>{
+    let a=String((r&&r.indexNumber)||'').trim(), n=String((r&&r.name)||'').trim();
+    if(_rIsHeader(a) || _rIsHeader(n)) return;
+    if(!_rIsIdx(a) && _rIsIdx(n)){ const t=a; a=n; n=t; }
+    if(!a) return;
+    const k=a.toLowerCase().replace(/\s+/g,'');
+    if(k in pos){ if(n.length>(out[pos[k]].name||'').length) out[pos[k]].name=n; return; }
+    pos[k]=out.length; out.push({indexNumber:a,name:n});
+  });
+  return out;
+}
+function _normAllRosters(d){ try{ if(d && d.rosters){ Object.keys(d.rosters).forEach(c=>{ d.rosters[c]=normRoster(d.rosters[c]); }); } }catch(e){} return d; }
 async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return await res.json();
+    return _normAllRosters(await res.json());
   }catch(e){ return {}; }
 }
 async function saveSupabaseData(data){

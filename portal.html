@@ -695,7 +695,7 @@ async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return await res.json();
+    return _normAllRosters(await res.json());
   }catch(e){
     return {};
   }
@@ -2746,7 +2746,7 @@ function normRoster(list){
     if(_rIsHeader(a) || _rIsHeader(n)) return;
     if(!_rIsIdx(a) && _rIsIdx(n)){ const t=a; a=n; n=t; }
     if(!a) return;
-    const k=a.toLowerCase();
+    const k=a.toLowerCase().replace(/\s+/g,'');
     if(k in pos){ if(n.length>(out[pos[k]].name||'').length) out[pos[k]].name=n; return; }
     pos[k]=out.length; out.push({indexNumber:a,name:n});
   });
@@ -2771,6 +2771,7 @@ async function repairRosters(){
   }catch(e){ msg.innerHTML=`<div class="msg err">Could not repair: ${escapeHtml(e.message)}</div>`; }
 }
 
+function _normAllRosters(d){ try{ if(d && d.rosters){ Object.keys(d.rosters).forEach(c=>{ d.rosters[c]=normRoster(d.rosters[c]); }); } }catch(e){} return d; }
 async function saveRosterData(course, roster, msgEl){
   roster = normRoster(roster);
   const data = await fetchSupabaseData();

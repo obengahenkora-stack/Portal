@@ -229,6 +229,11 @@
 
 <div class="wrap">
   <p class="sub">Manage assessment scores and attendance — for teaching staff only.</p>
+  <div id="whoInline" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);font-size:.88rem;">
+    <span id="whoInDot" style="width:11px;height:11px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
+    <span id="whoInText" style="font-weight:700;">Not signed in</span>
+    <span id="whoInSub" style="color:var(--muted);"></span>
+  </div>
 
   <!-- HUB LANDING VIEW -->
   <div id="hubView">
@@ -3420,6 +3425,8 @@ if ('serviceWorker' in navigator) {
 <script>
 function _who(signed,l1,l2){
   var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
+  try{ var i1=document.getElementById('whoInDot'),i2=document.getElementById('whoInText'),i3=document.getElementById('whoInSub');
+    if(i1){ i1.style.background=signed?'#22a559':'#9aa3ad'; i1.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none'; i2.textContent=l1; i3.textContent=l2?'· '+l2:''; } }catch(e){}
   d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
   a.textContent=l1; b.textContent=l2||'';
   var w=document.getElementById('whoBar'); if(w) w.title=(l1+' '+(l2||'')).trim();

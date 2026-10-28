@@ -1386,10 +1386,14 @@ function updateWhoBar(){
   try{
     if(!studentCurrentEmail){ _who(false,'Not signed in',''); return; }
     var a=studentCurrentAccount;
+    if(!a && typeof ADMIN_EMAIL!=='undefined' && String(studentCurrentEmail).toLowerCase()===ADMIN_EMAIL.toLowerCase()){
+      if(!window._whoAdminName && !window._whoFetching){ window._whoFetching=true; fetchSupabaseData().then(function(d){ window._whoAdminName=(d&&d.profile&&d.profile.name)||'Administrator'; updateWhoBar(); }).catch(function(){ window._whoAdminName='Administrator'; }); }
+      _who(true,'Signed in: '+(window._whoAdminName||studentCurrentEmail),'Administrator · '+studentCurrentEmail); return;
+    }
     if(a && a.indexNumber){
       _who(true,'Signed in: '+(a.name||studentCurrentEmail), [a.indexNumber,(a.level?'Level '+a.level:''),a.department||''].filter(Boolean).join(' · '));
     } else {
-      _who(true,'Signed in', studentCurrentEmail);
+      _who(true,'Signed in: '+studentCurrentEmail, 'Account not linked to an index number yet');
     }
   }catch(e){}
 }

@@ -3429,7 +3429,12 @@ function updateWhoBar(){
     if(!currentUserEmail){ _who(false,'Not signed in',''); return; }
     var roles={owner:'Owner',admin:'Admin',lecturer:'Lecturer',ta:'Teaching Assistant'};
     var r=currentUserRole?roles[currentUserRole]||currentUserRole:'no role assigned yet';
-    _who(true,'Signed in: '+(currentUserName||currentUserEmail),r+' · '+currentUserEmail);
+    var nm=(currentUserName && currentUserName!=='Owner')?currentUserName:(window._whoOwnerName||'');
+    if(!nm && currentUserRole==='owner' && !window._whoFetching){
+      window._whoFetching=true;
+      fetchSupabaseData().then(function(d){ window._whoOwnerName=(d&&d.profile&&d.profile.name)||'Owner'; updateWhoBar(); }).catch(function(){ window._whoOwnerName='Owner'; updateWhoBar(); });
+    }
+    _who(true,'Signed in: '+(nm||currentUserName||currentUserEmail),r+' · '+currentUserEmail);
   }catch(e){}
 }
 </script>

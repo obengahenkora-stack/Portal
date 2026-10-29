@@ -1,6 +1,6 @@
 /* Show/hide + confirm-password helpers shared by all sign-in pages */
 (function(){
-  var BTN='position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:12px;line-height:1.2;border:1px solid rgba(128,128,128,.5);background:rgba(128,128,128,.12);color:inherit;border-radius:6px;cursor:pointer;width:auto;margin:0;min-width:0;';
+  var BTN='position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:4px 10px;font-size:12px;line-height:1.2;border:1px solid rgba(128,128,128,.5);background:#e8eeec !important;color:#16222a !important;text-transform:none !important;letter-spacing:0 !important;font-weight:600 !important;border-radius:6px;cursor:pointer;width:auto;margin:0;min-width:0;';
   function wrap(inp){
     if(!inp || inp._pwWrapped) return inp;
     var w=document.createElement('div'); w.style.cssText='position:relative;display:flow-root;';

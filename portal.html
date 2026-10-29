@@ -1014,6 +1014,12 @@ async function applyLecturerHeaderName(){
   }
 }
 
+async function isKnownStaffEmail(email){
+  email=String(email||'').trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return false;
+  if(email===OWNER_EMAIL.toLowerCase()) return true;
+  try{ var data=await fetchSupabaseData(true); return (data.teamMembers||[]).some(function(m){ return String(m.email||'').trim().toLowerCase()===email; }); }catch(e){ return null; }
+}
 async function signUpUser(){
   const email = document.getElementById('authEmailInput').value.trim();
   const password = document.getElementById('authPasswordInput').value;
@@ -1021,6 +1027,10 @@ async function signUpUser(){
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
   if(!PW.confirmSignup('authPasswordInput', msg)) return;
+  msg.innerHTML = '<div class="msg ok">Checking your email...</div>';
+  const known = await isKnownStaffEmail(email);
+  if(known===null){ msg.innerHTML = '<div class="msg err">Could not check your email right now. Check your internet and try again.</div>'; return; }
+  if(!known){ msg.innerHTML = '<div class="msg err">This email has not been added to Team Access. Ask the Owner or an Admin to add it first, then create your account. (Students: use the Students Dashboard.)</div>'; return; }
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -1054,6 +1064,9 @@ async function resetMyPassword(){
   const email = document.getElementById('authEmailInput').value.trim();
   const msg = document.getElementById('authMsg');
   if(!email){ msg.innerHTML = '<div class="msg err">Enter your email above first, then click Forgot Password.</div>'; return; }
+  const known = await isKnownStaffEmail(email);
+  if(known===null){ msg.innerHTML = '<div class="msg err">Could not check your email right now. Try again.</div>'; return; }
+  if(!known){ msg.innerHTML = '<div class="msg err">That email is not on the staff list, so no reset email was sent.</div>'; return; }
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   msg.innerHTML = error
     ? `<div class="msg err">${escapeHtml(error.message)}</div>`
@@ -4097,5 +4110,6 @@ function updateWhoBar(){
 }
 </script>
 <script src="chat.js"></script>
+<script src="darkfix.js"></script>
 </body>
 </html>

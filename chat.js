@@ -292,6 +292,7 @@ function css(){
   st.textContent=
   '#ceChatBtn{position:fixed;right:16px;bottom:16px;z-index:9500;display:flex;align-items:center;gap:8px;padding:12px 18px;border:none;border-radius:999px;cursor:pointer;background:var(--accent,#3f7a32);color:#fff;font:600 .9rem "IBM Plex Sans",sans-serif;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .15s}'
  +'#ceChatBtn:hover{transform:translateY(-2px)}'
+ +'#ceChatBtn{text-transform:none !important;letter-spacing:0 !important'
  +'html[data-theme="dark"] #ceChatBtn{color:#08161d}'
  +'#ceChatBtn .dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3)}'
  +'#ceChatBtn .bd{background:#f43f5e;color:#fff;border-radius:999px;font-size:.7rem;padding:1px 7px;min-width:18px;text-align:center}'

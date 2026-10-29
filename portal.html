@@ -278,6 +278,16 @@
     </div>
 
     <style id="hubCompact">
+.ah-hero{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:22px 22px;border-radius:22px;color:#fff;background:linear-gradient(135deg,var(--accent,#2f6f4f),#1f5f8b 70%,#6d4cc2);box-shadow:0 18px 40px rgba(31,95,139,.28);margin:4px 0 14px;position:relative;overflow:hidden}
+.ah-hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.1)}
+.ah-hi{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;line-height:1.15}
+.ah-sub{opacity:.85;font-size:.88rem;margin-top:4px}
+.ah-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.ah-actions button{background:rgba(255,255,255,.18) !important;color:#fff !important;border:1px solid rgba(255,255,255,.35) !important;border-radius:999px !important;padding:9px 15px !important;font-size:.8rem !important;text-transform:none !important;letter-spacing:0 !important;cursor:pointer;margin:0 !important}
+.ah-actions button:hover{background:rgba(255,255,255,.3) !important}
+#hubTiles #logoutBtn{display:none !important}
+.ah-bd{background:#f43f5e;color:#fff;border-radius:999px;font-size:.7rem;padding:1px 7px;margin-left:4px}
+@media(max-width:520px){.ah-hero{padding:18px 16px}.ah-hi{font-size:1.2rem}}
 #hubTiles .row2{grid-template-columns:repeat(auto-fit,minmax(165px,1fr)) !important;gap:12px !important;margin-top:8px !important}
 #hubTiles .row2>.card,#hubTiles .row2>a.card{padding:16px 14px !important;grid-column:auto !important;border-radius:16px;transition:transform .15s,box-shadow .15s}
 #hubTiles .row2>.card:hover,#hubTiles .row2>a.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.08)}
@@ -286,6 +296,16 @@
 #hubTiles .row2 p{font-size:.76rem !important;line-height:1.35}
 </style>
 <div id="hubTiles" class="hidden">
+    <div class="ah-hero" id="hubHero">
+      <div>
+        <div class="ah-hi" id="hubHi">Welcome back</div>
+        <div class="ah-sub" id="hubSub">Faculty Console</div>
+      </div>
+      <div class="ah-actions">
+        <button type="button" onclick="switchTab('chat')">&#128172; Open chat <span id="hubHeroBd" class="ah-bd" style="display:none"></span></button>
+        <button type="button" onclick="signOutUser()">Sign out</button>
+      </div>
+    </div>
     <button id="logoutBtn" onclick="signOutUser()" class="secondary hidden" style="margin-bottom:16px;">Sign Out</button>
     <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
       <div class="card" onclick="switchTab('teacher')" style="cursor:pointer;text-align:center;padding:32px 20px;">
@@ -1167,7 +1187,16 @@ const EMAILJS_PUBLIC_KEY = "YAoDPw-tkurcPjVrU";
 if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 // ===================================
 
-window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0), b=document.getElementById('hubChatBadge'); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } });
+window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0); ['hubChatBadge','hubHeroBd'].forEach(function(id){ var b=document.getElementById(id); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } }); });
+function hubGreet(){
+  var hi=document.getElementById('hubHi'); if(!hi) return;
+  var h=new Date().getHours(), g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  var nm=(currentUserRole==='owner')?'Dr Obeng-Ahenkora':((currentUserName&&currentUserName!=='Owner')?currentUserName:'');
+  var role={owner:'Owner',admin:'Admin',lecturer:'Lecturer',ta:'Teaching Assistant'}[currentUserRole]||'';
+  hi.textContent=g+(nm?', '+nm:'');
+  var sb=document.getElementById('hubSub'); if(sb) sb.textContent='Faculty Console'+(role?' · '+role:'');
+}
+setInterval(hubGreet,2000); document.addEventListener('DOMContentLoaded',function(){ setTimeout(hubGreet,500); });
 function switchTab(tab){
   document.getElementById('hubView').classList.toggle('hidden', tab!=='hub');
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');

@@ -2816,7 +2816,7 @@ async function reAdd(){
         +'<span style="flex:1;">'+escapeHtml(c)+'</span><span style="font-size:.74rem;color:var(--muted);font-weight:400;">'+(has?'already on this list':(rosters[c]||[]).length+' students')+'</span></label>';
     }).join('');
     document.getElementById('reAddMsg').innerHTML='';
-    const m=document.getElementById('reAddModal'); m.classList.remove('hidden'); m.style.display='flex';
+    const m=document.getElementById('reAddModal'); if(m.parentNode!==document.body) document.body.appendChild(m); m.style.zIndex='2147483000'; m.classList.remove('hidden'); m.style.display='flex';
   }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
 }
 function reAddAll(on){ document.querySelectorAll('.reAddCb:not(:disabled)').forEach(function(cb){ cb.checked=!!on; }); }

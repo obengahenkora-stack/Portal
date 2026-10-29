@@ -1307,9 +1307,9 @@ async function loadDashboard(skipLock){
       Object.keys(rosters).forEach(c=>(rosters[c]||[]).forEach(r=>{
         const k=_nz(r.indexNumber); if(!k||_seen[k]) return;
         const common=_toks(r.name).filter(t=>_myToks.indexOf(t)>=0).length;
-        if(_lev(k,_ix)<=2 || common>=2){ _seen[k]=1; _sug.push(escapeHtml((r.name||'')+' — '+r.indexNumber+' ('+c+')')); }
+        if(common>=2){ _seen[k]=1; _sug.push(escapeHtml((r.name||'')+' — '+r.indexNumber+' ('+c+')')); }
       }));
-      attContainer.innerHTML = '<div class="empty">No attendance record found for index number <b>'+escapeHtml(String(idx))+'</b>. If this is not the index on the class list, update it under My Profile.'+(_sug.length?'<div style="margin-top:10px;text-align:left;"><b>Is one of these you?</b><br>'+_sug.slice(0,6).join('<br>')+'</div>':'')+'</div>';
+      attContainer.innerHTML = '<div class="empty" style="text-align:left;line-height:1.55;">We could not find attendance for index number <b>'+escapeHtml(String(idx))+'</b> yet.<br><span style="color:var(--muted);">You are not on a class list under this index. If you registered late, ask your lecturer to add you. If your index is wrong, correct it under My Profile.</span>'+(_sug.length?'<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint);"><b>Is this you?</b> A class list has your name under a different index number:<br>'+_sug.slice(0,3).join('<br>')+'</div>':'')+'</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
       let _shown = 0;

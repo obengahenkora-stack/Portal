@@ -491,12 +491,30 @@ function normRoster(list){
   });
   return out;
 }
+function _normAllAttendance(d){
+  try{
+    if(!d || !Array.isArray(d.attendance)) return d;
+    const map={}, out=[];
+    d.attendance.forEach(a=>{
+      if(!a) return;
+      const date=String(a.date||'').trim().slice(0,10);
+      const course=String(a.course||'').trim();
+      const key=course.toLowerCase()+'__'+date;
+      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
+      const t=out[map[key]], have=new Set(t.present.map(x=>String(x).trim().toLowerCase()));
+      (a.present||[]).forEach(x=>{ const k=String(x).trim().toLowerCase(); if(!have.has(k)){ have.add(k); t.present.push(x); } });
+      Object.keys(a.checkInTimes||{}).forEach(k=>{ if(!t.checkInTimes[k]) t.checkInTimes[k]=a.checkInTimes[k]; });
+    });
+    d.attendance=out;
+  }catch(e){}
+  return d;
+}
 function _normAllRosters(d){ try{ if(d && d.rosters){ Object.keys(d.rosters).forEach(c=>{ d.rosters[c]=normRoster(d.rosters[c]); }); } }catch(e){} return d; }
 async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return _normAllRosters(await res.json());
+    return _normAllAttendance(_normAllRosters(await res.json()));
   }catch(e){ return {}; }
 }
 async function saveSupabaseData(data){

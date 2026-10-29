@@ -528,6 +528,14 @@
       </div>
     </div>
 
+    <div class="card hidden" id="allSessionsCard">
+      <label>All Saved Attendance Sessions</label>
+      <div class="hint">Every attendance session stored in the system, including courses with no class list. Students see these counts on their dashboards. Delete any session that should not exist.</div>
+      <button class="secondary" onclick="asLoad()" style="padding:8px 14px;">Refresh list</button>
+      <div id="asBody" style="margin-top:12px;"></div>
+      <div id="asMsg" style="margin-top:10px;"></div>
+    </div>
+
     <div class="card hidden" id="rosterEditCard">
       <label>Edit Class List (no re-upload needed)</label>
       <div class="hint">Add a student to an existing class list, fix a name or index number, or remove someone. Changes save straight away. Newly added students count as absent until you mark them under Review &amp; Edit Saved Attendance.</div>
@@ -720,7 +728,7 @@ async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return _normAllRosters(await res.json());
+    return _normAllAttendance(_normAllRosters(await res.json()));
   }catch(e){
     return {};
   }
@@ -1104,7 +1112,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('attendanceEditCard').classList.remove('hidden'); document.getElementById('rosterEditCard').classList.remove('hidden'); try{aeInit();reInit();}catch(e){} } try{delAttInit();}catch(e){}
+  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} document.getElementById('attendanceEditCard').classList.remove('hidden'); document.getElementById('rosterEditCard').classList.remove('hidden'); try{aeInit();reInit();}catch(e){} } try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2420,6 +2428,36 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
+async function asLoad(){
+  const box=document.getElementById('asBody'); box.innerHTML='<div class="empty">Loading...</div>';
+  try{
+    const data=await fetchSupabaseData();
+    const recs=(data.attendance||[]).filter(a=>visibleCourses([a.course]).length).sort((a,b)=>String(a.course).localeCompare(String(b.course))||String(a.date).localeCompare(String(b.date)));
+    if(!recs.length){ box.innerHTML='<div class="empty">No attendance sessions stored.</div>'; return; }
+    const hasRoster=new Set(Object.keys(data.rosters||{}));
+    let lastCourse=null, h='';
+    recs.forEach(a=>{
+      if(a.course!==lastCourse){ lastCourse=a.course; const n=recs.filter(x=>x.course===a.course).length;
+        h+=`<div style="font-weight:700;font-size:.85rem;margin:14px 0 4px;">${escapeHtml(a.course)} <span style="color:var(--muted);font-weight:400;">— ${n} session(s)${hasRoster.has(a.course)?'':' · <span style="color:var(--danger);">no class list</span>'}</span></div>`; }
+      h+=`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:.82rem;">
+        <div style="flex:1;">${escapeHtml(a.date)} · ${(a.present||[]).length} present</div>
+        <button class="secondary" style="padding:4px 10px;font-size:.72rem;border-color:var(--danger);color:var(--danger);" data-c="${escapeHtml(a.course)}" data-d="${escapeHtml(a.date)}" onclick="asDelete(this.dataset.c,this.dataset.d)">Delete</button></div>`;
+    });
+    box.innerHTML=h;
+  }catch(e){ box.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function asDelete(c,d){
+  if(!confirm(`Delete the attendance session for "${c}" on ${d}? This cannot be undone.`)) return;
+  const msg=document.getElementById('asMsg');
+  try{
+    const data=await fetchSupabaseData();
+    data.attendance=(data.attendance||[]).filter(a=>!(a.course===c && a.date===d));
+    await saveSupabaseData(data);
+    msg.innerHTML=`<div class="msg ok">Deleted ${escapeHtml(c)} on ${escapeHtml(d)}.</div>`;
+    asLoad();
+  }catch(e){ msg.innerHTML=`<div class="msg err">Could not delete: ${escapeHtml(e.message)}</div>`; }
+}
+
 let _re=null;
 async function reInit(){
   try{
@@ -2804,7 +2842,7 @@ async function loadAttendanceSummaryCourseOptions(){
   try{
     const data = await fetchSupabaseData();
     const rosters = data.rosters || {};
-    const courses = visibleCourses(Object.keys(rosters));
+    const courses = visibleCourses([...new Set(Object.keys(rosters).concat((data.attendance||[]).map(a=>a.course).filter(Boolean)))]);
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     const summarySelect = document.getElementById('attendanceSummaryCourseSelect');
     if(summarySelect) summarySelect.innerHTML = options;
@@ -2889,6 +2927,24 @@ async function repairRosters(){
   }catch(e){ msg.innerHTML=`<div class="msg err">Could not repair: ${escapeHtml(e.message)}</div>`; }
 }
 
+function _normAllAttendance(d){
+  try{
+    if(!d || !Array.isArray(d.attendance)) return d;
+    const map={}, out=[];
+    d.attendance.forEach(a=>{
+      if(!a) return;
+      const date=String(a.date||'').trim().slice(0,10);
+      const course=String(a.course||'').trim();
+      const key=course.toLowerCase()+'__'+date;
+      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
+      const t=out[map[key]], have=new Set(t.present.map(x=>String(x).trim().toLowerCase()));
+      (a.present||[]).forEach(x=>{ const k=String(x).trim().toLowerCase(); if(!have.has(k)){ have.add(k); t.present.push(x); } });
+      Object.keys(a.checkInTimes||{}).forEach(k=>{ if(!t.checkInTimes[k]) t.checkInTimes[k]=a.checkInTimes[k]; });
+    });
+    d.attendance=out;
+  }catch(e){}
+  return d;
+}
 function _normAllRosters(d){ try{ if(d && d.rosters){ Object.keys(d.rosters).forEach(c=>{ d.rosters[c]=normRoster(d.rosters[c]); }); } }catch(e){} return d; }
 async function saveRosterData(course, roster, msgEl){
   roster = normRoster(roster);

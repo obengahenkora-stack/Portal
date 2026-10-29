@@ -167,6 +167,24 @@
   .overview-grid{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
   .overview-item{ min-width:0 !important; padding-left:6px !important; padding-right:6px !important; }
   .pane-off{ display:none !important; }
+  .pg-g.sel{ background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+  html[data-theme="dark"] .pg-g.sel{ color:#08161d !important; }
+  #welcomeAvatar svg{ width:100%; height:100%; overflow:visible; }
+  .dn{ transform-origin:50px 128px; animation:dnBob .9s ease-in-out infinite alternate; }
+  .dn .armL{ transform-origin:34px 66px; animation:dnArmL .9s ease-in-out infinite alternate; }
+  .dn .armR{ transform-origin:66px 66px; animation:dnArmR .9s ease-in-out infinite alternate; }
+  .dn .head{ transform-origin:50px 52px; animation:dnHead .9s ease-in-out infinite alternate; }
+  .dn .legL{ transform-origin:44px 100px; animation:dnLegL .9s ease-in-out infinite alternate; }
+  .dn .legR{ transform-origin:56px 100px; animation:dnLegR .9s ease-in-out infinite alternate; }
+  .dn-sp{ animation:dnSp 1.2s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+  @keyframes dnBob{ from{ transform:translateY(0) rotate(-2deg);} to{ transform:translateY(-6px) rotate(2deg);} }
+  @keyframes dnArmL{ from{ transform:rotate(-70deg);} to{ transform:rotate(20deg);} }
+  @keyframes dnArmR{ from{ transform:rotate(-20deg);} to{ transform:rotate(70deg);} }
+  @keyframes dnHead{ from{ transform:rotate(-6deg);} to{ transform:rotate(6deg);} }
+  @keyframes dnLegL{ from{ transform:rotate(6deg);} to{ transform:rotate(-8deg);} }
+  @keyframes dnLegR{ from{ transform:rotate(8deg);} to{ transform:rotate(-6deg);} }
+  @keyframes dnSp{ 0%,100%{ opacity:.2; transform:scale(.6);} 50%{ opacity:1; transform:scale(1.1);} }
+  @media (prefers-reduced-motion:reduce){ .dn,.dn *{ animation:none !important; } }
   .dash-nav a.on{ background:var(--accent); color:#fff; }
   html[data-theme="dark"] .dash-nav a.on{ color:#08161d; }
   .ov-links{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
@@ -240,6 +258,22 @@
     </div>
   </div>
 
+  <div id="profileGate" class="hidden" style="position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.78);display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card,#fff);color:var(--ink,#111);max-width:440px;width:100%;border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <h2 style="margin:0 0 6px;">Complete your profile</h2>
+      <p style="color:var(--muted);font-size:0.88rem;margin:0 0 14px;">Your gender and phone number are required before you can continue. Only you and the course staff can see them.</p>
+      <label>Gender</label>
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <button type="button" class="secondary pg-g" data-g="Female" onclick="pgPick('Female')" style="flex:1;">Female</button>
+        <button type="button" class="secondary pg-g" data-g="Male" onclick="pgPick('Male')" style="flex:1;">Male</button>
+      </div>
+      <label>Phone number</label>
+      <input type="text" id="pgPhone" inputmode="tel" placeholder="e.g. 024 123 4567">
+      <button style="margin-top:4px;width:100%;" onclick="saveProfileGate()">Save and continue</button>
+      <div id="profileGateMsg" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <div class="card hidden" id="linkIndexCard">
     <h2>Link Your Index Number</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">One-time step — this connects your account to your student records.</p>
@@ -261,12 +295,26 @@
       <option value="Civil Engineering">Civil Engineering</option>
       <option value="Environmental Engineering">Environmental Engineering</option>
     </select>
+    <label>Your Gender</label>
+    <select id="linkGenderInput">
+      <option value="">Select your gender...</option>
+      <option value="Female">Female</option>
+      <option value="Male">Male</option>
+    </select>
+    <label>Your Phone Number</label>
+    <input type="text" id="linkPhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
     <button onclick="linkIndexNumber()">Link Account</button>
     <div id="linkIndexMsg"></div>
   </div>
 
-  <div class="card hidden" id="signedInCard" style="display:flex;justify-content:space-between;align-items:center;">
-    <span style="font-size:0.85rem;color:var(--muted);">Signed in as <strong id="studentWhoAmI"></strong></span>
+  <div class="card hidden" id="signedInCard" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+      <div id="welcomeAvatar" class="hidden" style="flex:0 0 auto;width:96px;height:118px;"></div>
+      <div style="min-width:0;">
+        <div id="welcomeLine" style="font-family:'Fraunces',serif;font-size:1.25rem;font-weight:700;line-height:1.2;">Welcome back</div>
+        <span style="font-size:0.82rem;color:var(--muted);">Signed in as <strong id="studentWhoAmI"></strong></span>
+      </div>
+    </div>
     <button class="secondary" onclick="studentSignOut()">Sign Out</button>
   </div>
 
@@ -295,6 +343,14 @@
       <option value="Civil Engineering">Civil Engineering</option>
       <option value="Environmental Engineering">Environmental Engineering</option>
     </select>
+    <label>Your Gender</label>
+    <select id="profileGenderInput">
+      <option value="">Select your gender...</option>
+      <option value="Female">Female</option>
+      <option value="Male">Male</option>
+    </select>
+    <label>Your Phone Number</label>
+    <input type="text" id="profilePhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
     <button onclick="saveProfileDetails()">Save Details</button>
     <div id="profileDetailsMsg"></div>
 
@@ -681,7 +737,7 @@ const DB_HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE
 const DB_WRITE_HEADERS = { ...DB_HEADERS, "Content-Type": "application/json" };
 
 function dbRowToRecord(row){
-  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
+  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
 }
 
 async function dbFetchAllStudents(){
@@ -701,20 +757,22 @@ async function dbFindStudentByEmail(email){
 // Insert-or-update in one atomic operation — this is what actually eliminates the race
 // condition, since the database only ever touches this one student's row, never anyone else's.
 async function dbUpsertStudent(record){
-  const send = async (withDept) => {
+  // Optional columns are dropped one by one if the database does not have them yet, so the core record always saves.
+  const optional = { department: record.department || null, gender: record.gender || null, phone: record.phone || null };
+  const send = async () => {
     const body = { email: record.email, index_number: record.indexNumber, name: record.name, level: record.level, linked_at: record.linkedAt };
-    if(withDept) body.department = record.department || null;
+    Object.keys(optional).forEach(k => { body[k] = optional[k]; });
     return fetch(`${STUDENT_TABLE_URL}?on_conflict=email`, {
       method: "POST",
       headers: { ...DB_WRITE_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
       body: JSON.stringify(body)
     });
   };
-  let res = await send(true);
-  if(!res.ok){
+  let res = await send();
+  for(let i = 0; i < 4 && !res.ok; i++){
     const d1 = await res.clone().text().catch(() => '');
-    // Department column not created yet in the database: still save everything else.
-    if(/PGRST204|department/i.test(d1)) res = await send(false);
+    const m = d1.match(/'(department|gender|phone)'/i) || d1.match(/\b(department|gender|phone)\b/i);
+    if(/PGRST204/i.test(d1) && m && (m[1].toLowerCase() in optional)){ delete optional[m[1].toLowerCase()]; res = await send(); } else break;
   }
   if(!res.ok){
     const detail = await res.text().catch(() => '');
@@ -803,7 +861,7 @@ async function onStudentSignedIn(){
     document.getElementById('linkLevelInput').value = myAccount.level || '';
     document.getElementById('linkDeptInput').value = myAccount.department || '';
     document.getElementById('profileDeptInput').value = myAccount.department || '';
-    if(!myAccount.department) showDeptGate();
+    renderWelcome(); if(needsGate(myAccount)) showGate();
 
     if(!myAccount.level){
       // Registered before the Level field existed — prompt them to add it now instead of relying on the small edit link.
@@ -841,6 +899,7 @@ async function saveDeptGate(){
     const g = document.getElementById('deptGate'); g.classList.add('hidden'); g.style.display = 'none';
     document.body.style.overflow = '';
     document.getElementById('profileDeptInput').value = v;
+    if(needsGate(studentCurrentAccount)) showGate(); else loadDashboard();
   }catch(e){ msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
 }
 
@@ -853,6 +912,8 @@ function toggleProfileSection(){
     document.getElementById('profileIndexInput').value = studentCurrentAccount.indexNumber || '';
     document.getElementById('profileLevelInput').value = studentCurrentAccount.level || '';
     document.getElementById('profileDeptInput').value = studentCurrentAccount.department || '';
+    document.getElementById('profileGenderInput').value = studentCurrentAccount.gender || '';
+    document.getElementById('profilePhoneInput').value = studentCurrentAccount.phone || '';
     document.getElementById('profileNewEmailInput').value = '';
     document.getElementById('profileNewPasswordInput').value = ''; PW.reset('profileNewPasswordInput');
   }
@@ -863,18 +924,22 @@ async function saveProfileDetails(){
   const name = document.getElementById('profileNameInput').value.trim();
   const level = document.getElementById('profileLevelInput').value;
   const department = document.getElementById('profileDeptInput').value;
+  const gender = document.getElementById('profileGenderInput').value;
+  const phone = normPhone(document.getElementById('profilePhoneInput').value);
   const msg = document.getElementById('profileDetailsMsg');
 
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
+  if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
+  if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, department, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
     await dbUpsertStudent(record);
-    studentCurrentAccount = record;
+    studentCurrentAccount = record; renderWelcome();
 
     msg.innerHTML = '<div class="msg ok">Saved.</div>';
     document.getElementById('dashIndexInput').value = indexNumber;
@@ -1158,7 +1223,7 @@ function renderRegisteredStudents(){
       <input type="checkbox" class="stuSel" style="width:auto;margin:0;" data-email="${escapeHtml(a.email)}" ${_sel.has(a.email)?'checked':''} onchange="toggleStudent(this.dataset.email,this.checked)">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; ${a.gender ? escapeHtml(a.gender) : 'Gender not set'} &middot; ${a.phone ? escapeHtml(a.phone) : 'Phone not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
         <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
@@ -1178,18 +1243,22 @@ async function linkIndexNumber(){
   const name = document.getElementById('linkNameInput').value.trim();
   const level = document.getElementById('linkLevelInput').value;
   const department = document.getElementById('linkDeptInput').value;
+  const gender = document.getElementById('linkGenderInput').value;
+  const phone = normPhone(document.getElementById('linkPhoneInput').value);
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
+  if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
+  if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, department, hasDeptCol: true, linkedAt: new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, hasDeptCol: true, linkedAt: new Date().toISOString() };
     await dbUpsertStudent(record);
-    studentCurrentAccount = record;
+    studentCurrentAccount = record; renderWelcome();
 
     document.getElementById('linkIndexCard').classList.add('hidden');
     document.getElementById('editDetailsLink').classList.remove('hidden');
@@ -1231,7 +1300,7 @@ async function isDeviceLockEnabled(){
 const LOCK_KEY = "assessment_locked_index"; // shared with the Assessment Portal's lock, so a device stays tied to one student everywhere
 
 async function loadDashboard(skipLock){
-  if(!skipLock && studentCurrentAccount && !studentCurrentAccount.department){ showDeptGate(); return; }
+  if(!skipLock && needsGate(studentCurrentAccount)){ showGate(); return; }
   const idxInput = document.getElementById('dashIndexInput');
   const idx = idxInput.value.trim();
   const msg = document.getElementById('dashMsg');
@@ -1565,7 +1634,7 @@ setInterval(updateWhoBar,1500);
     var f=function(){ var t=(w.textContent||'').trim(); if(!t){ h.textContent='Student Dashboard'; return; } var first=t.indexOf('@')>0?'':t.split(/\s+/)[0]; h.textContent=first?('Welcome back, '+first):'Welcome back'; };
     new MutationObserver(f).observe(w,{childList:true,characterData:true,subtree:true}); f();
   }
-  document.addEventListener('DOMContentLoaded',function(){ setBar('ovAvgScore'); setBar('ovAttendance'); greet(); });
+  document.addEventListener('DOMContentLoaded',function(){ setBar('ovAvgScore'); setBar('ovAttendance'); });
 })();
 </script>
 <script>
@@ -1593,6 +1662,91 @@ setInterval(updateWhoBar,1500);
     dashTab('dashOverviewCard'); window.scrollTo(0,0); summarize();
   });
 })();
+</script>
+<script>
+/* ===== Gender + phone gate, dancing welcome avatar ===== */
+var _pgGender='';
+function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone); }
+function showGate(){
+  var a=studentCurrentAccount; if(!a) return;
+  if(!a.department){ showDeptGate(); return; }
+  if(!a.gender || !a.phone){ showProfileGate(); return; }
+}
+function showProfileGate(){
+  var g=document.getElementById('profileGate'); if(!g) return;
+  var a=studentCurrentAccount||{};
+  _pgGender=a.gender||''; pgPick(_pgGender);
+  document.getElementById('pgPhone').value=a.phone||'';
+  g.classList.remove('hidden'); g.style.display='flex'; document.body.style.overflow='hidden';
+}
+function pgPick(v){
+  _pgGender=v||'';
+  document.querySelectorAll('.pg-g').forEach(function(b){ b.classList.toggle('sel', b.getAttribute('data-g')===_pgGender); });
+}
+function normPhone(v){
+  var t=String(v||'').replace(/[\s\-().]/g,'');
+  return /^\+?\d{9,15}$/.test(t) ? t : '';
+}
+async function saveProfileGate(){
+  var msg=document.getElementById('profileGateMsg');
+  var phone=normPhone(document.getElementById('pgPhone').value);
+  if(!_pgGender){ msg.innerHTML='<div class="msg err">Please choose your gender.</div>'; return; }
+  if(!phone){ msg.innerHTML='<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    var res=await fetch(STUDENT_TABLE_URL+'?email=eq.'+encodeURIComponent(studentCurrentEmail),{
+      method:'PATCH', headers:Object.assign({},DB_WRITE_HEADERS,{'Prefer':'return=representation'}),
+      body:JSON.stringify({gender:_pgGender, phone:phone})
+    });
+    if(!res.ok){ var t=await res.text().catch(function(){return '';}); throw new Error(/PGRST204|gender|phone/i.test(t)?'The gender and phone fields are not set up in the database yet. The administrator must run the gender and phone SQL once, then try again.':'save failed ('+res.status+')'); }
+    studentCurrentAccount.gender=_pgGender; studentCurrentAccount.phone=phone;
+    var g=document.getElementById('profileGate'); g.classList.add('hidden'); g.style.display='none'; document.body.style.overflow='';
+    var pg=document.getElementById('profileGenderInput'); if(pg) pg.value=_pgGender;
+    var pp=document.getElementById('profilePhoneInput'); if(pp) pp.value=phone;
+    renderWelcome();
+    if(needsGate(studentCurrentAccount)) showGate(); else loadDashboard();
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
+}
+
+var _AV_F='<svg viewBox="0 0 100 130" aria-hidden="true"><g class="dn">'
+ +'<g class="legL"><rect x="40" y="98" width="8" height="26" rx="4" fill="#8a5a3b"/><ellipse cx="42" cy="125" rx="8" ry="4" fill="#7a2f57"/></g>'
+ +'<g class="legR"><rect x="52" y="98" width="8" height="26" rx="4" fill="#8a5a3b"/><ellipse cx="58" cy="125" rx="8" ry="4" fill="#7a2f57"/></g>'
+ +'<g class="armL"><rect x="26" y="62" width="9" height="30" rx="4.5" fill="#8a5a3b"/></g>'
+ +'<g class="armR"><rect x="65" y="62" width="9" height="30" rx="4.5" fill="#8a5a3b"/></g>'
+ +'<path d="M34 64 Q50 58 66 64 L76 108 Q50 116 24 108 Z" fill="#e0568a"/>'
+ +'<path d="M30 100 Q50 108 70 100" stroke="#f7a8c8" stroke-width="3" fill="none"/>'
+ +'<g class="head"><rect x="45" y="56" width="10" height="8" rx="3" fill="#8a5a3b"/>'
+ +'<circle cx="50" cy="42" r="18" fill="#8a5a3b"/>'
+ +'<circle cx="30" cy="24" r="9" fill="#1d1512"/><circle cx="70" cy="24" r="9" fill="#1d1512"/>'
+ +'<path d="M32 40 Q34 20 50 20 Q66 20 68 40 Q60 30 50 30 Q40 30 32 40Z" fill="#1d1512"/>'
+ +'<circle cx="43" cy="43" r="2.3" fill="#1d1512"/><circle cx="57" cy="43" r="2.3" fill="#1d1512"/>'
+ +'<path d="M43 50 Q50 57 57 50" stroke="#1d1512" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
+ +'<circle cx="38" cy="49" r="3" fill="#e98a7a" opacity=".55"/><circle cx="62" cy="49" r="3" fill="#e98a7a" opacity=".55"/></g></g>'
+ +'<g class="dn-sp" fill="#f4c542"><path d="M8 20 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></g>'
+ +'<g class="dn-sp" fill="#f4c542" style="animation-delay:.5s"><path d="M92 40 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z"/></g></svg>';
+var _AV_M='<svg viewBox="0 0 100 130" aria-hidden="true"><g class="dn">'
+ +'<g class="legL"><rect x="40" y="98" width="9" height="26" rx="4" fill="#2b3a55"/><ellipse cx="42" cy="125" rx="9" ry="4" fill="#1b2538"/></g>'
+ +'<g class="legR"><rect x="51" y="98" width="9" height="26" rx="4" fill="#2b3a55"/><ellipse cx="58" cy="125" rx="9" ry="4" fill="#1b2538"/></g>'
+ +'<g class="armL"><rect x="25" y="62" width="10" height="30" rx="5" fill="#8a5a3b"/></g>'
+ +'<g class="armR"><rect x="65" y="62" width="10" height="30" rx="5" fill="#8a5a3b"/></g>'
+ +'<rect x="32" y="62" width="36" height="42" rx="9" fill="#2f7dd1"/>'
+ +'<rect x="32" y="62" width="36" height="9" rx="4" fill="#5aa0e8"/>'
+ +'<g class="head"><rect x="45" y="56" width="10" height="8" rx="3" fill="#8a5a3b"/>'
+ +'<circle cx="50" cy="42" r="18" fill="#8a5a3b"/>'
+ +'<path d="M32 38 Q32 20 50 20 Q68 20 68 38 Q62 28 50 28 Q38 28 32 38Z" fill="#1d1512"/>'
+ +'<circle cx="43" cy="43" r="2.3" fill="#1d1512"/><circle cx="57" cy="43" r="2.3" fill="#1d1512"/>'
+ +'<path d="M43 50 Q50 57 57 50" stroke="#1d1512" stroke-width="2.2" fill="none" stroke-linecap="round"/></g></g>'
+ +'<g class="dn-sp" fill="#f4c542"><path d="M8 20 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></g>'
+ +'<g class="dn-sp" fill="#f4c542" style="animation-delay:.5s"><path d="M92 40 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6z"/></g></svg>';
+function renderWelcome(){
+  var a=studentCurrentAccount, box=document.getElementById('welcomeAvatar'), line=document.getElementById('welcomeLine');
+  if(!box||!line) return;
+  var first=a&&a.name?String(a.name).trim().split(/\s+/)[0]:'';
+  line.textContent=first?('Welcome back, '+first):'Welcome back';
+  if(a&&a.gender==='Female'){ box.innerHTML=_AV_F; box.classList.remove('hidden'); }
+  else if(a&&a.gender==='Male'){ box.innerHTML=_AV_M; box.classList.remove('hidden'); }
+  else { box.innerHTML=''; box.classList.add('hidden'); }
+}
 </script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 'use strict';
 if(window.ChatUI) return;
 
-var S={ rt:null, me:null, pres:null, chans:{}, sendCh:{}, msgs:{}, unread:{}, online:{}, dms:{}, gen:{}, readAt:{}, sq:'', sr:null, sT:null, mute:false, open:false, cur:null, wins:[],
+var S={ rt:null, me:null, pres:null, chans:{}, sendCh:{}, msgs:{}, unread:{}, online:{}, dms:{}, gen:{}, readAt:{}, sq:'', sr:null, sT:null, mute:false, open:false, cur:null, confirmDel:null, embed:null, wantEmbed:null, cl:{}, wins:[],
         histOK:true, genCol:true, loaded:{}, lastSend:0, rooms:[], root:null, started:false, renderT:null };
 
 function G(expr){ try{ return (0,eval)(expr); }catch(e){ return undefined; } }
@@ -57,7 +57,7 @@ function rememberGender(id,g){ if(id&&(g==='Male'||g==='Female')) S.gen[id]=g; }
 
 /* ---------- sound + seen ---------- */
 var _ac=null;
-try{ S.mute=localStorage.getItem('ceChatMute')==='1'; }catch(e){}
+try{ S.mute=localStorage.getItem('ceChatMute')==='1'; S.cl=JSON.parse(localStorage.getItem('ceChatCleared')||'{}')||{}; }catch(e){}
 document.addEventListener('click',function(){ try{ if(!_ac){ var AC=window.AudioContext||window.webkitAudioContext; if(AC) _ac=new AC(); } if(_ac&&_ac.state==='suspended') _ac.resume(); }catch(e){} },true);
 function beep(){
   if(S.mute||!_ac||_ac.state!=='running') return;
@@ -100,6 +100,16 @@ function editMsg(room,id,text){
     if(isDm(room)) sendTo('inbox:'+peerOf(room),'edit',p).catch(function(){}); else sendTo('room:'+room,'edit',p).catch(function(){});
   });
 }
+function inClear(p){ if(!p||!p.payload) return; var c=p.payload, l=S.msgs[c.room]; if(!l) return; S.msgs[c.room]=l.filter(function(x){return x.from_id!==c.from_id;}); scheduleRender(); }
+function deleteChat(room){
+  if(!isDm(room)) return;
+  var peer=peerOf(room);
+  S.cl[room]=now(); try{ localStorage.setItem('ceChatCleared',JSON.stringify(S.cl)); }catch(e){}
+  S.msgs[room]=[]; delete S.dms[room]; S.unread[room]=0; S.confirmDel=null;
+  if(S.histOK) fetch(tUrl()+'?room=eq.'+encodeURIComponent(room)+'&from_id=eq.'+encodeURIComponent(S.me.id),{method:'DELETE',headers:hdr()}).catch(function(){});
+  sendTo('inbox:'+peer,'clear',{room:room,from_id:S.me.id}).catch(function(){});
+  closeWin(room,true); S.cur=null; render();
+}
 function inRead(p){ if(!p||!p.payload) return; var r=p.payload; if(r.room&&r.ts){ S.readAt[r.room]=Math.max(S.readAt[r.room]||0,r.ts); scheduleRender(); } }
 function sendRead(room){
   if(!isDm(room)||!S.me) return;
@@ -139,7 +149,7 @@ function loadDmList(){
    return fetch(tUrl()+'?select=*&'+like+'&created_at=gte.'+encodeURIComponent(new Date(Date.now()-31*24*3600*1000).toISOString())+'&order=created_at.desc&limit=200',{headers:hdr(),cache:'no-store'}); })
    .then(function(r){ if(!r.ok) throw new Error('x'); return r.json(); })
    .then(function(rows){ var seen=seenGet(), fresh=0;
-     rows.forEach(function(x){ if(expOf(x)<=Date.now()) return; var peer=peerOf(x.room); if(!S.dms[x.room]) S.dms[x.room]={peer:peer,name:nameOf(peer)}; S.dms[x.room].until=Math.max(S.dms[x.room].until||0,expOf(x));
+     rows.forEach(function(x){ if(expOf(x)<=Date.now()||new Date(x.created_at).getTime()<=(S.cl[x.room]||0)) return; var peer=peerOf(x.room); if(!S.dms[x.room]) S.dms[x.room]={peer:peer,name:nameOf(peer)}; S.dms[x.room].until=Math.max(S.dms[x.room].until||0,expOf(x));
        if(x.from_id===S.me.id && x.to_name){ S.dms[x.room].name=x.to_name; rememberName(peer,x.to_name); }
        if(x.from_id!==S.me.id){ if(x.from_name) S.dms[x.room].name=x.from_name; rememberGender(x.from_id,x.from_gender);
          if(new Date(x.created_at).getTime()>(seen[x.room]||0) && !winOpen(x.room)){ S.unread[x.room]=(S.unread[x.room]||0)+1; fresh++; } } });
@@ -163,6 +173,7 @@ function removeRow(id){ if(!S.histOK) return; fetch(tUrl()+'?id=eq.'+encodeURICo
 
 /* ---------- messages ---------- */
 function addMsg(m,silent){
+  if(m.ts<=(S.cl[m.room]||0)) return false;
   var list=S.msgs[m.room]||(S.msgs[m.room]=[]);
   if(list.some(function(x){return x.id===m.id;})) return false;
   rememberGender(m.from_id,m.from_g); if(m.from_id!==S.me.id) rememberName(m.from_id,m.from_name);
@@ -193,6 +204,7 @@ function joinInbox(){
   getChan('inbox:'+S.me.id,function(ch){
     ch.on('broadcast',{event:'msg'},inMsg);
     ch.on('broadcast',{event:'read'},inRead);
+    ch.on('broadcast',{event:'clear'},inClear);
     ch.on('broadcast',{event:'edit'},inEdit);
     ch.on('broadcast',{event:'del'},function(p){ if(p&&p.payload) delMsg(p.payload.room,p.payload.id); });
   });
@@ -261,6 +273,8 @@ function css(){
  +'.cc-win{flex:1;min-height:0;display:none;flex-direction:column}'
  +'.cc-home{display:flex;flex-direction:column;flex:1;min-height:0}'
  +'.cc-views{display:none;flex:1;min-height:0;flex-direction:column}'
+ +'.cc-dc{align-items:center;gap:8px;padding:8px 12px;font-size:.74rem;background:rgba(244,63,94,.12);border-bottom:1px solid var(--line,#ddd)}.cc-dc span{flex:1}.cc-dc button{border:none !important;border-radius:999px !important;padding:5px 12px !important;font-size:.74rem !important;cursor:pointer;background:#f43f5e !important;color:#fff !important}.cc-dc button[data-a=dcno]{background:transparent !important;color:inherit !important;text-decoration:underline}'
+ +'.cc-embed{position:static !important;width:100% !important;max-width:none !important;height:min(72vh,640px) !important;box-shadow:none !important;display:flex}.cc-embed [data-a=close]{display:none !important}'
  +'.cc-tabs{display:flex;gap:6px;padding:6px 8px;overflow-x:auto;border-bottom:1px solid var(--line,#ddd);flex:0 0 auto}'
  +'.cc-tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:rgba(120,160,120,.14);font-size:.74rem;cursor:pointer;max-width:150px;user-select:none}'
  +'.cc-tab.act{background:var(--accent,#3f7a32);color:#fff}html[data-theme="dark"] .cc-tab.act{color:#08161d}'
@@ -363,13 +377,18 @@ function renderHome(p){
   });
   if(ids.length<=1) h+='<div class="cc-note">No one else is online right now.</div>';
   if(!p.__sk){
-    p.innerHTML='<div class="cc-h"><span class="t">Student chat</span><button type="button" data-a="mute" aria-label="Sound on or off"></button><button type="button" data-a="close" aria-label="Close">&times;</button></div><div class="cc-tabs" style="display:none"></div><div class="cc-home"><div class="cc-s"><input id="ceSearch" type="search" placeholder="Search any student by name..." autocomplete="off"></div><div class="cc-b"></div></div><div class="cc-views"></div>';
+    p.innerHTML='<div class="cc-h"><span class="t">Student chat</span><button type="button" data-a="delchat" title="Delete this chat" aria-label="Delete this chat" style="display:none">&#128465;</button><button type="button" data-a="mute" aria-label="Sound on or off"></button><button type="button" data-a="close" aria-label="Close">&times;</button></div><div class="cc-tabs" style="display:none"></div><div class="cc-dc" style="display:none"><span>Delete this chat? Everything you sent is removed for both of you, with no trace.</span><button type="button" data-a="dcyes">Delete</button><button type="button" data-a="dcno">Cancel</button></div><div class="cc-home"><div class="cc-s"><input id="ceSearch" type="search" placeholder="Search any student by name..." autocomplete="off"></div><div class="cc-b"></div></div><div class="cc-views"></div>';
     p.querySelector('.cc-tabs').addEventListener('click',function(e){ var x=e.target.closest('[data-tclose]'); if(x){ closeWin(x.getAttribute('data-tclose')); return; } var t=e.target.closest('[data-tab]'); if(!t) return; var r=t.getAttribute('data-tab'); if(r==='home'){ S.cur=null; render(); } else openRoom(r); });
     p.__sk=1;
     p.querySelector('[data-a=close]').onclick=toggleHome;
+    p.querySelector('[data-a=delchat]').onclick=function(){ S.confirmDel=S.cur; render(); };
+    p.querySelector('[data-a=dcno]').onclick=function(){ S.confirmDel=null; render(); };
+    p.querySelector('[data-a=dcyes]').onclick=function(){ if(S.confirmDel) deleteChat(S.confirmDel); };
     p.querySelector('[data-a=mute]').onclick=function(){ S.mute=!S.mute; try{ localStorage.setItem('ceChatMute',S.mute?'1':'0'); }catch(e){} render(); };
     p.querySelector('#ceSearch').addEventListener('input',function(e){ doSearch(e.target.value); });
   }
+  p.querySelector('[data-a=delchat]').style.display=(S.cur&&isDm(S.cur))?'':'none';
+  p.querySelector('.cc-dc').style.display=(S.confirmDel&&S.confirmDel===S.cur)?'flex':'none';
   p.querySelector('[data-a=mute]').innerHTML=S.mute?'&#128263;':'&#128276;';
   p.querySelector('.cc-home').style.display=S.cur?'none':'flex'; p.querySelector('.cc-views').style.display=S.cur?'flex':'none';
   p.querySelector('.cc-h .t').textContent=S.cur?roomTitle(S.cur):'Student chat';
@@ -466,12 +485,12 @@ function start(me){
   var lib=window.supabase; if(!lib||!lib.createClient) return;
   S.me=me; S.rooms=myRooms(); rememberGender(me.id,me.g);
   try{ S.rt=lib.createClient(G('SUPABASE_URL'),G('SUPABASE_KEY'),{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:10}}}); }catch(e){ return; }
-  build(); S.rooms.forEach(joinRoom); joinInbox(); setupPresence(); loadDmList(); purgeOld(); S.started=true; render();
+  build(); S.rooms.forEach(joinRoom); joinInbox(); setupPresence(); loadDmList(); purgeOld(); S.started=true; render(); if(S.wantEmbed) embed(S.wantEmbed);
 }
 function stop(){
   try{ Object.keys(S.chans).forEach(function(k){ S.rt.removeChannel(S.chans[k]); }); Object.keys(S.sendCh).forEach(function(k){ S.rt.removeChannel(S.sendCh[k]); }); }catch(e){}
   if(S.root&&S.root.parentNode) S.root.parentNode.removeChild(S.root);
-  S.rt=null; S.me=null; S.chans={}; S.sendCh={}; S.msgs={}; S.unread={}; S.online={}; S.dms={}; S.gen={}; S.loaded={}; S.wins=[]; S.cur=null; S.open=false; S.root=null; S.started=false;
+  S.rt=null; S.me=null; S.chans={}; S.sendCh={}; S.msgs={}; S.unread={}; S.online={}; S.dms={}; S.gen={}; S.loaded={}; S.wins=[]; S.cur=null; S.embed=null; S.confirmDel=null; S.open=false; S.root=null; S.started=false;
 }
 var _lastPurge=0;
 function tick(){
@@ -495,7 +514,24 @@ function fitKeyboard(){
 }
 if(window.visualViewport){ visualViewport.addEventListener('resize',fitKeyboard); visualViewport.addEventListener('scroll',fitKeyboard); }
 window.addEventListener('resize',function(){ fitKeyboard(); if(S.started) scheduleRender(); });
-window.ChatUI={tick:tick,stop:stop,_state:S};
+function embed(host){
+  if(!host) return; S.wantEmbed=host;
+  if(!S.started) return;
+  var panel=document.getElementById('ceChatPanel'); if(!panel) return;
+  Array.prototype.forEach.call(host.querySelectorAll('.cc-ph'),function(e){ e.style.display='none'; });
+  host.appendChild(panel); panel.classList.add('cc-embed'); S.embed=host;
+  var b=document.getElementById('ceChatBtn'); if(b) b.style.display='none';
+  S.open=true; render();
+}
+function unembed(){
+  S.wantEmbed=null;
+  if(!S.embed) return; S.embed=null;
+  var panel=document.getElementById('ceChatPanel'), dock=document.getElementById('ceDock');
+  if(panel&&dock){ dock.appendChild(panel); panel.classList.remove('cc-embed'); }
+  var b=document.getElementById('ceChatBtn'); if(b) b.style.display='';
+  S.open=false; render();
+}
+window.ChatUI={tick:tick,stop:stop,embed:embed,unembed:unembed,_state:S};
 setInterval(tick,1500);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tick); else setTimeout(tick,300);
 })();

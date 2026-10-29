@@ -433,6 +433,7 @@
     <nav class="dash-nav" id="dashNav">
       <a href="javascript:void(0)" data-tab="dashOverviewCard" class="on">Overview</a>
       <a href="javascript:void(0)" data-tab="dashLectureHall">Lecture Hall</a>
+      <a href="javascript:void(0)" data-tab="dashChatCard">Chat</a>
       <a href="javascript:void(0)" data-tab="dashScoresCard">Scores</a>
       <a href="javascript:void(0)" data-tab="dashAttCard">Attendance</a>
       <a href="javascript:void(0)" data-tab="dashReportsCard">Reports</a>
@@ -482,6 +483,11 @@
     <div class="card dash-sec" id="dashReportsCard">
       <h2>My Reports</h2>
       <div id="dashReports"><div class="empty">No data.</div></div>
+    </div>
+
+    <div class="card dash-sec pane-off" id="dashChatCard">
+      <h3 style="margin-top:0">Student Chat</h3>
+      <p class="cc-ph" style="color:var(--muted)">Loading chat...</p>
     </div>
 
     <div class="card dash-sec" id="dashIssueCard">
@@ -1640,11 +1646,12 @@ setInterval(updateWhoBar,1500);
 </script>
 <script>
 (function(){
-  var SEC=['dashOverviewCard','dashLectureHall','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
+  var SEC=['dashOverviewCard','dashLectureHall','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
   window.dashTab=function(id){
     if(SEC.indexOf(id)<0) id='dashOverviewCard';
     SEC.forEach(function(x){ var e=document.getElementById(x); if(e) e.classList.toggle('pane-off', x!==id); });
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-tab')===id); });
+    try{ if(window.ChatUI){ if(id==='dashChatCard') ChatUI.embed(document.getElementById('dashChatCard')); else ChatUI.unembed(); } }catch(e){}
     try{ var n=document.getElementById('dashNav'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
   };
   function rows(id){ var t=document.querySelector('#'+id+' tbody'); return t?t.querySelectorAll('tr').length:0; }

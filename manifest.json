@@ -1,11 +1,11 @@
 {
-  "name": "In'kr\u025bd\u0131bl\u025b - CE Portal",
-  "short_name": "In'kr\u025bd\u0131bl\u025b",
-  "description": "Civil Engineering course portal - assessments, blog, lecture notes, and attendance.",
+  "name": "Obeng-Ahenkora Ph.D.",
+  "short_name": "Obeng-Ahenkora Ph.D.",
+  "description": "Construction management, research, services and student resources.",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f5f7fa",
-  "theme_color": "#0b2545",
+  "background_color": "#f4faf8",
+  "theme_color": "#0b1e3a",
   "orientation": "portrait-primary",
   "icons": [
     {

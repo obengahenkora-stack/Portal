@@ -4,20 +4,20 @@
 <meta name="description" content="Lecture notes and engineering articles.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Obeng-Ahenkora">
-<meta property="og:title" content="Engineering Notes | Engr. Obeng-Ahenkora">
+<meta property="og:title" content="Engineering Notes | Obeng-Ahenkora">
 <meta property="og:description" content="Lecture notes and engineering articles.">
 <meta property="og:url" content="https://obeng-ahenkora.xyz/blog.html">
 <meta property="og:image" content="https://obeng-ahenkora.xyz/og-blog.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Engineering Notes | Engr. Obeng-Ahenkora">
+<meta name="twitter:title" content="Engineering Notes | Obeng-Ahenkora">
 <meta name="twitter:description" content="Lecture notes and engineering articles.">
 <meta name="twitter:image" content="https://obeng-ahenkora.xyz/og-blog.png">
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0b">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -194,6 +194,7 @@
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body>
 
@@ -203,7 +204,7 @@
   <img class="profile-pic" id="heroProfilePic" src="" alt="" style="display:none;">
   <div class="profile-pic" id="heroProfilePicPlaceholder">NO</div>
   <h1>Engineering Notes</h1>
-  <p class="hero-sub" id="heroName">Engr. Nana Kwame Obeng-Ahenkora, Ph.D</p>
+  <p class="hero-sub" id="heroName">Nana Kwame Obeng-Ahenkora, Ph.D</p>
 </div>
 
 <div class="hero-tabs">
@@ -316,7 +317,7 @@
 
 <footer class="site-footer">
   <div class="wrap" style="padding:24px;">
-    <div class="footer-bottom">&copy; <span id="footerYear"></span> Engr. Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
+    <div class="footer-bottom">&copy; <span id="footerYear"></span> Nana Kwame Obeng-Ahenkora, Ph.D. All rights reserved.</div>
   </div>
 </footer>
 
@@ -408,6 +409,7 @@ async function signUpUser(){
   const msg = document.getElementById('authMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('authPasswordInput', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -1037,7 +1039,7 @@ async function loadHeroProfile(){
     const data = await fetchSupabaseData();
     const profile = data.profile || {};
     const nameEl = document.getElementById('heroName');
-    if(nameEl) nameEl.textContent = profile.name || "Engr. Nana Kwame Obeng-Ahenkora, Ph.D";
+    if(nameEl) nameEl.textContent = profile.name || "Nana Kwame Obeng-Ahenkora, Ph.D";
     const picImg = document.getElementById('heroProfilePic');
     const picPlaceholder = document.getElementById('heroProfilePicPlaceholder');
     if(profile.photoData){
@@ -1084,5 +1086,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="theme.js"></script>
+<script src="pw-tools.js"></script>
 </body>
 </html>

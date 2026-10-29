@@ -122,6 +122,7 @@
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<script src="db-sync.js"></script>
 </head>
 <body>
 
@@ -514,10 +515,14 @@ async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return _normAllAttendance(_normAllRosters(await res.json()));
-  }catch(e){ return {}; }
+    if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+    return _normAllAttendance(_normAllRosters(await DBS.load(await res.json())));
+  }catch(e){ if(e && e.dbs) throw e; return {}; }
 }
 async function saveSupabaseData(data){
+  if(!data || typeof data!=='object' || !Object.keys(data).length) throw new Error("Refusing to save empty data — reload the page and try again.");
+  if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+  data = await DBS.persist(data);
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
     method: "POST", cache: "no-store",
     headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },

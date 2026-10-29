@@ -4,14 +4,14 @@
 <meta name="description" content="Latest course announcements.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Obeng-Ahenkora">
-<meta property="og:title" content="Announcements | Engr. Obeng-Ahenkora">
+<meta property="og:title" content="Announcements | Obeng-Ahenkora">
 <meta property="og:description" content="Latest course announcements.">
 <meta property="og:url" content="https://obeng-ahenkora.xyz/announcements.html">
 <meta property="og:image" content="https://obeng-ahenkora.xyz/og-announcements.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Announcements | Engr. Obeng-Ahenkora">
+<meta name="twitter:title" content="Announcements | Obeng-Ahenkora">
 <meta name="twitter:description" content="Latest course announcements.">
 <meta name="twitter:image" content="https://obeng-ahenkora.xyz/og-announcements.png">
 
@@ -20,7 +20,7 @@
 <title>Announcements</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0b">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -76,6 +76,7 @@
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body>
 
@@ -197,6 +198,7 @@ async function signUpUser(){
   const msg = document.getElementById('authMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('authPasswordInput', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -356,5 +358,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="theme.js"></script>
+<script src="pw-tools.js"></script>
 </body>
 </html>

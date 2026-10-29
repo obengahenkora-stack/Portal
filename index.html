@@ -1442,6 +1442,7 @@ async function signUpUser(){
   const msg = document.getElementById('authMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
   if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('authPasswordInput', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
@@ -4239,5 +4240,6 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <script src="motion.js"></script>
+<script src="pw-tools.js"></script>
 </body>
 </html>

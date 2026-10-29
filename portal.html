@@ -209,6 +209,7 @@
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<script src="db-sync.js"></script>
 </head>
 <body>
 
@@ -535,6 +536,19 @@
       </div>
     </div>
 
+    <div class="card hidden" id="dbMigrateCard">
+      <label>Database Upgrade (owner only)</label>
+      <div class="hint">Moves attendance and class lists out of the single shared file into proper database tables, so two people saving at once can no longer overwrite each other. Run the set-up SQL first, then upload the new site files, then migrate. A full backup is stored inside the system and you can revert at any time.</div>
+      <div id="dbmStatus" class="hint" style="font-weight:700;">Checking...</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button class="secondary" onclick="dbmCheck()" style="padding:8px 14px;">1. Check database set-up</button>
+        <button class="secondary" onclick="dbmBackup()" style="padding:8px 14px;">2. Download backup file</button>
+        <button onclick="dbmMigrate()" style="padding:8px 14px;">3. Migrate now</button>
+        <button class="secondary" onclick="dbmRevert()" style="padding:8px 14px;border-color:var(--danger);color:var(--danger);">Revert to old storage</button>
+      </div>
+      <div id="dbmMsg" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card hidden" id="allSessionsCard">
       <label>All Saved Attendance Sessions</label>
       <div class="hint">Every attendance session stored in the system, including courses with no class list. Students see these counts on their dashboards. Delete any session that should not exist.</div>
@@ -735,13 +749,18 @@ async function fetchSupabaseData(){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
-    return _normAllAttendance(_normAllRosters(await res.json()));
+    if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+    return _normAllAttendance(_normAllRosters(await DBS.load(await res.json())));
   }catch(e){
+    if(e && e.dbs) throw e;
     return {};
   }
 }
 
 async function saveSupabaseData(data){
+  if(!data || typeof data!=='object' || !Object.keys(data).length) throw new Error("Refusing to save empty data — reload the page and try again.");
+  if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+  data = await DBS.persist(data);
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
     method: "POST",
     cache: "no-store",
@@ -1121,7 +1140,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(canManageRosters()){ document.getElementById('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} document.getElementById('attendanceEditCard').classList.remove('hidden'); document.getElementById('rosterEditCard').classList.remove('hidden'); try{aeInit();reInit();}catch(e){} } try{delAttInit();}catch(e){}
+  if(canManageRosters()){ document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(isOwner()){ document.getElementById('dbMigrateCard').classList.remove('hidden'); try{dbmStatus();}catch(e){} document.getElementById('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} } document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} if(isOwner()){ document.getElementById('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} } } try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();
   const dateInput = document.getElementById('attendanceDateInput');
@@ -2449,7 +2468,87 @@ function _stamp(rec, prev, how){
 }
 function _byText(a){ if(!a) return ''; const d=a.at?new Date(a.at).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''; return escapeHtml((a.name||a.email||'Unknown')+(a.role?' ('+a.role+')':''))+(d?' · '+d:''); }
 
+async function _dbmRaw(){
+  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`,{cache:'no-store'});
+  if(!r.ok) throw new Error('Could not read the site data file ('+r.status+')');
+  return await r.json();
+}
+async function _dbmSaveRaw(obj){
+  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,'x-upsert':'true','cache-control':'no-cache'},body:JSON.stringify(obj)});
+  if(!r.ok) throw new Error('Could not save the site data file ('+r.status+')');
+}
+async function dbmStatus(){
+  const el=document.getElementById('dbmStatus'); if(!el) return;
+  try{ const raw=await _dbmRaw(); el.innerHTML=raw.dbMigrated?'Currently stored in: <span style="color:var(--ok);">database tables (upgraded)</span>':'Currently stored in: <span style="color:var(--danger);">the old shared file (not upgraded yet)</span>'; }
+  catch(e){ el.textContent='Could not read status: '+e.message; }
+}
+async function dbmCheck(){
+  const msg=document.getElementById('dbmMsg'); msg.innerHTML='<div class="msg ok">Checking...</div>';
+  try{
+    if(!DBS.url) DBS.init(SUPABASE_URL,SUPABASE_KEY);
+    for(const t of ['attendance_sessions','attendance_marks','roster_entries']){
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?select=*&limit=1`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
+      if(!r.ok) throw new Error(`Table "${t}" is not ready (${r.status}). Run the database set-up SQL first.`);
+    }
+    // write test: insert and remove a throw-away row
+    await DBS.upsert('roster_entries',[{course:'__test__',index_number:'__test__',name:''}],'course,index_number');
+    await DBS.del('roster_entries','course=eq.__test__');
+    msg.innerHTML='<div class="msg ok">Database set-up is correct: all three tables exist and can be read and written.</div>';
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function dbmBackup(){
+  const msg=document.getElementById('dbmMsg');
+  try{
+    const raw=await _dbmRaw();
+    const blob=new Blob([JSON.stringify(raw,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='site-data-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    msg.innerHTML='<div class="msg ok">Backup downloaded. Keep this file safe.</div>';
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function dbmMigrate(){
+  if(!isOwner()){ alert('Only the owner can do this.'); return; }
+  const msg=document.getElementById('dbmMsg');
+  if(!confirm('Migrate attendance and class lists to the database tables now?\n\nMake sure you have run the SQL, uploaded the new site files, and downloaded the backup.')) return;
+  msg.innerHTML='<div class="msg ok">Migrating... please do not close this page.</div>';
+  try{
+    if(!DBS.url) DBS.init(SUPABASE_URL,SUPABASE_KEY);
+    const raw=await _dbmRaw();
+    if(raw.dbMigrated){ msg.innerHTML='<div class="msg ok">Already migrated.</div>'; return; }
+    const tmp={attendance:JSON.parse(JSON.stringify(raw.attendance||[])),rosters:JSON.parse(JSON.stringify(raw.rosters||{}))};
+    _normAllAttendance(tmp); _normAllRosters(tmp);
+    const res=await DBS.migrate(tmp.attendance,tmp.rosters);
+    if(!res.ok) throw new Error('Verification failed: the tables hold fewer rows than expected ('+JSON.stringify(res.inDb)+'). Nothing was switched over.');
+    const fresh=await _dbmRaw();
+    if(JSON.stringify(fresh.attendance||[])!==JSON.stringify(raw.attendance||[]) || JSON.stringify(fresh.rosters||{})!==JSON.stringify(raw.rosters||{})){
+      throw new Error('Someone saved attendance or class lists while the copy was running. Nothing was switched over — please try again.');
+    }
+    const stubs={}; Object.keys(tmp.rosters).forEach(c=>stubs[c]=[]);
+    fresh.legacyBackup={attendance:raw.attendance||[],rosters:raw.rosters||{},at:new Date().toISOString()};
+    fresh.rosters=stubs; delete fresh.attendance; fresh.dbMigrated=true;
+    await _dbmSaveRaw(fresh);
+    msg.innerHTML=`<div class="msg ok">Done. Copied ${res.sessions} session(s), ${res.marks} attendance mark(s) and ${res.rosterEntries} class-list entr${res.rosterEntries===1?'y':'ies'}. The system now uses the database tables.</div>`;
+    dbmStatus();
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function dbmRevert(){
+  if(!isOwner()){ alert('Only the owner can do this.'); return; }
+  const msg=document.getElementById('dbmMsg');
+  if(!confirm('Revert to the old shared-file storage? Current attendance and class lists will be copied back into the file.')) return;
+  try{
+    if(!DBS.url) DBS.init(SUPABASE_URL,SUPABASE_KEY);
+    const raw=await _dbmRaw();
+    if(!raw.dbMigrated){ msg.innerHTML='<div class="msg ok">Already using the old storage.</div>'; return; }
+    const d=await DBS.dump();
+    raw.attendance=d.attendance; raw.rosters=d.rosters; delete raw.dbMigrated;
+    await _dbmSaveRaw(raw);
+    msg.innerHTML='<div class="msg ok">Reverted. Attendance and class lists are back in the shared file (the database tables are left untouched).</div>';
+    dbmStatus();
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+
 async function asLoad(){
+  if(!isOwner()) return;
   const box=document.getElementById('asBody'); box.innerHTML='<div class="empty">Loading...</div>';
   try{
     const data=await fetchSupabaseData();
@@ -2468,6 +2567,7 @@ async function asLoad(){
   }catch(e){ box.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
 }
 async function asDelete(c,d){
+  if(!isOwner()){ alert('Only the owner can delete saved sessions here.'); return; }
   if(!confirm(`Delete the attendance session for "${c}" on ${d}? This cannot be undone.`)) return;
   const msg=document.getElementById('asMsg');
   try{
@@ -2524,7 +2624,7 @@ function reDownload(kind){
 }
 async function reSave(okText){
   const msg=document.getElementById('reMsg');
-  if(!canManageRosters()){ msg.innerHTML='<div class="msg err">Only a lecturer or administrator can edit the class list.</div>'; return false; }
+  if(!isOwner()){ msg.innerHTML='<div class="msg err">Only the owner can edit the class list here.</div>'; return false; }
   try{
     const data=await fetchSupabaseData(); data.rosters=data.rosters||{};
     data.rosters[_re.course]=normRoster(_re.list);
@@ -2533,6 +2633,7 @@ async function reSave(okText){
   }catch(e){ msg.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; return false; }
 }
 async function reAdd(){
+  if(!isOwner()) return;
   if(!_re) return;
   const idx=document.getElementById('reNewIdx').value.trim(), name=document.getElementById('reNewName').value.trim(), msg=document.getElementById('reMsg');
   if(!idx){ msg.innerHTML='<div class="msg err">Enter the index number.</div>'; return; }
@@ -2543,6 +2644,7 @@ async function reAdd(){
   reRender();
 }
 async function reEdit(i){
+  if(!isOwner()) return;
   const p=_re.list[i]; if(!p) return;
   const idx=prompt('Index number:',p.indexNumber); if(idx===null) return;
   const name=prompt('Name:',p.name); if(name===null) return;
@@ -2565,6 +2667,7 @@ async function reEdit(i){
   reRender();
 }
 async function reRemove(i){
+  if(!isOwner()) return;
   const p=_re.list[i]; if(!p) return;
   if(!confirm(`Remove ${p.name||p.indexNumber} (${p.indexNumber}) from this class list? Their past attendance records stay in the sessions.`)) return;
   _re.list.splice(i,1);
@@ -2728,6 +2831,7 @@ async function apParse(){
   }catch(e){ info.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
 }
 async function apImport(){
+  if(!canManageRosters()){ alert('Only a lecturer or administrator can do this.'); return; }
   const msg=document.getElementById('apMsg');
   if(!_apParsed){ msg.innerHTML='<div class="msg err">Choose a PDF first.</div>'; return; }
   const course=document.getElementById('apCourse').value.trim();
@@ -2783,6 +2887,7 @@ async function delAttLoad(){
   }catch(e){ sel.innerHTML='<option value="">Could not load</option>'; }
 }
 async function delAttRun(){
+  if(!canManageRosters()){ alert('Only a lecturer or administrator can do this.'); return; }
   const c = document.getElementById('delAttCourse').value, d = document.getElementById('delAttDate').value, msg = document.getElementById('delAttMsg');
   if(!c || !d){ msg.innerHTML='<div class="msg err">Select a course and a date.</div>'; return; }
   if(!confirm(`Delete the attendance for "${c}" on ${d}? This cannot be undone.`)) return;
@@ -2931,6 +3036,7 @@ function normRoster(list){
   return out;
 }
 async function repairRosters(){
+  if(!canManageRosters()){ alert('Only a lecturer or administrator can do this.'); return; }
   const msg=document.getElementById('repairMsg');
   msg.innerHTML='<div class="msg ok">Checking rosters...</div>';
   try{

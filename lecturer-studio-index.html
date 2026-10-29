@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecturer Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.puter.com/v2/"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth.js/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
+<style>
+  :root{
+    --navy:#12203a; --navy-dark:#0a1526; --gold:#3f7a32; --gold-dark:#2f5f26;
+    --bg:#ffffff; --card:#f7f8fa; --ink:#16202b; --muted:#5b6b78;
+    --line:#dde3e8; --danger:#b3261e; --ok:#3f7a32;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .hero{ background:linear-gradient(135deg, var(--navy), var(--navy-dark)); color:#fff; padding:44px 24px 32px; text-align:center; }
+  .hero h1{ font-family:'Fraunces',sans-serif; font-size:1.9rem; margin:0 0 6px; }
+  .hero p{ color:rgba(255,255,255,0.7); font-size:0.9rem; margin:0; }
+  .wrap{ max-width:820px; margin:0 auto; padding:24px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:24px; margin-bottom:18px; }
+  h2{ font-family:'Fraunces',sans-serif; font-size:1.1rem; margin:0 0 16px; color:var(--navy); }
+  label{ display:block; font-size:0.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+  input[type=text], input[type=password], input[type=number], input[type=file], textarea, select{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:8px;
+    font-size:0.92rem; font-family:'IBM Plex Sans',sans-serif; margin-bottom:14px; background:#fff; color:var(--ink);
+  }
+  textarea{ min-height:110px; resize:vertical; }
+  button{ background:var(--gold); color:#fff; border:none; padding:11px 22px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.86rem; font-family:'IBM Plex Sans',sans-serif; }
+  button:hover{ opacity:0.9; }
+  button.secondary{ background:transparent; color:var(--danger); border:1px solid var(--danger); }
+  button.ghost{ background:transparent; color:var(--navy); border:1px solid var(--line); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  .msg{ padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:0.85rem; }
+  .msg.ok{ background:rgba(63,122,50,0.08); color:var(--ok); }
+  .msg.err{ background:rgba(179,38,30,0.08); color:var(--danger); }
+  .hidden{ display:none; }
+  .empty{ color:var(--muted); font-size:0.88rem; padding:16px 0; text-align:center; }
+  .tabs{ display:flex; gap:6px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px; margin-bottom:20px; }
+  .tab{ flex:1; text-align:center; padding:10px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.85rem; color:var(--muted); }
+  .tab.active{ background:var(--navy); color:#fff; }
+  .week-block{ border:1px solid var(--line); border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .outline-table{ width:100%; border-collapse:collapse; margin-bottom:18px; font-size:0.85rem; }
+  .outline-table td, .outline-table th{ border:1px solid #333; padding:8px 10px; vertical-align:top; text-align:left; }
+  .outline-table td:first-child{ font-weight:700; background:#f2f2f2; width:150px; }
+  .outline-header{ text-align:center; margin-bottom:14px; }
+  .outline-header .inst-name{ font-family:'Fraunces',sans-serif; font-weight:700; font-size:1.15rem; color:var(--navy); }
+  .outline-header .inst-dept{ font-weight:700; color:var(--danger); font-size:0.9rem; margin-top:4px; }
+  .outline-header .inst-meta{ font-size:0.8rem; color:var(--muted); margin-top:2px; }
+  .outline-title-bar{ text-align:center; font-weight:700; font-size:0.85rem; border-top:3px solid #000; border-bottom:1px solid #000; padding:6px 0; margin:10px 0; }
+  .outline-title{ text-align:center; font-family:'Fraunces',sans-serif; font-weight:700; font-size:1.4rem; margin:10px 0 16px; }
+  .week-header{ display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:#fff; cursor:pointer; }
+  .week-title{ font-weight:600; font-size:0.9rem; }
+  .week-body{ padding:14px 16px; border-top:1px solid var(--line); background:#fbfbfc; }
+  .note-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed var(--line); font-size:0.85rem; }
+  .note-row:last-child{ border-bottom:none; }
+  .q-item{ border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:10px; background:#fff; }
+  .q-item .q-text{ font-weight:600; margin-bottom:8px; font-size:0.9rem; }
+  .q-item .q-opt{ font-size:0.85rem; padding:3px 0; }
+  .q-item .q-opt.correct{ color:var(--ok); font-weight:600; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:520px){ .row2{ grid-template-columns:1fr; } }
+  @media print{
+    .hero, .tabs, .no-print, button, select#weekCourseFilter, .card.controls{ display:none !important; }
+    body{ background:#fff; }
+    .card{ border:none; box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Lecturer Studio</h1>
+  <p>Organize weekly lecture notes and build exam question banks.</p>
+</div>
+
+<div class="wrap">
+
+  <!-- AUTH -->
+  <div id="authCard" class="card">
+    <h2 id="authTitle">Sign In</h2>
+    <button onclick="signInWithGoogle()" style="width:100%;background:#fff;color:#3c4043;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.84 2.09-1.8 2.73v2.27h2.9c1.7-1.57 2.68-3.87 2.68-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.27c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.95 10.69c-.18-.54-.28-1.11-.28-1.69s.1-1.16.28-1.69V4.97H.96C.35 6.19 0 7.55 0 9s.35 2.81.96 4.03l2.99-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l2.99 2.34C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <div style="text-align:center;color:var(--muted);font-size:0.78rem;margin-bottom:14px;">— or use email —</div>
+    <label>Email</label>
+    <input type="text" id="authEmail" placeholder="you@school.edu">
+    <label>Password</label>
+    <input type="password" id="authPassword" placeholder="Your password">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="signIn()">Sign In</button>
+      <button class="ghost" onclick="signUp()">Create Account</button>
+    </div>
+    <div id="authMsg" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- APP (hidden until signed in) -->
+  <div id="appArea" class="hidden">
+    <div class="card no-print" style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;">
+      <span style="font-size:0.85rem;color:var(--muted);display:flex;align-items:center;gap:10px;">
+        <img id="whoAmIPhoto" src="" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:none;">
+        <span>Signed in as <strong id="whoAmI"></strong></span>
+      </span>
+      <button class="secondary" onclick="signOut()">Sign Out</button>
+    </div>
+
+    <div class="tabs no-print">
+      <div class="tab active" id="tabNotes" onclick="switchAppTab('notes')">Weekly Notes</div>
+      <div class="tab" id="tabQuiz" onclick="switchAppTab('quiz')">Quiz Generator</div>
+      <div class="tab" id="tabProfile" onclick="switchAppTab('profile')">My Profile</div>
+      <div class="tab hidden" id="tabAdmin" onclick="switchAppTab('admin')">Admin</div>
+    </div>
+
+    <div id="adminModeBanner" class="hidden no-print" style="background:var(--danger);color:#fff;padding:10px 20px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+      <span>Admin Mode — managing <strong id="adminModeEmail"></strong>'s data</span>
+      <button class="secondary" style="border-color:#fff;color:#fff;" onclick="returnToOwnData()">Return to My Own Data</button>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="panelProfile" class="hidden">
+      <div class="card no-print">
+        <h2>My Profile</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-10px;">This information auto-fills the Lecturer fields whenever you create a new course outline.</p>
+        <label>Photo (optional)</label>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+          <img id="profilePhotoPreview" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--line);display:none;">
+          <input type="file" id="profilePhotoInput" accept="image/*" onchange="handleProfilePhotoUpload()" style="margin-bottom:0;flex:1;">
+        </div>
+        <div class="row2">
+          <div>
+            <label>Title</label>
+            <input type="text" id="pfTitle" placeholder="e.g. Dr., Prof., Mr., Mrs.">
+          </div>
+          <div>
+            <label>Full Name</label>
+            <input type="text" id="pfName" placeholder="e.g. Wezenamo Clement Apuri">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Email</label>
+            <input type="text" id="pfEmail" placeholder="you@school.edu">
+          </div>
+          <div>
+            <label>Phone (optional)</label>
+            <input type="text" id="pfPhone" placeholder="e.g. +233 XX XXX XXXX">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Department</label>
+            <input type="text" id="pfDepartment" placeholder="e.g. Civil and Environmental Engineering">
+          </div>
+          <div>
+            <label>Office Location (optional)</label>
+            <input type="text" id="pfOffice" placeholder="e.g. Engineering Block, Room 12">
+          </div>
+        </div>
+        <label>Specialization / Research Areas (optional)</label>
+        <input type="text" id="pfSpecialization" placeholder="e.g. Soil Mechanics, Geotechnical Engineering">
+        <label>Short Bio (optional)</label>
+        <textarea id="pfBio" placeholder="A brief professional bio"></textarea>
+        <button onclick="saveProfile()">Save Profile</button>
+        <div id="profileSaveMsg"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="panelAdmin" class="hidden">
+      <div class="card no-print">
+        <h2>All Lecturers</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-10px;">Every lecturer who has signed in at least once appears here. Click "Manage" to view and edit their courses, notes, and quizzes directly.</p>
+        <div id="adminLecturerList"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- WEEKLY NOTES / COURSE OUTLINE -->
+    <div id="panelNotes">
+      <div class="card controls no-print">
+        <h2>Institution Details</h2>
+        <p style="color:var(--muted);font-size:0.82rem;margin-top:-10px;">Used at the top of every printed course outline. Set once, applies to all your courses.</p>
+        <div class="row2">
+          <div>
+            <label>Institution Name</label>
+            <input type="text" id="instName" placeholder="e.g. University of Energy and Natural Resources (UENR)">
+          </div>
+          <div>
+            <label>Department</label>
+            <input type="text" id="instDept" placeholder="e.g. Department of Civil and Environmental Engineering">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Address</label>
+            <input type="text" id="instAddress" placeholder="e.g. Post Office Box 214, Sunyani">
+          </div>
+          <div>
+            <label>Website</label>
+            <input type="text" id="instWebsite" placeholder="e.g. www.uenr.edu.gh">
+          </div>
+        </div>
+        <button onclick="saveInstitutionDetails()">Save Institution Details</button>
+        <div id="instSaveMsg"></div>
+      </div>
+
+      <div class="card controls no-print">
+        <h2>Courses</h2>
+        <label>Select Course</label>
+        <select id="weekCourseFilter" onchange="renderWeeks()"><option value="">Select a course...</option></select>
+        <button class="ghost" onclick="showNewCourseForm()" style="margin-top:6px;">+ Add New Course</button>
+      </div>
+
+      <div id="newCourseFormCard" class="card no-print hidden">
+        <h2>New Course Outline</h2>
+        <div class="row2">
+          <div>
+            <label>Course Code &amp; Title</label>
+            <input type="text" id="ncCode" placeholder="e.g. CIVL 301 — Soil Mechanics">
+          </div>
+          <div>
+            <label>Credit Hours</label>
+            <input type="text" id="ncCredits" placeholder="e.g. 3">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Lecturer Name</label>
+            <input type="text" id="ncLecturerName" placeholder="Your name">
+          </div>
+          <div>
+            <label>Lecturer Email</label>
+            <input type="text" id="ncLecturerEmail" placeholder="you@school.edu">
+          </div>
+        </div>
+        <label>Pre-requisite</label>
+        <input type="text" id="ncPrereq" placeholder="e.g. Introduction to Soil Mechanics">
+        <label>Learning Outcomes</label>
+        <textarea id="ncOutcomes" placeholder="What students should be able to do by the end of the course"></textarea>
+        <label>Objectives</label>
+        <textarea id="ncObjectives" placeholder="The purpose and goals of the course"></textarea>
+        <label>Course Content</label>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">Type it below, or upload a course outline/syllabus file (PDF, Word, or PowerPoint) to auto-extract the content.</div>
+        <input type="file" id="ncContentFile" accept=".pdf,.docx,.pptx" onchange="handleCourseContentFile()">
+        <div id="ncContentFileMsg" style="margin-bottom:14px;"></div>
+        <textarea id="ncContent" placeholder="Overall summary of topics covered across the semester"></textarea>
+        <div class="row2">
+          <div>
+            <label>Academic Year</label>
+            <input type="text" id="ncYear" placeholder="e.g. 2025/2026">
+          </div>
+          <div>
+            <label>Semester</label>
+            <input type="text" id="ncSemester" placeholder="e.g. First Semester">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Continuous Assessment %</label>
+            <input type="text" id="ncCaPercent" placeholder="e.g. 40">
+          </div>
+          <div>
+            <label>Final Exam %</label>
+            <input type="text" id="ncExamPercent" placeholder="e.g. 60">
+          </div>
+        </div>
+        <button onclick="saveNewCourse()">Save Course</button>
+        <button class="secondary" onclick="hideNewCourseForm()">Cancel</button>
+      </div>
+
+      <div id="courseOutlineDisplay"></div>
+      <div id="weeksContainer"></div>
+    </div>
+
+    <!-- QUIZ GENERATOR -->
+    <div id="panelQuiz" class="hidden">
+      <div class="card no-print">
+        <h2>Generate Questions with AI</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-10px;">Upload a lecture file, or paste content directly, and AI will draft multiple-choice questions from it. Review and edit before saving — always check for accuracy.</p>
+        <label>Upload a File (PDF, Word, or PowerPoint)</label>
+        <input type="file" id="aiSourceFile" accept=".pdf,.docx,.pptx" onchange="handleQuizSourceFile()">
+        <div id="aiFileMsg" style="margin-bottom:14px;"></div>
+        <label>Source Material (auto-filled from file, or paste/edit directly)</label>
+        <textarea id="aiSourceText" placeholder="Paste lecture notes, key points, or a topic summary here..."></textarea>
+        <div class="row2">
+          <div>
+            <label>Number of Questions</label>
+            <input type="number" id="aiNumQuestions" value="5" min="1" max="20">
+          </div>
+          <div>
+            <label>Difficulty</label>
+            <select id="aiDifficulty">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="generateAIQuestions()" id="genBtn">Generate Questions</button>
+        <div id="genMsg"></div>
+      </div>
+
+      <div class="card no-print">
+        <h2>Add a Question Manually</h2>
+        <label>Question</label>
+        <input type="text" id="manualQText" placeholder="e.g. What is the SI unit of force?">
+        <label>Option A (correct answer)</label>
+        <input type="text" id="manualOptA" placeholder="Correct answer">
+        <label>Option B</label>
+        <input type="text" id="manualOptB" placeholder="Distractor">
+        <label>Option C</label>
+        <input type="text" id="manualOptC" placeholder="Distractor">
+        <label>Option D</label>
+        <input type="text" id="manualOptD" placeholder="Distractor">
+        <button onclick="addManualQuestion()">Add Question</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;">Question Bank (<span id="qCount">0</span>)</h2>
+          <div class="no-print" style="display:flex;gap:8px;">
+            <button class="ghost" onclick="window.print()">Print / Save as PDF</button>
+            <button class="secondary" onclick="clearAllQuestions()">Clear All</button>
+          </div>
+        </div>
+        <label class="no-print">Exam / Quiz Title</label>
+        <input type="text" id="examTitle" class="no-print" placeholder="e.g. CIVL 368 Mid-Semester Quiz" oninput="renderQuestionBank()">
+        <h2 id="printExamTitle" style="display:none;"></h2>
+        <div id="questionBankList"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://mdbhlndjuddymvderuun.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+const SUPABASE_BUCKET = "lecturer-studio-storage";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ADMIN_EMAIL = "obengahenkora@gmail.com"; // change this to whoever should have admin oversight of this app
+
+// ===== JSONBin (used for Lecturer Profiles only — reuses the same bin as the main portal) =====
+const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
+const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+
+async function fetchJsonBinData(){
+  try{
+    const res = await fetch(JSONBIN_URL + '/latest', {
+      headers: { "X-Master-Key": JSONBIN_API_KEY },
+      cache: "no-store"
+    });
+    if(!res.ok) return {};
+    const json = await res.json();
+    return json.record || {};
+  }catch(e){ return {}; }
+}
+async function saveJsonBinData(data){
+  const res = await fetch(JSONBIN_URL, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save to JSONBin");
+}
+async function loadLecturerProfile(email){
+  const data = await fetchJsonBinData();
+  const profiles = data.lecturerProfiles || {};
+  return profiles[email] || {};
+}
+async function saveLecturerProfile(email, profile){
+  const data = await fetchJsonBinData();
+  const profiles = data.lecturerProfiles || {};
+  profiles[email] = profile;
+  data.lecturerProfiles = profiles;
+  await saveJsonBinData(data);
+}
+
+let currentEmail = null;
+let studioData = { courses: [], weeks: [], notes: [], questions: [], institution: {}, profile: {} };
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = String(str || '');
+  return div.innerHTML;
+}
+function safeFileKey(email){
+  return email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+function studioFilePath(email){
+  return `lecturer-studio/${safeFileKey(email)}.json`;
+}
+
+async function loadStudioData(email){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${studioFilePath(email)}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return { courses: [], weeks: [], notes: [], questions: [], institution: {}, profile: {} };
+    return await res.json();
+  }catch(e){ return { courses: [], weeks: [], notes: [], questions: [], institution: {}, profile: {} }; }
+}
+async function saveStudioData(email, data){
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${studioFilePath(email)}`, {
+    method: "POST", cache: "no-store",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) throw new Error("Could not save");
+}
+let viewingAsEmail = null;
+async function persist(){
+  await saveStudioData(viewingAsEmail || currentEmail, studioData);
+}
+
+async function renderAdminLecturerList(){
+  const container = document.getElementById('adminLecturerList');
+  container.innerHTML = '<div class="empty">Loading...</div>';
+  try{
+    const registry = await loadRegistry();
+    if(registry.length === 0){
+      container.innerHTML = '<div class="empty">No lecturers have signed in yet.</div>';
+      return;
+    }
+    const sorted = registry.slice().sort((a, b) => new Date(b.lastActive) - new Date(a.lastActive));
+    container.innerHTML = sorted.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);">
+        <div>
+          <div style="font-weight:600;font-size:0.9rem;">${escapeHtml(r.title ? r.title + ' ' : '')}${escapeHtml(r.name || r.email)}</div>
+          <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(r.email)}${r.department ? ' — ' + escapeHtml(r.department) : ''}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">Last active: ${new Date(r.lastActive).toLocaleDateString()}</div>
+        </div>
+        <button onclick="manageLecturer('${escapeHtml(r.email)}')">Manage</button>
+      </div>
+    `).join('');
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not load the lecturer list.</div>';
+  }
+}
+
+async function manageLecturer(email){
+  viewingAsEmail = email;
+  studioData = await loadStudioData(email);
+  studioData.profile = await loadLecturerProfile(email);
+  document.getElementById('adminModeBanner').classList.remove('hidden');
+  document.getElementById('adminModeEmail').textContent = email;
+  loadInstitutionFields();
+  loadProfileFields();
+  renderCourseOptions();
+  renderWeeks();
+  renderQuestionBank();
+  switchAppTab('notes');
+}
+
+async function returnToOwnData(){
+  viewingAsEmail = null;
+  studioData = await loadStudioData(currentEmail);
+  studioData.profile = await loadLecturerProfile(currentEmail);
+  document.getElementById('adminModeBanner').classList.add('hidden');
+  loadInstitutionFields();
+  loadProfileFields();
+  updateWhoAmI();
+  renderCourseOptions();
+  renderWeeks();
+  renderQuestionBank();
+  switchAppTab('notes');
+}
+
+// ===== Admin Registry (tracks all lecturers who've signed up) =====
+const REGISTRY_PATH = 'lecturer-studio/_registry.json';
+
+async function loadRegistry(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${REGISTRY_PATH}?t=${Date.now()}`, { cache: "no-store" });
+    if(!res.ok) return [];
+    return await res.json();
+  }catch(e){ return []; }
+}
+async function saveRegistry(list){
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${REGISTRY_PATH}`, {
+    method: "POST", cache: "no-store",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
+    body: JSON.stringify(list)
+  });
+}
+async function registerInDirectory(email, profile){
+  try{
+    const registry = await loadRegistry();
+    const existing = registry.find(r => r.email === email);
+    const entry = {
+      email,
+      name: (profile && profile.name) || '',
+      title: (profile && profile.title) || '',
+      department: (profile && profile.department) || '',
+      lastActive: new Date().toISOString(),
+      joinedAt: existing ? existing.joinedAt : new Date().toISOString()
+    };
+    const updated = registry.filter(r => r.email !== email);
+    updated.push(entry);
+    await saveRegistry(updated);
+  }catch(e){ /* registry update is best-effort, never block the lecturer's own workflow */ }
+}
+
+// ===== Auth =====
+async function signUp(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
+  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(!PW.confirmSignup('authPassword', msg)) return;
+  msg.innerHTML = '<div class="msg ok">Creating account...</div>';
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  if(data.session){ await onSignedIn(); }
+  else{ msg.innerHTML = '<div class="msg ok">Account created. Check your email to confirm, then sign in.</div>'; }
+}
+async function signInWithGoogle(){
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+  if(error){
+    document.getElementById('authMsg').innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`;
+  }
+}
+async function signIn(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter your email and password.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Signing in...</div>';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ msg.innerHTML = `<div class="msg err">${escapeHtml(error.message)}</div>`; return; }
+  await onSignedIn();
+}
+async function signOut(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+async function onSignedIn(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  currentEmail = session.user.email;
+  document.getElementById('authCard').classList.add('hidden');
+  document.getElementById('appArea').classList.remove('hidden');
+  document.getElementById('whoAmI').textContent = currentEmail;
+  studioData = await loadStudioData(currentEmail);
+  studioData.profile = await loadLecturerProfile(currentEmail);
+  loadInstitutionFields();
+  loadProfileFields();
+  updateWhoAmI();
+  renderCourseOptions();
+  renderWeeks();
+  renderQuestionBank();
+  registerInDirectory(currentEmail, studioData.profile);
+  document.getElementById('tabAdmin').classList.toggle('hidden', currentEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase());
+}
+
+function switchAppTab(tab){
+  document.getElementById('panelNotes').classList.toggle('hidden', tab !== 'notes');
+  document.getElementById('panelQuiz').classList.toggle('hidden', tab !== 'quiz');
+  document.getElementById('panelProfile').classList.toggle('hidden', tab !== 'profile');
+  document.getElementById('panelAdmin').classList.toggle('hidden', tab !== 'admin');
+  document.getElementById('tabNotes').classList.toggle('active', tab === 'notes');
+  document.getElementById('tabQuiz').classList.toggle('active', tab === 'quiz');
+  document.getElementById('tabProfile').classList.toggle('active', tab === 'profile');
+  document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
+  if(tab === 'admin') renderAdminLecturerList();
+}
+
+// ===== Institution Details =====
+// ===== Lecturer Profile =====
+async function saveProfile(){
+  const msg = document.getElementById('profileSaveMsg');
+  msg.innerHTML = '<div class="msg ok">Saving...</div>';
+  try{
+    const photoUrl = (studioData.profile && studioData.profile.photo) || '';
+    const profile = {
+      photo: photoUrl,
+      title: document.getElementById('pfTitle').value.trim(),
+      name: document.getElementById('pfName').value.trim(),
+      email: document.getElementById('pfEmail').value.trim(),
+      phone: document.getElementById('pfPhone').value.trim(),
+      department: document.getElementById('pfDepartment').value.trim(),
+      office: document.getElementById('pfOffice').value.trim(),
+      specialization: document.getElementById('pfSpecialization').value.trim(),
+      bio: document.getElementById('pfBio').value.trim()
+    };
+    studioData.profile = profile;
+    await saveLecturerProfile(viewingAsEmail || currentEmail, profile);
+    msg.innerHTML = '<div class="msg ok">Profile saved.</div>';
+    updateWhoAmI();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function loadProfileFields(){
+  const p = studioData.profile || {};
+  document.getElementById('pfTitle').value = p.title || '';
+  document.getElementById('pfName').value = p.name || '';
+  document.getElementById('pfEmail').value = p.email || currentEmail || '';
+  document.getElementById('pfPhone').value = p.phone || '';
+  document.getElementById('pfDepartment').value = p.department || '';
+  document.getElementById('pfOffice').value = p.office || '';
+  document.getElementById('pfSpecialization').value = p.specialization || '';
+  document.getElementById('pfBio').value = p.bio || '';
+  const photoPreview = document.getElementById('profilePhotoPreview');
+  if(p.photo){
+    photoPreview.src = p.photo;
+    photoPreview.style.display = 'block';
+  } else {
+    photoPreview.style.display = 'none';
+  }
+}
+
+async function handleProfilePhotoUpload(){
+  const fileInput = document.getElementById('profilePhotoInput');
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  try{
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'portal_uploads');
+    const uploadRes = await fetch('https://api.cloudinary.com/v1_1/v9y3judf/auto/upload', { method: "POST", body: formData });
+    if(!uploadRes.ok) throw new Error('Upload failed (HTTP ' + uploadRes.status + ')');
+    const uploadData = await uploadRes.json();
+
+    studioData.profile = studioData.profile || {};
+    studioData.profile.photo = uploadData.secure_url;
+    await saveLecturerProfile(viewingAsEmail || currentEmail, studioData.profile);
+    const photoPreview = document.getElementById('profilePhotoPreview');
+    photoPreview.src = uploadData.secure_url;
+    photoPreview.style.display = 'block';
+    updateWhoAmI();
+  }catch(e){
+    alert('Could not upload photo: ' + e.message);
+  }
+}
+
+function updateWhoAmI(){
+  const p = studioData.profile || {};
+  const displayName = p.name ? `${p.title ? p.title + ' ' : ''}${p.name}` : currentEmail;
+  document.getElementById('whoAmI').textContent = displayName;
+  const photoEl = document.getElementById('whoAmIPhoto');
+  if(p.photo){
+    photoEl.src = p.photo;
+    photoEl.style.display = 'block';
+  } else {
+    photoEl.style.display = 'none';
+  }
+}
+
+async function saveInstitutionDetails(){
+  studioData.institution = {
+    name: document.getElementById('instName').value.trim(),
+    dept: document.getElementById('instDept').value.trim(),
+    address: document.getElementById('instAddress').value.trim(),
+    website: document.getElementById('instWebsite').value.trim()
+  };
+  await persist();
+  document.getElementById('instSaveMsg').innerHTML = '<div class="msg ok">Saved.</div>';
+}
+
+function loadInstitutionFields(){
+  const inst = studioData.institution || {};
+  document.getElementById('instName').value = inst.name || '';
+  document.getElementById('instDept').value = inst.dept || '';
+  document.getElementById('instAddress').value = inst.address || '';
+  document.getElementById('instWebsite').value = inst.website || '';
+}
+
+// ===== Courses & Weeks =====
+function showNewCourseForm(){
+  document.getElementById('newCourseFormCard').classList.remove('hidden');
+  const p = studioData.profile || {};
+  if(p.name && !document.getElementById('ncLecturerName').value){
+    document.getElementById('ncLecturerName').value = `${p.title ? p.title + ' ' : ''}${p.name}`;
+  }
+  if(p.email && !document.getElementById('ncLecturerEmail').value){
+    document.getElementById('ncLecturerEmail').value = p.email;
+  }
+}
+function hideNewCourseForm(){
+  document.getElementById('newCourseFormCard').classList.add('hidden');
+}
+
+async function saveNewCourse(){
+  const code = document.getElementById('ncCode').value.trim();
+  if(!code){ alert('Please enter a course code and title.'); return; }
+
+  const course = {
+    id: 'c_' + Date.now(),
+    name: code,
+    credits: document.getElementById('ncCredits').value.trim(),
+    lecturerName: document.getElementById('ncLecturerName').value.trim(),
+    lecturerEmail: document.getElementById('ncLecturerEmail').value.trim(),
+    prerequisite: document.getElementById('ncPrereq').value.trim(),
+    outcomes: document.getElementById('ncOutcomes').value.trim(),
+    objectives: document.getElementById('ncObjectives').value.trim(),
+    content: document.getElementById('ncContent').value.trim(),
+    year: document.getElementById('ncYear').value.trim(),
+    semester: document.getElementById('ncSemester').value.trim(),
+    caPercent: document.getElementById('ncCaPercent').value.trim(),
+    examPercent: document.getElementById('ncExamPercent').value.trim()
+  };
+  studioData.courses.push(course);
+  await persist();
+
+  ['ncCode','ncCredits','ncLecturerName','ncLecturerEmail','ncPrereq','ncOutcomes','ncObjectives','ncContent','ncYear','ncSemester','ncCaPercent','ncExamPercent','ncContentFile'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ncContentFileMsg').innerHTML = '';
+  hideNewCourseForm();
+  renderCourseOptions();
+  document.getElementById('weekCourseFilter').value = course.id;
+  renderWeeks();
+}
+
+function renderCourseOptions(){
+  const select = document.getElementById('weekCourseFilter');
+  const current = select.value;
+  select.innerHTML = '<option value="">Select a course...</option>' + studioData.courses.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  select.value = current;
+}
+
+function renderCourseOutline(course, weeks){
+  const inst = studioData.institution || {};
+  const container = document.getElementById('courseOutlineDisplay');
+
+  const weekRows = weeks.map(w => `
+    <tr>
+      <td style="font-weight:600;background:#fafafa;width:70px;">Week ${w.weekNumber}</td>
+      <td>${escapeHtml(w.topic || '')}</td>
+      <td style="width:110px;">${escapeHtml(w.venue || '')}</td>
+      <td style="width:140px;">${escapeHtml(course.lecturerName || '')}</td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="no-print" style="text-align:right;margin-bottom:12px;">
+        <button class="ghost" onclick="generateCourseContentSummary('${course.id}')" id="genContentBtn">Auto-Generate Course Content</button>
+        <button class="ghost" onclick="window.print()">Print Course Outline</button>
+      </div>
+      <div id="genContentMsg" class="no-print"></div>
+      <div class="outline-header">
+        ${inst.name ? `<div class="inst-name">${escapeHtml(inst.name)}</div>` : ''}
+        ${inst.address ? `<div class="inst-meta">${escapeHtml(inst.address)}</div>` : ''}
+        ${inst.website ? `<div class="inst-meta">${escapeHtml(inst.website)}</div>` : ''}
+        ${inst.dept ? `<div class="inst-dept">${escapeHtml(inst.dept)}</div>` : ''}
+      </div>
+      <div class="outline-title-bar">ACADEMIC YEAR: ${escapeHtml(course.year || '—')} ${course.semester ? '– ' + escapeHtml(course.semester) : ''}</div>
+      <div class="outline-title">COURSE OUTLINE</div>
+      <table class="outline-table">
+        <tr><td>Course Code &amp; Title</td><td>${escapeHtml(course.name)}</td></tr>
+        <tr><td>Credit Hours</td><td>${escapeHtml(course.credits || '—')}</td></tr>
+        <tr><td>Lecturer</td><td>${escapeHtml(course.lecturerName || '—')}${course.lecturerEmail ? ' — Email: ' + escapeHtml(course.lecturerEmail) : ''}</td></tr>
+        <tr><td>Pre-requisite</td><td>${escapeHtml(course.prerequisite || '—')}</td></tr>
+        <tr><td>Learning Outcomes</td><td>${escapeHtml(course.outcomes || '—')}</td></tr>
+        <tr><td>Objectives</td><td>${escapeHtml(course.objectives || '—')}</td></tr>
+        <tr><td>Course Content</td><td>${escapeHtml(course.content || '—')}</td></tr>
+        <tr><td>Assessment</td><td>Continuous Assessment: ${escapeHtml(course.caPercent || '—')}%<br>Final Exams: ${escapeHtml(course.examPercent || '—')}%</td></tr>
+      </table>
+      <table class="outline-table">
+        <tr><th>Weeks</th><th>Topic</th><th>Venue</th><th>Lecturer</th></tr>
+        ${weekRows || '<tr><td colspan="4" style="text-align:center;color:#888;">No weeks added yet.</td></tr>'}
+      </table>
+    </div>
+  `;
+}
+
+function renderWeeks(){
+  const courseId = document.getElementById('weekCourseFilter').value;
+  const container = document.getElementById('weeksContainer');
+  const outlineContainer = document.getElementById('courseOutlineDisplay');
+
+  if(!courseId){
+    container.innerHTML = '';
+    outlineContainer.innerHTML = '<div class="empty">Select a course above, or add a new one, to see its outline and weekly breakdown.</div>';
+    return;
+  }
+
+  const course = studioData.courses.find(c => c.id === courseId);
+  let weeks = studioData.weeks.filter(w => w.courseId === courseId).sort((a,b) => a.weekNumber - b.weekNumber);
+
+  renderCourseOutline(course, weeks);
+
+  let html = '<div class="no-print">' + weeks.map(w => {
+    const notes = studioData.notes.filter(n => n.weekId === w.id);
+    return `
+      <div class="week-block">
+        <div class="week-header" onclick="toggleWeek('${w.id}')">
+          <span class="week-title">Week ${w.weekNumber}${w.topic ? ' — ' + escapeHtml(w.topic) : ''}</span>
+          <span style="font-size:0.75rem;color:var(--muted);">${notes.length} file(s)</span>
+        </div>
+        <div class="week-body hidden" id="weekBody_${w.id}">
+          <div id="notesFor_${w.id}">
+            ${notes.length === 0 ? '<div class="empty">No files uploaded for this week yet.</div>' : notes.map(n => `
+              <div class="note-row">
+                <span>${escapeHtml(n.title)}</span>
+                <span><a href="${n.url}" target="_blank" style="margin-right:12px;color:var(--gold-dark);text-decoration:none;font-weight:600;">Open</a><button class="secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="deleteNote('${n.id}','${w.id}')">Delete</button></span>
+              </div>
+            `).join('')}
+          </div>
+          <div style="margin-top:14px;">
+            <label>Upload File for This Week</label>
+            <input type="file" id="fileInput_${w.id}">
+            <label>File Title</label>
+            <input type="text" id="titleInput_${w.id}" placeholder="e.g. Week ${w.weekNumber} Slides">
+            <div style="font-size:0.75rem;color:var(--muted);margin:-8px 0 12px;">If this week has no topic set yet, uploading a PDF, Word, or PowerPoint file will auto-generate one from its content.</div>
+            <button onclick="uploadWeekNote('${w.id}')" id="uploadBtn_${w.id}">Upload</button>
+            <button class="secondary" onclick="deleteWeek('${w.id}')" style="margin-left:8px;">Delete Week</button>
+            <div id="uploadMsg_${w.id}"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  html += `
+    <div class="card" style="margin-top:4px;">
+      <h2>Add a Week</h2>
+      <div class="row2">
+        <div>
+          <label>Week Number</label>
+          <input type="number" id="newWeekNumber" min="1" value="${weeks.length + 1}">
+        </div>
+        <div>
+          <label>Topic</label>
+          <input type="text" id="newWeekTopic" placeholder="e.g. Darcy's experiment and applications">
+        </div>
+      </div>
+      <label>Venue (optional)</label>
+      <input type="text" id="newWeekVenue" placeholder="e.g. Lecture Hall A">
+      <button onclick="addWeek()">Add Week</button>
+    </div>
+  </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function toggleWeek(weekId){
+  document.getElementById('weekBody_' + weekId).classList.toggle('hidden');
+}
+
+async function addWeek(){
+  const courseId = document.getElementById('weekCourseFilter').value;
+  if(!courseId) return;
+  const weekNumber = parseInt(document.getElementById('newWeekNumber').value, 10);
+  const topic = document.getElementById('newWeekTopic').value.trim();
+  const venue = document.getElementById('newWeekVenue').value.trim();
+  if(!weekNumber || weekNumber <= 0) return;
+  studioData.weeks.push({ id: 'w_' + Date.now(), courseId, weekNumber, topic, venue });
+  await persist();
+  renderWeeks();
+}
+
+async function deleteWeek(weekId){
+  if(!confirm('Delete this week and all its uploaded files?')) return;
+  studioData.weeks = studioData.weeks.filter(w => w.id !== weekId);
+  studioData.notes = studioData.notes.filter(n => n.weekId !== weekId);
+  await persist();
+  renderWeeks();
+}
+
+async function extractTextFromFile(file){
+  try{
+    if(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')){
+      if(!window.pdfjsLib) return '';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      let text = '';
+      const maxPages = Math.min(pdf.numPages, 5);
+      for(let i = 1; i <= maxPages; i++){
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(item => item.str).join(' ') + '\n';
+      }
+      return text.slice(0, 6000);
+    }
+    if(file.name.toLowerCase().endsWith('.docx')){
+      if(!window.mammoth) return '';
+      const buffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+      return (result.value || '').slice(0, 6000);
+    }
+    if(file.name.toLowerCase().endsWith('.pptx')){
+      if(!window.JSZip) return '';
+      const buffer = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(buffer);
+      const slideFiles = Object.keys(zip.files)
+        .filter(name => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+        .sort((a, b) => {
+          const numA = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
+          const numB = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
+          return numA - numB;
+        })
+        .slice(0, 8);
+
+      let text = '';
+      for(const slideName of slideFiles){
+        const xml = await zip.files[slideName].async('text');
+        const matches = xml.match(/<a:t[^>]*>([^<]*)<\/a:t>/g) || [];
+        const slideText = matches
+          .map(m => m.replace(/<a:t[^>]*>/, '').replace('</a:t>', ''))
+          .map(t => t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'"))
+          .join(' ');
+        text += slideText + '\n';
+      }
+      return text.slice(0, 6000);
+    }
+    return '';
+  }catch(e){
+    return '';
+  }
+}
+
+async function suggestTopicFromText(text){
+  if(!text || !text.trim()) return null;
+  try{
+    const prompt = `This is text extracted from a university lecture file. In 6-10 words, write a short topic/title suitable for a course outline's "Topic" column for this week. Respond with ONLY the topic phrase, nothing else, no quotes.\n\nText:\n${text.slice(0, 3000)}`;
+    const response = await puter.ai.chat(prompt, { model: "openai/gpt-5.4-nano" });
+    const raw = (typeof response === 'string') ? response : (response && response.message && response.message.content) || '';
+    return raw.trim().replace(/^["']|["']$/g, '').slice(0, 150) || null;
+  }catch(e){
+    return null;
+  }
+}
+
+async function uploadWeekNote(weekId){
+  const fileInput = document.getElementById('fileInput_' + weekId);
+  const titleInput = document.getElementById('titleInput_' + weekId);
+  const msg = document.getElementById('uploadMsg_' + weekId);
+  const btn = document.getElementById('uploadBtn_' + weekId);
+  const file = fileInput.files[0];
+  const title = titleInput.value.trim();
+  if(!file || !title){ alert('Please choose a file and enter a title.'); return; }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Uploading...</div>';
+
+  try{
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'portal_uploads');
+    const uploadRes = await fetch('https://api.cloudinary.com/v1_1/v9y3judf/auto/upload', { method: "POST", body: formData });
+    if(!uploadRes.ok) throw new Error('Upload failed (HTTP ' + uploadRes.status + ')');
+    const uploadData = await uploadRes.json();
+
+    studioData.notes.push({ id: 'n_' + Date.now(), weekId, title, url: uploadData.secure_url, uploadedAt: new Date().toISOString() });
+
+    // Auto-generate the week's topic from the file content, only if no topic is set yet
+    const week = studioData.weeks.find(w => w.id === weekId);
+    if(week && !week.topic){
+      msg.innerHTML = '<div class="msg ok">Uploaded. Reading file content for topic suggestion...</div>';
+      const text = await extractTextFromFile(file);
+      if(text){
+        const topic = await suggestTopicFromText(text);
+        if(topic){
+          week.topic = topic;
+          week.topicAutoGenerated = true;
+        }
+      }
+    }
+
+    await persist();
+    renderWeeks();
+    setTimeout(() => document.getElementById('weekBody_' + weekId)?.classList.remove('hidden'), 50);
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not upload file: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function generateCourseContentSummary(courseId){
+  const course = studioData.courses.find(c => c.id === courseId);
+  const weeks = studioData.weeks.filter(w => w.courseId === courseId).sort((a,b) => a.weekNumber - b.weekNumber);
+  const msg = document.getElementById('genContentMsg');
+  const btn = document.getElementById('genContentBtn');
+
+  const topics = weeks.filter(w => w.topic).map(w => `Week ${w.weekNumber}: ${w.topic}`).join('\n');
+  if(!topics){
+    msg.innerHTML = '<div class="msg err">Add some weeks with topics first (or upload files so topics can be auto-generated), then try again.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Generating...</div>';
+
+  try{
+    const prompt = `Based on this list of weekly lecture topics for a university course called "${course.name}", write a single flowing paragraph (3-5 sentences) summarizing the overall course content, suitable for a formal course outline document. Respond with ONLY the paragraph, no headers or extra text.\n\nWeekly topics:\n${topics}`;
+    const response = await puter.ai.chat(prompt, { model: "openai/gpt-5.4-nano" });
+    const raw = (typeof response === 'string') ? response : (response && response.message && response.message.content) || '';
+    if(raw.trim()){
+      course.content = raw.trim();
+      await persist();
+      renderWeeks();
+      msg.innerHTML = '<div class="msg ok">Course Content field updated below. Review and edit if needed.</div>';
+    } else {
+      msg.innerHTML = '<div class="msg err">Could not generate a summary. Please try again.</div>';
+    }
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not generate: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function deleteNote(noteId, weekId){
+  if(!confirm('Delete this file?')) return;
+  studioData.notes = studioData.notes.filter(n => n.id !== noteId);
+  await persist();
+  renderWeeks();
+  setTimeout(() => document.getElementById('weekBody_' + weekId)?.classList.remove('hidden'), 50);
+}
+
+// ===== Quiz Generator =====
+async function handleCourseContentFile(){
+  const fileInput = document.getElementById('ncContentFile');
+  const msg = document.getElementById('ncContentFileMsg');
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  const supportedTypes = ['.pdf', '.docx', '.pptx'];
+  const isSupported = supportedTypes.some(ext => file.name.toLowerCase().endsWith(ext));
+  if(!isSupported){
+    msg.innerHTML = '<div class="msg err">Please upload a PDF, Word (.docx), or PowerPoint (.pptx) file.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Reading file content...</div>';
+  const text = await extractTextFromFile(file);
+  if(!text){
+    msg.innerHTML = '<div class="msg err">Could not extract text from this file. Try typing the content directly instead.</div>';
+    return;
+  }
+  document.getElementById('ncContent').value = text;
+  msg.innerHTML = '<div class="msg ok">Content loaded from file below. Review and trim as needed before saving.</div>';
+}
+
+async function handleQuizSourceFile(){
+  const fileInput = document.getElementById('aiSourceFile');
+  const msg = document.getElementById('aiFileMsg');
+  const file = fileInput.files[0];
+  if(!file) return;
+
+  const supportedTypes = ['.pdf', '.docx', '.pptx'];
+  const isSupported = supportedTypes.some(ext => file.name.toLowerCase().endsWith(ext));
+  if(!isSupported){
+    msg.innerHTML = '<div class="msg err">Please upload a PDF, Word (.docx), or PowerPoint (.pptx) file.</div>';
+    return;
+  }
+
+  msg.innerHTML = '<div class="msg ok">Reading file content...</div>';
+  const text = await extractTextFromFile(file);
+  if(!text){
+    msg.innerHTML = '<div class="msg err">Could not extract text from this file. Try pasting the content directly instead.</div>';
+    return;
+  }
+  document.getElementById('aiSourceText').value = text;
+  msg.innerHTML = '<div class="msg ok">Content loaded from file below. You can edit it before generating questions.</div>';
+}
+
+async function generateAIQuestions(){
+  const source = document.getElementById('aiSourceText').value.trim();
+  const num = parseInt(document.getElementById('aiNumQuestions').value, 10) || 5;
+  const difficulty = document.getElementById('aiDifficulty').value;
+  const msg = document.getElementById('genMsg');
+  const btn = document.getElementById('genBtn');
+
+  if(!source){
+    msg.innerHTML = '<div class="msg err">Please paste some lecture content first.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.innerHTML = '<div class="msg ok">Generating questions...</div>';
+
+  const prompt = `You are helping a university lecturer create exam questions. Based on the following lecture material, generate exactly ${num} multiple-choice questions at ${difficulty} difficulty. For each question, provide exactly 4 options where the FIRST option listed is always the correct answer (I will shuffle them myself).
+
+Respond ONLY with valid JSON in this exact format, no other text:
+[{"q": "question text", "options": ["correct answer", "wrong 1", "wrong 2", "wrong 3"]}, ...]
+
+Lecture material:
+${source.slice(0, 4000)}`;
+
+  try{
+    const response = await puter.ai.chat(prompt, { model: "openai/gpt-5.4-nano" });
+    const raw = (typeof response === 'string') ? response : (response && response.message && response.message.content) || '';
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if(!jsonMatch) throw new Error('Could not parse AI response. Try again or rephrase the source text.');
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    parsed.forEach(item => {
+      if(item.q && Array.isArray(item.options) && item.options.length >= 2){
+        studioData.questions.push({
+          id: 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+          text: item.q,
+          options: item.options,
+          correctIndex: 0,
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+    await persist();
+    msg.innerHTML = `<div class="msg ok">Added ${parsed.length} question(s) to the bank below. Review carefully before using.</div>`;
+    renderQuestionBank();
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not generate questions: ${escapeHtml(e.message)}. You can add questions manually instead.</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function addManualQuestion(){
+  const text = document.getElementById('manualQText').value.trim();
+  const a = document.getElementById('manualOptA').value.trim();
+  const b = document.getElementById('manualOptB').value.trim();
+  const c = document.getElementById('manualOptC').value.trim();
+  const d = document.getElementById('manualOptD').value.trim();
+
+  if(!text || !a){ alert('Please enter the question and at least the correct answer.'); return; }
+
+  const options = [a, b, c, d].filter(o => o);
+  studioData.questions.push({
+    id: 'q_' + Date.now(),
+    text, options, correctIndex: 0,
+    createdAt: new Date().toISOString()
+  });
+  await persist();
+
+  ['manualQText','manualOptA','manualOptB','manualOptC','manualOptD'].forEach(id => document.getElementById(id).value = '');
+  renderQuestionBank();
+}
+
+function renderQuestionBank(){
+  const container = document.getElementById('questionBankList');
+  document.getElementById('qCount').textContent = studioData.questions.length;
+  const title = document.getElementById('examTitle').value.trim();
+  const printTitle = document.getElementById('printExamTitle');
+  printTitle.textContent = title || 'Untitled Question Bank';
+  printTitle.style.display = title ? 'block' : 'none';
+
+  if(studioData.questions.length === 0){
+    container.innerHTML = '<div class="empty">No questions yet — generate with AI or add manually above.</div>';
+    return;
+  }
+
+  container.innerHTML = studioData.questions.map((q, i) => `
+    <div class="q-item">
+      <div class="q-text">${i+1}. ${escapeHtml(q.text)}</div>
+      ${q.options.map((opt, oi) => `<div class="q-opt ${oi === q.correctIndex ? 'correct' : ''}">${String.fromCharCode(65+oi)}. ${escapeHtml(opt)}${oi === q.correctIndex ? ' ✓' : ''}</div>`).join('')}
+      <div class="no-print" style="margin-top:8px;"><button class="secondary" style="padding:4px 12px;font-size:0.7rem;" onclick="deleteQuestion('${q.id}')">Delete</button></div>
+    </div>
+  `).join('');
+}
+
+async function deleteQuestion(id){
+  studioData.questions = studioData.questions.filter(q => q.id !== id);
+  await persist();
+  renderQuestionBank();
+}
+
+async function clearAllQuestions(){
+  if(!confirm('Delete all questions in the bank? This cannot be undone.')) return;
+  studioData.questions = [];
+  await persist();
+  renderQuestionBank();
+}
+
+let hasInitialized = false;
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if(session && !hasInitialized){
+    hasInitialized = true;
+    onSignedIn();
+  }
+});
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session && !hasInitialized){
+    hasInitialized = true;
+    await onSignedIn();
+  }
+});
+</script>
+<script src="pw-tools.js"></script>
+</body>
+</html>

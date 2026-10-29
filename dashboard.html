@@ -433,11 +433,11 @@
     <nav class="dash-nav" id="dashNav">
       <a href="javascript:void(0)" data-tab="dashOverviewCard" class="on">Overview</a>
       <a href="javascript:void(0)" data-tab="dashLectureHall">Lecture Hall</a>
-      <a href="javascript:void(0)" data-tab="dashChatCard">Chat</a>
       <a href="javascript:void(0)" data-tab="dashScoresCard">Scores</a>
       <a href="javascript:void(0)" data-tab="dashAttCard">Attendance</a>
       <a href="javascript:void(0)" data-tab="dashReportsCard">Reports</a>
       <a href="javascript:void(0)" data-tab="dashIssueCard">Report an Issue</a>
+      <a href="javascript:void(0)" data-tab="dashChatCard">Chat <span id="dashChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0"></span></a>
     </nav>
     <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
@@ -1662,6 +1662,7 @@ setInterval(updateWhoBar,1500);
     set('ovsAtt', at? at+' course'+(at>1?'s':'')+' tracked' : 'No attendance yet');
     set('ovsRep', rp? rp+' report'+(rp>1?'s':'') : 'No reports yet');
   }
+  window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0), b=document.getElementById('dashChatBadge'); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } });
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.addEventListener('click',function(){ dashTab(a.getAttribute('data-tab')); }); });
     document.querySelectorAll('.ov-link').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });

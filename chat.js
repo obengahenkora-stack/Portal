@@ -350,7 +350,7 @@ function render(){
   if(!S.root) return;
   var onl=Object.keys(S.online).length;
   var c=document.getElementById('ceChatCount'); if(c) c.textContent=onl?('· '+onl+' online'):'';
-  var bd=document.getElementById('ceChatBd'); var u=totalUnread(); if(bd){ bd.style.display=u?'inline-block':'none'; bd.textContent=u>99?'99+':u; }
+  var bd=document.getElementById('ceChatBd'); var u=totalUnread(); if(S.lastU!==u){ S.lastU=u; try{ if(!S.baseTitle) S.baseTitle=document.title.replace(/^\(\d+\+?\)\s*/,''); document.title=(u?'('+(u>99?'99+':u)+') ':'')+S.baseTitle; window.dispatchEvent(new CustomEvent('ce-chat-unread',{detail:u})); }catch(e){} } if(bd){ bd.style.display=u?'inline-block':'none'; bd.textContent=u>99?'99+':u; }
   var panel=document.getElementById('ceChatPanel');
   if(S.open){ panel.style.display='flex'; renderHome(panel); renderTabs(panel); renderWins(); } else panel.style.display='none';
 }

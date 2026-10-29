@@ -63,6 +63,31 @@ function beep(){
   if(S.mute||!_ac||_ac.state!=='running') return;
   try{ var t=_ac.currentTime; [[880,0],[1175,.13]].forEach(function(n){ var o=_ac.createOscillator(), g=_ac.createGain(); o.type='sine'; o.frequency.value=n[0]; g.gain.setValueAtTime(0,t+n[1]); g.gain.linearRampToValueAtTime(.18,t+n[1]+.02); g.gain.exponentialRampToValueAtTime(.001,t+n[1]+.18); o.connect(g); g.connect(_ac.destination); o.start(t+n[1]); o.stop(t+n[1]+.2); }); }catch(e){}
 }
+function toast(m){
+  try{
+    var name=m.from_name||'Someone', txt=String(m.text||'').slice(0,90);
+    var el=document.getElementById('ceToast');
+    if(!el){ el=document.createElement('div'); el.id='ceToast'; document.body.appendChild(el); }
+    el.innerHTML='<span class="tt-av"></span><span class="tt-tx"><b></b><span></span></span><span class="tt-x" aria-label="Dismiss">&times;</span>';
+    el.querySelector('.tt-av').innerHTML=avatar(m.from_id,name,true,m.from_g,false);
+    el.querySelector('b').textContent=(isDm(m.room)?name:name+' in '+roomTitle(m.room));
+    el.querySelector('.tt-tx span').textContent=txt;
+    el.className='show';
+    el.onclick=function(e){ if(e.target.closest('.tt-x')){ el.className=''; return; } el.className=''; goChat(m.room); };
+    clearTimeout(el.__t); el.__t=setTimeout(function(){ el.className=''; },6500);
+  }catch(e){}
+  try{ if(document.visibilityState==='hidden'&&window.Notification&&Notification.permission==='granted'){ var n=new Notification((m.from_name||'New message'),{body:String(m.text||'').slice(0,120),tag:'ce-'+m.room}); n.onclick=function(){ window.focus(); openRoom(m.room); n.close(); }; } }catch(e){}
+}
+function goChat(room){
+  try{
+    var ah=document.getElementById('adminHub');
+    if(ah&&!ah.classList.contains('hidden')&&window.adminTab) window.adminTab('adminChat');
+    else if(document.getElementById('dashChatCard')&&window.dashTab) window.dashTab('dashChatCard');
+    else if(document.getElementById('chatView')&&typeof G('switchTab')==='function') G('switchTab')('chat');
+  }catch(e){}
+  openRoom(room);
+}
+function askNotify(){ try{ if(window.Notification&&Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
 function seenGet(){ try{ return JSON.parse(localStorage.getItem('ceChatSeen')||'{}'); }catch(e){ return {}; } }
 function markSeen(room){ try{ var o=seenGet(); o[room]=Date.now(); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} }
 
@@ -182,6 +207,8 @@ function addMsg(m,silent){
   if(!silent && m.from_id!==S.me.id){
     if(!(S.open&&S.cur===m.room)) S.unread[m.room]=(S.unread[m.room]||0)+1; else { sendRead(m.room); markSeen(m.room); }
     beep();
+    if(!(S.open&&S.cur===m.room&&document.visibilityState==='visible')) toast(m);
+    render();
   }
   scheduleRender();
   return true;
@@ -209,7 +236,9 @@ function joinInbox(){
     ch.on('broadcast',{event:'del'},function(p){ if(p&&p.payload) delMsg(p.payload.room,p.payload.id); });
   });
 }
+function warm(topic){ if(S.chans[topic]||S.sendCh[topic]) return; var ch=S.rt.channel(topic,{config:{broadcast:{self:false}}}); ch.__ready=new Promise(function(res){ ch.subscribe(function(st){ if(st==='SUBSCRIBED') res(); }); }); S.sendCh[topic]=ch; }
 function sendTo(topic,event,payload){
+  if(S.chans[topic]&&!S.sendCh[topic]){ var jc=S.chans[topic]; try{ return Promise.resolve(jc.send({type:'broadcast',event:event,payload:payload})); }catch(e){} }
   var ch=S.sendCh[topic];
   if(!ch){ ch=S.rt.channel(topic,{config:{broadcast:{self:false}}}); ch.__ready=new Promise(function(res){ ch.subscribe(function(st){ if(st==='SUBSCRIBED') res(); }); }); S.sendCh[topic]=ch; }
   return ch.__ready.then(function(){ return ch.send({type:'broadcast',event:event,payload:payload}); });
@@ -275,6 +304,9 @@ function css(){
  +'.cc-views{display:none;flex:1;min-height:0;flex-direction:column}'
  +'.cc-dc{align-items:center;gap:8px;padding:8px 12px;font-size:.74rem;background:rgba(244,63,94,.12);border-bottom:1px solid var(--line,#ddd)}.cc-dc span{flex:1}.cc-dc button{border:none !important;border-radius:999px !important;padding:5px 12px !important;font-size:.74rem !important;cursor:pointer;background:#f43f5e !important;color:#fff !important}.cc-dc button[data-a=dcno]{background:transparent !important;color:inherit !important;text-decoration:underline}'
  +'.cc-embed{position:static !important;width:100% !important;max-width:none !important;height:min(72vh,640px) !important;box-shadow:none !important;display:flex}.cc-embed [data-a=close]{display:none !important}'
+ +'#ceToast{position:fixed;top:14px;left:50%;transform:translate(-50%,-140%);z-index:10000;display:flex;align-items:center;gap:10px;min-width:260px;max-width:min(92vw,420px);padding:10px 14px;border-radius:16px;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);box-shadow:0 14px 40px rgba(0,0,0,.28);cursor:pointer;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);font:500 .85rem "IBM Plex Sans",sans-serif}'
+ +'#ceToast.show{transform:translate(-50%,0)}'
+ +'#ceToast .tt-tx{display:flex;flex-direction:column;min-width:0;flex:1}#ceToast b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ceToast .tt-tx span{color:var(--muted,#666);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ceToast .tt-x{opacity:.6;font-size:1.1rem;padding:0 4px}#ceToast .cc-av{width:34px;height:34px}'
  +'.cc-tabs{display:flex;gap:6px;padding:6px 8px;overflow-x:auto;border-bottom:1px solid var(--line,#ddd);flex:0 0 auto}'
  +'.cc-tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:rgba(120,160,120,.14);font-size:.74rem;cursor:pointer;max-width:150px;user-select:none}'
  +'.cc-tab.act{background:var(--accent,#3f7a32);color:#fff}html[data-theme="dark"] .cc-tab.act{color:#08161d}'
@@ -305,7 +337,7 @@ function css(){
  +'.cc-x{margin-left:6px;cursor:pointer;opacity:.6}'
  +'.cc-note{font-size:.74rem;color:var(--muted,#777);text-align:center;margin:6px 0 10px}'
  +'.cc-in{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line,#ddd)}'
- +'.cc-in textarea{flex:1;min-width:0;margin:0 !important;padding:10px 14px !important;border-radius:18px !important;resize:none;font:400 16px/1.35 "IBM Plex Sans",sans-serif;max-height:110px;border:1px solid var(--line,#ddd);background:transparent;color:inherit}'
+ +'.cc-in textarea{flex:1;min-width:0;margin:0 !important;min-height:0 !important;height:42px;box-sizing:border-box !important;overflow-y:auto;padding:10px 14px !important;border-radius:18px !important;resize:none;font:400 16px/1.35 "IBM Plex Sans",sans-serif;max-height:110px;border:1px solid var(--line,#ddd);background:transparent;color:inherit}'
  +'.cc-in{align-items:flex-end}'
  +'.cc-box button{text-transform:none !important;letter-spacing:0 !important}'
  +'.cc-box{border-radius:20px;font-size:14px}'
@@ -339,7 +371,7 @@ function build(){
   document.getElementById('ceChatBtn').addEventListener('click',toggleHome);
 }
 function toggleHome(){
-  S.open=!S.open;
+  S.open=!S.open; askNotify();
   if(S.open && S.cur){ S.unread[S.cur]=0; markSeen(S.cur); sendRead(S.cur); }
   scheduleRender(); render();
 }
@@ -421,7 +453,8 @@ function winEl(room){ return document.getElementById('ceWin-'+hash(room)); }
 function openRoom(room){
   if(!S.wins.some(function(x){return x.room===room;})) S.wins.push({room:room});
   while(S.wins.length>8){ var old=S.wins.filter(function(x){return x.room!==room;})[0]; closeWin(old.room,true); }
-  S.cur=room; S.open=true;
+  S.cur=room; S.open=true; askNotify();
+  if(isDm(room)) warm('inbox:'+peerOf(room));
   S.unread[room]=0; markSeen(room);
   render();
   var el2=winEl(room); if(el2){ var inp=el2.querySelector('textarea'); if(inp && !isMobile()) inp.focus(); }

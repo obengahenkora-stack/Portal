@@ -122,6 +122,26 @@
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<style id="adminHubCss">
+  .ah-wrap{padding:0 !important;overflow:hidden;border:none !important;background:transparent !important;box-shadow:none !important}
+  .ah-hero{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;padding:26px 24px;border-radius:22px;color:#fff;background:linear-gradient(135deg,var(--accent,#2f6f4f),#1f5f8b 70%,#6d4cc2);box-shadow:0 18px 40px rgba(31,95,139,.28);margin-bottom:16px;position:relative;overflow:hidden}
+  .ah-hero::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.1)}
+  .ah-hi{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:700;line-height:1.15}
+  .ah-sub{opacity:.85;font-size:.9rem;margin-top:4px}
+  .ah-actions{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+  .ah-actions button{background:rgba(255,255,255,.18) !important;color:#fff !important;border:1px solid rgba(255,255,255,.35) !important;border-radius:999px !important;padding:10px 16px !important;font-size:.82rem !important;text-transform:none !important;letter-spacing:0 !important;cursor:pointer;backdrop-filter:blur(4px)}
+  .ah-actions button:hover{background:rgba(255,255,255,.3) !important}
+  .ah-bd{background:#f43f5e;color:#fff;border-radius:999px;font-size:.7rem;padding:1px 7px;margin-left:4px}
+  .ah-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .ah-tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 16px 14px;box-shadow:0 6px 18px rgba(0,0,0,.05);transition:transform .15s}
+  .ah-tile:hover{transform:translateY(-2px)}
+  .ah-tile.big{grid-column:span 2;background:linear-gradient(135deg,var(--tint,#eef6ee),var(--card))}
+  .ah-n{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;line-height:1;color:var(--ink)}
+  .ah-tile.big .ah-n{font-size:2.6rem}
+  .ah-l{margin-top:6px;font-size:.78rem;color:var(--muted);font-weight:600}
+  .ah-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+  @media(max-width:520px){.ah-hero{padding:20px 16px}.ah-hi{font-size:1.3rem}.ah-tile.big{grid-column:span 2}}
+</style>
 <style id="modernDash">
   :root{ --page:#f3f6f1; --accent2:#2f7d4a; --tint:rgba(63,122,50,0.10); --shadow:0 1px 2px rgba(20,40,20,.05),0 8px 24px rgba(20,40,20,.06); }
   html[data-theme="dark"]{ --page:#08161d; --tint:rgba(120,200,150,0.12); --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); }
@@ -316,6 +336,41 @@
       </div>
     </div>
     <button class="secondary" onclick="studentSignOut()">Sign Out</button>
+  </div>
+
+  <div id="adminHub" class="hidden">
+    <nav class="dash-nav" id="adminNav">
+      <a href="javascript:void(0)" data-atab="adminOverview" class="on">Overview</a>
+      <a href="javascript:void(0)" data-atab="adminStudents">Students</a>
+      <a href="javascript:void(0)" data-atab="adminChat">Chat <span id="adminChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;text-transform:none;letter-spacing:0"></span></a>
+    </nav>
+    <div class="card ah-wrap" id="adminOverview">
+      <div class="ah-hero">
+        <div>
+          <div class="ah-hi" id="ahHi">Welcome back</div>
+          <div class="ah-sub">Your students at a glance</div>
+        </div>
+        <div class="ah-actions">
+          <button type="button" data-ago="adminChat">&#128172; Open chat <span id="ahChatBd" class="ah-bd" style="display:none"></span></button>
+          <button type="button" data-ago="adminStudents">&#128269; Find a student</button>
+        </div>
+      </div>
+      <div class="ah-grid">
+        <div class="ah-tile big"><div class="ah-n" id="ahTotal">0</div><div class="ah-l">Registered students</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahOnline">0</div><div class="ah-l"><span class="ah-dot"></span>Online now</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahNew">0</div><div class="ah-l">Joined this week</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahL100">0</div><div class="ah-l">Level 100</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahL200">0</div><div class="ah-l">Level 200</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahL300">0</div><div class="ah-l">Level 300</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahCivil">0</div><div class="ah-l">Civil Engineering</div></div>
+        <div class="ah-tile"><div class="ah-n" id="ahEnv">0</div><div class="ah-l">Environmental Eng.</div></div>
+      </div>
+    </div>
+    <div class="card pane-off" id="adminChatCard">
+      <h3 style="margin-top:0">Chat</h3>
+      <p class="cc-ph" style="color:var(--muted)">Loading chat...</p>
+    </div>
   </div>
 
   <div class="hidden" id="editDetailsLink" style="text-align:right;margin:-10px 0 16px;">
@@ -1756,6 +1811,47 @@ function renderWelcome(){
   else if(a&&a.gender==='Male'){ box.innerHTML=_AV_M; box.classList.remove('hidden'); }
   else { box.innerHTML=''; box.classList.add('hidden'); }
 }
+</script>
+<script>
+/* ===== Admin hub: Overview / Students / Chat tabs ===== */
+(function(){
+  var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard'],adminChat:['adminChatCard']};
+  var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminChatCard'];
+  function $(i){ return document.getElementById(i); }
+  window.adminTab=function(t){
+    if(!MAP[t]) t='adminOverview';
+    var on=MAP[t];
+    ALL.forEach(function(x){ var e=$(x); if(e) e.classList.toggle('pane-off', on.indexOf(x)<0); });
+    document.querySelectorAll('#adminNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-atab')===t); });
+    try{ if(window.ChatUI){ if(t==='adminChat') ChatUI.embed($('adminChatCard')); else ChatUI.unembed(); } }catch(e){}
+    stats();
+  };
+  function greet(){ var h=new Date().getHours(); return (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Dr Obeng-Ahenkora'; }
+  function set(id,v){ var e=$(id); if(e) e.textContent=v; }
+  function stats(){
+    var c=[]; try{ c=registeredStudentsCache||[]; }catch(e){}
+    var n=function(f){ return c.filter(f).length; }, wk=Date.now()-7*864e5;
+    set('ahTotal',c.length);
+    ['100','200','300','400'].forEach(function(l){ set('ahL'+l,n(function(s){ return String(s.level||'').replace(/\D/g,'')===l; })); });
+    set('ahCivil',n(function(s){ return /civil/i.test(s.department||''); }));
+    set('ahEnv',n(function(s){ return /env/i.test(s.department||''); }));
+    set('ahNew',n(function(s){ return s.linkedAt && new Date(s.linkedAt).getTime()>wk; }));
+    var on=0; try{ on=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){} set('ahOnline',on);
+  }
+  function init(){
+    var h=$('adminHub'); if(!h||!h.classList.contains('hidden')) return;
+    h.classList.remove('hidden'); set('ahHi',greet());
+    var w=$('welcomeLine'); if(w) w.style.display='none';
+    adminTab('adminOverview');
+  }
+  window.addEventListener('ce-chat-unread',function(e){ var n=e.detail||0; ['adminChatBadge','ahChatBd'].forEach(function(id){ var b=$(id); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } }); });
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('#adminNav a').forEach(function(a){ a.addEventListener('click',function(){ adminTab(a.getAttribute('data-atab')); }); });
+    document.querySelectorAll('[data-ago]').forEach(function(b){ b.addEventListener('click',function(){ adminTab(b.getAttribute('data-ago')); }); });
+    var r=$('adminRegisteredCard'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) init(); }).observe(r,{attributes:true,attributeFilter:['class']});
+    setInterval(function(){ var h=$('adminHub'); if(h&&!h.classList.contains('hidden')) stats(); },2000);
+  });
+})();
 </script>
 <script src="chat.js"></script>
 </body>

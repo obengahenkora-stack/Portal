@@ -290,12 +290,26 @@
         <h2 style="justify-content:center;">Attendance Portal</h2>
         <p style="color:var(--muted);font-size:0.85rem;margin:0;">QR check-in, rosters, attendance summaries.</p>
       </div>
+      <div class="card" onclick="switchTab('chat')" style="cursor:pointer;text-align:center;padding:32px 20px;grid-column:1 / -1;">
+        <div style="font-size:2rem;margin-bottom:10px;">💬</div>
+        <h2 style="justify-content:center;">Chat <span id="hubChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 9px;margin-left:6px;text-transform:none;letter-spacing:0"></span></h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">Message students and colleagues. See who is online.</p>
+      </div>
       <a id="hubStudentTile" class="card hidden" href="dashboard.html" style="cursor:pointer;text-align:center;padding:32px 20px;text-decoration:none;color:inherit;grid-column:1 / -1;">
         <div style="font-size:2rem;margin-bottom:10px;">🎓</div>
         <h2 style="justify-content:center;">Students Dashboard</h2>
         <p style="color:var(--muted);font-size:0.85rem;margin:0;">Registered students, search by index number, view any student's page.</p>
       </a>
     </div>
+    </div>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" class="hidden">
+    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <div class="card" id="portalChatCard">
+      <h2 style="margin-top:0">Chat</h2>
+      <p class="cc-ph" style="color:var(--muted)">Loading chat...</p>
     </div>
   </div>
 
@@ -1145,11 +1159,14 @@ const EMAILJS_PUBLIC_KEY = "YAoDPw-tkurcPjVrU";
 if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 // ===================================
 
+window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0), b=document.getElementById('hubChatBadge'); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } });
 function switchTab(tab){
   document.getElementById('hubView').classList.toggle('hidden', tab!=='hub');
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
-  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance');
+  var _cv=document.getElementById('chatView'); if(_cv) _cv.classList.toggle('hidden', tab!=='chat');
+  try{ if(window.ChatUI){ if(tab==='chat') ChatUI.embed(document.getElementById('portalChatCard')); else ChatUI.unembed(); } }catch(e){}
+  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat');
   if(tab === 'attendance'){
     loadAttendanceSummaryCourseOptions();
   }

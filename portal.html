@@ -583,18 +583,19 @@
 
     <div class="card hidden" id="rosterEditCard">
       <label>Edit Class List (no re-upload needed)</label>
-      <div class="hint">Add a student to an existing class list, fix a name or index number, or remove someone. Changes save straight away. Newly added students count as absent until you mark them under Review &amp; Edit Saved Attendance.</div>
-      <label>Course</label>
+      <div class="hint">Add a student to several class lists at once, fix a name or index number, or remove someone. Changes save straight away. Newly added students count as absent until you mark them under Review &amp; Edit Saved Attendance.</div>
+      <div style="margin:12px 0 14px;padding:14px;border:1px dashed var(--line);border-radius:12px;">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:4px;">Add a student to one or more class lists</div>
+        <div class="hint" style="margin-bottom:8px;">Type the index number and name, then press the button. You will choose which courses to add them to.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="reNewIdx" placeholder="Index number (e.g. UEB0712924)" style="flex:1;min-width:150px;margin:0;">
+          <input type="text" id="reNewName" placeholder="Name" style="flex:1;min-width:150px;margin:0;">
+          <button onclick="reAdd()" style="padding:8px 14px;">Choose courses &amp; add</button>
+        </div>
+      </div>
+      <label>Or open one course to edit or download its list</label>
       <select id="reCourse" onchange="reLoad()"><option value="">Select course...</option></select>
       <div id="reBody" class="hidden">
-        <div style="margin:12px 0 6px;padding:12px;border:1px dashed var(--line);border-radius:8px;">
-          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px;">Add a student</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input type="text" id="reNewIdx" placeholder="Index number (e.g. UEB0712924)" style="flex:1;min-width:150px;margin:0;">
-            <input type="text" id="reNewName" placeholder="Name" style="flex:1;min-width:150px;margin:0;">
-            <button onclick="reAdd()" style="padding:8px 14px;">Add to class list</button>
-          </div>
-        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;">
           <button class="secondary" onclick="reDownload('xlsx')" style="padding:8px 14px;">Download class list (Excel)</button>
           <button class="secondary" onclick="reDownload('csv')" style="padding:8px 14px;">Download class list (CSV)</button>
@@ -604,6 +605,23 @@
         <div id="reList" style="max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:4px 10px;"></div>
       </div>
       <div id="reMsg" style="margin-top:12px;"></div>
+    </div>
+
+    <div id="reAddModal" class="hidden" style="position:fixed;inset:0;z-index:99998;background:rgba(10,20,30,.6);align-items:center;justify-content:center;padding:16px;">
+      <div style="background:var(--card);color:var(--ink);max-width:520px;width:100%;max-height:88vh;display:flex;flex-direction:column;border-radius:16px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="font-weight:700;font-size:1.05rem;margin-bottom:2px;">Add to which course lists?</div>
+        <div id="reAddWho" style="font-size:.85rem;color:var(--muted);margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="secondary" type="button" onclick="reAddAll(true)" style="padding:6px 12px;font-size:.78rem;">Select all</button>
+          <button class="secondary" type="button" onclick="reAddAll(false)" style="padding:6px 12px;font-size:.78rem;">Clear</button>
+        </div>
+        <div id="reAddList" style="overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:4px 12px;flex:1;"></div>
+        <div id="reAddMsg" style="margin-top:10px;"></div>
+        <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+          <button class="secondary" type="button" onclick="reAddClose()">Cancel</button>
+          <button type="button" id="reAddGo" onclick="reAddConfirm()">Add student</button>
+        </div>
+      </div>
     </div>
 
     <div class="card hidden" id="attendanceEditCard">
@@ -2776,16 +2794,57 @@ async function reSave(okText){
     msg.innerHTML=`<div class="msg ok">${okText}</div>`; return true;
   }catch(e){ msg.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; return false; }
 }
+var _reAddData=null;
 async function reAdd(){
   if(!isOwner()) return;
-  if(!_re) return;
   const idx=document.getElementById('reNewIdx').value.trim(), name=document.getElementById('reNewName').value.trim(), msg=document.getElementById('reMsg');
   if(!idx){ msg.innerHTML='<div class="msg err">Enter the index number.</div>'; return; }
-  if(_re.list.some(x=>_aeNz(x.indexNumber)===_aeNz(idx))){ msg.innerHTML='<div class="msg err">That index number is already on the list.</div>'; return; }
-  _re.list.unshift({indexNumber:idx,name:name});
-  if(await reSave('Added '+escapeHtml(name||idx)+'. Mark them under Review &amp; Edit Saved Attendance when ready.')){ document.getElementById('reNewIdx').value=''; document.getElementById('reNewName').value=''; }
-  else _re.list.shift();
-  reRender();
+  if(!name){ msg.innerHTML='<div class="msg err">Enter the student\'s name.</div>'; return; }
+  msg.innerHTML='';
+  try{
+    const data=await fetchSupabaseData(true);
+    const rosters=data.rosters||{};
+    const cs=visibleCourses(Object.keys(rosters)).sort();
+    if(!cs.length){ msg.innerHTML='<div class="msg err">No class lists exist yet. Upload one first.</div>'; return; }
+    _reAddData={idx:idx,name:name};
+    document.getElementById('reAddWho').textContent=name+' ('+idx+')';
+    const cur=document.getElementById('reCourse').value;
+    document.getElementById('reAddList').innerHTML=cs.map(function(c,i){
+      const has=(rosters[c]||[]).some(function(x){return _aeNz(x.indexNumber)===_aeNz(idx);});
+      return '<label style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);text-transform:none;letter-spacing:normal;font-size:.9rem;font-weight:600;color:var(--ink);margin:0;'+(has?'opacity:.55;':'')+'cursor:'+(has?'default':'pointer')+';">'
+        +'<input type="checkbox" class="reAddCb" value="'+escapeHtml(c)+'" '+(has?'disabled':(c===cur?'checked':''))+' style="width:auto;margin:0;">'
+        +'<span style="flex:1;">'+escapeHtml(c)+'</span><span style="font-size:.74rem;color:var(--muted);font-weight:400;">'+(has?'already on this list':(rosters[c]||[]).length+' students')+'</span></label>';
+    }).join('');
+    document.getElementById('reAddMsg').innerHTML='';
+    const m=document.getElementById('reAddModal'); m.classList.remove('hidden'); m.style.display='flex';
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+function reAddAll(on){ document.querySelectorAll('.reAddCb:not(:disabled)').forEach(function(cb){ cb.checked=!!on; }); }
+function reAddClose(){ const m=document.getElementById('reAddModal'); m.classList.add('hidden'); m.style.display='none'; }
+async function reAddConfirm(){
+  if(!isOwner() || !_reAddData) return;
+  const picked=[...document.querySelectorAll('.reAddCb:checked')].map(function(cb){return cb.value;});
+  const am=document.getElementById('reAddMsg');
+  if(!picked.length){ am.innerHTML='<div class="msg err">Tick at least one course.</div>'; return; }
+  const btn=document.getElementById('reAddGo'); btn.disabled=true; am.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    const data=await fetchSupabaseData(true); data.rosters=data.rosters||{};
+    const added=[], skipped=[];
+    picked.forEach(function(c){
+      const cur=data.rosters[c]||[];
+      if(cur.some(function(x){return _aeNz(x.indexNumber)===_aeNz(_reAddData.idx);})){ skipped.push(c); return; }
+      data.rosters[c]=normRoster([{indexNumber:_reAddData.idx,name:_reAddData.name}].concat(cur));
+      added.push(c);
+    });
+    if(added.length) await saveSupabaseData(data);
+    reAddClose();
+    document.getElementById('reNewIdx').value=''; document.getElementById('reNewName').value='';
+    const t='Added '+escapeHtml(_reAddData.name)+' to '+added.length+' course list'+(added.length===1?'':'s')+(added.length?': '+added.map(escapeHtml).join(', '):'')+'.'+(skipped.length?' Already on: '+skipped.map(escapeHtml).join(', ')+'.':'')+' Mark them under Review &amp; Edit Saved Attendance when ready.';
+    document.getElementById('reMsg').innerHTML='<div class="msg ok">'+t+'</div>';
+    _reAddData=null;
+    if(_re && added.indexOf(_re.course)>=0) await reLoad();
+  }catch(e){ am.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
+  finally{ btn.disabled=false; }
 }
 async function reEdit(i){
   if(!isOwner()) return;

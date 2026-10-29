@@ -122,6 +122,66 @@
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<style id="modernDash">
+  :root{ --page:#f3f6f1; --accent2:#2f7d4a; --tint:rgba(63,122,50,0.10); --shadow:0 1px 2px rgba(20,40,20,.05),0 8px 24px rgba(20,40,20,.06); }
+  html[data-theme="dark"]{ --page:#08161d; --tint:rgba(120,200,150,0.12); --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); }
+  body{ background:var(--page) !important; }
+  .hero{ background:radial-gradient(120% 140% at 85% -20%, #3f9a55 0%, transparent 55%), radial-gradient(90% 120% at 0% 110%, #1f5a2c 0%, transparent 60%), linear-gradient(135deg,#0f2d17,#16411f) !important; padding:48px 24px 76px !important; border-radius:0 0 32px 32px; overflow:hidden; }
+  .hero::after{ display:none !important; }
+  .hero::before{ content:""; position:absolute; width:260px; height:260px; border-radius:50%; right:-70px; top:-90px; background:rgba(255,255,255,.07); }
+  .hero h1{ font-size:2.1rem !important; letter-spacing:-0.01em; position:relative; }
+  .hero p{ position:relative; font-size:0.95rem !important; max-width:520px; margin:0 auto !important; }
+  .hero-tabs{ margin:-34px auto 26px !important; background:var(--card) !important; border:1px solid var(--line); border-radius:999px !important; padding:5px !important; box-shadow:var(--shadow) !important; max-width:560px !important; }
+  .hero-tabs a,.hero-tabs .tab-static{ border-radius:999px !important; padding:10px 16px !important; font-size:0.8rem !important; transition:background .15s,color .15s; }
+  .hero-tabs a:hover{ background:var(--tint) !important; color:var(--ink) !important; }
+  .hero-tabs .active{ background:var(--accent) !important; color:#fff !important; }
+  .card{ background:var(--card) !important; border-radius:18px !important; border:1px solid var(--line) !important; box-shadow:var(--shadow) !important; padding:26px !important; }
+  h2{ font-size:1.08rem !important; letter-spacing:-0.005em; }
+  h2::before{ width:10px !important; height:10px !important; border-radius:50% !important; background:var(--accent) !important; box-shadow:0 0 0 5px var(--tint); margin-right:6px; }
+  button{ background:var(--accent) !important; border-radius:10px !important; padding:11px 22px !important; transition:transform .12s,box-shadow .12s,background .12s; }
+  button:hover{ background:var(--accent-dark) !important; transform:translateY(-1px); box-shadow:0 6px 14px rgba(47,95,38,.25); }
+  button.secondary{ background:transparent !important; color:var(--ink) !important; border:1px solid var(--line) !important; }
+  button.secondary:hover{ background:var(--tint) !important; box-shadow:none; }
+  html[data-theme="dark"] button:not(.secondary){ color:#08161d !important; }
+  input[type=text],input[type=password],input[type=email],select,textarea{ border-radius:10px !important; background:var(--card); }
+  input:focus,select:focus,textarea:focus{ outline:2px solid var(--accent) !important; outline-offset:1px; }
+  /* section navigation */
+  .dash-nav{ position:sticky; top:8px; z-index:20; display:flex; gap:8px; overflow-x:auto; padding:8px; margin:0 0 16px; background:var(--card); border:1px solid var(--line); border-radius:999px; box-shadow:var(--shadow); scrollbar-width:none; }
+  .dash-nav::-webkit-scrollbar{ display:none; }
+  .dash-nav a{ flex:0 0 auto; padding:8px 14px; border-radius:999px; font-size:0.8rem; font-weight:600; color:var(--muted); text-decoration:none; white-space:nowrap; }
+  .dash-nav a:hover{ background:var(--tint); color:var(--ink); }
+  html{ scroll-behavior:smooth; } .dash-sec{ scroll-margin-top:76px; }
+  /* overview tiles */
+  .overview-grid{ display:grid !important; grid-template-columns:repeat(3,1fr); gap:14px !important; }
+  .overview-item{ border-radius:16px !important; padding:20px 12px !important; background:linear-gradient(180deg,var(--tint),transparent) !important; border:1px solid var(--line) !important; }
+  .overview-num{ font-size:2rem !important; line-height:1.1; color:var(--ink) !important; }
+  .overview-label{ font-weight:600; margin-top:6px !important; }
+  .overview-item .ovbar{ height:6px; width:70%; margin:12px auto 0; border-radius:99px; background:linear-gradient(90deg,var(--accent) var(--p,0%),var(--line) var(--p,0%)); }
+  /* tables */
+  #dashScores table,#dashAttendance table{ border-collapse:separate; border-spacing:0; width:100%; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  #dashScores th,#dashAttendance th{ background:var(--tint); border-bottom:1px solid var(--line); padding:11px 12px; }
+  #dashScores td,#dashAttendance td{ padding:11px 12px; }
+  #dashScores tr:last-child td,#dashAttendance tr:last-child td{ border-bottom:none; }
+  #dashScores tbody tr:hover td,#dashAttendance tbody tr:hover td{ background:var(--tint); }
+  #dashScores th,#dashAttendance th{ color:var(--muted) !important; }
+  .overview-grid{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  .overview-item{ min-width:0 !important; padding-left:6px !important; padding-right:6px !important; }
+  .pct-badge{ padding:3px 10px !important; }
+  .report-item{ border:1px solid var(--line) !important; border-radius:12px; padding:14px !important; margin-bottom:10px; }
+  .empty{ text-align:center; padding:18px 0 !important; }
+  .intro-card{ text-align:center; background:linear-gradient(135deg,var(--tint),transparent) !important; }
+  body:has(#signedInCard:not(.hidden)) #introCard{ display:none; }
+  footer{ background:transparent !important; color:var(--muted) !important; }
+  @media (max-width:640px){
+    .hero{ padding:38px 16px 66px !important; border-radius:0 0 26px 26px; }
+    .hero h1{ font-size:1.7rem !important; }
+    .overview-grid{ grid-template-columns:1fr 1fr 1fr; gap:8px !important; }
+    .overview-num{ font-size:1.45rem !important; }
+    .overview-label{ font-size:0.62rem !important; }
+    .card{ padding:20px !important; border-radius:16px !important; }
+    .hero-tabs{ margin:-30px 12px 20px !important; }
+  }
+</style>
 <script src="db-sync.js"></script>
 </head>
 <body>
@@ -138,12 +198,9 @@
 </div>
 
 <div class="wrap">
-  <div class="card" style="text-align:center;background:linear-gradient(135deg,#f0f4f9,#e8eef7);">
-    <h2 style="justify-content:center;">What is the Students Dashboard?</h2>
-    <p style="color:var(--muted);font-size:0.92rem;line-height:1.6;max-width:520px;margin:0 auto;">
-      The Students Dashboard brings everything tied to your index number into one place — your assessment scores across all courses, your attendance record and percentage, and any issue reports you've submitted along with the lecturer's replies. Instead of checking the Assessment Portal, Attendance, and Report Issue sections separately, you can see it all here at a glance.
-      Sign in below (creating an account takes a minute) and link it to your index number once — after that, your dashboard loads automatically every time you sign in.
-    </p>
+  <div class="card intro-card" id="introCard">
+    <h2 style="justify-content:center;">Everything in one place</h2>
+    <p style="color:var(--muted);font-size:0.92rem;line-height:1.6;max-width:480px;margin:0 auto;">Your scores, attendance and report replies, tied to your index number. Sign in below and link your index number once. After that your dashboard loads automatically.</p>
   </div>
 
   <div class="card" id="studentAuthCard">
@@ -309,16 +366,24 @@
     <div class="hidden" id="adminHideResultsWrap" style="text-align:right;margin-bottom:12px;">
       <button class="secondary" onclick="hideAdminViewedStudent()">&larr; Hide / Back to List</button>
     </div>
-    <div class="card" id="dashOverviewCard">
+    <nav class="dash-nav" id="dashNav">
+      <a href="#dashOverviewCard">Overview</a>
+      <a href="#dashLectureHall">Lecture Hall</a>
+      <a href="#dashScoresCard">Scores</a>
+      <a href="#dashAttCard">Attendance</a>
+      <a href="#dashReportsCard">Reports</a>
+      <a href="#dashIssueCard">Report an Issue</a>
+    </nav>
+    <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
       <div class="overview-grid" id="dashOverview">
         <div class="overview-item">
           <div class="overview-num" id="ovAvgScore">–</div>
-          <div class="overview-label">Avg. Score</div>
+          <div class="overview-label">Avg. Score</div><div class="ovbar"></div>
         </div>
         <div class="overview-item">
           <div class="overview-num" id="ovAttendance">–</div>
-          <div class="overview-label">Attendance</div>
+          <div class="overview-label">Attendance</div><div class="ovbar"></div>
         </div>
         <div class="overview-item">
           <div class="overview-num" id="ovReports">–</div>
@@ -327,29 +392,29 @@
       </div>
     </div>
 
-    <div class="card" id="dashLectureHall">
+    <div class="card dash-sec" id="dashLectureHall">
       <h2>Lecture Hall</h2>
       <div style="font-size:0.85rem;color:var(--muted);margin-bottom:10px;">Notes, announcements, videos and syllabus from your lecturers.</div>
       <select id="dlhCourse" onchange="renderDashHall()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:12px;"></select>
       <div id="dlhBody"><div class="empty">Loading...</div></div>
     </div>
 
-    <div class="card">
+    <div class="card dash-sec" id="dashScoresCard">
       <h2>My Scores</h2>
       <div id="dashScores"><div class="empty">No data.</div></div>
     </div>
 
-    <div class="card">
+    <div class="card dash-sec" id="dashAttCard">
       <h2>My Attendance</h2>
       <div id="dashAttendance"><div class="empty">No data.</div></div>
     </div>
 
-    <div class="card">
+    <div class="card dash-sec" id="dashReportsCard">
       <h2>My Reports</h2>
       <div id="dashReports"><div class="empty">No data.</div></div>
     </div>
 
-    <div class="card">
+    <div class="card dash-sec" id="dashIssueCard">
       <h2>Report an Issue</h2>
       <label>Course</label>
       <select id="reportCourseSelect">
@@ -1472,6 +1537,22 @@ function updateWhoBar(){
   }catch(e){}
 }
 setInterval(updateWhoBar,1500);
+</script>
+<script>
+(function(){
+  function setBar(id){
+    var el=document.getElementById(id); if(!el) return;
+    var f=function(){ var n=parseFloat(el.textContent); var bar=el.parentNode.querySelector('.ovbar'); if(bar) bar.style.setProperty('--p',(isNaN(n)?0:Math.max(0,Math.min(100,n)))+'%'); };
+    new MutationObserver(f).observe(el,{childList:true,characterData:true,subtree:true}); f();
+  }
+  function greet(){
+    var w=document.getElementById('studentWhoAmI'), h=document.querySelector('.hero h1')||document.querySelector('h1');
+    if(!w||!h) return;
+    var f=function(){ var t=(w.textContent||'').trim(); if(!t){ h.textContent='Student Dashboard'; return; } var first=t.indexOf('@')>0?'':t.split(/\s+/)[0]; h.textContent=first?('Welcome back, '+first):'Welcome back'; };
+    new MutationObserver(f).observe(w,{childList:true,characterData:true,subtree:true}); f();
+  }
+  document.addEventListener('DOMContentLoaded',function(){ setBar('ovAvgScore'); setBar('ovAttendance'); greet(); });
+})();
 </script>
 </body>
 </html>

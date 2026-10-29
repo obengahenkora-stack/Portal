@@ -124,6 +124,24 @@
     margin-bottom:16px;
     box-shadow:3px 3px 0 rgba(43,36,32,0.06);
   }
+  .pane-off{display:none !important;}
+  .att-group{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
+  .att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+  .att-tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 2px rgba(43,36,32,0.05);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;font-family:inherit;width:100%;}
+  .att-tile,.att-tile *{text-transform:none !important;letter-spacing:normal !important;}
+  .att-tile .att-td{font-weight:400 !important;font-family:'IBM Plex Sans',sans-serif !important;}
+  .att-title{margin-bottom:4px !important;}
+  .att-tile:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(43,36,32,0.10);border-color:var(--accent);}
+  .att-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .att-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(122,24,24,0.08);color:var(--accent);}
+  .att-ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .att-tile.t-danger .att-ic{background:rgba(180,40,40,0.10);color:#b42828;}
+  .att-tile.t-lab .att-ic{background:rgba(214,140,20,0.14);color:#b36b00;}
+  .att-tile.t-go .att-ic{background:rgba(31,138,76,0.12);color:var(--ok);}
+  .att-tt{font-weight:700;font-size:0.98rem;color:var(--ink);font-family:'Fraunces',serif;}
+  .att-td{font-size:0.8rem;color:var(--muted);line-height:1.35;}
+  .att-title{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;margin:4px 0 2px;}
+  .test-banner{background:#fff4d6;border:1px solid #e8c56a;color:#7a5600;border-radius:10px;padding:9px 12px;font-size:0.82rem;font-weight:600;margin-bottom:12px;}
   label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Sans',sans-serif;}
   input[type=text], input[type=password], textarea, select{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:3px;
@@ -284,6 +302,12 @@
   <!-- TEACHER VIEW -->
   <div id="teacherView" class="hidden">
     <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <div id="tchTilesWrap">
+      <div class="att-title">Assessment</div>
+      <div class="hint" style="margin-bottom:4px;">Pick a tool. Everything you are allowed to use is shown below.</div>
+      <div id="tchTiles"></div>
+    </div>
+    <button class="secondary hidden" id="tchBackBar" onclick="tchGo(null)" style="margin-bottom:14px;">&larr; All assessment tools</button>
 
     <div class="card hidden" id="changePasscodeCard">
       <label>Change My Password</label>
@@ -478,14 +502,6 @@
       <div id="courseListDisplay" style="margin-top:14px;"></div>
     </div>
 
-    <div class="card hidden" id="taNoticeCard">
-      <div class="msg ok">You're logged in as a Teaching Assistant. You can mark attendance, view records, and reply to student issue reports. Uploading scores, managing courses, deleting data, backups, and settings are Main Instructor only.</div>
-    </div>
-
-    <div class="card hidden" id="lecturerNoticeCard">
-      <div class="msg ok">You're logged in as a Lecturer. You can upload scores, manage courses, mark attendance, manage rosters, and reply to student issue reports. Backups, settings, and deleting data are Main Instructor only.</div>
-    </div>
-
     <div class="card hidden" id="reportsCard">
       <label>Student Issue Reports (<span id="reportCount">0</span>)</label>
       <button class="secondary" id="clearAllReportsBtn" onclick="clearAllReports()" style="margin-bottom:12px;">Clear All Reports</button>
@@ -496,6 +512,12 @@
   <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" class="hidden">
     <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <div id="attTilesWrap">
+      <div class="att-title">Attendance</div>
+      <div class="hint" style="margin-bottom:4px;">Pick a tool. Everything you are allowed to use is shown below.</div>
+      <div id="attTiles"></div>
+    </div>
+    <button class="secondary hidden" id="attBackBar" onclick="attGo(null)" style="margin-bottom:14px;">&larr; All attendance tools</button>
 
     <div class="card" id="takeAttendanceLoginCard">
       <div class="msg err">Please sign in from the Faculty Console first. <button class="secondary" onclick="switchTab('hub')" style="margin-left:8px;padding:6px 12px;">Go to sign in</button></div>
@@ -503,6 +525,7 @@
 
     <div class="card hidden" id="takeAttendanceCard">
       <label>Take Attendance</label>
+      <div id="testBanner" class="test-banner hidden">PRACTICE COURSE: this is test data. Students do not see it and you can delete it from Practice Lab.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <div style="flex:1;min-width:160px;">
           <label>Course</label>
@@ -640,19 +663,6 @@
       <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
     </div>
 
-    <div style="text-align:center;margin-top:8px;">
-      <button onclick="switchTab('roster')" style="background:transparent;color:var(--muted);border:1px solid var(--line);font-size:0.75rem;padding:7px 14px;">Upload / Manage Roster (passcode required)</button>
-    </div>
-  </div>
-
-  <!-- ROSTER UPLOAD (passcode protected) -->
-  <div id="rosterView" class="hidden">
-    <span class="back-to-list" onclick="switchTab('attendance')" style="display:block;margin-bottom:14px;cursor:pointer;color:var(--accent);font-size:0.85rem;">&larr; Back to Attendance</span>
-
-    <div class="card" id="attendanceLoginCard">
-      <div class="msg err">Please sign in from the Assessment Portal first to manage rosters.</div>
-    </div>
-
     <div class="card hidden" id="rosterUploadCard">
       <label>Upload Class Roster (once per course)</label>
       <div class="hint">Uploading again for the same course replaces its roster.</div>
@@ -704,6 +714,17 @@
       <select id="delAttDate"><option value="">Select a course first...</option></select>
       <div style="margin-top:8px;"><button class="secondary" onclick="delAttRun()">Delete This Session</button></div>
       <div id="delAttMsg" style="margin-top:12px;"></div>
+    </div>
+    <div class="card hidden" id="practiceCard">
+      <label>Practice Lab (owner only)</label>
+      <div class="hint">Creates a fake course called "[TEST] Practice Class" with sample students. Try ticking, QR check-in, review, export and delete safely. Lecturers and students never see it. Remove it with one button when you are done.</div>
+      <label>Your own index number (optional, so you can scan the QR yourself)</label>
+      <input type="text" id="plabMyIndex" placeholder="e.g. your index number">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="plabCreate()">Create practice course</button>
+        <button class="secondary" onclick="plabClear()">Delete all practice data</button>
+      </div>
+      <div id="plabMsg" style="margin-top:12px;"></div>
     </div>
     <div class="card hidden" id="attendanceCleanupCard">
       <label>End of Semester Cleanup</label>
@@ -869,7 +890,7 @@ async function resolveCurrentUserRole(){
 }
 let currentUserName = null;
 let currentUserCourses = null; // null = sees all courses; array = only the assigned ones
-function visibleCourses(list){ if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
+function visibleCourses(list){ list=(list||[]).filter(function(c){return isOwner()||!/^\[TEST\]/i.test(String(c));}); if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
 function _cb(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return (m?m[1].trim():s).toLowerCase(); }
 function reportVisible(r){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var mine=currentUserCourses.map(_cb); return mine.indexOf(_cb(r.course))>=0; }
 async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; } }catch(e){} }
@@ -1096,13 +1117,127 @@ if(window.emailjs){ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }
 function switchTab(tab){
   document.getElementById('hubView').classList.toggle('hidden', tab!=='hub');
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
-  document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance' && tab!=='roster');
-  document.getElementById('rosterView').classList.toggle('hidden', tab!=='roster');
-  document.getElementById('attendanceSummaryCard').classList.toggle('hidden', tab==='roster');
-  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='roster');
-  if(tab === 'attendance' || tab === 'roster'){
+  document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
+  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance');
+  if(tab === 'attendance'){
     loadAttendanceSummaryCourseOptions();
   }
+  if(tab === 'attendance'){ attGo(null); } if(tab === 'teacher'){ tchGo(null); }
+}
+
+
+/* ===== Attendance tile launcher ===== */
+var _ATT_IC={
+ check:'<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+ qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/>',
+ chart:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+ edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+ upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+ file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+ trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+ users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+ list:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',
+ db:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+ flask:'<path d="M9 3h6M10 3v6L4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2l-6-10V3"/>',
+ reset:'<polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>'
+};
+var _ATT_TILES=[
+ {g:'Every class',id:'takeAttendanceCard',t:'Take Attendance',d:'Tick students as they arrive. Saves automatically.',i:'check',c:'t-go'},
+ {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
+ {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
+ {g:'Records',id:'attendanceEditCard',t:'Review & Edit',d:'Fix a saved session before it becomes final.',i:'edit'},
+ {g:'Records',id:'rosterUploadCard',t:'Upload Class List',d:'Add a course list from Excel or CSV.',i:'upload'},
+ {g:'Records',id:'attPdfCard',t:'Import from PDF',d:'Bring in attendance from a PDF sheet.',i:'file'},
+ {g:'Records',id:'attendanceDeleteCard',t:'Delete a Session',d:'Remove one date for a course.',i:'trash',c:'t-danger'},
+ {g:'Owner tools',id:'rosterEditCard',t:'Edit Class List',d:'Add, rename or remove students. Download lists.',i:'users'},
+ {g:'Owner tools',id:'allSessionsCard',t:'All Saved Sessions',d:'See every session and who took it.',i:'list'},
+ {g:'Owner tools',id:'practiceCard',t:'Practice Lab',d:'A safe test course to try everything.',i:'flask',c:'t-lab'},
+ {g:'Owner tools',id:'dbMigrateCard',t:'Database Upgrade',d:'Check, back up and migrate storage.',i:'db'},
+ {g:'Owner tools',id:'attendanceCleanupCard',t:'End of Semester',d:'Clear records before a new semester.',i:'reset',c:'t-danger'}
+];
+var _TCH_TILES=[
+ {g:'Scores',id:'uploadCard',t:'Upload Scores',d:'Add an assessment from a sheet or by pasting.',i:'upload',c:'t-go'},
+ {g:'Scores',id:'gradebookCard',t:'Gradebook',d:'Whole class, one column per assessment.',i:'list'},
+ {g:'Scores',id:'dataCard',t:'Score Records',d:'Filter and review every uploaded record.',i:'file'},
+ {g:'Scores',id:'exportScoresCard',t:'Download as Excel',d:'Export scores for a course or all courses.',i:'chart'},
+ {g:'Scores',id:'fillSheetCard',t:'Fill Official Sheet',d:'Put scores into the university sheet.',i:'edit'},
+ {g:'Scores',id:'transferScoresCard',t:'Transfer Between Files',d:'Copy columns from one Excel file to another.',i:'reset'},
+ {g:'Teaching',id:'lectureMaterialsCard',t:'Lecture Hall',d:'Post materials and announcements to students.',i:'file',c:'t-go'},
+ {g:'Teaching',id:'manageCoursesCard',t:'Manage Courses',d:'Courses students can report issues on.',i:'list'},
+ {g:'Teaching',id:'reportsCard',t:'Issue Reports',d:'Read and reply to student reports.',i:'users'},
+ {g:'Administration',id:'teamAccessCard',t:'Team Access',d:'Who can sign in and their role.',i:'users'},
+ {g:'Administration',id:'settingsCard',t:'Device Lock',d:'Student lookup device settings.',i:'db'},
+ {g:'Administration',id:'backupCard',t:'Backup Data',d:'Download a copy of all results.',i:'upload'},
+ {g:'Administration',id:'restoreCard',t:'Restore Backup',d:'Bring back data from a backup file.',i:'reset'},
+ {g:'Administration',id:'digestCard',t:'Weekly Digest',d:'Email summary of new reports.',i:'file'},
+ {g:'Administration',id:'deleteCourseCard',t:'Delete Course Results',d:'Remove all results for a course.',i:'trash',c:'t-danger'},
+ {g:'My account',id:'changePasscodeCard',t:'Change Password',d:'Set a new password for your account.',i:'check'}
+];
+var _LCH={
+ att:{tiles:_ATT_TILES,box:'attTiles',wrap:'attTilesWrap',back:'attBackBar',cur:null},
+ tch:{tiles:_TCH_TILES,box:'tchTiles',wrap:'tchTilesWrap',back:'tchBackBar',cur:null}
+};
+function _attCard(id){return document.getElementById(id);}
+function lchRender(k){
+  var L=_LCH[k], box=_attCard(L.box); if(!box) return;
+  var html='', lastG='', open=false;
+  L.tiles.forEach(function(t){
+    var el=_attCard(t.id); if(!el || el.classList.contains('hidden')) return;
+    if(t.g!==lastG){ if(open) html+='</div>'; html+='<div class="att-group">'+t.g+'</div><div class="att-grid">'; lastG=t.g; open=true; }
+    html+='<button class="att-tile '+(t.c||'')+'" onclick="lchGo(\''+k+'\',\''+t.id+'\')"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+_ATT_IC[t.i]+'</svg></span><span class="att-tt">'+t.t+'</span><span class="att-td">'+t.d+'</span></button>';
+  });
+  if(open) html+='</div>';
+  box.innerHTML=html;
+  lchApply(k);
+}
+function lchApply(k){
+  var L=_LCH[k];
+  L.tiles.forEach(function(t){ var el=_attCard(t.id); if(el) el.classList.toggle('pane-off', L.cur!==t.id); });
+  var w=_attCard(L.wrap), b=_attCard(L.back);
+  if(w) w.classList.toggle('pane-off', !!L.cur);
+  if(b) b.classList.toggle('hidden', !L.cur);
+}
+function lchGo(k,id){
+  var L=_LCH[k]; L.cur=id||null;
+  if(L.cur){ var el=_attCard(L.cur); if(el && el.classList.contains('hidden')) L.cur=null; }
+  lchRender(k);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function attRenderTiles(){ lchRender('att'); lchRender('tch'); }
+function attGo(id){ lchGo('att',id); }
+function tchGo(id){ lchGo('tch',id); }
+
+/* ===== Practice Lab (owner only) ===== */
+var _PLAB='[TEST] Practice Class';
+async function plabCreate(){
+  var msg=document.getElementById('plabMsg');
+  if(!isOwner()){ msg.innerHTML='<div class="msg err">Owner only.</div>'; return; }
+  try{
+    var data=await fetchSupabaseData();
+    var names=['Ama Mensah','Kofi Boateng','Akua Owusu','Yaw Asante','Esi Appiah','Kwesi Adjei','Abena Darko','Nana Yeboah'];
+    var roster=names.map(function(n,i){return {indexNumber:'TEST'+String(i+1).padStart(3,'0'),name:n};});
+    var mine=(document.getElementById('plabMyIndex').value||'').trim();
+    if(mine) roster.push({indexNumber:mine,name:'Me (test)'});
+    data.rosters=data.rosters||{}; data.rosters[_PLAB]=roster;
+    await saveSupabaseData(data);
+    try{ loadAttendanceCourseOptions(); loadAttendanceSummaryCourseOptions(); }catch(e){}
+    msg.innerHTML='<div class="msg ok">Practice course created with '+roster.length+' students. Open Take Attendance and choose "'+_PLAB+'". Test indexes are TEST001 to TEST008.</div>';
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not create: '+escapeHtml(e.message)+'</div>'; }
+}
+async function plabClear(){
+  var msg=document.getElementById('plabMsg');
+  if(!isOwner()){ msg.innerHTML='<div class="msg err">Owner only.</div>'; return; }
+  if(!confirm('Delete the practice course and all practice attendance? Real courses are not touched.')) return;
+  try{
+    var data=await fetchSupabaseData();
+    var isT=function(c){return /^\[TEST\]/i.test(String(c||''));};
+    Object.keys(data.rosters||{}).forEach(function(c){ if(isT(c)) delete data.rosters[c]; });
+    var before=(data.attendance||[]).length;
+    data.attendance=(data.attendance||[]).filter(function(a){return !isT(a.course);});
+    await saveSupabaseData(data);
+    try{ loadAttendanceCourseOptions(); loadAttendanceSummaryCourseOptions(); }catch(e){}
+    msg.innerHTML='<div class="msg ok">Practice data deleted ('+(before-data.attendance.length)+' practice session(s) removed).</div>';
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not delete: '+escapeHtml(e.message)+'</div>'; }
 }
 
 function toggleResultsVisibility(){
@@ -1157,7 +1292,6 @@ async function onAuthReady(showToast){
     loadExportCourseOptions();
     loadFillCourseOptions();
 
-    document.getElementById('attendanceLoginCard').classList.add('hidden');
     document.getElementById('rosterUploadCard').classList.remove('hidden');
   }
 
@@ -1174,12 +1308,8 @@ async function onAuthReady(showToast){
     loadCleanupCourseOptions(); try{delAttInit();}catch(e){}
   }
 
-  if(!isAdmin() && !canUploadScores()){
-    document.getElementById('taNoticeCard').classList.remove('hidden');
-  } else if(!isAdmin()){
-    document.getElementById('lecturerNoticeCard').classList.remove('hidden');
-  }
-
+  try{ if(isOwner()){ document.getElementById('practiceCard').classList.remove('hidden'); } }catch(e){}
+  try{ attRenderTiles(); }catch(e){}
   loadRecords();
   loadIssueReports();
 }
@@ -3181,6 +3311,7 @@ async function loadAttendanceForDate(){
     return;
   }
 
+  const _tb = document.getElementById('testBanner'); if(_tb) _tb.classList.toggle('hidden', !/^\[TEST\]/i.test(course));
   container.innerHTML = '<div class="empty">Loading roster...</div>';
   try{
     const data = await fetchSupabaseData();
@@ -3227,6 +3358,43 @@ function toggleAttendanceRow(row){
     statusEl.style.color = 'var(--ok)';
     row.style.background = 'rgba(31,138,76,0.08)';
   }
+  _autoMark(row.getAttribute('data-index'), statusEl.textContent === 'PRESENT');
+}
+
+// Auto-save: every tick/untick is saved on its own (one student at a time, queued), so nothing is lost if Save is forgotten.
+let _autoQ = Promise.resolve();
+function _autoMark(index, isPresent){
+  const course = document.getElementById('attendanceCourseSelect').value;
+  const date = document.getElementById('attendanceDateInput').value;
+  const msg = document.getElementById('saveAttendanceMsg');
+  if(!course || !date || !index) return;
+  if(msg) msg.innerHTML = '<div class="msg ok">Saving automatically...</div>';
+  _autoQ = _autoQ.then(async () => {
+    let lastErr;
+    for(let t=0;t<3;t++){
+      try{
+        const data = await fetchSupabaseData();
+        data.attendance = data.attendance || [];
+        const sessionKey = `${course}__${date}`;
+        let pos = data.attendance.findIndex(a => a.sessionKey === sessionKey);
+        const prev = pos>=0 ? data.attendance[pos] : null;
+        const rec = prev ? Object.assign({}, prev) : { sessionKey, course, date, present: [], checkInTimes: {} };
+        const key = String(index).trim().toLowerCase();
+        rec.present = (rec.present || []).filter(p => String(p).trim().toLowerCase() !== key);
+        rec.checkInTimes = Object.assign({}, rec.checkInTimes || {});
+        if(isPresent){ rec.present.push(index); if(!rec.checkInTimes[index]) rec.checkInTimes[index] = new Date().toISOString(); }
+        else { Object.keys(rec.checkInTimes).forEach(k => { if(String(k).trim().toLowerCase()===key) delete rec.checkInTimes[k]; }); }
+        const out = _stamp(rec, prev, 'taken');
+        if(pos>=0) data.attendance[pos] = out; else data.attendance.push(out);
+        await saveSupabaseData(data);
+        const m = document.getElementById('saveAttendanceMsg');
+        if(m) m.innerHTML = `<div class="msg ok">Saved automatically (${out.present.length} present). Press Save Attendance when you are done to confirm.</div>`;
+        return;
+      }catch(e){ lastErr = e; await new Promise(r => setTimeout(r, 600*(t+1))); }
+    }
+    const m = document.getElementById('saveAttendanceMsg');
+    if(m) m.innerHTML = `<div class="msg err">Auto-save failed: ${escapeHtml(lastErr && lastErr.message || 'error')}. Check your connection; press Save Attendance to retry.</div>`;
+  });
 }
 
 function filterAttendanceChecklist(){
@@ -3269,6 +3437,7 @@ async function saveAttendance(){
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
 
   try{
+    await _autoQ;
     const data = await fetchSupabaseData();
     const attendanceRecords = data.attendance || [];
     const sessionKey = `${course}__${date}`;

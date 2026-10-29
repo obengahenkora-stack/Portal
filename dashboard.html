@@ -1367,6 +1367,7 @@ async function loadDashboard(skipLock){
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
     )];
     const myCourses = _core;
+    try{ if(!isAdminUser()) window.__myCourses = myCourses; }catch(e){}
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
     if(myCourses.length === 0){
@@ -1748,5 +1749,6 @@ function renderWelcome(){
   else { box.innerHTML=''; box.classList.add('hidden'); }
 }
 </script>
+<script src="chat.js"></script>
 </body>
 </html>

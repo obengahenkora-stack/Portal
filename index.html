@@ -821,6 +821,70 @@ html[data-theme="dark"] .step:hover,html[data-theme="dark"] .step:hover .t,html[
   })();
 </script>
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<style id="homeModern">
+/* ===== Modern home layout: card grid, timeline, chips ===== */
+#proSection.prologue{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:20px; padding:56px 24px 16px; }
+#proSection .pro-row{ display:block; padding:30px; margin:0; border:1px solid var(--line); border-radius:24px; background:color-mix(in srgb,var(--bg) 78%,transparent); box-shadow:0 1px 2px rgba(11,42,58,.04),0 16px 36px rgba(11,42,58,.06); opacity:0; transform:translateY(18px); transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1),box-shadow .25s,border-color .25s; }
+#proSection .pro-row.in{ animation:none !important; opacity:1; transform:none; }
+#proSection .pro-row:hover{ border-color:color-mix(in srgb,var(--c1,#0ea5e9) 40%,var(--line)); box-shadow:0 2px 4px rgba(11,42,58,.05),0 22px 44px rgba(11,42,58,.10); }
+html[data-theme="dark"] #proSection .pro-row{ box-shadow:0 1px 2px rgba(0,0,0,.3),0 16px 36px rgba(0,0,0,.28); }
+#proSection .pro-row:nth-child(2){ transition-delay:.05s; } #proSection .pro-row:nth-child(3){ transition-delay:.1s; } #proSection .pro-row:nth-child(4){ transition-delay:.15s; } #proSection .pro-row:nth-child(5){ transition-delay:.2s; }
+/* section titles */
+#proSection .pro-head .sm{ display:flex; align-items:center; gap:10px; margin:0 0 20px; font:600 .78rem 'IBM Plex Mono',monospace; letter-spacing:.12em; color:var(--ink); }
+#proSection .pro-head .sm::before{ content:""; width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--c1,#0ea5e9),var(--c3,#8b5cf6)); box-shadow:0 0 0 5px color-mix(in srgb,var(--c1,#0ea5e9) 14%,transparent); }
+/* welcome card */
+#proSection .pro-row:nth-child(1){ grid-column:1/-1; display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:44px; align-items:center; padding:46px; background:radial-gradient(60% 90% at 0% 0%,color-mix(in srgb,var(--c1,#0ea5e9) 14%,transparent),transparent 70%),radial-gradient(60% 90% at 100% 100%,color-mix(in srgb,var(--c3,#8b5cf6) 12%,transparent),transparent 70%),color-mix(in srgb,var(--bg) 85%,transparent); }
+#proSection .pro-head h2{ font-size:clamp(2.6rem,6vw,4.4rem); margin:0 0 26px; }
+#proSection .pro-row:nth-child(1) .pro-text{ font-size:1.12rem; line-height:1.7; max-width:none; }
+#proSection .meta{ display:grid; grid-template-columns:none; grid-auto-flow:column; grid-template-rows:auto auto; gap:6px 30px; justify-content:start; }
+#proSection .meta dt{ font-size:.62rem; }
+#proSection .meta dd{ font-weight:600; font-size:.9rem; }
+/* placement */
+#cvInterestsRow{ grid-column:1 / span 5; grid-row:2; }
+#cvMembershipsRow{ grid-column:6 / span 7; grid-row:2; }
+#cvEducationRow{ grid-column:1 / span 6; grid-row:3; }
+#cvExperienceRow{ grid-column:7 / span 6; grid-row:3; }
+/* research interests as chips */
+#cvInterests{ display:flex; flex-wrap:wrap; gap:10px; }
+#cvInterests .cvl{ display:inline-flex; padding:9px 16px; border:1px solid color-mix(in srgb,var(--c1,#0ea5e9) 35%,var(--line)); border-radius:999px; background:color-mix(in srgb,var(--c1,#0ea5e9) 8%,transparent); font-size:.9rem; font-weight:500; transition:transform .15s,background .15s; }
+#cvInterests .cvl:nth-child(5n+2){ border-color:color-mix(in srgb,var(--c2,#22c55e) 40%,var(--line)); background:color-mix(in srgb,var(--c2,#22c55e) 9%,transparent); }
+#cvInterests .cvl:nth-child(5n+3){ border-color:color-mix(in srgb,var(--c3,#8b5cf6) 40%,var(--line)); background:color-mix(in srgb,var(--c3,#8b5cf6) 9%,transparent); }
+#cvInterests .cvl:nth-child(5n+4){ border-color:color-mix(in srgb,var(--c4,#f43f5e) 40%,var(--line)); background:color-mix(in srgb,var(--c4,#f43f5e) 9%,transparent); }
+#cvInterests .cvl:nth-child(5n){ border-color:color-mix(in srgb,var(--c5,#f59e0b) 45%,var(--line)); background:color-mix(in srgb,var(--c5,#f59e0b) 10%,transparent); }
+#cvInterests .cvl:hover{ transform:translateY(-2px); }
+/* timelines */
+#cvEducation .cvl,#cvExperience .cvl{ display:block; position:relative; padding:0 0 22px 26px; margin-left:6px; border:none; border-left:2px solid var(--line); }
+#cvEducation .cvl:last-child,#cvExperience .cvl:last-child{ padding-bottom:2px; border-left-color:transparent; }
+#cvEducation .cvl::before,#cvExperience .cvl::before{ content:""; position:absolute; left:-7px; top:3px; width:12px; height:12px; border-radius:50%; background:var(--bg); border:3px solid var(--c1,#0ea5e9); }
+#cvExperience .cvl::before{ border-color:var(--c3,#8b5cf6); }
+#cvEducation .cvl .y,#cvExperience .cvl .y{ display:inline-block; margin:0 0 7px; padding:3px 11px; border-radius:999px; background:color-mix(in srgb,var(--c1,#0ea5e9) 12%,transparent); color:var(--c1,#0ea5e9); font-weight:600; }
+#cvExperience .cvl .y{ background:color-mix(in srgb,var(--c3,#8b5cf6) 12%,transparent); color:var(--c3,#8b5cf6); }
+#cvEducation .cvl > span:not(.y),#cvExperience .cvl > span:not(.y){ display:block; font-size:.96rem; font-weight:500; line-height:1.45; }
+/* memberships as badge cards */
+#cvMemberships{ display:grid; gap:12px; }
+#cvMemberships .cvl{ display:grid; grid-template-columns:minmax(96px,auto) 1fr; gap:16px; align-items:center; padding:13px 16px; border:1px solid var(--line); border-radius:16px; background:color-mix(in srgb,var(--bg) 70%,transparent); transition:transform .15s,border-color .15s; }
+#cvMemberships .cvl:hover{ transform:translateX(3px); border-color:color-mix(in srgb,var(--c5,#f59e0b) 50%,var(--line)); }
+#cvMemberships .cvl .y{ justify-self:start; padding:6px 12px; border-radius:10px; background:linear-gradient(135deg,var(--c1,#0ea5e9),var(--c3,#8b5cf6)); color:#fff; font-weight:600; letter-spacing:.05em; }
+#cvMemberships .cvl > span:not(.y){ font-size:.92rem; line-height:1.4; }
+/* explore steps as cards */
+.process{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:16px; padding:20px 24px 80px; }
+.process h2{ grid-column:1/-1; margin:0 0 2px; }
+.step{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:24px; border:1px solid var(--line); border-radius:22px; background:color-mix(in srgb,var(--bg) 78%,transparent); box-shadow:0 1px 2px rgba(11,42,58,.04),0 12px 28px rgba(11,42,58,.05); transition:transform .2s,box-shadow .2s,background .2s,color .2s; }
+.step::after{ position:absolute; right:20px; top:22px; opacity:.35; }
+.step .n{ font-weight:600; }
+.step .t{ font-size:1.15rem !important; }
+.step .d{ font-size:.88rem; }
+.step:hover{ transform:translateY(-4px); box-shadow:0 22px 44px rgba(11,42,58,.16); }
+@media (max-width:900px){
+  #proSection.prologue{ gap:16px; padding-top:36px; }
+  #proSection .pro-row,#proSection .pro-row:nth-child(1){ grid-column:1/-1 !important; grid-row:auto !important; padding:24px; }
+  #proSection .pro-row:nth-child(1){ grid-template-columns:1fr; gap:22px; }
+  #proSection .meta{ grid-auto-flow:row; grid-template-columns:96px 1fr; grid-template-rows:none; gap:8px 14px; }
+  .step .d{ display:block !important; }
+  #cvMemberships .cvl{ grid-template-columns:1fr; gap:8px; }
+}
+@media (prefers-reduced-motion:reduce){ #proSection .pro-row{ opacity:1; transform:none; transition:none; } }
+</style>
 </head>
 <body class="landing">
 <script>try{ if(sessionStorage.getItem("portalEntered")==="1") document.body.classList.remove("landing"); }catch(e){}</script>

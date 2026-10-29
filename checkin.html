@@ -6,7 +6,7 @@
 <title>Attendance Check-In</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2545">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -49,6 +49,7 @@
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
+<meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 </head>
 <body>
 <div class="card">
@@ -190,7 +191,7 @@ async function verifyAndShowForm(){
         return;
       }
 
-      verifiedSession = { course, date, sessionKey };
+      verifiedSession = { course, date, sessionKey, startedBy: session.startedBy || null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
@@ -221,7 +222,8 @@ async function attemptCheckinWrite(idx){
   const attendanceRecords = data.attendance || [];
   let record = attendanceRecords.find(a => a.sessionKey === verifiedSession.sessionKey);
   if(!record){
-    record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [], checkInTimes: {} };
+    record = { sessionKey: verifiedSession.sessionKey, course: verifiedSession.course, date: verifiedSession.date, present: [], checkInTimes: {} }
+    if(verifiedSession.startedBy) record.takenBy = Object.assign({}, verifiedSession.startedBy, { how: 'QR check-in' });
     attendanceRecords.push(record);
   }
   record.checkInTimes = record.checkInTimes || {};

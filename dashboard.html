@@ -688,6 +688,7 @@ async function studentSignIn(){
 }
 
 async function studentSignOut(){
+  try{ if(window._adminViaStaff) await window._adminViaStaff.auth.signOut(); }catch(e){}
   await supabaseClient.auth.signOut();
   location.reload();
 }
@@ -1409,6 +1410,22 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(session){
     await onStudentSignedIn();
+  } else {
+    // Owner already signed in on the Faculty Console: no second sign-in needed here
+    try{
+      const staffClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data: { session: st } } = await staffClient.auth.getSession();
+      if(st && st.user && String(st.user.email).toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+        window._adminViaStaff = staffClient;
+        studentCurrentEmail = st.user.email;
+        document.getElementById('studentAuthCard').classList.add('hidden');
+        document.getElementById('signedInCard').classList.remove('hidden');
+        document.getElementById('studentWhoAmI').textContent = studentCurrentEmail;
+        document.getElementById('adminSearchCard').classList.remove('hidden');
+        document.getElementById('adminRegisteredCard').classList.remove('hidden');
+        loadRegisteredStudents();
+      }
+    }catch(e){ console.warn('staff session check', e); }
   }
 });
 </script>

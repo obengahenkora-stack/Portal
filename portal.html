@@ -237,23 +237,6 @@
 
   <!-- HUB LANDING VIEW -->
   <div id="hubView">
-    <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="card" onclick="switchTab('teacher')" style="cursor:pointer;text-align:center;padding:32px 20px;">
-        <div style="font-size:2rem;margin-bottom:10px;">📊</div>
-        <h2 style="justify-content:center;">Assessment Portal</h2>
-        <p style="color:var(--muted);font-size:0.85rem;margin:0;">Upload scores, manage students, view reports.</p>
-      </div>
-      <div class="card" onclick="switchTab('attendance')" style="cursor:pointer;text-align:center;padding:32px 20px;">
-        <div style="font-size:2rem;margin-bottom:10px;">✅</div>
-        <h2 style="justify-content:center;">Attendance Portal</h2>
-        <p style="color:var(--muted);font-size:0.85rem;margin:0;">QR check-in, rosters, attendance summaries.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- TEACHER VIEW -->
-  <div id="teacherView" class="hidden">
-    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
     <div class="card" id="loginCard">
       <label>Email</label>
       <input type="text" id="authEmailInput" placeholder="you@school.edu">
@@ -275,7 +258,31 @@
       <button class="secondary" onclick="signOutUser()">Sign Out</button>
     </div>
 
+    <div id="hubTiles" class="hidden">
     <button id="logoutBtn" onclick="signOutUser()" class="secondary hidden" style="margin-bottom:16px;">Sign Out</button>
+    <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+      <div class="card" onclick="switchTab('teacher')" style="cursor:pointer;text-align:center;padding:32px 20px;">
+        <div style="font-size:2rem;margin-bottom:10px;">📊</div>
+        <h2 style="justify-content:center;">Assessment Portal</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">Upload scores, manage students, view reports.</p>
+      </div>
+      <div class="card" onclick="switchTab('attendance')" style="cursor:pointer;text-align:center;padding:32px 20px;">
+        <div style="font-size:2rem;margin-bottom:10px;">✅</div>
+        <h2 style="justify-content:center;">Attendance Portal</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">QR check-in, rosters, attendance summaries.</p>
+      </div>
+      <a id="hubStudentTile" class="card hidden" href="dashboard.html" style="cursor:pointer;text-align:center;padding:32px 20px;text-decoration:none;color:inherit;grid-column:1 / -1;">
+        <div style="font-size:2rem;margin-bottom:10px;">🎓</div>
+        <h2 style="justify-content:center;">Students Dashboard</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">Registered students, search by index number, view any student's page.</p>
+      </a>
+    </div>
+    </div>
+  </div>
+
+  <!-- TEACHER VIEW -->
+  <div id="teacherView" class="hidden">
+    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
 
     <div class="card hidden" id="changePasscodeCard">
       <label>Change My Password</label>
@@ -490,7 +497,7 @@
     <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
 
     <div class="card" id="takeAttendanceLoginCard">
-      <div class="msg err">Please sign in from the Assessment Portal first to mark attendance.</div>
+      <div class="msg err">Please sign in from the Faculty Console first. <button class="secondary" onclick="switchTab('hub')" style="margin-left:8px;padding:6px 12px;">Go to sign in</button></div>
     </div>
 
     <div class="card hidden" id="takeAttendanceCard">
@@ -1105,6 +1112,8 @@ async function onAuthReady(showToast){
   document.getElementById('dataCard').classList.remove('hidden');
   document.getElementById('reportsCard').classList.remove('hidden');
   document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('hubTiles').classList.remove('hidden');
+  if(isOwner()){ document.getElementById('hubStudentTile').classList.remove('hidden'); }
   document.getElementById('changePasscodeCard').classList.remove('hidden');
 
   if(showToast) showWelcomeToast(currentUserName || currentUserEmail || 'there');
@@ -2428,6 +2437,18 @@ setInterval(updateLiveDateTime, 1000 * 30);
 
 // checkAttendancePasscode removed — access is now controlled centrally by onAuthReady() via real sign-in
 
+function _actor(){
+  const nm=(currentUserName && currentUserName!=='Owner')?currentUserName:(window._whoOwnerName||currentUserName||currentUserEmail||'Unknown');
+  return { name:nm, email:currentUserEmail||'', role:currentUserRole||'', at:new Date().toISOString() };
+}
+function _stamp(rec, prev, how){
+  const a=_actor(); if(how) a.how=how;
+  rec.takenBy = (prev && prev.takenBy) ? prev.takenBy : a;
+  if(prev) rec.editedBy = a;
+  return rec;
+}
+function _byText(a){ if(!a) return ''; const d=a.at?new Date(a.at).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''; return escapeHtml((a.name||a.email||'Unknown')+(a.role?' ('+a.role+')':''))+(d?' · '+d:''); }
+
 async function asLoad(){
   const box=document.getElementById('asBody'); box.innerHTML='<div class="empty">Loading...</div>';
   try{
@@ -2440,7 +2461,7 @@ async function asLoad(){
       if(a.course!==lastCourse){ lastCourse=a.course; const n=recs.filter(x=>x.course===a.course).length;
         h+=`<div style="font-weight:700;font-size:.85rem;margin:14px 0 4px;">${escapeHtml(a.course)} <span style="color:var(--muted);font-weight:400;">— ${n} session(s)${hasRoster.has(a.course)?'':' · <span style="color:var(--danger);">no class list</span>'}</span></div>`; }
       h+=`<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:.82rem;">
-        <div style="flex:1;">${escapeHtml(a.date)} · ${(a.present||[]).length} present</div>
+        <div style="flex:1;">${escapeHtml(a.date)} · ${(a.present||[]).length} present<div style="color:var(--muted);font-size:.74rem;">${a.takenBy?'Taken by '+_byText(a.takenBy):'Taken by: not recorded (saved before this feature)'}${a.editedBy?'<br>Last edited by '+_byText(a.editedBy):''}</div></div>
         <button class="secondary" style="padding:4px 10px;font-size:.72rem;border-color:var(--danger);color:var(--danger);" data-c="${escapeHtml(a.course)}" data-d="${escapeHtml(a.date)}" onclick="asDelete(this.dataset.c,this.dataset.d)">Delete</button></div>`;
     });
     box.innerHTML=h;
@@ -2584,6 +2605,7 @@ async function aeLoad(){
     (rec.present||[]).forEach(i=>{ const k=_aeNz(i); if(!seen.has(k)){ seen.add(k); people.push({orig:i,idx:i,name:'',present:true,isNew:false}); } });
     _ae={course:c,date:d,people:people,times:rec.checkInTimes||{}};
     document.getElementById('aeSearch').value='';
+    document.getElementById('aeMsg').innerHTML=`<div class="hint">${rec.takenBy?'Taken by '+_byText(rec.takenBy):'Taken by: not recorded (saved before this feature)'}${rec.editedBy?' · Last edited by '+_byText(rec.editedBy):''}</div>`;
     document.getElementById('aeBody').classList.remove('hidden');
     aeRender();
   }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
@@ -2637,8 +2659,8 @@ async function aeSave(){
     }
     const oldT={}; Object.keys(_ae.times||{}).forEach(k=>{ oldT[_aeNz(ren[_aeNz(k)]||k)]=_ae.times[k]; });
     const times={}; present.forEach(p=>{ times[p.idx]=oldT[_aeNz(p.idx)]||nowIso; });
-    const rec={sessionKey:`${course}__${date}`,course,date,present:present.map(p=>p.idx),checkInTimes:times};
     const pos=data.attendance.findIndex(a=>a.course===course&&a.date===date);
+    const rec=_stamp({sessionKey:`${course}__${date}`,course,date,present:present.map(p=>p.idx),checkInTimes:times}, pos>=0?data.attendance[pos]:null, 'edited');
     if(pos>=0) data.attendance[pos]=rec; else data.attendance.push(rec);
     // roster: keep in sync (new students added, index/name corrections applied)
     data.rosters=data.rosters||{};
@@ -2729,7 +2751,7 @@ async function apImport(){
       const pos=data.attendance.findIndex(a=>a.sessionKey===sessionKey || (a.course===course && a.date===date));
       const old=pos>=0?(data.attendance[pos].checkInTimes||{}):{};
       const times={}; present.forEach(x=>{ times[x]=old[x]||nowIso; });
-      const rec={sessionKey,course,date,present,checkInTimes:times};
+      const rec=_stamp({sessionKey,course,date,present,checkInTimes:times}, pos>=0?data.attendance[pos]:null, 'imported from PDF');
       if(pos>=0) data.attendance[pos]=rec; else data.attendance.push(rec);
     });
     let added=0;
@@ -3155,7 +3177,7 @@ async function saveAttendance(){
         checkInTimes[studentIndex] = nowIso;
       }
     });
-    const record = { sessionKey, course, date, present, checkInTimes };
+    const record = _stamp({ sessionKey, course, date, present, checkInTimes }, idx>=0?attendanceRecords[idx]:null, 'taken');
     if(idx >= 0){
       attendanceRecords[idx] = record;
     } else {
@@ -3223,7 +3245,7 @@ async function refreshQrSession(course, date, lat, lng){
     const qrData = await fetchQrSessions();
     const existing = qrData[sessionKey];
     const sessionStartTime = (existing && existing.sessionStartTime) ? existing.sessionStartTime : new Date().toISOString();
-    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date, sessionStartTime };
+    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
     await saveQrSessions(qrData);
 
     const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;

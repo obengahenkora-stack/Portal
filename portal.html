@@ -525,6 +525,7 @@
 
     <div class="card hidden" id="takeAttendanceCard">
       <label>Take Attendance</label>
+      <div id="offlineBanner" class="test-banner hidden" style="background:#fdecea;border-color:#e3a39c;color:#8a1f15;"></div>
       <div id="testBanner" class="test-banner hidden">PRACTICE COURSE: this is test data. Students do not see it and you can delete it from Practice Lab.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <div style="flex:1;min-width:160px;">
@@ -766,14 +767,16 @@ const SUPABASE_BUCKET = "portal-data";
 const SUPABASE_FILE = "site-data.json";
 const SUPABASE_QR_FILE = "qr-sessions.json"; // kept separate from site-data.json so frequent token refreshes never risk overwriting attendance check-ins
 
-async function fetchSupabaseData(){
+async function fetchSupabaseData(strict){
   try{
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
-    if(!res.ok) return {};
+    if(!res.ok){ if(strict) throw new Error('Could not reach the database ('+res.status+')'); return {}; }
     if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
-    return _normAllAttendance(_normAllRosters(await DBS.load(await res.json())));
+    const _full = _normAllAttendance(_normAllRosters(await DBS.load(await res.json())));
+    _cacheRosters(_full);
+    return _full;
   }catch(e){
-    if(e && e.dbs) throw e;
+    if(strict || (e && e.dbs)) throw e;
     return {};
   }
 }
@@ -873,6 +876,11 @@ function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'a
 function canUploadScores(){ return isAdmin() || currentUserRole === 'lecturer'; }
 function canManageRosters(){ return isAdmin() || currentUserRole === 'lecturer'; }
 
+var _rcT=0;
+function _cacheRosters(d){
+  try{ if(Date.now()-_rcT<60000) return; _rcT=Date.now(); localStorage.setItem('ceRosterCache', JSON.stringify({t:Date.now(), rosters:d.rosters||{}})); }catch(e){}
+}
+function _offlineRosters(){ try{ var o=JSON.parse(localStorage.getItem('ceRosterCache')||'null'); return o&&o.rosters?o.rosters:null; }catch(e){ return null; } }
 async function resolveCurrentUserRole(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session){ currentUserRole = null; currentUserEmail = null; currentUserName = null; return; }
@@ -886,7 +894,12 @@ async function resolveCurrentUserRole(){
     currentUserRole = me ? me.role : null;
     currentUserName = me ? me.name : null;
     currentUserCourses = (me && Array.isArray(me.courses)) ? me.courses : null;
-  }catch(e){ currentUserRole = null; currentUserName = null; }
+    try{ localStorage.setItem('ceRoleCache', JSON.stringify({email:email, role:currentUserRole, name:currentUserName, courses:currentUserCourses})); }catch(e){}
+  }catch(e){
+    // offline: fall back to the last role we saw for this same account
+    try{ var rc=JSON.parse(localStorage.getItem('ceRoleCache')||'null'); if(rc && rc.email===email){ currentUserRole=rc.role; currentUserName=rc.name; currentUserCourses=rc.courses; return; } }catch(e2){}
+    currentUserRole = null; currentUserName = null;
+  }
 }
 let currentUserName = null;
 let currentUserCourses = null; // null = sees all courses; array = only the assigned ones
@@ -1310,6 +1323,7 @@ async function onAuthReady(showToast){
 
   try{ if(isOwner()){ document.getElementById('practiceCard').classList.remove('hidden'); } }catch(e){}
   try{ attRenderTiles(); }catch(e){}
+  try{ _qBanner(); if(_qGet().length) flushAttQueue(); }catch(e){}
   loadRecords();
   loadIssueReports();
 }
@@ -3092,7 +3106,9 @@ async function loadAttendanceCourseOptions(){
     const options = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     document.getElementById('attendanceCourseSelect').innerHTML = options;
     document.getElementById('attendanceSummaryCourseSelect').innerHTML = options;
-  }catch(e){}
+  }catch(e){
+    var rc=_offlineRosters(); if(rc){ var cs=visibleCourses(Object.keys(rc)); document.getElementById('attendanceCourseSelect').innerHTML='<option value="">Select course...</option>'+cs.map(function(c){return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>';}).join(''); }
+  }
 }
 
 async function loadAttendanceSummaryCourseOptions(){
@@ -3314,7 +3330,13 @@ async function loadAttendanceForDate(){
   const _tb = document.getElementById('testBanner'); if(_tb) _tb.classList.toggle('hidden', !/^\[TEST\]/i.test(course));
   container.innerHTML = '<div class="empty">Loading roster...</div>';
   try{
-    const data = await fetchSupabaseData();
+    let data; _attLoadedOffline = false;
+    try{ data = await fetchSupabaseData(true); }
+    catch(fe){
+      const rc = _offlineRosters();
+      if(!rc){ container.innerHTML = '<div class="empty">Could not load the class list. You look offline and no saved copy exists on this device. Open this page once with internet, then it works offline.</div>'; return; }
+      data = { rosters: rc, attendance: [] }; _attLoadedOffline = true;
+    }
     const roster = (data.rosters && data.rosters[course]) || [];
     if(roster.length === 0){
       container.innerHTML = '<div class="empty">No roster uploaded for this course yet.</div>';
@@ -3325,6 +3347,7 @@ async function loadAttendanceForDate(){
     const sessionKey = `${course}__${date}`;
     const existingRecord = attendanceRecords.find(a => a.sessionKey === sessionKey);
     const presentSet = new Set((existingRecord ? existingRecord.present : []).map(p => String(p).trim().toLowerCase()));
+    _qGet().forEach(o => { if(o.course===course && o.date===date){ const k=String(o.index).trim().toLowerCase(); if(o.present) presentSet.add(k); else presentSet.delete(k); } });
 
     let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
     roster.forEach(s => {
@@ -3361,41 +3384,82 @@ function toggleAttendanceRow(row){
   _autoMark(row.getAttribute('data-index'), statusEl.textContent === 'PRESENT');
 }
 
-// Auto-save: every tick/untick is saved on its own (one student at a time, queued), so nothing is lost if Save is forgotten.
-let _autoQ = Promise.resolve();
-function _autoMark(index, isPresent){
-  const course = document.getElementById('attendanceCourseSelect').value;
-  const date = document.getElementById('attendanceDateInput').value;
-  const msg = document.getElementById('saveAttendanceMsg');
-  if(!course || !date || !index) return;
-  if(msg) msg.innerHTML = '<div class="msg ok">Saving automatically...</div>';
-  _autoQ = _autoQ.then(async () => {
-    let lastErr;
-    for(let t=0;t<3;t++){
-      try{
-        const data = await fetchSupabaseData();
-        data.attendance = data.attendance || [];
-        const sessionKey = `${course}__${date}`;
-        let pos = data.attendance.findIndex(a => a.sessionKey === sessionKey);
-        const prev = pos>=0 ? data.attendance[pos] : null;
-        const rec = prev ? Object.assign({}, prev) : { sessionKey, course, date, present: [], checkInTimes: {} };
-        const key = String(index).trim().toLowerCase();
-        rec.present = (rec.present || []).filter(p => String(p).trim().toLowerCase() !== key);
-        rec.checkInTimes = Object.assign({}, rec.checkInTimes || {});
-        if(isPresent){ rec.present.push(index); if(!rec.checkInTimes[index]) rec.checkInTimes[index] = new Date().toISOString(); }
-        else { Object.keys(rec.checkInTimes).forEach(k => { if(String(k).trim().toLowerCase()===key) delete rec.checkInTimes[k]; }); }
-        const out = _stamp(rec, prev, 'taken');
-        if(pos>=0) data.attendance[pos] = out; else data.attendance.push(out);
-        await saveSupabaseData(data);
-        const m = document.getElementById('saveAttendanceMsg');
-        if(m) m.innerHTML = `<div class="msg ok">Saved automatically (${out.present.length} present). Press Save Attendance when you are done to confirm.</div>`;
-        return;
-      }catch(e){ lastErr = e; await new Promise(r => setTimeout(r, 600*(t+1))); }
-    }
-    const m = document.getElementById('saveAttendanceMsg');
-    if(m) m.innerHTML = `<div class="msg err">Auto-save failed: ${escapeHtml(lastErr && lastErr.message || 'error')}. Check your connection; press Save Attendance to retry.</div>`;
-  });
+// ===== Auto-save with an offline queue =====
+// Every tick/untick is written to this device first, then synced one student at a time.
+// If the internet is off, changes wait on the device and sync automatically when it returns.
+var _attLoadedOffline=false, _flushing=null, _retryT=null;
+const _QK='ceAttQueue';
+function _qGet(){ try{ return JSON.parse(localStorage.getItem(_QK)||'[]'); }catch(e){ return []; } }
+function _qSet(a){ try{ localStorage.setItem(_QK, JSON.stringify(a)); }catch(e){} }
+function _qAdd(op){
+  const k=String(op.index).trim().toLowerCase();
+  const q=_qGet().filter(o=>!(o.course===op.course && o.date===op.date && String(o.index).trim().toLowerCase()===k));
+  q.push(op); _qSet(q);
 }
+function _qBanner(state){
+  const el=document.getElementById('offlineBanner'); if(!el) return;
+  const n=_qGet().length, off=(typeof navigator!=='undefined' && navigator.onLine===false);
+  if(!n && !off && state!=='error'){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  if(n && (off || state==='error')) el.innerHTML='<b>Offline.</b> '+n+' change'+(n>1?'s':'')+' saved on this device. They will sync automatically when the internet returns. Please do not clear your browser data.';
+  else if(n) el.innerHTML='Syncing '+n+' change'+(n>1?'s':'')+'...';
+  else el.innerHTML='<b>You are offline.</b> Ticks will be saved on this device and synced later.';
+}
+async function flushAttQueue(){
+  if(_flushing) return _flushing;
+  _flushing=(async()=>{
+    let ok=true;
+    try{
+      const q=_qGet();
+      if(!q.length){ _qBanner(); return true; }
+      if(typeof navigator!=='undefined' && navigator.onLine===false) throw new Error('offline');
+      const data=await fetchSupabaseData(true);
+      data.attendance=data.attendance||[];
+      const groups={};
+      q.forEach(o=>{ (groups[o.course+'__'+o.date]=groups[o.course+'__'+o.date]||[]).push(o); });
+      Object.keys(groups).forEach(sk=>{
+        const ops=groups[sk].sort((x,y)=>x.ts-y.ts), f=ops[0];
+        const pos=data.attendance.findIndex(a=>a.sessionKey===sk);
+        const prev=pos>=0?data.attendance[pos]:null;
+        const rec=prev?Object.assign({},prev):{sessionKey:sk,course:f.course,date:f.date,present:[],checkInTimes:{}};
+        rec.present=(rec.present||[]).slice(); rec.checkInTimes=Object.assign({},rec.checkInTimes||{});
+        ops.forEach(o=>{
+          const key=String(o.index).trim().toLowerCase();
+          rec.present=rec.present.filter(p=>String(p).trim().toLowerCase()!==key);
+          if(o.present){ rec.present.push(o.index); if(!rec.checkInTimes[o.index]) rec.checkInTimes[o.index]=new Date(o.ts).toISOString(); }
+          else Object.keys(rec.checkInTimes).forEach(k=>{ if(String(k).trim().toLowerCase()===key) delete rec.checkInTimes[k]; });
+        });
+        const out=_stamp(rec,prev,'taken');
+        if(pos>=0) data.attendance[pos]=out; else data.attendance.push(out);
+      });
+      await saveSupabaseData(data);
+      const done=new Set(q.map(o=>o.id));
+      _qSet(_qGet().filter(o=>!done.has(o.id)));
+      const m=document.getElementById('saveAttendanceMsg');
+      if(m) m.innerHTML='<div class="msg ok">Saved automatically. Press Save Attendance when you are done to confirm.</div>';
+      _qBanner();
+    }catch(e){
+      ok=false; _qBanner('error');
+      clearTimeout(_retryT); _retryT=setTimeout(()=>{ flushAttQueue(); },15000);
+    }
+    return ok;
+  })();
+  const r=await _flushing; _flushing=null;
+  if(r && _qGet().length) setTimeout(flushAttQueue,50);
+  else if(r && _attLoadedOffline){ _attLoadedOffline=false; try{ loadAttendanceForDate(); }catch(e){} }
+  return r;
+}
+function _autoMark(index, isPresent){
+  const course=document.getElementById('attendanceCourseSelect').value;
+  const date=document.getElementById('attendanceDateInput').value;
+  if(!course || !date || !index) return;
+  _qAdd({id:Date.now()+'-'+Math.random().toString(36).slice(2),course:course,date:date,index:index,present:!!isPresent,ts:Date.now()});
+  _qBanner();
+  flushAttQueue();
+}
+window.addEventListener('online',function(){ _qBanner(); flushAttQueue(); });
+window.addEventListener('offline',function(){ _qBanner(); });
+window.addEventListener('beforeunload',function(e){ if(_qGet().length){ e.preventDefault(); e.returnValue=''; } });
 
 function filterAttendanceChecklist(){
   const query = document.getElementById('attendanceSearchInput').value.trim().toLowerCase();
@@ -3437,7 +3501,9 @@ async function saveAttendance(){
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
 
   try{
-    await _autoQ;
+    const _synced = await flushAttQueue();
+    if(!_synced){ msg.innerHTML = '<div class="msg err">No internet right now. Your ticks are saved on this device and will sync automatically when it returns. Do not clear browser data.</div>'; btn.disabled=false; return; }
+    if(_attLoadedOffline){ msg.innerHTML = '<div class="msg ok">Synced. Reloading the saved list...</div>'; _attLoadedOffline=false; loadAttendanceForDate(); btn.disabled=false; return; }
     const data = await fetchSupabaseData();
     const attendanceRecords = data.attendance || [];
     const sessionKey = `${course}__${date}`;

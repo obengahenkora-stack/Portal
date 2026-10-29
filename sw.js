@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ce-portal-v14';
+const CACHE_NAME = 'ce-portal-v15';
 const urlsToCache = [
   'index.html',
   'theme.css',
@@ -32,9 +32,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first for everything so live data (scores, posts, attendance) always stays fresh.
-  // Falls back to cache only if the network is unavailable (offline).
+  const req = event.request;
+  if(req.method !== 'GET'){ return; }
+  const url = req.url;
+  // Live data (database and storage) is never cached, so it always stays fresh.
+  if(url.indexOf('supabase.co') >= 0 || url.indexOf('jsonbin.io') >= 0){ return; }
+  // Network-first. Every successful page/script is remembered so the portal can open offline later.
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(req).then((res) => {
+      if(res && (res.ok || res.type === 'opaque')){
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => {});
+      }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });

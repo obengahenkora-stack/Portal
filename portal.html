@@ -277,7 +277,15 @@
       <button class="secondary" onclick="signOutUser()">Sign Out</button>
     </div>
 
-    <div id="hubTiles" class="hidden">
+    <style id="hubCompact">
+#hubTiles .row2{grid-template-columns:repeat(auto-fit,minmax(165px,1fr)) !important;gap:12px !important;margin-top:8px !important}
+#hubTiles .row2>.card,#hubTiles .row2>a.card{padding:16px 14px !important;grid-column:auto !important;border-radius:16px;transition:transform .15s,box-shadow .15s}
+#hubTiles .row2>.card:hover,#hubTiles .row2>a.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.08)}
+#hubTiles .row2 .card>div[style*="font-size:2rem"]{font-size:1.5rem !important;margin-bottom:6px !important}
+#hubTiles .row2 h2{font-size:1rem !important;margin:0 0 4px !important}
+#hubTiles .row2 p{font-size:.76rem !important;line-height:1.35}
+</style>
+<div id="hubTiles" class="hidden">
     <button id="logoutBtn" onclick="signOutUser()" class="secondary hidden" style="margin-bottom:16px;">Sign Out</button>
     <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
       <div class="card" onclick="switchTab('teacher')" style="cursor:pointer;text-align:center;padding:32px 20px;">

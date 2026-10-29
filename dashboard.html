@@ -166,6 +166,14 @@
   #dashScores th,#dashAttendance th{ color:var(--muted) !important; }
   .overview-grid{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
   .overview-item{ min-width:0 !important; padding-left:6px !important; padding-right:6px !important; }
+  .pane-off{ display:none !important; }
+  .dash-nav a.on{ background:var(--accent); color:#fff; }
+  html[data-theme="dark"] .dash-nav a.on{ color:#08161d; }
+  .ov-links{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+  .ov-link{ text-align:left !important; background:var(--card) !important; color:var(--ink) !important; border:1px solid var(--line) !important; border-radius:14px !important; padding:14px 16px !important; display:flex; flex-direction:column; gap:4px; }
+  .ov-link:hover{ border-color:var(--accent) !important; background:var(--tint) !important; }
+  .ov-link b{ font-family:'Fraunces',serif; font-size:0.98rem; }
+  .ov-link span{ font-size:0.8rem; color:var(--muted); font-weight:400; }
   .pct-badge{ padding:3px 10px !important; }
   .report-item{ border:1px solid var(--line) !important; border-radius:12px; padding:14px !important; margin-bottom:10px; }
   .empty{ text-align:center; padding:18px 0 !important; }
@@ -367,12 +375,12 @@
       <button class="secondary" onclick="hideAdminViewedStudent()">&larr; Hide / Back to List</button>
     </div>
     <nav class="dash-nav" id="dashNav">
-      <a href="#dashOverviewCard">Overview</a>
-      <a href="#dashLectureHall">Lecture Hall</a>
-      <a href="#dashScoresCard">Scores</a>
-      <a href="#dashAttCard">Attendance</a>
-      <a href="#dashReportsCard">Reports</a>
-      <a href="#dashIssueCard">Report an Issue</a>
+      <a href="javascript:void(0)" data-tab="dashOverviewCard" class="on">Overview</a>
+      <a href="javascript:void(0)" data-tab="dashLectureHall">Lecture Hall</a>
+      <a href="javascript:void(0)" data-tab="dashScoresCard">Scores</a>
+      <a href="javascript:void(0)" data-tab="dashAttCard">Attendance</a>
+      <a href="javascript:void(0)" data-tab="dashReportsCard">Reports</a>
+      <a href="javascript:void(0)" data-tab="dashIssueCard">Report an Issue</a>
     </nav>
     <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
@@ -389,6 +397,12 @@
           <div class="overview-num" id="ovReports">–</div>
           <div class="overview-label">Reports Filed</div>
         </div>
+      </div>
+      <div class="ov-links" id="ovLinks">
+        <button class="ov-link" data-go="dashLectureHall"><b>Lecture Hall</b><span id="ovsHall">Notes, videos and syllabus</span></button>
+        <button class="ov-link" data-go="dashScoresCard"><b>My Scores</b><span id="ovsScores">View your results</span></button>
+        <button class="ov-link" data-go="dashAttCard"><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
+        <button class="ov-link" data-go="dashReportsCard"><b>My Reports</b><span id="ovsRep">View replies</span></button>
       </div>
     </div>
 
@@ -1552,6 +1566,32 @@ setInterval(updateWhoBar,1500);
     new MutationObserver(f).observe(w,{childList:true,characterData:true,subtree:true}); f();
   }
   document.addEventListener('DOMContentLoaded',function(){ setBar('ovAvgScore'); setBar('ovAttendance'); greet(); });
+})();
+</script>
+<script>
+(function(){
+  var SEC=['dashOverviewCard','dashLectureHall','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
+  window.dashTab=function(id){
+    if(SEC.indexOf(id)<0) id='dashOverviewCard';
+    SEC.forEach(function(x){ var e=document.getElementById(x); if(e) e.classList.toggle('pane-off', x!==id); });
+    document.querySelectorAll('#dashNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-tab')===id); });
+    try{ var n=document.getElementById('dashNav'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
+  };
+  function rows(id){ var t=document.querySelector('#'+id+' tbody'); return t?t.querySelectorAll('tr').length:0; }
+  function summarize(){
+    var sc=rows('dashScores'), at=rows('dashAttendance'), rp=document.querySelectorAll('#dashReports .report-item').length;
+    var set=function(id,t){ var e=document.getElementById(id); if(e) e.textContent=t; };
+    set('ovsScores', sc? sc+' score'+(sc>1?'s':'')+' recorded' : 'No scores yet');
+    set('ovsAtt', at? at+' course'+(at>1?'s':'')+' tracked' : 'No attendance yet');
+    set('ovsRep', rp? rp+' report'+(rp>1?'s':'') : 'No reports yet');
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('#dashNav a').forEach(function(a){ a.addEventListener('click',function(){ dashTab(a.getAttribute('data-tab')); }); });
+    document.querySelectorAll('.ov-link').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });
+    ['dashScores','dashAttendance','dashReports'].forEach(function(id){ var e=document.getElementById(id); if(e) new MutationObserver(summarize).observe(e,{childList:true,subtree:true}); });
+    var r=document.getElementById('dashResults'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) dashTab('dashOverviewCard'); }).observe(r,{attributes:true,attributeFilter:['class']});
+    dashTab('dashOverviewCard'); window.scrollTo(0,0); summarize();
+  });
 })();
 </script>
 </body>

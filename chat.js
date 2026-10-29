@@ -288,6 +288,7 @@ function css(){
  +'.cc-in{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line,#ddd)}'
  +'.cc-in textarea{flex:1;min-width:0;margin:0 !important;padding:10px 14px !important;border-radius:18px !important;resize:none;font:400 16px/1.35 "IBM Plex Sans",sans-serif;max-height:110px;border:1px solid var(--line,#ddd);background:transparent;color:inherit}'
  +'.cc-in{align-items:flex-end}'
+ +'.cc-wrap{white-space:normal !important;overflow:visible !important;line-height:1.25;text-transform:none}.cc-wrap b{display:block;font-weight:600;word-break:break-word}.cc-wrap small{display:block;font-size:.72rem;color:var(--muted,#777);font-weight:400}'
  +'.cc-s{padding:8px 12px;border-bottom:1px solid var(--line,#ddd)}.cc-s input{width:100%;box-sizing:border-box;margin:0 !important;padding:9px 14px !important;border-radius:999px !important;font-size:16px !important}'
  +'.cc-eb{align-items:center;justify-content:space-between;padding:6px 12px;font-size:.78rem;background:rgba(245,158,11,.15);border-top:1px solid var(--line,#ddd)}'
  +'.cc-eb button{background:transparent !important;color:inherit !important;border:none !important;text-decoration:underline;padding:2px 6px !important;box-shadow:none !important;text-transform:none !important}'
@@ -332,7 +333,7 @@ function renderHome(p){
     h+='<div class="cc-sec">Search results</div>';
     if(S.sr===null) h+='<div class="cc-note">Searching...</div>';
     else if(!S.sr.length) h+='<div class="cc-note">No student found with that name.</div>';
-    else S.sr.forEach(function(x){ if(x.id===S.me.id) return; var on=!!S.online[x.id]; h+='<button class="cc-row" type="button" data-dm="'+esc(x.id)+'" data-nm="'+esc(x.name)+'" data-g="'+esc(x.gender||'')+'">'+avatar(x.id,x.name,on,x.gender)+'<span class="cc-nm">'+esc(x.name)+'</span><span class="cc-tag">'+(on?'Online':'Offline, leave a message')+'</span></button>'; });
+    else S.sr.forEach(function(x){ if(x.id===S.me.id) return; var on=!!S.online[x.id]; h+='<button class="cc-row" type="button" data-dm="'+esc(x.id)+'" data-nm="'+esc(x.name)+'" data-g="'+esc(x.gender||'')+'">'+avatar(x.id,x.name,on,x.gender)+'<span class="cc-nm cc-wrap"><b>'+esc(x.name)+'</b><small>'+(x.info?esc(x.info)+' · ':'')+(on?'Online now':'Offline, leave a message')+'</small></span></button>'; });
   }
   h+='<div class="cc-note">Be kind and respectful. Messages are deleted after 24 hours.'+(S.histOK?'':' History is off, messages disappear when you close the page.')+'</div>';
   h+='<div class="cc-sec">Rooms</div>';
@@ -367,10 +368,10 @@ function doSearch(q){
   S.sT=setTimeout(function(){
     var words=q.trim().split(/\s+/).map(function(w){return w.replace(/[^A-Za-z0-9'.\-]/g,'');}).filter(Boolean).slice(0,3);
     if(!words.length){ S.sr=[]; scheduleRender(); return; }
-    var url=G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email,gender&order=name.asc&limit=8'+words.map(function(w){return '&name=ilike.*'+encodeURIComponent(w)+'*';}).join('');
+    var url=G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email,gender,level,department&order=name.asc&limit=8'+words.map(function(w){return '&name=ilike.*'+encodeURIComponent(w)+'*';}).join('');
     fetch(url,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
       if(S.sq!==q) return;
-      S.sr=(rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:shortName(x.name),gender:x.gender||''}; });
+      S.sr=(rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:String(x.name).trim().replace(/\s+/g,' '),gender:x.gender||'',info:[x.level?('Level '+String(x.level).replace(/^level\s*/i,'')):'',x.department||''].filter(Boolean).join(' · ')}; });
       scheduleRender();
     }).catch(function(){ if(S.sq===q){ S.sr=[]; scheduleRender(); } });
   },350);

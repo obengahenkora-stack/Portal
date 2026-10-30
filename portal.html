@@ -1070,7 +1070,7 @@ async function resetMyPassword(){
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   msg.innerHTML = error
     ? `<div class="msg err">${escapeHtml(error.message)}</div>`
-    : '<div class="msg ok">Password reset email sent — check your inbox.</div>';
+    : '<div class="msg ok">Password reset email sent. Didn’t get it? Check your <b>Spam</b> folder and click “Not spam”.</div>';
 }
 
 async function changeMyPasscode(){

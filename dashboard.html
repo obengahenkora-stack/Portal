@@ -621,7 +621,7 @@ async function resetStudentPassword(){
   var email=document.getElementById('studentAuthEmail').value.trim(), msg=document.getElementById('studentAuthMsg');
   if(!email){ msg.innerHTML='<div class="msg err">Type your email above first, then click Forgot password.</div>'; return; }
   var r=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
-  msg.innerHTML=r.error?'<div class="msg err">'+escapeHtml(r.error.message)+'</div>':'<div class="msg ok">Reset link sent. Check your inbox (and spam), then open the link.</div>';
+  msg.innerHTML=r.error?'<div class="msg err">'+escapeHtml(r.error.message)+'</div>':'<div class="msg ok">Reset link sent. Didn’t get it? Check your <b>Spam</b> folder and click “Not spam”, then open the link.</div>';
 }
 
 // ===== Lecture Hall inside the dashboard =====

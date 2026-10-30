@@ -1711,7 +1711,7 @@ setInterval(updateWhoBar,1500);
     try{ if(window.ChatUI){ if(id==='dashChatCard') ChatUI.embed(document.getElementById('dashChatCard')); else ChatUI.unembed(); } }catch(e){}
     try{ var n=document.getElementById('dashNav'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
   };
-  function rows(id){ var t=document.querySelector('#'+id+' tbody'); return t?t.querySelectorAll('tr').length:0; }
+  function rows(id){ var t=document.querySelector('#'+id+' table'); if(!t) return 0; var n=0; t.querySelectorAll('tr').forEach(function(r){ if(r.querySelector('td')) n++; }); return n; }
   function summarize(){
     var sc=rows('dashScores'), at=rows('dashAttendance'), rp=document.querySelectorAll('#dashReports .report-item').length;
     var set=function(id,t){ var e=document.getElementById(id); if(e) e.textContent=t; };

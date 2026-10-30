@@ -89,7 +89,13 @@ function goChat(room){
 }
 function askNotify(){ try{ if(window.Notification&&Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
 function seenGet(){ try{ return JSON.parse(localStorage.getItem('ceChatSeen')||'{}'); }catch(e){ return {}; } }
-function markSeen(room){ try{ var o=seenGet(); o[room]=Date.now(); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} }
+function markSeen(room){ try{ var o=seenGet(); o[room]=Date.now(); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} seenPush(); }
+function seenPush(){ if(!S.me||!S.histOK) return; clearTimeout(S.spT); S.spT=setTimeout(function(){ try{ var id='seen:'+S.me.id;
+  var row={id:id,room:id,from_id:S.me.id,from_name:'-',text:JSON.stringify(seenGet()),created_at:new Date().toISOString()};
+  if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
+  fetch(tUrl()+'?on_conflict=id',{method:'POST',headers:Object.assign(hdr(),{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)}).catch(function(){}); }catch(e){} },1500); }
+function seenPull(cb){ if(!S.me||!S.histOK) return cb(); fetch(tUrl()+'?select=text&id=eq.'+encodeURIComponent('seen:'+S.me.id),{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+  try{ var rem=JSON.parse((rows[0]&&rows[0].text)||'{}'), o=seenGet(); Object.keys(rem).forEach(function(k){ if((rem[k]||0)>(o[k]||0)) o[k]=rem[k]; }); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} cb(); }).catch(function(){ cb(); }); }
 
 /* ---------- encryption (AES-GCM; text is scrambled before it is sent or stored) ---------- */
 var _keys={};
@@ -166,7 +172,8 @@ function loadHistory(room){
    .then(function(rows){ return Promise.all(rows.reverse().filter(function(x){ return expOf(x)>Date.now(); }).map(function(x){ rememberGender(x.from_id,x.from_gender); return dec(x.room,x.text).then(function(t){ addMsg({id:x.id,room:x.room,from_id:x.from_id,from_name:x.from_name,from_g:x.from_gender||'',text:t,ts:new Date(x.created_at).getTime(),exp:expOf(x)},true); }); })); })
    .catch(function(){});
 }
-function loadDmList(){
+function loadDmList(){ seenPull(_loadDm); }
+function _loadDm(){
   if(!S.histOK) return;
   var like='room=like.'+encodeURIComponent('dm:*'+S.me.id+'*');
   var pick=S.genCol?fetch(tUrl()+'?'+like+'&from_id=neq.'+encodeURIComponent(S.me.id)+'&expires_at=gt.'+encodeURIComponent(new Date(Date.now()+TTL+3600000).toISOString()),{method:'PATCH',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify({expires_at:new Date(Date.now()+TTL).toISOString()})}).catch(function(){}):Promise.resolve();
@@ -293,6 +300,7 @@ function css(){
   '#ceChatBtn{position:fixed;right:16px;bottom:16px;z-index:9500;display:flex;align-items:center;gap:8px;padding:12px 18px;border:none;border-radius:999px;cursor:pointer;background:var(--accent,#3f7a32);color:#fff;font:600 .9rem "IBM Plex Sans",sans-serif;box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .15s}'
  +'#ceChatBtn:hover{transform:translateY(-2px)}'
  +'#ceChatBtn{text-transform:none !important;letter-spacing:0 !important}'
+ +'@media(max-width:700px){#whoBar{bottom:78px !important;max-width:calc(100vw - 24px) !important}}'
  +'html[data-theme="dark"] #ceChatBtn{color:#08161d}'
  +'#ceChatBtn .dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3)}'
  +'#ceChatBtn .bd{background:#f43f5e;color:#fff;border-radius:999px;font-size:.7rem;padding:1px 7px;min-width:18px;text-align:center}'

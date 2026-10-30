@@ -2310,7 +2310,8 @@ async function sendWeeklyDigest(){
       if(courseSessions.length < 3) return;
       (rosters[course] || []).forEach(s => {
         const attended = courseSessions.filter(a => (a.present||[]).includes(s.indexNumber)).length;
-        const pct = Math.round((attended / courseSessions.length) * 100);
+        const _ex = courseSessions.filter(a => !(a.present||[]).includes(s.indexNumber) && (a.excused||[]).includes(s.indexNumber)).length;
+        const pct = (courseSessions.length-_ex) > 0 ? Math.round((attended / (courseSessions.length-_ex)) * 100) : 100;
         if(pct < 75) atRisk.push(`${s.name || s.indexNumber} (${course}, ${pct}%)`);
       });
     });
@@ -2993,10 +2994,11 @@ async function aeLoad(){
   try{
     const data=await fetchSupabaseData();
     const rec=(data.attendance||[]).find(a=>a.course===c&&a.date===d); if(!rec) return;
-    const presentSet=new Set((rec.present||[]).map(_aeNz));
+    const presentSet=new Set((rec.present||[]).map(_aeNz)), excSet=new Set((rec.excused||[]).map(_aeNz));
     const people=[], seen=new Set();
-    ((data.rosters&&data.rosters[c])||[]).forEach(r=>{ const k=_aeNz(r.indexNumber); if(!k||seen.has(k)) return; seen.add(k); people.push({orig:r.indexNumber,idx:r.indexNumber,name:r.name||'',present:presentSet.has(k),isNew:false}); });
-    (rec.present||[]).forEach(i=>{ const k=_aeNz(i); if(!seen.has(k)){ seen.add(k); people.push({orig:i,idx:i,name:'',present:true,isNew:false}); } });
+    ((data.rosters&&data.rosters[c])||[]).forEach(r=>{ const k=_aeNz(r.indexNumber); if(!k||seen.has(k)) return; seen.add(k); people.push({orig:r.indexNumber,idx:r.indexNumber,name:r.name||'',present:presentSet.has(k),excused:!presentSet.has(k)&&excSet.has(k),isNew:false}); });
+    (rec.present||[]).forEach(i=>{ const k=_aeNz(i); if(!seen.has(k)){ seen.add(k); people.push({orig:i,idx:i,name:'',present:true,excused:false,isNew:false}); } });
+    (rec.excused||[]).forEach(i=>{ const k=_aeNz(i); if(!seen.has(k)){ seen.add(k); people.push({orig:i,idx:i,name:'',present:false,excused:true,isNew:false}); } });
     _ae={course:c,date:d,people:people,times:rec.checkInTimes||{}};
     document.getElementById('aeSearch').value='';
     document.getElementById('aeMsg').innerHTML=`<div class="hint">${rec.takenBy?'Taken by '+_byText(rec.takenBy):'Taken by: not recorded (saved before this feature)'}${rec.editedBy?' · Last edited by '+_byText(rec.editedBy):''}</div>`;
@@ -3008,14 +3010,17 @@ function aeRender(){
   if(!_ae) return;
   const q=_aeNz(document.getElementById('aeSearch').value);
   const rows=_ae.people.map((p,i)=>({p,i})).filter(x=>!q||_aeNz(x.p.idx).includes(q)||_aeNz(x.p.name).includes(q));
-  document.getElementById('aeCount').textContent=_ae.people.filter(p=>p.present).length+' of '+_ae.people.length+' present';
-  document.getElementById('aeList').innerHTML=rows.length?rows.map(x=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);">
-    <input type="checkbox" style="width:auto;margin:0;" ${x.p.present?'checked':''} onchange="aeToggle(${x.i},this.checked)">
+  aeCount();
+  document.getElementById('aeList').innerHTML=rows.length?rows.map(x=>{ const st=x.p.present?'present':(x.p.excused?'excused':'absent'); const col=st==='present'?'var(--ok)':(st==='excused'?'#b7791f':'var(--danger)'); return `<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);">
+    <select onchange="aeSet(${x.i},this.value)" style="width:auto;margin:0;padding:5px 6px;font-size:.74rem;font-weight:700;color:${col};border:1px solid ${col};border-radius:8px;min-height:0;height:auto;text-transform:none;">
+      <option value="present" ${st==='present'?'selected':''}>Present</option><option value="absent" ${st==='absent'?'selected':''}>Absent</option><option value="excused" ${st==='excused'?'selected':''}>Absent with permission</option></select>
     <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;">${escapeHtml(x.p.name||'(no name)')}${x.p.isNew?' <span style="color:var(--ok);font-size:.7rem;">NEW</span>':''}</div><div style="font-size:.75rem;color:var(--muted);">${escapeHtml(x.p.idx)}</div></div>
-    <button class="secondary" style="padding:5px 10px;font-size:.72rem;" onclick="aeEdit(${x.i})">Edit</button></div>`).join(''):'<div class="empty">No match.</div>';
+    <button class="secondary" style="padding:5px 10px;font-size:.72rem;" onclick="aeEdit(${x.i})">Edit</button></div>`; }).join(''):'<div class="empty">No match.</div>';
 }
-function aeToggle(i,v){ _ae.people[i].present=v; document.getElementById('aeCount').textContent=_ae.people.filter(p=>p.present).length+' of '+_ae.people.length+' present'; }
-function aeMarkAll(v){ if(!_ae) return; _ae.people.forEach(p=>p.present=v); aeRender(); }
+function aeCount(){ const P=_ae.people.filter(p=>p.present).length, E=_ae.people.filter(p=>p.excused&&!p.present).length; document.getElementById('aeCount').textContent=P+' of '+_ae.people.length+' present'+(E?' · '+E+' absent with permission':''); }
+function aeSet(i,v){ const p=_ae.people[i]; p.present=(v==='present'); p.excused=(v==='excused'); aeRender(); }
+function aeToggle(i,v){ aeSet(i,v?'present':'absent'); }
+function aeMarkAll(v){ if(!_ae) return; _ae.people.forEach(p=>{ p.present=v; p.excused=false; }); aeRender(); }
 function aeEdit(i){
   const p=_ae.people[i];
   const idx=prompt('Index number:',p.idx); if(idx===null) return;
@@ -3029,15 +3034,15 @@ function aeAdd(){
   const idx=document.getElementById('aeNewIdx').value.trim(), name=document.getElementById('aeNewName').value.trim(), msg=document.getElementById('aeMsg');
   if(!idx){ msg.innerHTML='<div class="msg err">Enter the index number.</div>'; return; }
   const ex=_ae.people.find(x=>_aeNz(x.idx)===_aeNz(idx));
-  if(ex){ ex.present=true; if(name&&!ex.name) ex.name=name; msg.innerHTML='<div class="msg ok">That student is already listed — marked present.</div>'; }
-  else { _ae.people.unshift({orig:null,idx,name,present:true,isNew:true}); msg.innerHTML=''; }
+  if(ex){ ex.present=true; ex.excused=false; if(name&&!ex.name) ex.name=name; msg.innerHTML='<div class="msg ok">That student is already listed — marked present.</div>'; }
+  else { _ae.people.unshift({orig:null,idx,name,present:true,excused:false,isNew:true}); msg.innerHTML=''; }
   document.getElementById('aeNewIdx').value=''; document.getElementById('aeNewName').value=''; aeRender();
 }
 async function aeSave(){
   if(!_ae) return; const msg=document.getElementById('aeMsg');
   if(!canManageRosters()){ msg.innerHTML='<div class="msg err">Only a lecturer or administrator can edit saved attendance.</div>'; return; }
-  const present=_ae.people.filter(p=>p.present);
-  if(!confirm(`Save ${present.length} of ${_ae.people.length} present for "${_ae.course}" on ${_ae.date} as the final record?`)) return;
+  const present=_ae.people.filter(p=>p.present), excusedL=_ae.people.filter(p=>p.excused&&!p.present);
+  if(!confirm(`Save ${present.length} of ${_ae.people.length} present${excusedL.length?' and '+excusedL.length+' absent with permission':''} for "${_ae.course}" on ${_ae.date} as the final record?`)) return;
   msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
     const data=await fetchSupabaseData();
@@ -3048,20 +3053,21 @@ async function aeSave(){
     if(Object.keys(ren).length){
       data.attendance.forEach(a=>{ if(a.course!==course) return;
         a.present=(a.present||[]).map(i=>ren[_aeNz(i)]||i);
+        if(a.excused) a.excused=a.excused.map(i=>ren[_aeNz(i)]||i);
         if(a.checkInTimes){ const t={}; Object.keys(a.checkInTimes).forEach(k=>{ t[ren[_aeNz(k)]||k]=a.checkInTimes[k]; }); a.checkInTimes=t; }
       });
     }
     const oldT={}; Object.keys(_ae.times||{}).forEach(k=>{ oldT[_aeNz(ren[_aeNz(k)]||k)]=_ae.times[k]; });
     const times={}; present.forEach(p=>{ times[p.idx]=oldT[_aeNz(p.idx)]||nowIso; });
     const pos=data.attendance.findIndex(a=>a.course===course&&a.date===date);
-    const rec=_stamp({sessionKey:`${course}__${date}`,course,date,present:present.map(p=>p.idx),checkInTimes:times}, pos>=0?data.attendance[pos]:null, 'edited');
+    const rec=_stamp({sessionKey:`${course}__${date}`,course,date,present:present.map(p=>p.idx),excused:excusedL.map(p=>p.idx),checkInTimes:times}, pos>=0?data.attendance[pos]:null, 'edited');
     if(pos>=0) data.attendance[pos]=rec; else data.attendance.push(rec);
     // roster: keep in sync (new students added, index/name corrections applied)
     data.rosters=data.rosters||{};
     data.rosters[course]=normRoster(_ae.people.map(p=>({indexNumber:p.idx,name:p.name})));
     await saveSupabaseData(data);
     _ae.people.forEach(p=>{ p.orig=p.idx; p.isNew=false; });
-    msg.innerHTML=`<div class="msg ok">Saved. ${present.length} of ${_ae.people.length} present — this is now the final record for ${escapeHtml(date)}. Reload the summary below to see it.</div>`;
+    msg.innerHTML=`<div class="msg ok">Saved. ${present.length} of ${_ae.people.length} present${excusedL.length?', '+excusedL.length+' absent with permission':''} — this is now the final record for ${escapeHtml(date)}. Reload the summary below to see it.</div>`;
     aeRender(); aeLoadDatesKeep();
     try{ loadAttendanceSummary(); }catch(e){}
   }catch(e){ msg.innerHTML=`<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`; }
@@ -3357,9 +3363,10 @@ function _normAllAttendance(d){
       const date=String(a.date||'').trim().slice(0,10);
       const course=String(a.course||'').trim();
       const key=course.toLowerCase()+'__'+date;
-      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
+      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),excused:(a.excused||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
       const t=out[map[key]], have=new Set(t.present.map(x=>String(x).trim().toLowerCase()));
       (a.present||[]).forEach(x=>{ const k=String(x).trim().toLowerCase(); if(!have.has(k)){ have.add(k); t.present.push(x); } });
+      t.excused=t.excused||[]; (a.excused||[]).forEach(x=>{ if(!t.excused.some(y=>String(y).trim().toLowerCase()===String(x).trim().toLowerCase())) t.excused.push(x); });
       Object.keys(a.checkInTimes||{}).forEach(k=>{ if(!t.checkInTimes[k]) t.checkInTimes[k]=a.checkInTimes[k]; });
     });
     d.attendance=out;
@@ -3573,6 +3580,7 @@ async function flushAttQueue(){
         ops.forEach(o=>{
           const key=String(o.index).trim().toLowerCase();
           rec.present=rec.present.filter(p=>String(p).trim().toLowerCase()!==key);
+          if(o.present && rec.excused) rec.excused=rec.excused.filter(p=>String(p).trim().toLowerCase()!==key);
           if(o.present){ rec.present.push(o.index); if(!rec.checkInTimes[o.index]) rec.checkInTimes[o.index]=new Date(o.ts).toISOString(); }
           else Object.keys(rec.checkInTimes).forEach(k=>{ if(String(k).trim().toLowerCase()===key) delete rec.checkInTimes[k]; });
         });
@@ -3665,7 +3673,8 @@ async function saveAttendance(){
         checkInTimes[studentIndex] = nowIso;
       }
     });
-    const record = _stamp({ sessionKey, course, date, present, checkInTimes }, idx>=0?attendanceRecords[idx]:null, 'taken');
+    const _pz=new Set(present.map(x=>String(x).trim().toLowerCase())); const excused=((idx>=0&&attendanceRecords[idx].excused)||[]).filter(x=>!_pz.has(String(x).trim().toLowerCase()));
+    const record = _stamp({ sessionKey, course, date, present, excused, checkInTimes }, idx>=0?attendanceRecords[idx]:null, 'taken');
     if(idx >= 0){
       attendanceRecords[idx] = record;
     } else {
@@ -3904,9 +3913,9 @@ async function exportAttendanceExcel(){
     const aoa = [['Attendance — ' + course], ['Exported ' + new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'})], [],
       ['Index #','Name'].concat(dates, ['Attended','Total Sessions','%'])];
     people.forEach(pp => {
-      const marks = recs.map(a => (a.present||[]).some(i => nz(i) === nz(pp.idx)));
-      const att = marks.filter(Boolean).length;
-      aoa.push([pp.idx, pp.name].concat(marks.map(m => m ? '✓' : '✗'), [att, recs.length, recs.length ? Math.round(att/recs.length*100) / 100 : 0]));
+      const marks = recs.map(a => (a.present||[]).some(i => nz(i) === nz(pp.idx)) ? 'P' : ((a.excused||[]).some(i => nz(i) === nz(pp.idx)) ? 'E' : 'A'));
+      const att = marks.filter(m => m==='P').length, exc = marks.filter(m => m==='E').length, tot = recs.length - exc;
+      aoa.push([pp.idx, pp.name].concat(marks.map(m => m==='P' ? '✓' : (m==='E' ? 'AP' : '✗')), [att, tot, tot ? Math.round(att/tot*100) / 100 : 0]));
     });
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [{wch:16},{wch:36}].concat(dates.map(() => ({wch:12})), [{wch:10},{wch:14},{wch:8}]);
@@ -4035,18 +4044,22 @@ async function loadAttendanceSummary(){
 
     roster.forEach(s => {
       const sIdxLower = String(s.indexNumber).trim().toLowerCase();
-      const presentCount = attendanceRecords.filter(a => a.present.some(p => String(p).trim().toLowerCase() === sIdxLower)).length;
-      const pct = totalSessions > 0 ? Math.round((presentCount / totalSessions) * 100) : 0;
+      const _isP = a => a.present.some(p => String(p).trim().toLowerCase() === sIdxLower);
+      const _isE = a => !_isP(a) && (a.excused||[]).some(p => String(p).trim().toLowerCase() === sIdxLower);
+      const presentCount = attendanceRecords.filter(_isP).length;
+      const excusedCount = attendanceRecords.filter(_isE).length;
+      const countable = totalSessions - excusedCount;
+      const pct = countable > 0 ? Math.round((presentCount / countable) * 100) : 0;
       const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
       const isAtRisk = totalSessions >= 3 && pct < ATTENDANCE_ALERT_THRESHOLD;
       if(isAtRisk) atRiskStudents.push({ ...s, pct });
       const rowStyle = isAtRisk ? 'background:rgba(192,57,43,0.06);' : '';
       studentHtml += `<tr style="${rowStyle}"><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.indexNumber)}${isAtRisk ? ' ⚠️' : ''}</td><td style="position:sticky;left:0;background:${isAtRisk?'#fdf0ee':'var(--card)'};">${escapeHtml(s.name||'')}</td>`;
       sortedByDateAsc.forEach(a => {
-        const wasPresent = a.present.some(p => String(p).trim().toLowerCase() === sIdxLower);
-        studentHtml += `<td style="text-align:center;color:${wasPresent ? 'var(--ok)' : 'var(--danger)'};font-weight:700;">${wasPresent ? '✓' : '✗'}</td>`;
+        const wasPresent = _isP(a), wasExc = _isE(a);
+        studentHtml += `<td style="text-align:center;color:${wasPresent ? 'var(--ok)' : (wasExc ? '#b7791f' : 'var(--danger)')};font-weight:700;" title="${wasExc?'Absent with permission':''}">${wasPresent ? '✓' : (wasExc ? 'AP' : '✗')}</td>`;
       });
-      studentHtml += `<td>${presentCount}/${totalSessions}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
+      studentHtml += `<td>${presentCount}/${countable}${excusedCount?' <span style="color:#b7791f;font-size:.72rem;">(+'+excusedCount+' AP)</span>':''}</td><td style="color:${pctColor};font-weight:700;">${pct}%</td></tr>`;
     });
     studentHtml += '</table></div>';
 
@@ -4065,9 +4078,9 @@ async function loadAttendanceSummary(){
     byStudentContainer.innerHTML = studentHtml;
 
     // By Session
-    let sessionHtml = '<table><tr><th>Date</th><th>Present</th><th>Total</th></tr>';
+    let sessionHtml = '<table><tr><th>Date</th><th>Present</th><th>Absent with permission</th><th>Total</th></tr>';
     attendanceRecords.forEach(a => {
-      sessionHtml += `<tr><td>${escapeHtml(a.date)}</td><td>${a.present.length}</td><td>${roster.length}</td></tr>`;
+      sessionHtml += `<tr><td>${escapeHtml(a.date)}</td><td>${a.present.length}</td><td>${(a.excused||[]).length}</td><td>${roster.length}</td></tr>`;
     });
     sessionHtml += '</table>';
     bySessionContainer.innerHTML = sessionHtml;

@@ -697,7 +697,7 @@ function _normAllAttendance(d){
       const date=String(a.date||'').trim().slice(0,10);
       const course=String(a.course||'').trim();
       const key=course.toLowerCase()+'__'+date;
-      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
+      if(map[key]===undefined){ map[key]=out.length; out.push(Object.assign({},a,{date:date,course:a.course,present:(a.present||[]).slice(),excused:(a.excused||[]).slice(),checkInTimes:Object.assign({},a.checkInTimes||{})})); return; }
       const t=out[map[key]], have=new Set(t.present.map(x=>String(x).trim().toLowerCase()));
       (a.present||[]).forEach(x=>{ const k=String(x).trim().toLowerCase(); if(!have.has(k)){ have.add(k); t.present.push(x); } });
       Object.keys(a.checkInTimes||{}).forEach(k=>{ if(!t.checkInTimes[k]) t.checkInTimes[k]=a.checkInTimes[k]; });
@@ -1450,9 +1450,11 @@ async function loadDashboard(skipLock){
         if(totalSessions === 0) return;
         _shown++;
         const attended = courseSessions.filter(a => (a.present||[]).some(_isMe)).length;
-        const pct = totalSessions > 0 ? Math.round((attended/totalSessions)*100) : 0;
+        const excusedN = courseSessions.filter(a => !(a.present||[]).some(_isMe) && (a.excused||[]).some(_isMe)).length;
+        const _cnt = totalSessions - excusedN;
+        const pct = _cnt > 0 ? Math.round((attended/_cnt)*100) : 0;
         const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
-        html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${totalSessions}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
+        html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${_cnt}${excusedN?' <span style="font-size:.72rem;opacity:.8;">(+'+excusedN+' excused)</span>':''}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
       });
       html += '</table>';
       attContainer.innerHTML = _shown ? html : '<div class="empty">No attendance sessions have been recorded for your courses yet.</div>';
@@ -1498,8 +1500,8 @@ async function loadDashboard(skipLock){
     let totalAttended = 0, totalSessions = 0;
     myCourses.forEach(course => {
       const courseSessions = attendanceRecords.filter(a => a.course === course);
-      totalSessions += courseSessions.length;
       totalAttended += courseSessions.filter(a => (a.present||[]).some(_isMe)).length;
+      totalSessions += courseSessions.length - courseSessions.filter(a => !(a.present||[]).some(_isMe) && (a.excused||[]).some(_isMe)).length;
     });
     const overallAttPct = totalSessions > 0 ? Math.round((totalAttended/totalSessions)*100) : null;
     document.getElementById('ovAttendance').textContent = overallAttPct !== null ? overallAttPct + '%' : '–';

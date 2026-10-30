@@ -39,7 +39,7 @@ function portalIdentity(){
   var label={owner:'Owner',admin:'Admin',lecturer:'Lecturer',ta:'TA'}[role]||'Staff';
   var cs=G('typeof currentUserCourses!=="undefined"?currentUserCourses:null');
   window.__myCourses=Array.isArray(cs)?cs:[];
-  return { id:'s'+hash(String(em).toLowerCase()), name:nm&&nm!=='Owner'?shortName(nm):label, staff:role!=='ta', role:label, g:'' };
+  return { id:'s'+hash(String(em).toLowerCase()), name:role==='owner'?OWNER_FULL:(nm&&nm!=='Owner'?shortName(nm):label), staff:role!=='ta', role:label, g:'' };
 }
 function myRooms(){
   var rooms=[{id:'everyone',title:'Everyone',kind:'room'}];
@@ -52,13 +52,18 @@ function isDm(r){ return String(r).indexOf('dm:')===0; }
 function peerOf(room){ var ids=String(room).slice(3).split('|'); return ids[0]===S.me.id?ids[1]:ids[0]; }
 function namesGet(){ try{ return JSON.parse(localStorage.getItem('ceChatNames')||'{}'); }catch(e){ return {}; } }
 function rememberName(id,n){ if(!id||!n||id===(S.me&&S.me.id)) return; try{ var o=namesGet(); if(o[id]===n) return; o[id]=n; var k=Object.keys(o); if(k.length>300) delete o[k[0]]; localStorage.setItem('ceChatNames',JSON.stringify(o)); }catch(e){} }
-function nameOf(id){ return (S.dir&&S.dir[id])||(S.online[id]&&S.online[id].name)||namesGet()[id]||''; }
-function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1;
-  fetch(G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email&limit=3000',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
-    var d={}; (rows||[]).forEach(function(x){ if(x&&x.email&&x.name) d['s'+hash(String(x.email).toLowerCase())]=String(x.name).trim().replace(/\s+/g,' '); });
-    S.dir=d; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ if(d[m.from_id]) m.from_name=d[m.from_id]; }); });
-    Object.keys(S.dms).forEach(function(k){ var p=S.dms[k]&&S.dms[k].peer; if(p&&d[p]) S.dms[k].name=d[p]; });
-    S.gen&&0; scheduleRender(); }).catch(function(){ S.dirLoading=0; }); }
+function nameOf(id){ return (S.dir&&S.dir[id])||S.dn[id]||(S.online[id]&&S.online[id].name)||namesGet()[id]||''; }
+function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
+  var page=function(off){ return fetch(G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email&order=email.asc&limit=1000&offset='+off,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+    (rows||[]).forEach(function(x){ if(x&&x.email&&x.name) d['s'+hash(String(x.email).toLowerCase())]=String(x.name).trim().replace(/\s+/g,' '); });
+    if(rows&&rows.length===1000&&off<20000) return page(off+1000); }); };
+  var staff=function(){ try{ var f=G('typeof fetchSupabaseData==="function"?fetchSupabaseData:null'); if(!f) return Promise.resolve(); return Promise.resolve(f()).then(function(data){
+    ((data&&data.teamMembers)||[]).forEach(function(m){ if(m&&m.email&&m.name) d['s'+hash(String(m.email).toLowerCase())]=String(m.name).trim().replace(/\s+/g,' '); });
+    try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
+  page(0).catch(function(){}).then(staff).then(function(){
+    S.dir=d; applyNames(d);
+    var ids=[]; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ ids.push(m.from_id); }); }); Object.keys(S.dms).forEach(function(k){ if(S.dms[k].peer) ids.push(S.dms[k].peer); }); lsNeed(ids); }); }
+var OWNER_FULL='Engr. Nana Kwame Obeng-Ahenkora';
 function rememberGender(id,g){ if(id&&(g==='Male'||g==='Female')) S.gen[id]=g; }
 
 /* ---------- sound + seen ---------- */
@@ -105,7 +110,7 @@ function markSeen(room){ try{ var o=seenGet(); o[room]=Date.now(); localStorage.
 function seenPush(){ if(!S.me||!S.histOK) return; clearTimeout(S.spT); S.spT=setTimeout(function(){ try{ var id='seen:'+S.me.id;
   var row={id:id,room:id,from_id:S.me.id,from_name:'-',text:JSON.stringify(seenGet()),created_at:new Date().toISOString()};
   if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
-  fetch(tUrl()+'?on_conflict=id',{method:'POST',headers:Object.assign(hdr(),{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)}).catch(function(){}); }catch(e){} },1500); }
+  upsertRow(row); }catch(e){} },1500); }
 function seenPull(cb){ if(!S.me||!S.histOK) return cb(); fetch(tUrl()+'?select=text&id=eq.'+encodeURIComponent('seen:'+S.me.id),{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
   try{ var rem=JSON.parse((rows[0]&&rows[0].text)||'{}'), o=seenGet(); Object.keys(rem).forEach(function(k){ if((rem[k]||0)>(o[k]||0)) o[k]=rem[k]; }); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} cb(); }).catch(function(){ cb(); }); }
 
@@ -282,14 +287,23 @@ function removeMsg(room,id){
 function canDelete(m){ return m.from_id===S.me.id || S.me.staff; }
 
 /* ---------- presence ---------- */
-S.ls={}; S.lsAsk={};
-function lsPush(ka){ if(!S.me||!S.histOK) return; try{ var id='ls:'+S.me.id, row={id:id,room:id,from_id:S.me.id,from_name:'-',text:String(Date.now()),created_at:new Date().toISOString()};
+S.ls={}; S.lsAsk={}; S.dn={};
+function upsertRow(row,ka){ var h=Object.assign(hdr(),{Prefer:'return=representation'});
+  return fetch(tUrl()+'?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',keepalive:!!ka,headers:h,body:JSON.stringify({text:row.text,created_at:row.created_at,expires_at:row.expires_at})}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){
+    if(a&&a.length) return; return fetch(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}).then(function(r){ if(!r.ok&&S.genCol&&r.status===400){ delete row.expires_at; return fetch(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}); } }); }).catch(function(){}); }
+function applyNames(map){ Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ if(map[m.from_id]) m.from_name=map[m.from_id]; }); });
+  Object.keys(S.dms).forEach(function(k){ var p=S.dms[k]&&S.dms[k].peer; if(p&&map[p]) S.dms[k].name=map[p]; }); scheduleRender(); }
+function myFullName(){ var n=(S.me&&S.me.name)||''; return n; }
+function lsPush(ka){ if(!S.me||!S.histOK) return; try{ var id='ls:'+S.me.id, row={id:id,room:id,from_id:S.me.id,from_name:'-',text:JSON.stringify({t:Date.now(),n:myFullName()}),created_at:new Date().toISOString()};
   if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
-  fetch(tUrl()+'?on_conflict=id',{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)}).catch(function(){}); }catch(e){} }
-function lsNeed(ids){ if(!S.histOK) return; var need=ids.filter(function(i){ return i&&!S.online[i]&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>60000); }); if(!need.length) return;
+  upsertRow(row,ka); }catch(e){} }
+function lsNeed(ids){ if(!S.histOK) return; var need=[]; ids.forEach(function(i){ if(i&&i!==(S.me&&S.me.id)&&need.indexOf(i)<0&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>60000)) need.push(i); }); if(!need.length) return;
   need.forEach(function(i){ S.lsAsk[i]=Date.now(); });
-  fetch(tUrl()+'?select=id,text&id=in.('+need.map(function(i){ return encodeURIComponent('"ls:'+i+'"'); }).join(',')+')',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
-    var ch=0; (rows||[]).forEach(function(x){ var t=parseInt(x.text,10); var id=String(x.id).slice(3); if(t&&S.ls[id]!==t){ S.ls[id]=t; ch=1; } }); if(ch) scheduleRender(); }).catch(function(){}); }
+  for(var p=0;p<need.length;p+=40) (function(part){
+  fetch(tUrl()+'?select=id,text&id=in.('+part.map(function(i){ return encodeURIComponent('"ls:'+i+'"'); }).join(',')+')',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+    var ch=0, nm={}; (rows||[]).forEach(function(x){ var id=String(x.id).slice(3), t=0, n=''; try{ var o=JSON.parse(x.text); t=o.t||0; n=o.n||''; }catch(e){ t=parseInt(x.text,10)||0; }
+      if(t&&S.ls[id]!==t){ S.ls[id]=t; ch=1; } if(n&&n!=='Owner'&&n!=='Lecturer'&&n!=='TA'&&n!=='Admin'&&n!=='Student'&&S.dn[id]!==n){ S.dn[id]=n; if(!(S.dir&&S.dir[id])) nm[id]=n; } });
+    if(Object.keys(nm).length) applyNames(nm); else if(ch) scheduleRender(); }).catch(function(){}); })(need.slice(p,p+40)); }
 function lsText(id){ var t=S.ls[id]; if(!t) return ''; var m=Math.floor((Date.now()-t)/60000);
   if(m<1) return 'last seen just now'; if(m<60) return 'last seen '+m+' min ago'; var h=Math.floor(m/60); if(h<24) return 'last seen '+h+' hr ago';
   var d=Math.floor(h/24); if(d<2) return 'last seen yesterday'; return 'last seen '+d+' days ago'; }

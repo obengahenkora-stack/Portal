@@ -282,7 +282,20 @@ function removeMsg(room,id){
 function canDelete(m){ return m.from_id===S.me.id || S.me.staff; }
 
 /* ---------- presence ---------- */
+S.ls={}; S.lsAsk={};
+function lsPush(ka){ if(!S.me||!S.histOK) return; try{ var id='ls:'+S.me.id, row={id:id,room:id,from_id:S.me.id,from_name:'-',text:String(Date.now()),created_at:new Date().toISOString()};
+  if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
+  fetch(tUrl()+'?on_conflict=id',{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)}).catch(function(){}); }catch(e){} }
+function lsNeed(ids){ if(!S.histOK) return; var need=ids.filter(function(i){ return i&&!S.online[i]&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>60000); }); if(!need.length) return;
+  need.forEach(function(i){ S.lsAsk[i]=Date.now(); });
+  fetch(tUrl()+'?select=id,text&id=in.('+need.map(function(i){ return encodeURIComponent('"ls:'+i+'"'); }).join(',')+')',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+    var ch=0; (rows||[]).forEach(function(x){ var t=parseInt(x.text,10); var id=String(x.id).slice(3); if(t&&S.ls[id]!==t){ S.ls[id]=t; ch=1; } }); if(ch) scheduleRender(); }).catch(function(){}); }
+function lsText(id){ var t=S.ls[id]; if(!t) return ''; var m=Math.floor((Date.now()-t)/60000);
+  if(m<1) return 'last seen just now'; if(m<60) return 'last seen '+m+' min ago'; var h=Math.floor(m/60); if(h<24) return 'last seen '+h+' hr ago';
+  var d=Math.floor(h/24); if(d<2) return 'last seen yesterday'; return 'last seen '+d+' days ago'; }
 function setupPresence(){
+  lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden') lsPush(); },90000);
+  if(!S.lsBound){ S.lsBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') lsPush(true); }); window.addEventListener('pagehide',function(){ lsPush(true); }); }
   var ch=S.rt.channel('ce-lounge',{config:{presence:{key:S.me.id}}});
   ch.on('presence',{event:'sync'},function(){
     var st=ch.presenceState(), o={};
@@ -414,7 +427,7 @@ function renderHome(p){
     h+='<div class="cc-sec">Search results</div>';
     if(S.sr===null) h+='<div class="cc-note">Searching...</div>';
     else if(!S.sr.length) h+='<div class="cc-note">No student found with that name.</div>';
-    else S.sr.forEach(function(x){ if(x.id===S.me.id) return; var on=!!S.online[x.id]; h+='<button class="cc-row" type="button" data-dm="'+esc(x.id)+'" data-nm="'+esc(x.name)+'" data-g="'+esc(x.gender||'')+'">'+avatar(x.id,x.name,on,x.gender)+'<span class="cc-nm cc-wrap"><b>'+esc(x.name)+'</b><small>'+(x.info?esc(x.info)+' · ':'')+(on?'Online now':'Offline, leave a message')+'</small></span></button>'; });
+    else S.sr.forEach(function(x){ if(x.id===S.me.id) return; var on=!!S.online[x.id]; h+='<button class="cc-row" type="button" data-dm="'+esc(x.id)+'" data-nm="'+esc(x.name)+'" data-g="'+esc(x.gender||'')+'">'+avatar(x.id,x.name,on,x.gender)+'<span class="cc-nm cc-wrap"><b>'+esc(x.name)+'</b><small>'+(x.info?esc(x.info)+' · ':'')+(on?'Online now':(lsText(x.id)?esc(lsText(x.id))+' · leave a message':'Offline, leave a message'))+'</small></span></button>'; });
   }
   h+='<div class="cc-note">Be kind and respectful. Messages are deleted after 24 hours.'+(S.histOK?'':' History is off, messages disappear when you close the page.')+'</div>';
   h+='<div class="cc-sec">Rooms</div>';
@@ -460,6 +473,7 @@ function doSearch(q){
     var url=G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email,gender,level,department&order=name.asc&limit=8'+words.map(function(w){return '&name=ilike.*'+encodeURIComponent(w)+'*';}).join('');
     fetch(url,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
       if(S.sq!==q) return;
+      lsNeed((rows||[]).map(function(x){ return x&&x.email?'s'+hash(String(x.email).toLowerCase()):''; }));
       S.sr=(rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:String(x.name).trim().replace(/\s+/g,' '),gender:x.gender||'',info:[x.level?('Level '+String(x.level).replace(/^level\s*/i,'')):'',x.department||''].filter(Boolean).join(' · ')}; });
       scheduleRender();
     }).catch(function(){ if(S.sq===q){ S.sr=[]; scheduleRender(); } });
@@ -524,7 +538,7 @@ function renderWins(){
     var isDmRoom=isDm(w.room), d=S.dms[w.room]||{};
     var b=el.querySelector('.cc-b'), near=(b.scrollHeight-b.scrollTop-b.clientHeight)<80;
     var list=S.msgs[w.room]||[], h='';
-    if(isDmRoom&&!S.online[d.peer]) h+='<div class="cc-note">'+esc(roomTitle(w.room))+' is offline. Your message is saved and delivered when they sign in.</div>';
+    if(isDmRoom&&!S.online[d.peer]) h+='<div class="cc-note">'+esc(roomTitle(w.room))+' is offline'+(lsText(d.peer)?' ('+esc(lsText(d.peer))+')':'')+'. Your message is saved and delivered when they sign in.</div>'; if(isDmRoom&&!S.online[d.peer]) lsNeed([d.peer]);
     if(!list.length) h+='<div class="cc-note">No messages yet. Say hello.</div>';
     list.forEach(function(m){
       var me=m.from_id===S.me.id;

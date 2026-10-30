@@ -933,8 +933,10 @@ let currentUserEmail = null;
 
 function isOwner(){ return currentUserRole === 'owner'; }
 function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
-function canUploadScores(){ return isAdmin() || currentUserRole === 'lecturer'; }
-function canManageRosters(){ return isAdmin() || currentUserRole === 'lecturer'; }
+var currentUserPerms = null;   // null = role defaults; array = exactly these features were granted by the owner
+function _hasP(ids){ return Array.isArray(currentUserPerms) && ids.some(function(i){ return currentUserPerms.indexOf(i)>=0; }); }
+function canUploadScores(){ return isAdmin() || currentUserRole === 'lecturer' || _hasP(['uploadCard','gradebookCard','dataCard','exportScoresCard','fillSheetCard','transferScoresCard','manageCoursesCard','rosterUploadCard']); }
+function canManageRosters(){ return isAdmin() || currentUserRole === 'lecturer' || _hasP(['attendanceEditCard','attendanceDeleteCard','attPdfCard']); }
 
 var _rcT=0;
 function _cacheRosters(d){
@@ -954,10 +956,11 @@ async function resolveCurrentUserRole(){
     currentUserRole = me ? me.role : null;
     currentUserName = me ? me.name : null;
     currentUserCourses = (me && Array.isArray(me.courses)) ? me.courses : null;
-    try{ localStorage.setItem('ceRoleCache', JSON.stringify({email:email, role:currentUserRole, name:currentUserName, courses:currentUserCourses})); }catch(e){}
+    currentUserPerms = (me && Array.isArray(me.perms)) ? me.perms : null;
+    try{ localStorage.setItem('ceRoleCache', JSON.stringify({email:email, role:currentUserRole, name:currentUserName, courses:currentUserCourses, perms:currentUserPerms})); }catch(e){}
   }catch(e){
     // offline: fall back to the last role we saw for this same account
-    try{ var rc=JSON.parse(localStorage.getItem('ceRoleCache')||'null'); if(rc && rc.email===email){ currentUserRole=rc.role; currentUserName=rc.name; currentUserCourses=rc.courses; return; } }catch(e2){}
+    try{ var rc=JSON.parse(localStorage.getItem('ceRoleCache')||'null'); if(rc && rc.email===email){ currentUserRole=rc.role; currentUserName=rc.name; currentUserCourses=rc.courses; currentUserPerms=Array.isArray(rc.perms)?rc.perms:null; return; } }catch(e2){}
     currentUserRole = null; currentUserName = null;
   }
 }
@@ -1147,6 +1150,52 @@ async function addTeamMember(){
   }
 }
 
+
+// ===== Per-person feature access (the owner ticks what each team member may use) =====
+var _PERM_SKIP={teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
+function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); return out; }
+var _PERM_ROLE_DEF={ ta:['takeAttendanceCard','qrCheckinCard','attendanceSummaryCard','reportsCard','lectureMaterialsCard'] };
+function _permDefaults(role){ if(_PERM_ROLE_DEF[role]) return _PERM_ROLE_DEF[role]; var no={backupCard:1,digestCard:1,rosterEditCard:1,allSessionsCard:1}; return _permTiles().map(function(t){return t.id;}).filter(function(i){return !no[i];}); }
+function applyPerms(){
+  if(!Array.isArray(currentUserPerms) || isAdmin()) return;
+  var P=currentUserPerms, el=function(i){ return document.getElementById(i); };
+  if(P.indexOf('attendanceEditCard')>=0 && el('attendanceEditCard')){ el('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} }
+  if(P.indexOf('rosterEditCard')>=0 && el('rosterEditCard')){ el('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} }
+  if(P.indexOf('allSessionsCard')>=0 && el('allSessionsCard')){ el('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} }
+  ['backupCard','digestCard'].forEach(function(i){ if(P.indexOf(i)>=0 && el(i)) el(i).classList.remove('hidden'); });
+  _permTiles().forEach(function(t){ if(P.indexOf(t.id)<0 && el(t.id)) el(t.id).classList.add('hidden'); });
+  var any=function(list){ return list.some(function(t){ return !_PERM_SKIP[t.id] && P.indexOf(t.id)>=0; }); };
+  var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
+  if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
+  if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
+}
+async function openPerms(email){
+  try{
+    const data=await fetchSupabaseData(); const m=(data.teamMembers||[]).find(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(!m) return;
+    const cur=Array.isArray(m.perms)?m.perms:_permDefaults(m.role);
+    var old=document.getElementById('permModal'); if(old) old.remove();
+    var groups={}, order=[]; _permTiles().forEach(function(t){ if(!groups[t.g]){ groups[t.g]=[]; order.push(t.g); } groups[t.g].push(t); });
+    var h='<div style="background:var(--card,#fff);color:var(--ink,#111);border-radius:16px;padding:20px;max-width:460px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">'
+      +'<h3 style="margin:0 0 4px;">Access for '+escapeHtml(m.name)+'</h3><div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">Tick what this person may use. Unticked features are hidden from them.</div>';
+    order.forEach(function(g){ h+='<div style="font-weight:700;font-size:.78rem;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">'+escapeHtml(g)+'</div>';
+      groups[g].forEach(function(t){ h+='<label style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;cursor:pointer;"><input type="checkbox" class="permCb" value="'+t.id+'" '+(cur.indexOf(t.id)>=0?'checked':'')+' style="width:auto;margin:3px 0 0;flex:none;"><span><b>'+escapeHtml(t.t)+'</b><br><span style="color:var(--muted);font-size:.74rem;">'+escapeHtml(t.d)+'</span></span></label>'; }); });
+    h+='<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;"><button type="button" onclick="savePerms(\''+escapeHtml(m.email)+'\')" style="text-transform:none !important;">Save access</button>'
+      +'<button type="button" class="secondary" onclick="resetPerms(\''+escapeHtml(m.email)+'\')" style="text-transform:none !important;">Use role defaults</button>'
+      +'<button type="button" class="secondary" onclick="document.getElementById(\'permModal\').remove()" style="text-transform:none !important;">Cancel</button></div><div id="permMsg" style="margin-top:8px;"></div></div>';
+    var d=document.createElement('div'); d.id='permModal'; d.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;'; d.innerHTML=h; document.body.appendChild(d);
+  }catch(e){ alert('Could not load: '+e.message); }
+}
+async function _permWrite(email,perms){
+  const msg=document.getElementById('permMsg'); if(msg) msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    const data=await fetchSupabaseData(true); const mem=data.teamMembers||[]; const i=mem.findIndex(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(i<0) throw new Error('Member not found');
+    if(perms===null) delete mem[i].perms; else mem[i].perms=perms;
+    data.teamMembers=mem; await saveSupabaseData(data);
+    var md=document.getElementById('permModal'); if(md) md.remove(); loadTeamMemberList();
+  }catch(e){ if(msg) msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
+}
+function savePerms(email){ var v=[].slice.call(document.querySelectorAll('#permModal .permCb:checked')).map(function(c){return c.value;}); _permWrite(email,v); }
+function resetPerms(email){ _permWrite(email,null); }
 async function loadTeamMemberList(){
   const container = document.getElementById('teamMemberList');
   container.innerHTML = '<div class="empty">Loading...</div>';
@@ -1163,9 +1212,10 @@ async function loadTeamMemberList(){
         <div>
           <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(m.name)}</div>
           <div style="font-size:0.75rem;color:var(--muted);">${escapeHtml(m.email)} — ${roleLabels[m.role] || m.role}</div>
+          <div style="font-size:0.75rem;color:#b7791f;">${Array.isArray(m.perms)?'Custom access: '+m.perms.length+' feature'+(m.perms.length===1?'':'s'):''}</div>
           <div style="font-size:0.75rem;color:var(--c1,#0ea5e9);">${m.role==='admin' ? 'All courses' : (Array.isArray(m.courses) ? (m.courses.length ? 'Courses: ' + escapeHtml(m.courses.join(', ')) : 'No courses assigned') : 'All courses (not restricted)')}</div>
         </div>
-        <div style="display:flex;gap:6px;">${m.role==='admin' ? '' : `<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" data-email="${escapeHtml(m.email)}" onclick="assignCourses(this.dataset.email)">Assign courses</button>`}<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.email).replace(/'/g,"\\'")}')">Remove</button></div>
+        <div style="display:flex;gap:6px;">${m.role==='admin' ? '' : `<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" data-email="${escapeHtml(m.email)}" onclick="openPerms(this.dataset.email)">Access</button><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" data-email="${escapeHtml(m.email)}" onclick="assignCourses(this.dataset.email)">Assign courses</button>`}<button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="removeTeamMember('${escapeHtml(m.email).replace(/'/g,"\\'")}')">Remove</button></div>
       </div>
     `).join('');
   }catch(e){
@@ -1428,6 +1478,7 @@ async function onAuthReady(showToast){
   }
 
   try{ if(isOwner()){ document.getElementById('practiceCard').classList.remove('hidden'); } }catch(e){}
+  try{ applyPerms(); }catch(e){ console.warn('perms',e); }
   try{ attRenderTiles(); }catch(e){}
   try{ _qBanner(); if(_qGet().length) flushAttQueue(); }catch(e){}
   loadRecords();

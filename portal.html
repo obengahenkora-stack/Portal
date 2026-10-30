@@ -984,27 +984,48 @@ function showWelcomeToast(name){
   }, 3500);
 }
 
-// ===== 30-minute session timeout =====
-const SESSION_DURATION_MS = 30 * 60 * 1000;
+// ===== 60-minute session timeout, with a warning 5 minutes before =====
+const SESSION_DURATION_MS = 60 * 60 * 1000;
+const SESSION_WARN_MS = 5 * 60 * 1000;
 function markSessionStart(){
   localStorage.setItem('session_login_time', Date.now().toString());
+  try{ var w=document.getElementById('sessWarn'); if(w) w.remove(); }catch(e){}
+}
+async function sessionLogout(){
+  try{ await supabaseClient.auth.signOut(); }catch(e){}
+  localStorage.removeItem('session_login_time');
+  location.reload();
+}
+function showSessionWarn(){
+  if(document.getElementById('sessWarn')) return;
+  var d=document.createElement('div'); d.id='sessWarn';
+  d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML='<div style="background:var(--card,#fff);color:var(--ink,#111);border-radius:16px;padding:22px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;font-family:inherit;">'
+   +'<div style="font-size:1.6rem;">⏳</div><h3 style="margin:6px 0 8px;">Still there?</h3>'
+   +'<p style="margin:0 0 16px;font-size:.92rem;">You will be signed out in <b id="sessCount">5:00</b> to keep your account safe.</p>'
+   +'<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'
+   +'<button type="button" id="sessStay" style="text-transform:none !important;letter-spacing:0 !important;padding:10px 18px;border-radius:10px;border:none;background:#16a34a !important;color:#fff !important;font-weight:700;cursor:pointer;">Stay signed in</button>'
+   +'<button type="button" id="sessOut" style="text-transform:none !important;letter-spacing:0 !important;padding:10px 18px;border-radius:10px;border:1px solid #cbd5e1;background:#fff !important;color:#111 !important;font-weight:600;cursor:pointer;">Log out</button></div></div>';
+  document.body.appendChild(d);
+  document.getElementById('sessStay').onclick=markSessionStart;
+  document.getElementById('sessOut').onclick=sessionLogout;
 }
 async function checkSessionTimeout(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return;
   const loginTime = localStorage.getItem('session_login_time');
   if(!loginTime){
-    // Existing session from before this feature, or first time seeing it — start the clock now.
     markSessionStart();
     return;
   }
-  if(Date.now() - parseInt(loginTime) > SESSION_DURATION_MS){
-    await supabaseClient.auth.signOut();
-    localStorage.removeItem('session_login_time');
-    location.reload();
+  const left = SESSION_DURATION_MS - (Date.now() - parseInt(loginTime));
+  if(left <= 0){ await sessionLogout(); return; }
+  if(left <= SESSION_WARN_MS){
+    showSessionWarn();
+    var c=document.getElementById('sessCount'); if(c){ var t=Math.ceil(left/1000); c.textContent=Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
   }
 }
-setInterval(checkSessionTimeout, 60000);
+setInterval(checkSessionTimeout, 1000);
 
 // ===== Header name swap for lecturers =====
 async function applyLecturerHeaderName(){

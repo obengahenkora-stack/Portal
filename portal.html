@@ -1153,6 +1153,7 @@ async function addTeamMember(){
     }
     data.teamMembers = members;
     await saveSupabaseData(data);
+    teamApi({action:'team_upsert',member:{email:email,name:name,role:role}});
 
     msg.innerHTML = `<div class="msg ok">Added ${escapeHtml(name)}. Tell them to create an account (or sign in) on this site using ${escapeHtml(email)}.</div>`;
     document.getElementById('teamMemberNameInput').value = '';
@@ -1181,6 +1182,13 @@ function applyPerms(){
   var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
   if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
   if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
+}
+async function teamApi(payload){
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    return await r.json();
+  }catch(e){ return {ok:false,error:e.message}; }
 }
 async function migrateTeam(){
   const m=document.getElementById('backendTestMsg'); m.textContent='Copying...';
@@ -1222,6 +1230,7 @@ async function _permWrite(email,perms){
     const data=await fetchSupabaseData(true); const mem=data.teamMembers||[]; const i=mem.findIndex(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(i<0) throw new Error('Member not found');
     if(perms===null) delete mem[i].perms; else mem[i].perms=perms;
     data.teamMembers=mem; await saveSupabaseData(data);
+    await teamApi({action:'team_upsert',member:{email:email,perms:perms}});
     var md=document.getElementById('permModal'); if(md) md.remove(); loadTeamMemberList();
   }catch(e){ if(msg) msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
@@ -1231,8 +1240,10 @@ async function loadTeamMemberList(){
   const container = document.getElementById('teamMemberList');
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
-    const data = await fetchSupabaseData();
-    const members = data.teamMembers || [];
+    let members = null;
+    const tl = await teamApi({action:'team_list'});
+    if(tl && tl.ok && Array.isArray(tl.members) && tl.members.length) members = tl.members;
+    if(!members){ const data = await fetchSupabaseData(); members = data.teamMembers || []; }
     if(members.length === 0){
       container.innerHTML = '<div class="empty">No additional team members added yet.</div>';
       return;
@@ -1275,6 +1286,7 @@ async function assignCourses(email){
     if(document.getElementById('asgAll').checked){ delete mm.courses; }
     else { mm.courses = [...new Set([...ov.querySelectorAll('#asgList input:checked')].flatMap(i => i.value.split('||')))]; }
     await saveSupabaseData(fresh);
+    await teamApi({action:'team_upsert',member:{email:email,courses:Array.isArray(mm.courses)?mm.courses:null}});
     ov.remove();
     loadTeamMemberList();
   };
@@ -1286,6 +1298,7 @@ async function removeTeamMember(email){
     const data = await fetchSupabaseData();
     data.teamMembers = (data.teamMembers || []).filter(m => (m.email || '').toLowerCase() !== email.toLowerCase());
     await saveSupabaseData(data);
+    await teamApi({action:'team_remove',email:email});
     loadTeamMemberList();
   }catch(e){
     alert('Could not remove team member: ' + e.message);

@@ -140,6 +140,31 @@
   .att-tile.t-go .att-ic{background:rgba(31,138,76,0.12);color:var(--ok);}
   .att-tt{font-weight:700;font-size:0.98rem;color:var(--ink);font-family:'Fraunces',serif;}
   .att-td{font-size:0.8rem;color:var(--muted);line-height:1.35;}
+  /* ===== Play-card look for the tool tiles ===== */
+  .att-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;}
+  .att-tile,.att-tile:hover,.att-tile:focus,.att-tile:active{
+    --g1:#0ea5e9;--g2:#8b5cf6;
+    background:linear-gradient(135deg,var(--g1),var(--g2)) !important;
+    color:#fff !important;border:none !important;border-radius:20px !important;
+    padding:18px 16px !important;min-height:150px;position:relative;overflow:hidden;
+    box-shadow:0 8px 20px rgba(30,41,90,.22) !important;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .att-tile::after{content:"";position:absolute;right:-30px;bottom:-34px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none;}
+  .att-tile:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 14px 28px rgba(30,41,90,.30) !important;}
+  .att-tile:active{transform:scale(.97);}
+  .att-grid .att-tile:nth-child(6n+1){--g1:#0ea5e9;--g2:#8b5cf6;}
+  .att-grid .att-tile:nth-child(6n+2){--g1:#10b981;--g2:#0ea5e9;}
+  .att-grid .att-tile:nth-child(6n+3){--g1:#f59e0b;--g2:#ef4444;}
+  .att-grid .att-tile:nth-child(6n+4){--g1:#8b5cf6;--g2:#ec4899;}
+  .att-grid .att-tile:nth-child(6n+5){--g1:#06b6d4;--g2:#3b82f6;}
+  .att-grid .att-tile:nth-child(6n+6){--g1:#84cc16;--g2:#10b981;}
+  .att-tile.t-danger{--g1:#ef4444 !important;--g2:#9f1239 !important;}
+  .att-tile.t-lab{--g1:#f59e0b !important;--g2:#d97706 !important;}
+  .att-tile .att-ic,.att-tile.t-danger .att-ic,.att-tile.t-lab .att-ic,.att-tile.t-go .att-ic{background:rgba(255,255,255,.22) !important;color:#fff !important;width:46px;height:46px;border-radius:14px;backdrop-filter:blur(4px);}
+  .att-tile .att-tt{color:#fff !important;font-size:1rem;position:relative;z-index:1;}
+  .att-tile .att-td{color:rgba(255,255,255,.88) !important;position:relative;z-index:1;}
+  .att-group{font-size:.74rem;}
   .att-title{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;margin:4px 0 2px;}
   .test-banner{background:#fff4d6;border:1px solid #e8c56a;color:#7a5600;border-radius:10px;padding:9px 12px;font-size:0.82rem;font-weight:600;margin-bottom:12px;}
   label{display:block;font-size:0.75rem;font-weight:700;margin-bottom:7px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-family:'IBM Plex Sans',sans-serif;}

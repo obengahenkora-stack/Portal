@@ -488,6 +488,7 @@
       <div id="teamMemberMsg"></div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);">
         <button type="button" class="secondary" onclick="testBackend()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
+        <button type="button" class="secondary" onclick="stripTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Remove staff list from the public file</button>
         <button type="button" class="secondary" onclick="migrateTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy staff list to the private store</button>
         <div id="backendTestMsg" style="margin-top:8px;font-size:.84rem;"></div>
       </div>
@@ -850,6 +851,7 @@ async function fetchSupabaseData(strict){
 async function saveSupabaseData(data){
   if(!data || typeof data!=='object' || !Object.keys(data).length) throw new Error("Refusing to save empty data — reload the page and try again.");
   if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+  try{ delete data.teamMembers; }catch(e){}
   data = await DBS.persist(data);
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
     method: "POST",
@@ -982,7 +984,7 @@ let currentUserCourses = null; // null = sees all courses; array = only the assi
 function visibleCourses(list){ list=(list||[]).filter(function(c){return isOwner()||!/^\[TEST\]/i.test(String(c));}); if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
 function _cb(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return (m?m[1].trim():s).toLowerCase(); }
 function reportVisible(r){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var mine=currentUserCourses.map(_cb); return mine.indexOf(_cb(r.course))>=0; }
-async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; try{ await teamApi({action:'self_grant_course',course:course}); }catch(e2){} } }catch(e){} }
+async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var r=await teamApi({action:'self_grant_course',course:course}); if(r&&r.ok&&Array.isArray(r.courses)) currentUserCourses=r.courses; }catch(e){} }
 
 // ===== Welcome toast =====
 function showWelcomeToast(name){
@@ -1144,18 +1146,8 @@ async function addTeamMember(){
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const data = await fetchSupabaseData();
-    const members = data.teamMembers || [];
-    const existingIndex = members.findIndex(m => (m.email || '').toLowerCase() === email);
-    if(existingIndex >= 0){
-      members[existingIndex] = Object.assign({}, members[existingIndex], { email, name, role });
-    } else {
-      members.push({ email, name, role });
-    }
-    data.teamMembers = members;
-    await saveSupabaseData(data);
-    teamApi({action:'team_upsert',member:{email:email,name:name,role:role}});
-
+    const r = await teamApi({action:'team_upsert',member:{email:email,name:name,role:role}});
+    if(!r.ok) throw new Error(r.error||'The back end refused');
     msg.innerHTML = `<div class="msg ok">Added ${escapeHtml(name)}. Tell them to create an account (or sign in) on this site using ${escapeHtml(email)}.</div>`;
     document.getElementById('teamMemberNameInput').value = '';
     document.getElementById('teamMemberEmailInput').value = '';
@@ -1164,32 +1156,18 @@ async function addTeamMember(){
     msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
   }
 }
-
-
-// ===== Per-person feature access (the owner ticks what each team member may use) =====
-var _PERM_SKIP={teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
-function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); return out; }
-var _PERM_ROLE_DEF={ ta:['takeAttendanceCard','qrCheckinCard','attendanceSummaryCard','reportsCard','lectureMaterialsCard'] };
-function _permDefaults(role){ if(_PERM_ROLE_DEF[role]) return _PERM_ROLE_DEF[role]; var no={backupCard:1,digestCard:1,rosterEditCard:1,allSessionsCard:1}; return _permTiles().map(function(t){return t.id;}).filter(function(i){return !no[i];}); }
-function applyPerms(){
-  if(!Array.isArray(currentUserPerms) || isAdmin()) return;
-  var P=currentUserPerms, el=function(i){ return document.getElementById(i); };
-  if(P.indexOf('attendanceEditCard')>=0 && el('attendanceEditCard')){ el('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} }
-  if(P.indexOf('rosterEditCard')>=0 && el('rosterEditCard')){ el('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} }
-  if(P.indexOf('allSessionsCard')>=0 && el('allSessionsCard')){ el('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} }
-  ['backupCard','digestCard'].forEach(function(i){ if(P.indexOf(i)>=0 && el(i)) el(i).classList.remove('hidden'); });
-  _permTiles().forEach(function(t){ if(P.indexOf(t.id)<0 && el(t.id)) el(t.id).classList.add('hidden'); });
-  var any=function(list){ return list.some(function(t){ return !_PERM_SKIP[t.id] && P.indexOf(t.id)>=0; }); };
-  var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
-  if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
-  if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
-}
 async function teamApi(payload){
   try{
     const { data:{ session } } = await supabaseClient.auth.getSession();
     const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     return await r.json();
   }catch(e){ return {ok:false,error:e.message}; }
+}
+async function stripTeam(){
+  if(!confirm('Remove the staff list from the public data file? Your team stays safe in the private store.')) return;
+  const m=document.getElementById('backendTestMsg'); m.textContent='Working...';
+  const j=await teamApi({action:'team_strip'});
+  m.innerHTML=j.ok?('<span style="color:var(--ok);font-weight:700;">Done.</span> Removed '+j.removedFromPublicFile+' entries from the public file. The private store holds '+j.inPrivateStore+'.'):('<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>');
 }
 async function migrateTeam(){
   const m=document.getElementById('backendTestMsg'); m.textContent='Copying...';
@@ -1211,7 +1189,7 @@ async function testBackend(){
 }
 async function openPerms(email){
   try{
-    const data=await fetchSupabaseData(); const m=(data.teamMembers||[]).find(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(!m) return;
+    const tl=await teamApi({action:'team_list'}); const m=((tl&&tl.members)||[]).find(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(!m) return;
     const cur=Array.isArray(m.perms)?m.perms:_permDefaults(m.role);
     var old=document.getElementById('permModal'); if(old) old.remove();
     var groups={}, order=[]; _permTiles().forEach(function(t){ if(!groups[t.g]){ groups[t.g]=[]; order.push(t.g); } groups[t.g].push(t); });
@@ -1228,10 +1206,7 @@ async function openPerms(email){
 async function _permWrite(email,perms){
   const msg=document.getElementById('permMsg'); if(msg) msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
-    const data=await fetchSupabaseData(true); const mem=data.teamMembers||[]; const i=mem.findIndex(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(i<0) throw new Error('Member not found');
-    if(perms===null) delete mem[i].perms; else mem[i].perms=perms;
-    data.teamMembers=mem; await saveSupabaseData(data);
-    await teamApi({action:'team_upsert',member:{email:email,perms:perms}});
+    const r=await teamApi({action:'team_upsert',member:{email:email,perms:perms}}); if(!r.ok) throw new Error(r.error||'The back end refused');
     var md=document.getElementById('permModal'); if(md) md.remove(); loadTeamMemberList();
   }catch(e){ if(msg) msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
@@ -1268,7 +1243,8 @@ async function loadTeamMemberList(){
 
 async function assignCourses(email){
   const data = await fetchSupabaseData();
-  const m = (data.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
+  const _tl = await teamApi({action:'team_list'});
+  const m = ((_tl&&_tl.members)||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
   if(!m) return;
   const _s = {}; Object.keys(data.rosters||{}).forEach(c=>_s[c]=1); (data.courseList||[]).forEach(c=>{ if(c) _s[c]=1; }); ['resources','announcements','videos'].forEach(k=>(data[k]||[]).forEach(x=>{ if(x.course) _s[x.course]=1; })); (m.courses||[]).forEach(c=>_s[c]=1);
   const all = Object.keys(_s).sort();
@@ -1281,13 +1257,9 @@ async function assignCourses(email){
   document.body.appendChild(ov);
   document.getElementById('asgCancel').onclick = () => ov.remove();
   document.getElementById('asgSave').onclick = async () => {
-    const fresh = await fetchSupabaseData();
-    const mm = (fresh.teamMembers||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
-    if(!mm) { ov.remove(); return; }
-    if(document.getElementById('asgAll').checked){ delete mm.courses; }
-    else { mm.courses = [...new Set([...ov.querySelectorAll('#asgList input:checked')].flatMap(i => i.value.split('||')))]; }
-    await saveSupabaseData(fresh);
-    await teamApi({action:'team_upsert',member:{email:email,courses:Array.isArray(mm.courses)?mm.courses:null}});
+    const chosen = document.getElementById('asgAll').checked ? null : [...new Set([...ov.querySelectorAll('#asgList input:checked')].flatMap(i => i.value.split('||')))];
+    const r = await teamApi({action:'team_upsert',member:{email:email,courses:chosen}});
+    if(!r.ok){ alert('Could not save: '+(r.error||'error')); return; }
     ov.remove();
     loadTeamMemberList();
   };
@@ -1296,10 +1268,8 @@ async function assignCourses(email){
 async function removeTeamMember(email){
   if(!confirm('Remove this team member? Their access will stop working immediately.')) return;
   try{
-    const data = await fetchSupabaseData();
-    data.teamMembers = (data.teamMembers || []).filter(m => (m.email || '').toLowerCase() !== email.toLowerCase());
-    await saveSupabaseData(data);
-    await teamApi({action:'team_remove',email:email});
+    const r = await teamApi({action:'team_remove',email:email});
+    if(!r.ok) throw new Error(r.error||'The back end refused');
     loadTeamMemberList();
   }catch(e){
     alert('Could not remove team member: ' + e.message);

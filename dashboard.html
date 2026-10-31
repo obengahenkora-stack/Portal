@@ -210,6 +210,9 @@
   .ov-links{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
   .ov-link{ text-align:left !important; background:var(--card) !important; color:var(--ink) !important; border:1px solid var(--line) !important; border-radius:14px !important; padding:14px 16px !important; display:flex; flex-direction:column; gap:4px; }
   .ov-link:hover{ border-color:var(--accent) !important; background:var(--tint) !important; }
+  .dash-nav#dashNav{ display:none; }
+  .ov-link i{ font-style:normal; font-size:1.5rem; line-height:1; margin-bottom:4px; }
+  #dashBack{ margin:0 0 12px; }
   .ov-link b{ font-family:'Fraunces',serif; font-size:0.98rem; }
   .ov-link span{ font-size:0.8rem; color:var(--muted); font-weight:400; }
   .pct-badge{ padding:3px 10px !important; }
@@ -343,6 +346,7 @@
     <nav class="dash-nav" id="adminNav">
       <a href="javascript:void(0)" data-atab="adminOverview" class="on">Overview</a>
       <a href="javascript:void(0)" data-atab="adminStudents">Students</a>
+      <a href="javascript:void(0)" data-atab="adminQa">Q&amp;A</a>
       <a href="javascript:void(0)" data-atab="adminChat">Chat <span id="adminChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;text-transform:none;letter-spacing:0"></span></a>
     </nav>
     <div class="card ah-wrap" id="adminOverview">
@@ -496,6 +500,7 @@
       <a href="javascript:void(0)" data-tab="dashQaCard">Q&amp;A</a>
       <a href="javascript:void(0)" data-tab="dashChatCard">Chat <span id="dashChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0"></span></a>
     </nav>
+    <div id="dashBack" class="hidden"><button type="button" class="secondary" data-go="dashOverviewCard">&larr; Back to dashboard</button></div>
     <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
       <div class="overview-grid" id="dashOverview">
@@ -513,10 +518,13 @@
         </div>
       </div>
       <div class="ov-links" id="ovLinks">
-        <button class="ov-link" data-go="dashLectureHall"><b>Lecture Hall</b><span id="ovsHall">Notes, videos and syllabus</span></button>
-        <button class="ov-link" data-go="dashScoresCard"><b>My Scores</b><span id="ovsScores">View your results</span></button>
-        <button class="ov-link" data-go="dashAttCard"><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
-        <button class="ov-link" data-go="dashReportsCard"><b>My Reports</b><span id="ovsRep">View replies</span></button>
+        <button class="ov-link" data-go="dashLectureHall"><i>&#128218;</i><b>Lecture Hall</b><span id="ovsHall">Notes, videos and syllabus</span></button>
+        <button class="ov-link" data-go="dashScoresCard"><i>&#127942;</i><b>My Scores</b><span id="ovsScores">View your results</span></button>
+        <button class="ov-link" data-go="dashAttCard"><i>&#9989;</i><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
+        <button class="ov-link" data-go="dashReportsCard"><i>&#128172;</i><b>My Reports</b><span id="ovsRep">View replies</span></button>
+        <button class="ov-link" data-go="dashQaCard"><i>&#10067;</i><b>Q&amp;A Board</b><span>Ask and answer questions</span></button>
+        <button class="ov-link" data-go="dashIssueCard"><i>&#9888;&#65039;</i><b>Report an Issue</b><span>Tell us about a problem</span></button>
+        <button class="ov-link" data-go="dashChatCard"><i>&#128172;</i><b>Chat <span id="dashChatBadge2" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px"></span></b><span>Message classmates and staff</span></button>
       </div>
     </div>
 
@@ -1673,7 +1681,8 @@ setInterval(updateWhoBar,1500);
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-tab')===id); });
     try{ if(id==='dashQaCard' && window.qaOpen) window.qaOpen(); }catch(e){}
     try{ if(window.ChatUI){ if(id==='dashChatCard') ChatUI.embed(document.getElementById('dashChatCard')); else ChatUI.unembed(); } }catch(e){}
-    try{ var n=document.getElementById('dashNav'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
+    var bk=document.getElementById('dashBack'); if(bk) bk.classList.toggle('hidden', id==='dashOverviewCard');
+    try{ var n=document.getElementById('dashBack'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
   };
   function rows(id){ var t=document.querySelector('#'+id+' table'); if(!t) return 0; var n=0; t.querySelectorAll('tr').forEach(function(r){ if(r.querySelector('td')) n++; }); return n; }
   function summarize(){
@@ -1683,10 +1692,10 @@ setInterval(updateWhoBar,1500);
     set('ovsAtt', at? at+' course'+(at>1?'s':'')+' tracked' : 'No attendance yet');
     set('ovsRep', rp? rp+' report'+(rp>1?'s':'') : 'No reports yet');
   }
-  window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0), b=document.getElementById('dashChatBadge'); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } });
+  window.addEventListener('ce-chat-unread',function(e){ var n=(e.detail||0); ['dashChatBadge','dashChatBadge2'].forEach(function(i){ var b=document.getElementById(i); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } }); });
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.addEventListener('click',function(){ dashTab(a.getAttribute('data-tab')); }); });
-    document.querySelectorAll('.ov-link').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });
+    document.querySelectorAll('.ov-link, #dashBack [data-go]').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });
     ['dashScores','dashAttendance','dashReports'].forEach(function(id){ var e=document.getElementById(id); if(e) new MutationObserver(summarize).observe(e,{childList:true,subtree:true}); });
     var r=document.getElementById('dashResults'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) dashTab('dashOverviewCard'); }).observe(r,{attributes:true,attributeFilter:['class']});
     dashTab('dashOverviewCard'); window.scrollTo(0,0); summarize();
@@ -1777,12 +1786,13 @@ function renderWelcome(){
 <script>
 /* ===== Admin hub: Overview / Students / Chat tabs ===== */
 (function(){
-  var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard'],adminChat:['adminChatCard']};
-  var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminChatCard'];
+  var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard'],adminChat:['adminChatCard'],adminQa:['dashQaCard']};
+  var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminChatCard','dashQaCard'];
   function $(i){ return document.getElementById(i); }
   window.adminTab=function(t){
     if(!MAP[t]) t='adminOverview';
     var on=MAP[t];
+    if(t==='adminQa'){ var q=$('dashQaCard'),hub=$('adminHub'); if(q&&hub&&q.parentNode!==hub) hub.appendChild(q); try{ window.qaOpen&&window.qaOpen(); }catch(e){} }
     ALL.forEach(function(x){ var e=$(x); if(e) e.classList.toggle('pane-off', on.indexOf(x)<0); });
     document.querySelectorAll('#adminNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-atab')===t); });
     try{ if(window.ChatUI){ if(t==='adminChat') ChatUI.embed($('adminChatCard')); else ChatUI.unembed(); } }catch(e){}

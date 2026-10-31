@@ -151,6 +151,19 @@
   .ah-grid .ah-tile:nth-child(6n+7){--g1:#84cc16;--g2:#10b981}
   .ah-tile .ah-n,.ah-tile .ah-l{color:#fff;position:relative;z-index:1}
   .ah-tile .ah-l{opacity:.92}
+  /* play-card look: admin search + registered students */
+  #adminSearchCard,#adminRegisteredCard{position:relative;overflow:hidden;border:none !important;border-radius:22px !important;color:#fff;box-shadow:0 10px 24px rgba(30,41,90,.24) !important}
+  #adminSearchCard{background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important}
+  #adminRegisteredCard{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#6366f1) !important}
+  #adminSearchCard::after,#adminRegisteredCard::after{content:"";position:absolute;right:-40px;top:-44px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none}
+  #adminSearchCard h2,#adminRegisteredCard h2,#adminSearchCard p,#adminSearchCard label,#adminRegisteredCard label{color:#fff !important;position:relative;z-index:1}
+  #adminSearchCard input,#adminRegisteredCard input[type=text],#adminRegisteredCard select{background:rgba(255,255,255,.96) !important;color:#10222c !important;border:none !important;border-radius:14px !important}
+  #adminSearchCard > button:not(.secondary),#adminRegisteredCard button,#adminRegisteredCard button:hover,#adminRegisteredCard button:focus,#adminRegisteredCard button:active,#adminSearchCard > button:hover{background:rgba(255,255,255,.95) !important;color:#10222c !important;border:none !important;border-radius:999px !important;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+  #adminRegisteredCard #adminDeleteSelBtn,#adminRegisteredCard #adminDeleteLevelBtn{background:linear-gradient(135deg,#ef4444,#9f1239) !important;color:#fff !important}
+  #adminMovePanel,#adminBulkActions{background:rgba(255,255,255,.16) !important;border:1px solid rgba(255,255,255,.3) !important;border-radius:16px !important}
+  #adminMovePanel label{color:#fff !important}
+  #adminRegisteredList{background:var(--card);border-radius:16px;padding:6px;color:var(--ink)}
+  #adminRegisteredList label{color:inherit !important}
   .ah-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
   @media(max-width:520px){.ah-hero{padding:20px 16px}.ah-hi{font-size:1.3rem}.ah-tile.big{grid-column:span 2}}
 </style>

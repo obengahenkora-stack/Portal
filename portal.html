@@ -590,17 +590,9 @@
           <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
         </div>
       </div>
-      <label>Search Index Number</label>
-      <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
-
-      <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
-      <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
-      <div id="saveAttendanceMsg"></div>
-    </div>
-
-    <div class="card hidden" id="qrCheckinCard">
+    <div class="hidden" id="qrCheckinCard" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;">
       <label>QR Check-In</label>
-      <div class="hint">Uses the Course and Date selected above. Display this QR code in class — students scan it, allow location access, and mark themselves present. The code auto-refreshes every 90 seconds and only works within 100 meters of where you started the session, so it can't be shared with someone outside class.</div>
+      <div class="hint">Uses the Course and Date selected above. Ticks appear in the list below as students scan. Display this QR code in class — students scan it, allow location access, and mark themselves present. The code auto-refreshes every 90 seconds and only works within 100 meters of where you started the session, so it can't be shared with someone outside class.</div>
       <button id="startQrBtn" onclick="startQrCheckin()">Start QR Check-In Session</button>
       <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-left:8px;">Stop Session</button>
       <div id="qrCheckinMsg"></div>
@@ -608,6 +600,15 @@
         <img id="qrCheckinImage" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--line);">
         <div id="qrCheckinTimer" style="margin-top:10px;font-family:'Fraunces',sans-serif;font-weight:700;color:var(--navy);"></div>
         <div id="qrCheckinPresentCount" style="margin-top:6px;color:var(--muted);font-size:0.85rem;"></div>
+      </div>
+    </div>
+      <div id="attChecklistBlock">
+      <label>Search Index Number</label>
+      <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
+
+      <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
+      <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
+      <div id="saveAttendanceMsg"></div>
       </div>
     </div>
 
@@ -1219,6 +1220,7 @@ function applyPerms(){
   ['backupCard','digestCard'].forEach(function(i){ if(P.indexOf(i)>=0 && el(i)) el(i).classList.remove('hidden'); });
   _permTiles().forEach(function(t){ if(P.indexOf(t.id)<0 && el(t.id)) el(t.id).classList.add('hidden'); });
   var any=function(list){ return list.some(function(t){ return !_PERM_SKIP[t.id] && P.indexOf(t.id)>=0; }); };
+  if(P.indexOf('qrCheckinCard')>=0 && P.indexOf('takeAttendanceCard')<0 && el('takeAttendanceCard')){ el('takeAttendanceCard').classList.remove('hidden'); if(el('attChecklistBlock')) el('attChecklistBlock').classList.add('hidden'); }
   var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
   if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
   if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
@@ -3805,10 +3807,10 @@ function startQrCountdown(){
 async function pollQrPresentCount(course, date){
   if(!qrSessionActive) return;
   try{
-    const data = await fetchSupabaseData();
     const sessionKey = `${course}__${date}`;
-    const record = (data.attendance || []).find(a => a.sessionKey === sessionKey);
-    const rawPresentList = record ? record.present : [];
+    if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+    const marks = await DBS.getAll('attendance_marks','session_key,index_number');
+    const rawPresentList = marks.filter(m => m.session_key === sessionKey).map(m => m.index_number);
     const freshPresentSet = new Set(rawPresentList.map(p => String(p).trim().toLowerCase()));
 
     // Update the count text

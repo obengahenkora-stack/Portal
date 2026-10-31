@@ -1187,6 +1187,24 @@ async function testBackend(){
     m.innerHTML=j.ok ? ('<span style="color:var(--ok);font-weight:700;">Back end replied:</span> '+escapeHtml(j.signedIn?('you are '+(j.role||'not on the team list')+' ('+j.email+')'):'working, but not signed in')) : ('<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>');
   }catch(e){ m.innerHTML='<span style="color:var(--danger);">Could not reach the back end: '+escapeHtml(e.message)+'</span>'; }
 }
+// ===== Per-person feature access (the owner ticks what each team member may use) =====
+var _PERM_SKIP={teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
+function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); return out; }
+var _PERM_ROLE_DEF={ ta:['takeAttendanceCard','qrCheckinCard','attendanceSummaryCard','reportsCard','lectureMaterialsCard'] };
+function _permDefaults(role){ if(_PERM_ROLE_DEF[role]) return _PERM_ROLE_DEF[role]; var no={backupCard:1,digestCard:1,rosterEditCard:1,allSessionsCard:1}; return _permTiles().map(function(t){return t.id;}).filter(function(i){return !no[i];}); }
+function applyPerms(){
+  if(!Array.isArray(currentUserPerms) || isAdmin()) return;
+  var P=currentUserPerms, el=function(i){ return document.getElementById(i); };
+  if(P.indexOf('attendanceEditCard')>=0 && el('attendanceEditCard')){ el('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} }
+  if(P.indexOf('rosterEditCard')>=0 && el('rosterEditCard')){ el('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} }
+  if(P.indexOf('allSessionsCard')>=0 && el('allSessionsCard')){ el('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} }
+  ['backupCard','digestCard'].forEach(function(i){ if(P.indexOf(i)>=0 && el(i)) el(i).classList.remove('hidden'); });
+  _permTiles().forEach(function(t){ if(P.indexOf(t.id)<0 && el(t.id)) el(t.id).classList.add('hidden'); });
+  var any=function(list){ return list.some(function(t){ return !_PERM_SKIP[t.id] && P.indexOf(t.id)>=0; }); };
+  var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
+  if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
+  if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
+}
 async function openPerms(email){
   try{
     const tl=await teamApi({action:'team_list'}); const m=((tl&&tl.members)||[]).find(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(!m) return;

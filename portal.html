@@ -1465,22 +1465,21 @@ function tchGo(id){ lchGo('tch',id); }
   var _sw=switchTab, _lg=lchGo;
   switchTab=function(t){ _sw(t); cur.tab=t; cur.att=null; cur.tch=null; save(); };
   lchGo=function(k,id){ _lg(k,id); cur[k]=_LCH[k].cur; save(); };
-  var tries=0, iv=setInterval(function(){
+  var want=(saved && saved.tab && saved.tab!=='hub') ? saved : null;
+  window._navWant=want;
+  function goTab(){ try{ if(want) switchTab(want.tab); }catch(e){} }
+  // show the saved page straight away (no flash of the main page)
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',goTab); else goTab();
+  var tries=0, k=want ? (want.tab==='attendance'?'att':want.tab==='teacher'?'tch':null) : null, id=k?want[k]:null;
+  var iv=setInterval(function(){
     tries++;
-    if(typeof currentUserRole!=='undefined' && currentUserRole){
+    var el=id?document.getElementById(id):null;
+    if(!want || !id || (el && !el.classList.contains('hidden') && typeof currentUserRole!=='undefined' && currentUserRole)){
       clearInterval(iv);
-      setTimeout(function(){
-        try{
-          if(saved && saved.tab && saved.tab!=='hub'){
-            switchTab(saved.tab);
-            if(saved.tab==='attendance' && saved.att) lchGo('att',saved.att);
-            if(saved.tab==='teacher' && saved.tch) lchGo('tch',saved.tch);
-          }
-        }catch(e){}
-        ready=true;
-      },1200);
-    } else if(tries>40){ clearInterval(iv); ready=true; }
-  },500);
+      try{ if(id) lchGo(k,id); }catch(e){}
+      ready=true;
+    } else if(tries>100){ clearInterval(iv); ready=true; }
+  },100);
 })();
 
 /* ===== Practice Lab (owner only) ===== */
@@ -4216,7 +4215,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'attendance'){
     switchTab('attendance');
-  } else {
+  } else if(!window._navWant){
     switchTab('hub');
   }
 });

@@ -1725,7 +1725,7 @@ setInterval(updateWhoBar,1500);
     document.querySelectorAll('.ov-link, #dashBack [data-go]').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });
     ['dashScores','dashAttendance','dashReports'].forEach(function(id){ var e=document.getElementById(id); if(e) new MutationObserver(summarize).observe(e,{childList:true,subtree:true}); });
     var r=document.getElementById('dashResults'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')){ var first=!_ready; _ready=true; dashTab(first&&_saved?_saved:'dashOverviewCard'); } }).observe(r,{attributes:true,attributeFilter:['class']});
-    dashTab('dashOverviewCard'); window.scrollTo(0,0); summarize();
+    dashTab(_saved||'dashOverviewCard'); window.scrollTo(0,0); summarize();
   });
 })();
 </script>

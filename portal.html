@@ -490,6 +490,7 @@
         <button type="button" class="secondary" onclick="testBackend()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
         <button type="button" class="secondary" onclick="copyScores()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy scores to the private store</button>
         <button type="button" class="secondary" onclick="dataSummary()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Show what the data file holds</button>
+        <button type="button" class="secondary" onclick="stripOld()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Remove old data copies from the public file</button>
         <button type="button" class="secondary" onclick="stripTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Remove staff list from the public file</button>
         <button type="button" class="secondary" onclick="migrateTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy staff list to the private store</button>
         <div id="backendTestMsg" style="margin-top:8px;font-size:.84rem;"></div>
@@ -1173,6 +1174,12 @@ async function dataSummary(){
   const j=await teamApi({action:'data_summary'});
   if(!j.ok){ m.innerHTML='<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>'; return; }
   m.innerHTML='<div style="font-weight:700;margin-bottom:4px;">Data file contents</div><table style="font-size:.78rem;width:100%;"><tr><th style="text-align:left">Name</th><th>Items</th><th>Size (KB)</th></tr>'+j.keys.map(k=>'<tr><td>'+escapeHtml(k.key)+'</td><td style="text-align:center">'+k.items+'</td><td style="text-align:center">'+k.kb+'</td></tr>').join('')+'</table><div style="font-weight:700;margin:8px 0 4px;">Database tables (rows)</div>'+Object.keys(j.tables).map(t=>escapeHtml(t)+': <b>'+j.tables[t]+'</b>').join('<br>');
+}
+async function stripOld(){
+  if(!confirm('Move the old overflow data and old backup out of the public file? A safety copy is saved in the private store first.')) return;
+  const m=document.getElementById('backendTestMsg'); m.textContent='Working...';
+  const j=await teamApi({action:'public_strip_old'});
+  m.innerHTML=j.ok?('<span style="color:var(--ok);font-weight:700;">Done.</span> '+(j.removed.length?('Moved out of the public file: '+escapeHtml(j.removed.join(', '))+'. Safety copy: '+j.safetyCopyKb+' KB in the private store.'):'Nothing left to remove.')):('<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>');
 }
 async function stripTeam(){
   if(!confirm('Remove the staff list from the public data file? Your team stays safe in the private store.')) return;

@@ -1700,8 +1700,10 @@ setInterval(updateWhoBar,1500);
 <script>
 (function(){
   var SEC=['dashOverviewCard','dashLectureHall','dashQaCard','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
+  var _saved=null, _ready=false; try{ _saved=sessionStorage.getItem('ceDashTab'); }catch(e){}
   window.dashTab=function(id){
     if(SEC.indexOf(id)<0) id='dashOverviewCard';
+    if(_ready){ try{ sessionStorage.setItem('ceDashTab',id); }catch(e){} }
     SEC.forEach(function(x){ var e=document.getElementById(x); if(e) e.classList.toggle('pane-off', x!==id); });
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-tab')===id); });
     try{ if(id==='dashQaCard' && window.qaOpen) window.qaOpen(); }catch(e){}
@@ -1722,7 +1724,7 @@ setInterval(updateWhoBar,1500);
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.addEventListener('click',function(){ dashTab(a.getAttribute('data-tab')); }); });
     document.querySelectorAll('.ov-link, #dashBack [data-go]').forEach(function(b){ b.addEventListener('click',function(){ dashTab(b.getAttribute('data-go')); }); });
     ['dashScores','dashAttendance','dashReports'].forEach(function(id){ var e=document.getElementById(id); if(e) new MutationObserver(summarize).observe(e,{childList:true,subtree:true}); });
-    var r=document.getElementById('dashResults'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) dashTab('dashOverviewCard'); }).observe(r,{attributes:true,attributeFilter:['class']});
+    var r=document.getElementById('dashResults'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')){ var first=!_ready; _ready=true; dashTab(first&&_saved?_saved:'dashOverviewCard'); } }).observe(r,{attributes:true,attributeFilter:['class']});
     dashTab('dashOverviewCard'); window.scrollTo(0,0); summarize();
   });
 })();
@@ -1814,8 +1816,10 @@ function renderWelcome(){
   var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard'],adminChat:['adminChatCard'],adminQa:['dashQaCard']};
   var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminChatCard','dashQaCard'];
   function $(i){ return document.getElementById(i); }
+  var _aReady=false;
   window.adminTab=function(t){
     if(!MAP[t]) t='adminOverview';
+    if(_aReady){ try{ sessionStorage.setItem('ceAdminTab',t); }catch(e){} }
     var on=MAP[t];
     if(t==='adminQa'){ var q=$('dashQaCard'),hub=$('adminHub'); if(q&&hub&&q.parentNode!==hub) hub.appendChild(q); try{ window.qaOpen&&window.qaOpen(); }catch(e){} }
     ALL.forEach(function(x){ var e=$(x); if(e) e.classList.toggle('pane-off', on.indexOf(x)<0); });
@@ -1839,7 +1843,8 @@ function renderWelcome(){
     var h=$('adminHub'); if(!h||!h.classList.contains('hidden')) return;
     h.classList.remove('hidden'); set('ahHi',greet());
     var w=$('welcomeLine'); if(w) w.style.display='none';
-    adminTab('adminOverview');
+    var s=null; try{ s=sessionStorage.getItem('ceAdminTab'); }catch(e){}
+    adminTab(s||'adminOverview'); _aReady=true;
   }
   window.addEventListener('ce-chat-unread',function(e){ var n=e.detail||0; ['adminChatBadge','ahChatBd'].forEach(function(id){ var b=$(id); if(b){ b.style.display=n?'inline-block':'none'; b.textContent=n>99?'99+':n; } }); });
   document.addEventListener('DOMContentLoaded',function(){

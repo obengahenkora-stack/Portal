@@ -1457,6 +1457,32 @@ function attRenderTiles(){ lchRender('att'); lchRender('tch'); }
 function attGo(id){ lchGo('att',id); }
 function tchGo(id){ lchGo('tch',id); }
 
+/* ===== Remember where you were after a refresh ===== */
+(function(){
+  var K='ceNavPortal', saved=null, ready=false, cur={tab:'hub',att:null,tch:null};
+  try{ saved=JSON.parse(sessionStorage.getItem(K)||'null'); }catch(e){}
+  function save(){ if(!ready) return; try{ sessionStorage.setItem(K,JSON.stringify(cur)); }catch(e){} }
+  var _sw=switchTab, _lg=lchGo;
+  switchTab=function(t){ _sw(t); cur.tab=t; cur.att=null; cur.tch=null; save(); };
+  lchGo=function(k,id){ _lg(k,id); cur[k]=_LCH[k].cur; save(); };
+  var tries=0, iv=setInterval(function(){
+    tries++;
+    if(typeof currentUserRole!=='undefined' && currentUserRole){
+      clearInterval(iv);
+      setTimeout(function(){
+        try{
+          if(saved && saved.tab && saved.tab!=='hub'){
+            switchTab(saved.tab);
+            if(saved.tab==='attendance' && saved.att) lchGo('att',saved.att);
+            if(saved.tab==='teacher' && saved.tch) lchGo('tch',saved.tch);
+          }
+        }catch(e){}
+        ready=true;
+      },1200);
+    } else if(tries>40){ clearInterval(iv); ready=true; }
+  },500);
+})();
+
 /* ===== Practice Lab (owner only) ===== */
 var _PLAB='[TEST] Practice Class';
 async function plabCreate(){

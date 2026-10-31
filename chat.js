@@ -80,6 +80,7 @@ function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
     try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
   page().catch(function(){}).then(staff).then(function(){
     S.dir=d; applyNames(d);
+    try{ if(S.me&&S.me.id===ownerId()&&d[ownerId()]&&S.me.name!==d[ownerId()]){ S.me.name=d[ownerId()]; if(S.lounge) track(S.lounge); } }catch(e){}
     var ids=[]; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ ids.push(m.from_id); }); }); Object.keys(S.dms).forEach(function(k){ if(S.dms[k].peer) ids.push(S.dms[k].peer); }); lsNeed(ids); }); }
 var OWNER_FULL='Engr. Nana Kwame Obeng-Ahenkora';
 function rememberGender(id,g){ if(id&&(g==='Male'||g==='Female')) S.gen[id]=g; }
@@ -370,6 +371,7 @@ function setupPresence(){
   lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden'){ lsPush(); S.lsAsk={}; scheduleRender(); } },60000);
   if(!S.lsBound){ S.lsBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') lsPush(true); }); window.addEventListener('pagehide',function(){ lsPush(true); }); }
   var ch=S.rt.channel('ce-lounge',{config:{presence:{key:S.me.id}}});
+  S.lounge=ch;
   ch.on('presence',{event:'sync'},function(){
     var st=ch.presenceState(), o={};
     Object.keys(st).forEach(function(k){ var arr=st[k]; if(arr&&arr.length){ var m=arr[arr.length-1]; rememberName(k,m.name); o[k]={id:k,name:m.name||'Student',staff:!!m.staff,role:m.role||'',g:m.g||'',rooms:m.rooms||[]}; rememberGender(k,m.g); } });
@@ -519,13 +521,23 @@ function renderHome(p){
   });
   if(ids.length<=1) h+='<div class="cc-note">No one else is online right now.</div>';
   if(!p.__sk){
-    p.innerHTML='<div class="cc-h"><span class="t">Student chat</span><button type="button" data-a="delchat" title="Delete this chat" aria-label="Delete this chat" style="display:none">&#128465;</button><button type="button" data-a="mute" aria-label="Sound on or off"></button><button type="button" data-a="close" aria-label="Close">&times;</button></div><div class="cc-tabs" style="display:none"></div><div class="cc-dc" style="display:none"><span>Delete this chat? Everything you sent is removed for both of you, with no trace.</span><button type="button" data-a="dcyes">Delete</button><button type="button" data-a="dcno">Cancel</button></div><div class="cc-home"><div class="cc-s"><input id="ceSearch" type="search" placeholder="Search any student by name..." autocomplete="off"></div><div class="cc-b"></div></div><div class="cc-views"></div>';
+    p.innerHTML='<div class="cc-h"><span class="t">Student chat</span><button type="button" data-a="delchat" title="Delete this chat" aria-label="Delete this chat" style="display:none">&#128465;</button><button type="button" data-a="myname" title="Change my chat name" aria-label="Change my chat name" style="display:none">&#9998;</button><button type="button" data-a="mute" aria-label="Sound on or off"></button><button type="button" data-a="close" aria-label="Close">&times;</button></div><div class="cc-tabs" style="display:none"></div><div class="cc-dc" style="display:none"><span>Delete this chat? Everything you sent is removed for both of you, with no trace.</span><button type="button" data-a="dcyes">Delete</button><button type="button" data-a="dcno">Cancel</button></div><div class="cc-home"><div class="cc-s"><input id="ceSearch" type="search" placeholder="Search any student by name..." autocomplete="off"></div><div class="cc-b"></div></div><div class="cc-views"></div>';
     p.querySelector('.cc-tabs').addEventListener('click',function(e){ var x=e.target.closest('[data-tclose]'); if(x){ closeWin(x.getAttribute('data-tclose')); return; } var t=e.target.closest('[data-tab]'); if(!t) return; var r=t.getAttribute('data-tab'); if(r==='home'){ S.cur=null; render(); } else openRoom(r); });
     p.__sk=1;
     p.querySelector('[data-a=close]').onclick=toggleHome;
     p.querySelector('[data-a=delchat]').onclick=function(){ S.confirmDel=S.cur; render(); };
     p.querySelector('[data-a=dcno]').onclick=function(){ S.confirmDel=null; render(); };
     p.querySelector('[data-a=dcyes]').onclick=function(){ if(S.confirmDel) deleteChat(S.confirmDel); };
+    p.querySelector('[data-a=myname]').onclick=function(){
+      if(!S.me||S.me.id!==ownerId()) return;
+      var v=prompt('Your chat name (what everyone sees). Leave empty to use your full name:',S.me.name||'');
+      if(v===null) return; v=v.trim().slice(0,60);
+      chatOp('owner_name_set',{name:v}).then(function(j){
+        if(!j||!j.ok){ alert('Could not change the name: '+((j&&j.error)||'try again')); return; }
+        S.me.name=j.name; S.dir=S.dir||{}; S.dir[ownerId()]=j.name; var m={}; m[ownerId()]=j.name; applyNames(m);
+        try{ if(S.lounge) track(S.lounge); }catch(e){} lsPush(); scheduleRender();
+      }).catch(function(){ alert('Could not change the name. Please try again.'); });
+    };
     p.querySelector('[data-a=mute]').onclick=function(){ S.mute=!S.mute; try{ localStorage.setItem('ceChatMute',S.mute?'1':'0'); }catch(e){} render(); };
     p.querySelector('#ceSearch').addEventListener('input',function(e){ doSearch(e.target.value); });
   }
@@ -533,6 +545,7 @@ function renderHome(p){
   p.querySelector('.cc-dc').style.display=(S.confirmDel&&S.confirmDel===S.cur)?'flex':'none';
   p.querySelector('[data-a=mute]').innerHTML=S.mute?'&#128263;':'&#128276;';
   p.querySelector('.cc-home').style.display=S.cur?'none':'flex'; p.querySelector('.cc-views').style.display=S.cur?'flex':'none';
+  try{ var mb=p.querySelector('[data-a=myname]'); if(mb) mb.style.display=(S.me&&S.me.id===ownerId())?'':'none'; }catch(e){}
   var tt=p.querySelector('.cc-h .t'), peer=S.cur&&isDm(S.cur)&&S.dms[S.cur]?S.dms[S.cur].peer:'';
   if(peer){ lsNeed([peer]); var html=esc(roomTitle(S.cur))+'<small style="'+(S.online[peer]?'color:#7CFFB0':'')+'">'+(S.online[peer]?'&#9679; ':'')+esc(stText(peer))+'</small>'; if(tt.getAttribute('data-h')!==html){ tt.innerHTML=html; tt.setAttribute('data-h',html); } }
   else { var tx=S.cur?roomTitle(S.cur):'Student chat'; if(tt.getAttribute('data-h')!==tx){ tt.textContent=tx; tt.setAttribute('data-h',tx); } }

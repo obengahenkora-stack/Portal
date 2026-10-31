@@ -488,6 +488,7 @@
       <div id="teamMemberMsg"></div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);">
         <button type="button" class="secondary" onclick="testBackend()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
+        <button type="button" class="secondary" onclick="copyScores()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy scores to the private store</button>
         <button type="button" class="secondary" onclick="dataSummary()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Show what the data file holds</button>
         <button type="button" class="secondary" onclick="stripTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Remove staff list from the public file</button>
         <button type="button" class="secondary" onclick="migrateTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy staff list to the private store</button>
@@ -1162,6 +1163,13 @@ async function teamApi(payload){
     const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     return await r.json();
   }catch(e){ return {ok:false,error:e.message}; }
+}
+async function copyScores(){
+  const m=document.getElementById('backendTestMsg'); m.textContent='Copying...';
+  const j=await teamApi({action:'bin_migrate'});
+  if(!j.ok){ m.innerHTML='<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>'; return; }
+  const s=j.source, c=j.privateCopy, same=(s.records===c.records&&s.reports===c.reports&&s.courses===c.courses);
+  m.innerHTML=(same?'<span style="color:var(--ok);font-weight:700;">Copied and checked.</span> ':'<span style="color:var(--danger);font-weight:700;">Counts differ!</span> ')+'Source: '+s.records+' score records, '+s.reports+' reports, '+s.courses+' courses. Private copy: '+c.records+' score records, '+c.reports+' reports, '+c.courses+' courses.';
 }
 async function dataSummary(){
   const m=document.getElementById('backendTestMsg'); m.textContent='Looking...';

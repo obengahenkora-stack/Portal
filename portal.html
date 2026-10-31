@@ -488,6 +488,7 @@
       <div id="teamMemberMsg"></div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);">
         <button type="button" class="secondary" onclick="testBackend()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
+        <button type="button" class="secondary" onclick="dataSummary()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Show what the data file holds</button>
         <button type="button" class="secondary" onclick="stripTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Remove staff list from the public file</button>
         <button type="button" class="secondary" onclick="migrateTeam()" style="color:#b4281e !important;background:transparent !important;padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy staff list to the private store</button>
         <div id="backendTestMsg" style="margin-top:8px;font-size:.84rem;"></div>
@@ -1161,6 +1162,12 @@ async function teamApi(payload){
     const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     return await r.json();
   }catch(e){ return {ok:false,error:e.message}; }
+}
+async function dataSummary(){
+  const m=document.getElementById('backendTestMsg'); m.textContent='Looking...';
+  const j=await teamApi({action:'data_summary'});
+  if(!j.ok){ m.innerHTML='<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>'; return; }
+  m.innerHTML='<div style="font-weight:700;margin-bottom:4px;">Data file contents</div><table style="font-size:.78rem;width:100%;"><tr><th style="text-align:left">Name</th><th>Items</th><th>Size (KB)</th></tr>'+j.keys.map(k=>'<tr><td>'+escapeHtml(k.key)+'</td><td style="text-align:center">'+k.items+'</td><td style="text-align:center">'+k.kb+'</td></tr>').join('')+'</table><div style="font-weight:700;margin:8px 0 4px;">Database tables (rows)</div>'+Object.keys(j.tables).map(t=>escapeHtml(t)+': <b>'+j.tables[t]+'</b>').join('<br>');
 }
 async function stripTeam(){
   if(!confirm('Remove the staff list from the public data file? Your team stays safe in the private store.')) return;

@@ -893,17 +893,16 @@ async function saveSupabaseData(data, _opts){
 
 async function fetchQrSessions(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_QR_FILE}?t=${Date.now()}`, { cache: "no-store" });
-    if(!res.ok) return {};
-    return await res.json();
+    const j = await teamApi({action:'qr_get'});
+    return (j && j.ok && j.data) ? j.data : {};
   }catch(e){
     return {};
   }
 }
 
 async function saveQrSessions(qrData){
-  const res = await _bkPutRes(SUPABASE_QR_FILE, qrData);
-  if(!res.ok) throw new Error("Could not save QR session");
+  const j = await teamApi({action:'qr_put', data:qrData});
+  if(!j || !j.ok) throw new Error((j && j.error) || "Could not save QR session");
   return true;
 }
 // =================================================================

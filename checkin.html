@@ -166,26 +166,17 @@ async function verifyAndShowForm(){
     try{
       await checkIfStaffDevice();
 
-      const qrData = await fetchQrSessions();
       const sessionKey = `${course}__${date}`;
-      const session = qrData[sessionKey];
-
-      if(!session || session.token !== token){
-        document.getElementById('statusView').innerHTML = '<div class="icon">⚠️</div><h1>Code Expired</h1><p class="sub">This QR code is no longer active. Ask your lecturer to show the current one.</p>';
-        return;
-      }
-      if(Date.now() > session.expiresAt){
-        document.getElementById('statusView').innerHTML = '<div class="icon">⌛</div><h1>Code Expired</h1><p class="sub">This QR code has expired — it refreshes every 90 seconds. Scan the current one on screen.</p>';
-        return;
-      }
-
-      const dist = distanceMeters(position.coords.latitude, position.coords.longitude, session.lat, session.lng);
-      if(dist > (session.radius || 100)){
-        document.getElementById('statusView').innerHTML = '<div class="icon">📍</div><h1>Too Far From Class</h1><p class="sub">You need to be in the classroom to check in. Move closer and scan again.</p>';
+      if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+      let chk; try{ chk = await DBS.api({action:'qr_check', course, date, token, lat: position.coords.latitude, lng: position.coords.longitude}); }catch(e2){ chk = {ok:false, error: (e2 && e2.message) || ''}; }
+      if(!chk || !chk.ok){
+        const em = (chk && chk.error) || 'This QR code is no longer active.';
+        const far = /classroom/i.test(em), loc = /location/i.test(em), old = /expired/i.test(em);
+        document.getElementById('statusView').innerHTML = '<div class="icon">'+(far||loc?'📍':old?'⌛':'⚠️')+'</div><h1>'+(far?'Too Far From Class':loc?'Location Needed':'Code Expired')+'</h1><p class="sub">'+escapeHtml(em)+'</p>';
         return;
       }
 
-      verifiedSession = { course, date, sessionKey, token, lat: position.coords.latitude, lng: position.coords.longitude, startedBy: session.startedBy || null };
+      verifiedSession = { course, date, sessionKey, token, lat: position.coords.latitude, lng: position.coords.longitude, startedBy: null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 

@@ -486,6 +486,10 @@
       </select>
       <button onclick="addTeamMember()">Add Team Member</button>
       <div id="teamMemberMsg"></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);">
+        <button type="button" class="secondary" onclick="testBackend()" style="padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
+        <div id="backendTestMsg" style="margin-top:8px;font-size:.84rem;"></div>
+      </div>
 
       <div id="teamMemberList" style="margin-top:16px;"></div>
     </div>
@@ -812,6 +816,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="gate.js"></script>
 <script>
 
 // ===== JSONBin.io configuration (records, courses, reports, settings) =====
@@ -1168,6 +1173,15 @@ function applyPerms(){
   var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
   if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
   if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
+}
+async function testBackend(){
+  const m=document.getElementById('backendTestMsg'); m.textContent='Asking the back end...';
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify({action:'whoami'})});
+    const j=await r.json();
+    m.innerHTML=j.ok ? ('<span style="color:var(--ok);font-weight:700;">Back end replied:</span> '+escapeHtml(j.signedIn?('you are '+(j.role||'not on the team list')+' ('+j.email+')'):'working, but not signed in')) : ('<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>');
+  }catch(e){ m.innerHTML='<span style="color:var(--danger);">Could not reach the back end: '+escapeHtml(e.message)+'</span>'; }
 }
 async function openPerms(email){
   try{
@@ -2271,7 +2285,7 @@ async function performRestore(){
     if(restoringStudentDb){
       const rows = pendingRestoreBackup.studentAccountsDb;
       for(const row of rows){
-        await fetch(`${SUPABASE_URL}/rest/v1/student_accounts?on_conflict=email`, {
+        await GATE.saFetch(`${SUPABASE_URL}/rest/v1/student_accounts?on_conflict=email`, {
           method: "POST",
           headers: {
             "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`,
@@ -2299,7 +2313,7 @@ async function downloadBackup(){
     const [jsonBinData, supabaseData, studentAccountsDb] = await Promise.all([
       fetchBin().catch(() => ({})),
       fetchSupabaseData().catch(() => ({})),
-      fetch(`${SUPABASE_URL}/rest/v1/student_accounts?select=*`, {
+      GATE.saFetch(`${SUPABASE_URL}/rest/v1/student_accounts?select=*`, {
         headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
       }).then(r => r.ok ? r.json() : []).catch(() => [])
     ]);

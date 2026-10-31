@@ -209,7 +209,7 @@
   html[data-theme="dark"] .dash-nav a.on{ color:#08161d; }
   .ov-links{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
   .ov-link{ text-align:center !important; background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important; color:#fff !important; border:0 !important; border-radius:18px !important; padding:16px !important; min-height:150px; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(80,90,200,.18); transition:transform .15s,box-shadow .15s; }
-  .ov-link:hover{ transform:translateY(-3px); box-shadow:0 14px 28px rgba(80,90,200,.28); }
+  .ov-link:hover,.ov-link:focus,.ov-link:active{ background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important; color:#fff !important; transform:translateY(-3px); box-shadow:0 14px 28px rgba(80,90,200,.28); }
   .dash-nav#dashNav{ display:none; }
   .ov-link i{ font-style:normal; font-size:1.5rem; line-height:1; margin-bottom:4px; }
   #dashBack{ margin:0 0 12px; }
@@ -519,12 +519,12 @@
       </div>
       <div class="ov-links" id="ovLinks">
         <button class="ov-link" data-go="dashLectureHall"><i>&#128218;</i><b>Lecture Hall</b><span id="ovsHall">Notes, videos and syllabus</span></button>
+        <button class="ov-link" data-go="dashChatCard"><i>&#128172;</i><b>Chat <span id="dashChatBadge2" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px"></span></b><span>Message classmates and staff</span></button>
         <button class="ov-link" data-go="dashScoresCard"><i>&#127942;</i><b>My Scores</b><span id="ovsScores">View your results</span></button>
         <button class="ov-link" data-go="dashAttCard"><i>&#9989;</i><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
         <button class="ov-link" data-go="dashReportsCard"><i>&#128172;</i><b>My Reports</b><span id="ovsRep">View replies</span></button>
         <button class="ov-link" data-go="dashQaCard"><i>&#10067;</i><b>Q&amp;A Board</b><span>Ask and answer questions</span></button>
         <button class="ov-link" data-go="dashIssueCard"><i>&#9888;&#65039;</i><b>Report an Issue</b><span>Tell us about a problem</span></button>
-        <button class="ov-link" data-go="dashChatCard"><i>&#128172;</i><b>Chat <span id="dashChatBadge2" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px"></span></b><span>Message classmates and staff</span></button>
       </div>
     </div>
 

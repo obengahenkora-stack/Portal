@@ -80,7 +80,7 @@ function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
     try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
   page().catch(function(){}).then(staff).then(function(){
     S.dir=d; applyNames(d);
-    try{ if(S.me&&S.me.id===ownerId()&&d[ownerId()]&&S.me.name!==d[ownerId()]){ S.me.name=d[ownerId()]; if(S.lounge) track(S.lounge); } }catch(e){}
+    try{ if(S.me&&S.me.id===ownerId()&&d[ownerId()]){ var cu=(d[ownerId()]!==OWNER_FULL); if(S.me.name!==d[ownerId()]||S.me.custom!==cu){ S.me.name=d[ownerId()]; S.me.custom=cu; if(S.lounge) track(S.lounge); } } }catch(e){}
     var ids=[]; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ ids.push(m.from_id); }); }); Object.keys(S.dms).forEach(function(k){ if(S.dms[k].peer) ids.push(S.dms[k].peer); }); lsNeed(ids); }); }
 var OWNER_FULL='Engr. Nana Kwame Obeng-Ahenkora';
 function rememberGender(id,g){ if(id&&(g==='Male'||g==='Female')) S.gen[id]=g; }
@@ -381,7 +381,7 @@ function setupPresence(){
   ch.subscribe(function(status){ if(status==='SUBSCRIBED'){ track(ch); } });
   S.pres=ch; S.chans['ce-lounge']=ch;
 }
-function track(ch){ try{ ch.track({id:S.me.id,name:S.me.name,staff:S.me.staff,role:S.me.role||'',g:S.me.g||'',rooms:S.rooms.map(function(r){return r.id;}),t:now()}); }catch(e){} }
+function track(ch){ try{ ch.track({id:S.me.id,name:S.me.name,staff:(S.me.custom?false:S.me.staff),role:(S.me.custom?'':(S.me.role||'')),g:S.me.g||'',rooms:S.rooms.map(function(r){return r.id;}),t:now()}); }catch(e){} }
 
 /* ---------- icons ---------- */
 var ICON_M='<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#cfe3ff"/><path d="M5 40 Q6 28 20 27 Q34 28 35 40Z" fill="#2f7dd1"/><rect x="17" y="22" width="6" height="7" rx="2" fill="#8a5a3b"/><circle cx="20" cy="17" r="9" fill="#8a5a3b"/><path d="M11 16 Q11 7 20 7 Q29 7 29 16 Q26 11 20 11 Q14 11 11 16Z" fill="#1d1512"/><circle cx="17" cy="18" r="1.1" fill="#1d1512"/><circle cx="23" cy="18" r="1.1" fill="#1d1512"/><path d="M17 21.5 Q20 24 23 21.5" stroke="#1d1512" stroke-width="1.1" fill="none" stroke-linecap="round"/></svg>';
@@ -534,7 +534,7 @@ function renderHome(p){
       if(v===null) return; v=v.trim().slice(0,60);
       chatOp('owner_name_set',{name:v}).then(function(j){
         if(!j||!j.ok){ alert('Could not change the name: '+((j&&j.error)||'try again')); return; }
-        S.me.name=j.name; S.dir=S.dir||{}; S.dir[ownerId()]=j.name; var m={}; m[ownerId()]=j.name; applyNames(m);
+        S.me.name=j.name; S.me.custom=(j.name!==OWNER_FULL); S.dir=S.dir||{}; S.dir[ownerId()]=j.name; var m={}; m[ownerId()]=j.name; applyNames(m);
         try{ if(S.lounge) track(S.lounge); }catch(e){} lsPush(); scheduleRender();
       }).catch(function(){ alert('Could not change the name. Please try again.'); });
     };

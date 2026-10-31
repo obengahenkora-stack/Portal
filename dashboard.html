@@ -493,6 +493,7 @@
       <a href="javascript:void(0)" data-tab="dashAttCard">Attendance</a>
       <a href="javascript:void(0)" data-tab="dashReportsCard">Reports</a>
       <a href="javascript:void(0)" data-tab="dashIssueCard">Report an Issue</a>
+      <a href="javascript:void(0)" data-tab="dashQaCard">Q&amp;A</a>
       <a href="javascript:void(0)" data-tab="dashChatCard">Chat <span id="dashChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0"></span></a>
     </nav>
     <div class="card dash-sec" id="dashOverviewCard">
@@ -539,6 +540,23 @@
     <div class="card dash-sec" id="dashReportsCard">
       <h2>My Reports</h2>
       <div id="dashReports"><div class="empty">No data.</div></div>
+    </div>
+
+    <div class="card dash-sec pane-off" id="dashQaCard">
+      <h2>Q&amp;A Board</h2>
+      <p style="color:var(--muted);margin-top:0;">Ask a question about a course. Classmates and lecturers can answer. Your name shows next to your question.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;"><label>Course</label><select id="qaCourse"><option value="General">General</option></select></div>
+      </div>
+      <label>Your question</label>
+      <textarea id="qaText" rows="3" maxlength="1000" placeholder="Type your question here..."></textarea>
+      <button type="button" id="qaAskBtn" style="margin-top:8px;">Post question</button>
+      <div id="qaMsg"></div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:18px 0 8px;">
+        <div style="flex:1;min-width:180px;"><label>Show</label><select id="qaFilter"><option value="">All courses</option></select></div>
+        <button type="button" class="secondary" id="qaRefresh">Refresh</button>
+      </div>
+      <div id="qaList"><div class="empty">Loading...</div></div>
     </div>
 
     <div class="card dash-sec pane-off" id="dashChatCard">
@@ -1570,11 +1588,90 @@ setInterval(updateWhoBar,1500);
 </script>
 <script>
 (function(){
-  var SEC=['dashOverviewCard','dashLectureHall','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
+  var qaState={me:'',moderator:false,list:[],timer:null};
+  function E(id){ return document.getElementById(id); }
+  function ago(iso){ var m=Math.floor((Date.now()-Date.parse(iso))/60000); if(m<1) return 'just now'; if(m<60) return m+' min ago'; var h=Math.floor(m/60); if(h<24) return h+' hr ago'; var d=Math.floor(h/24); return d+' day'+(d>1?'s':'')+' ago'; }
+  function esc(s){ return escapeHtml(s); }
+  function fillCourses(){
+    var src=E('reportCourseSelect'), names=[];
+    if(src) Array.prototype.forEach.call(src.options,function(o){ if(o.value) names.push(o.value); });
+    var sel=E('qaCourse'), cur=sel.value;
+    sel.innerHTML='<option value="General">General</option>'+names.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('');
+    if(cur) sel.value=cur;
+    var f=E('qaFilter'), fc=f.value, seen={};
+    qaState.list.forEach(function(q){ seen[q.course]=1; }); names.forEach(function(n){ seen[n]=1; }); seen['General']=1;
+    f.innerHTML='<option value="">All courses</option>'+Object.keys(seen).sort().map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('');
+    f.value=fc;
+  }
+  function render(){
+    var box=E('qaList'), f=E('qaFilter').value;
+    var list=qaState.list.filter(function(q){ return !f||q.course===f; });
+    if(!list.length){ box.innerHTML='<div class="empty">No questions yet. Be the first to ask.</div>'; return; }
+    var open={}; box.querySelectorAll('textarea[data-r]').forEach(function(t){ if(t.value) open[t.getAttribute('data-r')]=t.value; });
+    box.innerHTML=list.map(function(q){
+      var mine=q.authorId===qaState.me, canDel=mine||qaState.moderator;
+      var ans=(q.answers||[]).map(function(a){
+        var good=q.accepted===a.id, aMine=a.authorId===qaState.me;
+        return '<div style="border-left:3px solid '+(good?'var(--ok,#1f8a4c)':'var(--line,#d9e4e0)')+';padding:6px 10px;margin:8px 0;">'
+          +'<div style="font-size:.82rem;color:var(--muted);"><b style="color:inherit">'+esc(a.authorName)+'</b>'+(a.authorTag?' <span style="background:rgba(31,138,76,.12);padding:1px 7px;border-radius:999px;font-size:.7rem;">'+esc(a.authorTag)+'</span>':'')+' &middot; '+ago(a.createdAt)+(good?' &middot; <b style="color:var(--ok,#1f8a4c)">&#10003; Best answer</b>':'')+'</div>'
+          +'<div style="white-space:pre-wrap;margin-top:2px;">'+esc(a.text)+'</div>'
+          +'<div style="margin-top:4px;font-size:.78rem;">'
+          +((mine||qaState.moderator)?'<a href="javascript:void(0)" data-acc="'+q.id+'|'+(good?'':a.id)+'">'+(good?'Remove best answer':'Mark as best answer')+'</a> &nbsp; ':'')
+          +((aMine||qaState.moderator)?'<a href="javascript:void(0)" data-del="'+q.id+'|'+a.id+'" style="color:#b4281e;">Delete</a>':'')
+          +'</div></div>';
+      }).join('');
+      return '<div style="border:1px solid var(--line,#d9e4e0);border-radius:12px;padding:12px 14px;margin-bottom:12px;">'
+        +'<div style="font-size:.78rem;color:var(--muted);"><span style="background:rgba(0,0,0,.06);padding:1px 8px;border-radius:999px;">'+esc(q.course)+'</span> &middot; <b style="color:inherit">'+esc(q.authorName)+'</b>'+(q.authorTag?' <span style="background:rgba(31,138,76,.12);padding:1px 7px;border-radius:999px;font-size:.7rem;">'+esc(q.authorTag)+'</span>':'')+' &middot; '+ago(q.createdAt)+'</div>'
+        +'<div style="white-space:pre-wrap;font-weight:600;margin:6px 0;">'+esc(q.text)+'</div>'
+        +ans
+        +'<textarea data-r="'+q.id+'" rows="2" maxlength="1000" placeholder="Write an answer..." style="margin-top:6px;"></textarea>'
+        +'<div style="margin-top:6px;display:flex;gap:10px;align-items:center;"><button type="button" data-ans="'+q.id+'" style="padding:6px 14px;font-size:.8rem;">Answer</button>'
+        +(canDel?'<a href="javascript:void(0)" data-del="'+q.id+'|" style="color:#b4281e;font-size:.8rem;">Delete question</a>':'')+'</div>'
+        +'</div>';
+    }).join('');
+    Object.keys(open).forEach(function(k){ var t=box.querySelector('textarea[data-r="'+k+'"]'); if(t) t.value=open[k]; });
+  }
+  function load(){
+    return _binCall({action:'qa_list'}).then(function(j){
+      if(!j||!j.ok){ E('qaList').innerHTML='<div class="empty">'+esc((j&&j.error)||'Could not load the Q&A board')+'</div>'; return; }
+      qaState.me=j.me; qaState.moderator=!!j.moderator; qaState.list=j.questions||[]; fillCourses(); render();
+    }).catch(function(){ E('qaList').innerHTML='<div class="empty">Could not load the Q&A board.</div>'; });
+  }
+  function say(t,ok){ E('qaMsg').innerHTML=t?'<div class="msg '+(ok?'ok':'err')+'">'+esc(t)+'</div>':''; }
+  window.qaOpen=function(){
+    load(); clearInterval(qaState.timer);
+    qaState.timer=setInterval(function(){ var c=E('dashQaCard'); if(!c||c.classList.contains('pane-off')){ clearInterval(qaState.timer); return; } if(document.visibilityState==='visible' && !document.activeElement.matches('textarea')) load(); },25000);
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    E('qaAskBtn').onclick=function(){
+      var t=E('qaText').value.trim(); if(t.length<5){ say('Please write your question first.'); return; }
+      E('qaAskBtn').disabled=true; say('Posting...',true);
+      _binCall({action:'qa_ask',course:E('qaCourse').value,text:t}).then(function(j){
+        E('qaAskBtn').disabled=false;
+        if(!j||!j.ok){ say((j&&j.error)||'Could not post. Please try again.'); return; }
+        E('qaText').value=''; say('Posted.',true); load();
+      }).catch(function(){ E('qaAskBtn').disabled=false; say('Could not post. Please try again.'); });
+    };
+    E('qaRefresh').onclick=load; E('qaFilter').onchange=render;
+    E('qaList').addEventListener('click',function(e){
+      var b=e.target.closest('[data-ans]'), dl=e.target.closest('[data-del]'), ac=e.target.closest('[data-acc]');
+      if(b){ var id=b.getAttribute('data-ans'), t=E('qaList').querySelector('textarea[data-r="'+id+'"]'); if(!t||t.value.trim().length<2) return; b.disabled=true;
+        _binCall({action:'qa_answer',qid:id,text:t.value}).then(function(j){ b.disabled=false; if(!j||!j.ok){ alert((j&&j.error)||'Could not post your answer'); return; } t.value=''; load(); }).catch(function(){ b.disabled=false; }); }
+      else if(dl){ var p=dl.getAttribute('data-del').split('|'); if(!confirm(p[1]?'Delete this answer?':'Delete this question and all its answers?')) return;
+        _binCall({action:'qa_delete',qid:p[0],aid:p[1]||''}).then(function(j){ if(!j||!j.ok) alert((j&&j.error)||'Could not delete'); load(); }); }
+      else if(ac){ var q=ac.getAttribute('data-acc').split('|'); _binCall({action:'qa_accept',qid:q[0],aid:q[1]||''}).then(load); }
+    });
+  });
+})();
+</script>
+<script>
+(function(){
+  var SEC=['dashOverviewCard','dashLectureHall','dashQaCard','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
   window.dashTab=function(id){
     if(SEC.indexOf(id)<0) id='dashOverviewCard';
     SEC.forEach(function(x){ var e=document.getElementById(x); if(e) e.classList.toggle('pane-off', x!==id); });
     document.querySelectorAll('#dashNav a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('data-tab')===id); });
+    try{ if(id==='dashQaCard' && window.qaOpen) window.qaOpen(); }catch(e){}
     try{ if(window.ChatUI){ if(id==='dashChatCard') ChatUI.embed(document.getElementById('dashChatCard')); else ChatUI.unembed(); } }catch(e){}
     try{ var n=document.getElementById('dashNav'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
   };

@@ -53,17 +53,23 @@ function peerOf(room){ var ids=String(room).slice(3).split('|'); return ids[0]==
 function namesGet(){ try{ return JSON.parse(localStorage.getItem('ceChatNames')||'{}'); }catch(e){ return {}; } }
 function rememberName(id,n){ if(!id||!n||id===(S.me&&S.me.id)) return; try{ var o=namesGet(); if(o[id]===n) return; o[id]=n; var k=Object.keys(o); if(k.length>300) delete o[k[0]]; localStorage.setItem('ceChatNames',JSON.stringify(o)); }catch(e){} }
 function nameOf(id){ return (S.dir&&S.dir[id])||S.dn[id]||(S.online[id]&&S.online[id].name)||namesGet()[id]||''; }
+function apiCall(payload){
+  var cl=null; try{ cl=G('typeof supabaseClient!=="undefined"?supabaseClient:null'); }catch(e){}
+  var adm=null; try{ adm=window._adminViaStaff||null; }catch(e){}
+  var get=function(c){ return (c&&c.auth&&c.auth.getSession)?c.auth.getSession().then(function(r){ return r&&r.data&&r.data.session?r.data.session.access_token:''; }).catch(function(){ return ''; }):Promise.resolve(''); };
+  return get(adm).then(function(t){ return t?t:get(cl); }).then(function(tok){
+    var h={'Content-Type':'application/json',apikey:G('SUPABASE_KEY')};
+    if(tok){ var iss=''; try{ iss=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).iss||''; }catch(e){} h[iss.indexOf('qqnsbuirelhwfrshafay')>=0?'x-student-token':'x-staff-token']=tok; }
+    return fetch(G('SUPABASE_URL')+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); });
+  });
+}
 function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
-  var page=function(off){
-    var viaGate=(window.GATE&&GATE.call)?GATE.call('students.dir',{}).then(function(j){ (j.rows||[]).forEach(function(x){ d[x[0]]=x[1]; }); }):Promise.reject(0);
-    return viaGate.catch(function(){ return fetch(G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email&order=email.asc&limit=1000&offset='+off,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
-      (rows||[]).forEach(function(x){ if(x&&x.email&&x.name) d['s'+hash(String(x.email).toLowerCase())]=String(x.name).trim().replace(/\s+/g,' '); });
-      if(rows&&rows.length===1000&&off<20000) return page(off+1000); }); }); };
+  var page=function(){ return apiCall({action:'stu_dir'}).then(function(j){ if(j&&j.ok&&j.names) Object.keys(j.names).forEach(function(k){ d[k]=j.names[k]; }); }); };
   var staff=function(){ return fetch(G('SUPABASE_URL')+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:G('SUPABASE_KEY')},body:JSON.stringify({action:'staff_names'})}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ if(j&&j.ok&&j.names){ Object.keys(j.names).forEach(function(k){ d[k]=j.names[k]; }); return; } return staff2(); }).catch(function(){ return staff2(); }); };
   var staff2=function(){ try{ var f=G('typeof fetchSupabaseData==="function"?fetchSupabaseData:null'); if(!f) return Promise.resolve(); return Promise.resolve(f()).then(function(data){
     ((data&&data.teamMembers)||[]).forEach(function(m){ if(m&&m.email&&m.name) d['s'+hash(String(m.email).toLowerCase())]=String(m.name).trim().replace(/\s+/g,' '); });
     try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
-  page(0).catch(function(){}).then(staff).then(function(){
+  page().catch(function(){}).then(staff).then(function(){
     S.dir=d; applyNames(d);
     var ids=[]; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ ids.push(m.from_id); }); }); Object.keys(S.dms).forEach(function(k){ if(S.dms[k].peer) ids.push(S.dms[k].peer); }); lsNeed(ids); }); }
 var OWNER_FULL='Engr. Nana Kwame Obeng-Ahenkora';
@@ -540,9 +546,7 @@ function doSearch(q){
   S.sT=setTimeout(function(){
     var words=q.trim().split(/\s+/).map(function(w){return w.replace(/[^A-Za-z0-9'.\-]/g,'');}).filter(Boolean).slice(0,3);
     if(!words.length){ S.sr=[]; scheduleRender(); return; }
-    var url=G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email,gender,level,department&order=name.asc&limit=8'+words.map(function(w){return '&name=ilike.*'+encodeURIComponent(w)+'*';}).join('');
-    var direct=function(){ return fetch(url,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){ return (rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:x.name,gender:x.gender,level:x.level,department:x.department}; }); }); };
-    var src=(window.GATE&&GATE.call)?GATE.call('students.search',{q:q}).then(function(j){ return j.rows||[]; }).catch(direct):direct();
+    var src=apiCall({action:'stu_search',q:q}).then(function(j){ return (j&&j.ok&&j.rows)?j.rows:[]; });
     src.then(function(rows){
       if(S.sq!==q) return;
       lsNeed(rows.map(function(x){ return x.id; }));

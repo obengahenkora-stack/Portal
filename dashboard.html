@@ -741,72 +741,35 @@ async function fetchBin(){
 }
 
 // ===== Student Accounts Database Table (replaces the old shared-JSON-file approach) =====
-const STUDENT_TABLE_URL = `${SUPABASE_URL}/rest/v1/student_accounts`;
-const DB_HEADERS = { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` };
-const DB_WRITE_HEADERS = { ...DB_HEADERS, "Content-Type": "application/json" };
 
 function dbRowToRecord(row){
   return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
 }
 
+async function _stu(payload){
+  const j = await _binCall(payload);
+  if(!j || !j.ok) throw new Error((j && j.error) || "Could not reach the back end");
+  return j;
+}
 async function dbFetchAllStudents(){
-  const res = await fetch(`${STUDENT_TABLE_URL}?select=*`, { headers: DB_HEADERS, cache: "no-store" });
-  if(!res.ok) throw new Error("Could not load student records");
-  const rows = await res.json();
-  return rows.map(dbRowToRecord);
+  const j = await _stu({action:'stu_list'});
+  return (j.rows||[]).map(dbRowToRecord);
 }
-
 async function dbFindStudentByEmail(email){
-  const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}&select=*`, { headers: DB_HEADERS, cache: "no-store" });
-  if(!res.ok) throw new Error("Could not look up student record");
-  const rows = await res.json();
-  return rows.length ? dbRowToRecord(rows[0]) : null;
+  const j = await _stu({action:'stu_me'});
+  return j.row ? dbRowToRecord(j.row) : null;
 }
-
-// Insert-or-update in one atomic operation — this is what actually eliminates the race
-// condition, since the database only ever touches this one student's row, never anyone else's.
 async function dbUpsertStudent(record){
-  // Optional columns are dropped one by one if the database does not have them yet, so the core record always saves.
-  const optional = { department: record.department || null, gender: record.gender || null, phone: record.phone || null };
-  const send = async () => {
-    const body = { email: record.email, index_number: record.indexNumber, name: record.name, level: record.level, linked_at: record.linkedAt };
-    Object.keys(optional).forEach(k => { body[k] = optional[k]; });
-    return fetch(`${STUDENT_TABLE_URL}?on_conflict=email`, {
-      method: "POST",
-      headers: { ...DB_WRITE_HEADERS, "Prefer": "resolution=merge-duplicates,return=representation" },
-      body: JSON.stringify(body)
-    });
-  };
-  let res = await send();
-  for(let i = 0; i < 4 && !res.ok; i++){
-    const d1 = await res.clone().text().catch(() => '');
-    const m = d1.match(/'(department|gender|phone)'/i) || d1.match(/\b(department|gender|phone)\b/i);
-    if(/PGRST204/i.test(d1) && m && (m[1].toLowerCase() in optional)){ delete optional[m[1].toLowerCase()]; res = await send(); } else break;
-  }
-  if(!res.ok){
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Could not save student record (${detail || res.status})`);
-  }
+  await _stu({action:'stu_save_me', record:{ index_number: record.indexNumber, name: record.name, level: record.level, department: record.department||null, gender: record.gender||null, phone: record.phone||null, linked_at: record.linkedAt }});
   return true;
 }
-
 async function dbMigrateLevel(fromLevel, toLevel){
-  const res = await fetch(`${STUDENT_TABLE_URL}?level=eq.${encodeURIComponent(fromLevel)}`, {
-    method: "PATCH",
-    headers: { ...DB_WRITE_HEADERS, "Prefer": "return=representation" },
-    body: JSON.stringify({ level: toLevel })
-  });
-  if(!res.ok) throw new Error("Could not migrate level");
-  return await res.json();
+  const j = await _stu({action:'stu_level_migrate', from:fromLevel, to:toLevel});
+  return new Array(j.count||0);
 }
-
 async function dbDeleteLevel(level){
-  const res = await fetch(`${STUDENT_TABLE_URL}?level=eq.${encodeURIComponent(level)}`, {
-    method: "DELETE",
-    headers: { ...DB_HEADERS, "Prefer": "return=representation" }
-  });
-  if(!res.ok) throw new Error("Could not delete students at this level");
-  return await res.json();
+  const j = await _stu({action:'stu_level_delete', level:level});
+  return new Array(j.count||0);
 }
 
 // ===== Student Account Sign-In / Sign-Up / Index Linking =====
@@ -899,11 +862,7 @@ async function saveDeptGate(){
   if(!v){ msg.innerHTML = '<div class="msg err">Please choose Civil Engineering or Environmental Engineering.</div>'; return; }
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(studentCurrentEmail)}`, {
-      method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ department: v })
-    });
-    if(!res.ok){ const t = await res.text().catch(()=>''); throw new Error(/PGRST204|department/i.test(t) ? 'The department field is not set up in the database yet. The administrator must run the department SQL once, then try again.' : 'save failed (' + res.status + ')'); }
+    await _stu({action:'stu_patch_me', patch:{ department: v }});
     studentCurrentAccount.department = v;
     const g = document.getElementById('deptGate'); g.classList.add('hidden'); g.style.display = 'none';
     document.body.style.overflow = '';
@@ -1101,11 +1060,7 @@ async function adminEditStudent(email){
   const dept = /env/i.test(deptIn) ? 'Environmental Engineering' : (/civ/i.test(deptIn) ? 'Civil Engineering' : '');
   if(deptIn.trim() && !dept){ alert('Department must be Civil Engineering or Environmental Engineering.'); return; }
   try{
-    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}`, {
-      method: 'PATCH', headers: { ...DB_WRITE_HEADERS, 'Prefer': 'return=representation' },
-      body: JSON.stringify({ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null })
-    });
-    if(!res.ok) throw new Error('save failed (' + res.status + ')');
+    await _stu({action:'stu_update', email:email, patch:{ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null }});
     loadRegisteredStudents();
   }catch(e){ alert('Could not update: ' + e.message); }
 }
@@ -1115,8 +1070,7 @@ async function adminDeleteStudent(email){
   const s = registeredStudentsCache.find(x => x.email === email); if(!s) return;
   if(!confirm('Delete ' + (s.name || s.email) + ' (' + s.indexNumber + ')? Their index link is removed and they will need to link again. This cannot be undone.')) return;
   try{
-    const res = await fetch(`${STUDENT_TABLE_URL}?email=eq.${encodeURIComponent(email)}`, { method: 'DELETE', headers: { ...DB_HEADERS, 'Prefer': 'return=representation' } });
-    if(!res.ok) throw new Error('delete failed (' + res.status + ')');
+    await _stu({action:'stu_delete', email:email});
     loadRegisteredStudents();
   }catch(e){ alert('Could not delete: ' + e.message); }
 }
@@ -1137,13 +1091,7 @@ function toggleSelectAllShown(on){
 }
 function selectedShown(){ return _shownStudents.filter(function(s){return _sel.has(s.email);}); }
 async function bulkByEmail(list,method,body){
-  for(var i=0;i<list.length;i+=40){
-    var chunk=list.slice(i,i+40).map(function(s){ return '"'+String(s.email).replace(/"/g,'')+'"'; }).join(',');
-    var opts={method:method,headers:Object.assign({},method==='PATCH'?DB_WRITE_HEADERS:DB_HEADERS,{'Prefer':'return=representation'})};
-    if(body) opts.body=JSON.stringify(body);
-    var res=await fetch(STUDENT_TABLE_URL+'?email=in.('+encodeURIComponent(chunk)+')',opts);
-    if(!res.ok) throw new Error('failed ('+res.status+')');
-  }
+  await _stu({action:'stu_bulk', emails:list.map(function(s){return s.email;}), op:(method==='PATCH'?'patch':'delete'), patch:body||null});
 }
 async function moveShownStudents(){
   var target=document.getElementById('adminMoveTarget').value, list=selectedShown();
@@ -1682,11 +1630,7 @@ async function saveProfileGate(){
   if(!phone){ msg.innerHTML='<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
   msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
-    var res=await fetch(STUDENT_TABLE_URL+'?email=eq.'+encodeURIComponent(studentCurrentEmail),{
-      method:'PATCH', headers:Object.assign({},DB_WRITE_HEADERS,{'Prefer':'return=representation'}),
-      body:JSON.stringify({gender:_pgGender, phone:phone})
-    });
-    if(!res.ok){ var t=await res.text().catch(function(){return '';}); throw new Error(/PGRST204|gender|phone/i.test(t)?'The gender and phone fields are not set up in the database yet. The administrator must run the gender and phone SQL once, then try again.':'save failed ('+res.status+')'); }
+    await _stu({action:'stu_patch_me', patch:{gender:_pgGender, phone:phone}});
     studentCurrentAccount.gender=_pgGender; studentCurrentAccount.phone=phone;
     var g=document.getElementById('profileGate'); g.classList.add('hidden'); g.style.display='none'; document.body.style.overflow='';
     var pg=document.getElementById('profileGenderInput'); if(pg) pg.value=_pgGender;

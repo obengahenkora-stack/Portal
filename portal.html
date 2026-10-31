@@ -2321,17 +2321,8 @@ async function performRestore(){
     }
     if(restoringStudentDb){
       const rows = pendingRestoreBackup.studentAccountsDb;
-      for(const row of rows){
-        await fetch(`${SUPABASE_URL}/rest/v1/student_accounts?on_conflict=email`, {
-          method: "POST",
-          headers: {
-            "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates"
-          },
-          body: JSON.stringify(row)
-        });
-      }
+      const rr = await teamApi({action:'stu_restore', rows});
+      if(!rr || !rr.ok) throw new Error((rr && rr.error) || 'Could not restore student accounts');
     }
 
     msg.innerHTML = `<div class="msg ok">Restored: ${labels.join(', ')}.</div>`;
@@ -2350,9 +2341,7 @@ async function downloadBackup(){
     const [jsonBinData, supabaseData, studentAccountsDb] = await Promise.all([
       fetchBin().catch(() => ({})),
       fetchSupabaseData().catch(() => ({})),
-      fetch(`${SUPABASE_URL}/rest/v1/student_accounts?select=*`, {
-        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-      }).then(r => r.ok ? r.json() : []).catch(() => [])
+      teamApi({action:'stu_list'}).then(j => (j && j.ok) ? j.rows : []).catch(() => [])
     ]);
 
     const fullBackup = {

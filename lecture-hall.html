@@ -206,9 +206,7 @@ async function checkAdminSession(){
     if(!session){ isSignedInAdmin = false; return; }
     const email = session.user.email.toLowerCase();
     if(email === OWNER_EMAIL.toLowerCase()){ isSignedInAdmin = true; return; }
-    const data = await getData();
-    const members = data.teamMembers || [];
-    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    const me = await (window._bkMe||function(s,e,fb){return fb();})(session, email, async function(){ const data = await getData(); return (data.teamMembers || []).find(m => (m.email || '').toLowerCase() === email) || null; });
     isSignedInAdmin = !!(me && (me.role === 'owner' || me.role === 'admin'));
   }catch(e){ isSignedInAdmin = false; }
 }
@@ -447,5 +445,6 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="theme.js"></script>
 <script src="darkfix.js"></script>
+<script src="staffcheck.js"></script>
 </body>
 </html>

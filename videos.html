@@ -203,9 +203,7 @@ async function resolveCurrentUserRole(){
   currentUserEmail = email;
   if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; return; }
   try{
-    const data = await fetchSupabaseData();
-    const members = data.teamMembers || [];
-    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    const me = await (window._bkMe||function(s,e,fb){return fb();})(session, email, async function(){ const data = await fetchSupabaseData(); return (data.teamMembers || []).find(m => (m.email || '').toLowerCase() === email) || null; });
     currentUserRole = me ? me.role : null;
   }catch(e){ currentUserRole = null; }
 }
@@ -456,5 +454,6 @@ if ('serviceWorker' in navigator) {
 <script src="theme.js"></script>
 <script src="pw-tools.js"></script>
 <script src="darkfix.js"></script>
+<script src="staffcheck.js"></script>
 </body>
 </html>

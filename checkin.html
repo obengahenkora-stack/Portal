@@ -96,9 +96,7 @@ async function checkIfStaffDevice(){
     if(!session){ isStaffDevice = false; return; }
     const email = session.user.email.toLowerCase();
     if(email === OWNER_EMAIL.toLowerCase()){ isStaffDevice = true; return; }
-    const data = await fetchSupabaseData(true);
-    const members = data.teamMembers || [];
-    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    const me = await (window._bkMe||function(s,e,fb){return fb();})(session, email, async function(){ const data = await fetchSupabaseData(true); return (data.teamMembers || []).find(m => (m.email || '').toLowerCase() === email) || null; });
     isStaffDevice = !!(me && me.role); // any assigned role counts as staff
   }catch(e){ isStaffDevice = false; }
 }
@@ -342,5 +340,6 @@ window.addEventListener('DOMContentLoaded', verifyAndShowForm);
 </script>
 <script src="theme.js"></script>
 <script src="darkfix.js"></script>
+<script src="staffcheck.js"></script>
 </body>
 </html>

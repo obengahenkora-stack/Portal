@@ -982,7 +982,7 @@ let currentUserCourses = null; // null = sees all courses; array = only the assi
 function visibleCourses(list){ list=(list||[]).filter(function(c){return isOwner()||!/^\[TEST\]/i.test(String(c));}); if(isAdmin() || !Array.isArray(currentUserCourses)) return list; var a=currentUserCourses.map(function(c){return String(c).toLowerCase();}); return list.filter(function(c){ return a.indexOf(String(c).toLowerCase())>=0; }); }
 function _cb(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return (m?m[1].trim():s).toLowerCase(); }
 function reportVisible(r){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var mine=currentUserCourses.map(_cb); return mine.indexOf(_cb(r.course))>=0; }
-async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; } }catch(e){} }
+async function grantMeCourse(course){ if(isAdmin() || !Array.isArray(currentUserCourses) || !currentUserEmail) return; if(visibleCourses([course]).length) return; try{ var data=await fetchSupabaseData(); var m=(data.teamMembers||[]).find(function(x){return (x.email||'').toLowerCase()===currentUserEmail;}); if(m){ m.courses=(m.courses||[]).concat([course]); await saveSupabaseData(data); currentUserCourses=m.courses; try{ await teamApi({action:'self_grant_course',course:course}); }catch(e2){} } }catch(e){} }
 
 // ===== Welcome toast =====
 function showWelcomeToast(name){
@@ -1055,6 +1055,7 @@ async function isKnownStaffEmail(email){
   email=String(email||'').trim().toLowerCase();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return false;
   if(email===OWNER_EMAIL.toLowerCase()) return true;
+  try{ var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({action:'is_staff',email:email})}); if(r.ok){ var j=await r.json(); if(j&&j.ok) return !!j.known; } }catch(e0){}
   try{ var data=await fetchSupabaseData(true); return (data.teamMembers||[]).some(function(m){ return String(m.email||'').trim().toLowerCase()===email; }); }catch(e){ return null; }
 }
 async function signUpUser(){

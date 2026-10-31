@@ -54,10 +54,13 @@ function namesGet(){ try{ return JSON.parse(localStorage.getItem('ceChatNames')|
 function rememberName(id,n){ if(!id||!n||id===(S.me&&S.me.id)) return; try{ var o=namesGet(); if(o[id]===n) return; o[id]=n; var k=Object.keys(o); if(k.length>300) delete o[k[0]]; localStorage.setItem('ceChatNames',JSON.stringify(o)); }catch(e){} }
 function nameOf(id){ return (S.dir&&S.dir[id])||S.dn[id]||(S.online[id]&&S.online[id].name)||namesGet()[id]||''; }
 function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
-  var page=function(off){ return fetch(G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email&order=email.asc&limit=1000&offset='+off,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
-    (rows||[]).forEach(function(x){ if(x&&x.email&&x.name) d['s'+hash(String(x.email).toLowerCase())]=String(x.name).trim().replace(/\s+/g,' '); });
-    if(rows&&rows.length===1000&&off<20000) return page(off+1000); }); };
-  var staff=function(){ try{ var f=G('typeof fetchSupabaseData==="function"?fetchSupabaseData:null'); if(!f) return Promise.resolve(); return Promise.resolve(f()).then(function(data){
+  var page=function(off){
+    var viaGate=(window.GATE&&GATE.call)?GATE.call('students.dir',{}).then(function(j){ (j.rows||[]).forEach(function(x){ d[x[0]]=x[1]; }); }):Promise.reject(0);
+    return viaGate.catch(function(){ return fetch(G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email&order=email.asc&limit=1000&offset='+off,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+      (rows||[]).forEach(function(x){ if(x&&x.email&&x.name) d['s'+hash(String(x.email).toLowerCase())]=String(x.name).trim().replace(/\s+/g,' '); });
+      if(rows&&rows.length===1000&&off<20000) return page(off+1000); }); }); };
+  var staff=function(){ return fetch(G('SUPABASE_URL')+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:G('SUPABASE_KEY')},body:JSON.stringify({action:'staff_names'})}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ if(j&&j.ok&&j.names){ Object.keys(j.names).forEach(function(k){ d[k]=j.names[k]; }); return; } return staff2(); }).catch(function(){ return staff2(); }); };
+  var staff2=function(){ try{ var f=G('typeof fetchSupabaseData==="function"?fetchSupabaseData:null'); if(!f) return Promise.resolve(); return Promise.resolve(f()).then(function(data){
     ((data&&data.teamMembers)||[]).forEach(function(m){ if(m&&m.email&&m.name) d['s'+hash(String(m.email).toLowerCase())]=String(m.name).trim().replace(/\s+/g,' '); });
     try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
   page(0).catch(function(){}).then(staff).then(function(){
@@ -111,7 +114,7 @@ function seenPush(){ if(!S.me||!S.histOK) return; clearTimeout(S.spT); S.spT=set
   var row={id:id,room:id,from_id:S.me.id,from_name:'-',text:JSON.stringify(seenGet()),created_at:new Date().toISOString()};
   if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
   upsertRow(row); }catch(e){} },1500); }
-function seenPull(cb){ if(!S.me||!S.histOK) return cb(); fetch(tUrl()+'?select=text&id=eq.'+encodeURIComponent('seen:'+S.me.id),{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+function seenPull(cb){ if(!S.me||!S.histOK) return cb(); cf(tUrl()+'?select=text&id=eq.'+encodeURIComponent('seen:'+S.me.id),{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
   try{ var rem=JSON.parse((rows[0]&&rows[0].text)||'{}'), o=seenGet(); Object.keys(rem).forEach(function(k){ if((rem[k]||0)>(o[k]||0)) o[k]=rem[k]; }); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} cb(); }).catch(function(){ cb(); }); }
 
 /* ---------- encryption (AES-GCM; text is scrambled before it is sent or stored) ---------- */
@@ -125,15 +128,61 @@ function keyFor(room){
     return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('obeng-ahenkora.xyz/chat'),iterations:60000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']); });
   return _keys[room];
 }
+/* ---------- end-to-end encryption for direct messages ----------
+   Each person has a private key that never leaves their own signed-in account (kept in their login profile,
+   not in the chat table). Only the public half is shared. Nobody else, including the site owner reading the
+   database, can open a direct message without one of the two private keys. */
+function me2(){ return S.me&&S.me.id; }
+function authClient(){ return G('window._adminViaStaff||(typeof supabaseClient!=="undefined"?supabaseClient:null)'); }
+function peerOfRoom(room){ var m=String(room).replace(/^dm:/,'').split('|'); return m[0]===me2()?m[1]:m[0]; }
+function e2Ready(){
+  if(S.e2p&&S.e2for===me2()) return S.e2p; S.e2for=me2();
+  var lk='ceE2E:'+me2(), cl=authClient();
+  var load=function(o){ return Promise.all([crypto.subtle.importKey('jwk',o.priv,{name:'ECDH',namedCurve:'P-256'},false,['deriveKey']),Promise.resolve(o.pub)]).then(function(a){ return {priv:a[0],pub:a[1]}; }); };
+  var local=null; try{ local=JSON.parse(localStorage.getItem(lk)||'null'); }catch(e){}
+  var fromMeta=(!cl||!cl.auth||!cl.auth.getUser)?Promise.resolve({ok:false}):cl.auth.getUser().then(function(r){ var u=r&&r.data&&r.data.user; if(!u) return {ok:false}; var m=u.user_metadata&&u.user_metadata.ce_e2e; if(m&&m.priv&&m.pub) return {ok:true,o:m}; return {ok:true,o:null}; }).catch(function(){ return {ok:false}; });
+  S.e2p=fromMeta.then(function(r){
+    if(r.ok&&r.o){ try{ localStorage.setItem(lk,JSON.stringify(r.o)); }catch(e){} return r.o; }
+    if(local) { if(r.ok&&cl&&cl.auth.updateUser) cl.auth.updateUser({data:{ce_e2e:local}}).catch(function(){}); return local; }
+    return crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveKey']).then(function(kp){
+      return Promise.all([crypto.subtle.exportKey('jwk',kp.privateKey),crypto.subtle.exportKey('jwk',kp.publicKey)]).then(function(a){
+        var o={priv:a[0],pub:a[1]}; try{ localStorage.setItem(lk,JSON.stringify(o)); }catch(e){}
+        if(r.ok&&cl&&cl.auth.updateUser) cl.auth.updateUser({data:{ce_e2e:o}}).catch(function(){});
+        return o; }); });
+  }).then(function(o){ S.e2pub=o.pub; e2Publish(o.pub); return load(o); }).catch(function(){ S.e2p=null; return null; });
+  return S.e2p;
+}
+function e2Publish(pub){ if(!S.histOK||!S.me) return; var id='pk:'+S.me.id, t=JSON.stringify(pub); if(S.e2pubSent===t) return; S.e2pubSent=t;
+  var row={id:id,room:id,from_id:S.me.id,from_name:'-',text:t,created_at:new Date().toISOString()}; if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString(); upsertRow(row); }
+S.pk=S.pk||{};
+function e2Peer(peer,force){ if(!force&&S.pk[peer]!==undefined&&(S.pk[peer]||Date.now()-(S.pkT&&S.pkT[peer]||0)<30000)) return Promise.resolve(S.pk[peer]);
+  S.pkT=S.pkT||{}; S.pkT[peer]=Date.now();
+  return cf(tUrl()+'?select=text&id=eq.'+encodeURIComponent('pk:'+peer),{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){
+    var j=null; try{ j=a&&a[0]?JSON.parse(a[0].text):null; }catch(e){}
+    if(j&&JSON.stringify(j)!==JSON.stringify(S.pk[peer])){ S.pk[peer]=j; delete S.e2k[peer]; scheduleRender(); } else if(!j) S.pk[peer]=null; return S.pk[peer]; }).catch(function(){ return S.pk[peer]||null; }); }
+S.e2k=S.e2k||{};
+function e2Key(peer){ if(S.e2k[peer]) return S.e2k[peer];
+  S.e2k[peer]=Promise.all([e2Ready(),e2Peer(peer)]).then(function(a){ var mine=a[0], pj=a[1]; if(!mine||!pj) { delete S.e2k[peer]; return null; }
+    return crypto.subtle.importKey('jwk',pj,{name:'ECDH',namedCurve:'P-256'},false,[]).then(function(pub){ return crypto.subtle.deriveKey({name:'ECDH',public:pub},mine.priv,{name:'AES-GCM',length:256},false,['encrypt','decrypt']); }); }).catch(function(){ delete S.e2k[peer]; return null; });
+  return S.e2k[peer]; }
 function enc(room,text){
   if(!(window.crypto&&crypto.subtle)) return Promise.resolve(text);
-  return keyFor(room).then(function(k){ var iv=crypto.getRandomValues(new Uint8Array(12)); return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(text)).then(function(ct){ return 'e1:'+b64(iv)+'.'+b64(ct); }); }).catch(function(){ return text; });
+  var legacy=function(){ return keyFor(room).then(function(k){ var iv=crypto.getRandomValues(new Uint8Array(12)); return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(text)).then(function(ct){ return 'e1:'+b64(iv)+'.'+b64(ct); }); }).catch(function(){ return text; }); };
+  if(!isDm(room)) return legacy();
+  return e2Key(peerOfRoom(room)).then(function(k){ if(!k) return legacy(); var iv=crypto.getRandomValues(new Uint8Array(12)); return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(text)).then(function(ct){ return 'e2:'+b64(iv)+'.'+b64(ct); }); }).catch(legacy);
 }
 function dec(room,text){
-  if(String(text).indexOf('e1:')!==0) return Promise.resolve(text);
+  var t=String(text);
+  if(t.indexOf('e2:')===0){
+    if(!(window.crypto&&crypto.subtle)) return Promise.resolve('[encrypted message]');
+    var p=t.slice(3).split('.'), peer=peerOfRoom(room);
+    var go=function(){ return e2Key(peer).then(function(k){ if(!k) throw 0; return crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(p[0])},k,unb64(p[1])); }).then(function(b){ return new TextDecoder().decode(b); }); };
+    return go().catch(function(){ return e2Peer(peer,true).then(function(){ delete S.e2k[peer]; return go(); }); }).catch(function(){ return '[locked message: open it on the device where you first signed in]'; });
+  }
+  if(t.indexOf('e1:')!==0) return Promise.resolve(text);
   if(!(window.crypto&&crypto.subtle)) return Promise.resolve('[encrypted message]');
-  var p=String(text).slice(3).split('.');
-  return keyFor(room).then(function(k){ return crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(p[0])},k,unb64(p[1])); }).then(function(b){ return new TextDecoder().decode(b); }).catch(function(){ return '[could not decrypt]'; });
+  var p1=t.slice(3).split('.');
+  return keyFor(room).then(function(k){ return crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(p1[0])},k,unb64(p1[1])); }).then(function(b){ return new TextDecoder().decode(b); }).catch(function(){ return '[could not decrypt]'; });
 }
 function inMsg(p){ if(!p||!p.payload) return; var m=p.payload; dec(m.room,m.text).then(function(t){ m.text=t; addMsg(m); }); }
 function inEdit(p){ if(!p||!p.payload) return; var e=p.payload; dec(e.room,e.text).then(function(t){ applyEdit(e.room,e.id,t); }); }
@@ -143,7 +192,7 @@ function editMsg(room,id,text){
   var l=S.msgs[room]||[], m=l.filter(function(x){return x.id===id;})[0]; if(!m||m.from_id!==S.me.id||text===m.text) return;
   applyEdit(room,id,text);
   enc(room,text).then(function(ct){
-    if(S.histOK) fetch(tUrl()+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify({text:ct})}).catch(function(){});
+    if(S.histOK) cf(tUrl()+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify({text:ct})}).catch(function(){});
     var p={room:room,id:id,text:ct};
     if(isDm(room)) sendTo('inbox:'+peerOf(room),'edit',p).catch(function(){}); else sendTo('room:'+room,'edit',p).catch(function(){});
   });
@@ -154,7 +203,7 @@ function deleteChat(room){
   var peer=peerOf(room);
   S.cl[room]=now(); try{ localStorage.setItem('ceChatCleared',JSON.stringify(S.cl)); }catch(e){}
   S.msgs[room]=[]; delete S.dms[room]; S.unread[room]=0; S.confirmDel=null;
-  if(S.histOK) fetch(tUrl()+'?room=eq.'+encodeURIComponent(room)+'&from_id=eq.'+encodeURIComponent(S.me.id),{method:'DELETE',headers:hdr()}).catch(function(){});
+  if(S.histOK) cf(tUrl()+'?room=eq.'+encodeURIComponent(room)+'&from_id=eq.'+encodeURIComponent(S.me.id),{method:'DELETE',headers:hdr()}).catch(function(){});
   sendTo('inbox:'+peer,'clear',{room:room,from_id:S.me.id}).catch(function(){});
   closeWin(room,true); S.cur=null; render();
 }
@@ -166,12 +215,13 @@ function sendRead(room){
 }
 
 /* ---------- storage (history) ---------- */
+function cf(u,o){ return (window.GATE&&GATE.chatFetch)?GATE.chatFetch(u,o):fetch(u,o); }
 function hdr(){ var k=G('SUPABASE_KEY'); return {apikey:k,Authorization:'Bearer '+k,'Content-Type':'application/json'}; }
 function tUrl(){ return G('SUPABASE_URL')+'/rest/v1/chat_messages'; }
 function persist(m){
   if(!S.histOK) return;
   var row={id:m.id,room:m.room,from_id:m.from_id,from_name:m.from_name,text:m.text,created_at:new Date(m.ts).toISOString()};
-  var post=function(body){ return fetch(tUrl(),{method:'POST',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(body)}); };
+  var post=function(body){ return cf(tUrl(),{method:'POST',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(body)}); };
   var body=Object.assign({},row);
   if(S.genCol){ if(m.from_g) body.from_gender=m.from_g; if(isDm(m.room)){ var tn=(S.dms[m.room]&&S.dms[m.room].name)||nameOf(peerOf(m.room)); if(tn) body.to_name=tn; } var offline=isDm(m.room)&&!S.online[peerOf(m.room)]; body.expires_at=new Date(m.ts+(offline?30*24*3600*1000:TTL)).toISOString(); }
   post(body).then(function(r){
@@ -184,7 +234,7 @@ function expOf(x){ return x.expires_at?new Date(x.expires_at).getTime():new Date
 function loadHistory(room){
   if(S.loaded[room]||!S.histOK) return Promise.resolve();
   S.loaded[room]=1;
-  return fetch(tUrl()+'?select=*&room=eq.'+encodeURIComponent(room)+'&created_at=gte.'+encodeURIComponent(new Date(Date.now()-31*24*3600*1000).toISOString())+'&order=created_at.desc&limit=60',{headers:hdr(),cache:'no-store'})
+  return cf(tUrl()+'?select=*&room=eq.'+encodeURIComponent(room)+'&created_at=gte.'+encodeURIComponent(new Date(Date.now()-31*24*3600*1000).toISOString())+'&order=created_at.desc&limit=60',{headers:hdr(),cache:'no-store'})
    .then(function(r){ if(!r.ok){ if(r.status===404||r.status===400) S.histOK=false; throw new Error('x'); } return r.json(); })
    .then(function(rows){ return Promise.all(rows.reverse().filter(function(x){ return expOf(x)>Date.now(); }).map(function(x){ rememberGender(x.from_id,x.from_gender); return dec(x.room,x.text).then(function(t){ addMsg({id:x.id,room:x.room,from_id:x.from_id,from_name:x.from_name,from_g:x.from_gender||'',text:t,ts:new Date(x.created_at).getTime(),exp:expOf(x)},true); }); })); })
    .catch(function(){});
@@ -193,9 +243,9 @@ function loadDmList(){ seenPull(_loadDm); }
 function _loadDm(){
   if(!S.histOK) return;
   var like='room=like.'+encodeURIComponent('dm:*'+S.me.id+'*');
-  var pick=S.genCol?fetch(tUrl()+'?'+like+'&from_id=neq.'+encodeURIComponent(S.me.id)+'&expires_at=gt.'+encodeURIComponent(new Date(Date.now()+TTL+3600000).toISOString()),{method:'PATCH',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify({expires_at:new Date(Date.now()+TTL).toISOString()})}).catch(function(){}):Promise.resolve();
+  var pick=S.genCol?cf(tUrl()+'?'+like+'&from_id=neq.'+encodeURIComponent(S.me.id)+'&expires_at=gt.'+encodeURIComponent(new Date(Date.now()+TTL+3600000).toISOString()),{method:'PATCH',headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify({expires_at:new Date(Date.now()+TTL).toISOString()})}).catch(function(){}):Promise.resolve();
   pick.then(function(){
-   return fetch(tUrl()+'?select=*&'+like+'&created_at=gte.'+encodeURIComponent(new Date(Date.now()-31*24*3600*1000).toISOString())+'&order=created_at.desc&limit=200',{headers:hdr(),cache:'no-store'}); })
+   return cf(tUrl()+'?select=*&'+like+'&created_at=gte.'+encodeURIComponent(new Date(Date.now()-31*24*3600*1000).toISOString())+'&order=created_at.desc&limit=200',{headers:hdr(),cache:'no-store'}); })
    .then(function(r){ if(!r.ok) throw new Error('x'); return r.json(); })
    .then(function(rows){ var seen=seenGet(), fresh=0;
      rows.forEach(function(x){ if(expOf(x)<=Date.now()||new Date(x.created_at).getTime()<=(S.cl[x.room]||0)) return; var peer=peerOf(x.room); if(!S.dms[x.room]) S.dms[x.room]={peer:peer,name:nameOf(peer)}; S.dms[x.room].until=Math.max(S.dms[x.room].until||0,expOf(x));
@@ -208,8 +258,8 @@ function _loadDm(){
 function purgeOld(){
   if(!S.histOK) return;
   var h=Object.assign(hdr(),{Prefer:'return=minimal'});
-  if(S.genCol){ fetch(tUrl()+'?expires_at=lt.'+encodeURIComponent(new Date().toISOString()),{method:'DELETE',headers:h}).catch(function(){}); fetch(tUrl()+'?expires_at=is.null&created_at=lt.'+encodeURIComponent(cutoffIso()),{method:'DELETE',headers:h}).catch(function(){}); }
-  else fetch(tUrl()+'?created_at=lt.'+encodeURIComponent(cutoffIso()),{method:'DELETE',headers:h}).catch(function(){});
+  if(S.genCol){ cf(tUrl()+'?expires_at=lt.'+encodeURIComponent(new Date().toISOString()),{method:'DELETE',headers:h}).catch(function(){}); cf(tUrl()+'?expires_at=is.null&created_at=lt.'+encodeURIComponent(cutoffIso()),{method:'DELETE',headers:h}).catch(function(){}); }
+  else cf(tUrl()+'?created_at=lt.'+encodeURIComponent(cutoffIso()),{method:'DELETE',headers:h}).catch(function(){});
 }
 function winOpen(room){ return S.wins.some(function(w){return w.room===room;}); }
 function pruneLocal(){
@@ -218,7 +268,7 @@ function pruneLocal(){
   Object.keys(S.dms).forEach(function(r){ if(!(S.msgs[r]&&S.msgs[r].length) && !winOpen(r) && !S.dms[r].keep && !((S.dms[r].until||0)>Date.now())){ delete S.dms[r]; changed=true; } });
   if(changed) scheduleRender();
 }
-function removeRow(id){ if(!S.histOK) return; fetch(tUrl()+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).catch(function(){}); }
+function removeRow(id){ if(!S.histOK) return; cf(tUrl()+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).catch(function(){}); }
 
 /* ---------- messages ---------- */
 function addMsg(m,silent){
@@ -289,8 +339,8 @@ function canDelete(m){ return m.from_id===S.me.id || S.me.staff; }
 /* ---------- presence ---------- */
 S.ls={}; S.lsAsk={}; S.dn={};
 function upsertRow(row,ka){ var h=Object.assign(hdr(),{Prefer:'return=representation'});
-  return fetch(tUrl()+'?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',keepalive:!!ka,headers:h,body:JSON.stringify({text:row.text,created_at:row.created_at,expires_at:row.expires_at})}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){
-    if(a&&a.length) return; return fetch(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}).then(function(r){ if(!r.ok&&S.genCol&&r.status===400){ delete row.expires_at; return fetch(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}); } }); }).catch(function(){}); }
+  return cf(tUrl()+'?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',keepalive:!!ka,headers:h,body:JSON.stringify({text:row.text,created_at:row.created_at,expires_at:row.expires_at})}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){
+    if(a&&a.length) return; return cf(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}).then(function(r){ if(!r.ok&&S.genCol&&r.status===400){ delete row.expires_at; return cf(tUrl(),{method:'POST',keepalive:!!ka,headers:Object.assign(hdr(),{Prefer:'return=minimal'}),body:JSON.stringify(row)}); } }); }).catch(function(){}); }
 function applyNames(map){ Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ if(map[m.from_id]) m.from_name=map[m.from_id]; }); });
   Object.keys(S.dms).forEach(function(k){ var p=S.dms[k]&&S.dms[k].peer; if(p&&map[p]) S.dms[k].name=map[p]; }); scheduleRender(); }
 function myFullName(){ var n=(S.me&&S.me.name)||''; return n; }
@@ -300,10 +350,10 @@ function lsPush(ka){ if(!S.me||!S.histOK) return; try{ var id='ls:'+S.me.id, row
 function lsNeed(ids){ if(!S.histOK) return; var need=[]; ids.forEach(function(i){ if(i&&i!==(S.me&&S.me.id)&&need.indexOf(i)<0&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>60000)) need.push(i); }); if(!need.length) return;
   need.forEach(function(i){ S.lsAsk[i]=Date.now(); });
   for(var p=0;p<need.length;p+=40) (function(part){
-  fetch(tUrl()+'?select=id,text&id=in.('+part.map(function(i){ return encodeURIComponent('"ls:'+i+'"'); }).join(',')+')',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+  cf(tUrl()+'?select=id,text&id=in.('+part.map(function(i){ return encodeURIComponent('"ls:'+i+'"'); }).join(',')+')',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
     var ch=0, nm={}; (rows||[]).forEach(function(x){ var id=String(x.id).slice(3), t=0, n=''; try{ var o=JSON.parse(x.text); t=o.t||0; n=o.n||''; }catch(e){ t=parseInt(x.text,10)||0; }
       if(t&&S.ls[id]!==t){ S.ls[id]=t; ch=1; } if(n&&n!=='Owner'&&n!=='Lecturer'&&n!=='TA'&&n!=='Admin'&&n!=='Student'&&S.dn[id]!==n){ S.dn[id]=n; if(!(S.dir&&S.dir[id])) nm[id]=n; } });
-    part.filter(function(i){ return !S.ls[i]; }).slice(0,8).forEach(function(i){ fetch(tUrl()+'?select=created_at&from_id=eq.'+encodeURIComponent(i)+'&room=not.like.'+encodeURIComponent('seen:*')+'&order=created_at.desc&limit=1',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(a&&a[0]){ var t=new Date(a[0].created_at).getTime(); if(t&&!S.ls[i]){ S.ls[i]=t; scheduleRender(); } } }).catch(function(){}); });
+    part.filter(function(i){ return !S.ls[i]; }).slice(0,8).forEach(function(i){ cf(tUrl()+'?select=created_at&from_id=eq.'+encodeURIComponent(i)+'&room=not.like.'+encodeURIComponent('seen:*')+'&order=created_at.desc&limit=1',{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(a&&a[0]){ var t=new Date(a[0].created_at).getTime(); if(t&&!S.ls[i]){ S.ls[i]=t; scheduleRender(); } } }).catch(function(){}); });
     if(Object.keys(nm).length) applyNames(nm); else if(ch) scheduleRender(); }).catch(function(){}); })(need.slice(p,p+40)); }
 function lsLocal(){ try{ return JSON.parse(localStorage.getItem('ceChatLS')||'{}'); }catch(e){ return {}; } }
 function stText(id){ if(S.online[id]) return 'Online'; var t=lsText(id); return t?t.charAt(0).toUpperCase()+t.slice(1):'Offline'; }
@@ -491,10 +541,12 @@ function doSearch(q){
     var words=q.trim().split(/\s+/).map(function(w){return w.replace(/[^A-Za-z0-9'.\-]/g,'');}).filter(Boolean).slice(0,3);
     if(!words.length){ S.sr=[]; scheduleRender(); return; }
     var url=G('SUPABASE_URL')+'/rest/v1/student_accounts?select=name,email,gender,level,department&order=name.asc&limit=8'+words.map(function(w){return '&name=ilike.*'+encodeURIComponent(w)+'*';}).join('');
-    fetch(url,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){
+    var direct=function(){ return fetch(url,{headers:hdr(),cache:'no-store'}).then(function(r){ return r.ok?r.json():[]; }).then(function(rows){ return (rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:x.name,gender:x.gender,level:x.level,department:x.department}; }); }); };
+    var src=(window.GATE&&GATE.call)?GATE.call('students.search',{q:q}).then(function(j){ return j.rows||[]; }).catch(direct):direct();
+    src.then(function(rows){
       if(S.sq!==q) return;
-      lsNeed((rows||[]).map(function(x){ return x&&x.email?'s'+hash(String(x.email).toLowerCase()):''; }));
-      S.sr=(rows||[]).filter(function(x){return x&&x.email&&x.name;}).map(function(x){ return {id:'s'+hash(String(x.email).toLowerCase()),name:String(x.name).trim().replace(/\s+/g,' '),gender:x.gender||'',info:[x.level?('Level '+String(x.level).replace(/^level\s*/i,'')):'',x.department||''].filter(Boolean).join(' · ')}; });
+      lsNeed(rows.map(function(x){ return x.id; }));
+      S.sr=rows.map(function(x){ return {id:x.id,name:String(x.name).trim().replace(/\s+/g,' '),gender:x.gender||'',info:[x.level?('Level '+String(x.level).replace(/^level\s*/i,'')):'',x.department||''].filter(Boolean).join(' \u00b7 ')}; });
       scheduleRender();
     }).catch(function(){ if(S.sq===q){ S.sr=[]; scheduleRender(); } });
   },350);
@@ -558,6 +610,7 @@ function renderWins(){
     var isDmRoom=isDm(w.room), d=S.dms[w.room]||{};
     var b=el.querySelector('.cc-b'), near=(b.scrollHeight-b.scrollTop-b.clientHeight)<80;
     var list=S.msgs[w.room]||[], h='';
+    if(isDmRoom){ e2Ready(); e2Peer(d.peer); h+=S.pk[d.peer]?'<div class="cc-note">&#128274; End-to-end encrypted. Only you and this person can read these messages.</div>':'<div class="cc-note">&#128275; Not end-to-end encrypted yet. It turns on once this person opens the updated chat.</div>'; }
     if(isDmRoom&&!S.online[d.peer]) h+='<div class="cc-note">'+esc(roomTitle(w.room))+' is offline'+(lsText(d.peer)?' ('+esc(lsText(d.peer))+')':'')+'. Your message is saved and delivered when they sign in.</div>'; if(isDmRoom&&!S.online[d.peer]) lsNeed([d.peer]);
     if(!list.length) h+='<div class="cc-note">No messages yet. Say hello.</div>';
     list.forEach(function(m){
@@ -574,12 +627,12 @@ function start(me){
   var lib=window.supabase; if(!lib||!lib.createClient) return;
   S.me=me; S.rooms=myRooms(); rememberGender(me.id,me.g);
   try{ S.rt=lib.createClient(G('SUPABASE_URL'),G('SUPABASE_KEY'),{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:10}}}); }catch(e){ return; }
-  build(); S.rooms.forEach(joinRoom); joinInbox(); setupPresence(); loadDir(); loadDmList(); purgeOld(); S.started=true; pushSub(); render(); if(S.wantEmbed) embed(S.wantEmbed);
+  build(); S.rooms.forEach(joinRoom); joinInbox(); setupPresence(); loadDir(); loadDmList(); e2Ready(); purgeOld(); S.started=true; pushSub(); render(); if(S.wantEmbed) embed(S.wantEmbed);
 }
 function stop(){
   try{ Object.keys(S.chans).forEach(function(k){ S.rt.removeChannel(S.chans[k]); }); Object.keys(S.sendCh).forEach(function(k){ S.rt.removeChannel(S.sendCh[k]); }); }catch(e){}
   if(S.root&&S.root.parentNode) S.root.parentNode.removeChild(S.root);
-  S.rt=null; S.me=null; S.chans={}; S.sendCh={}; S.msgs={}; S.unread={}; S.online={}; S.dms={}; S.gen={}; S.loaded={}; S.wins=[]; S.cur=null; S.embed=null; S.confirmDel=null; S.open=false; S.root=null; S.started=false;
+  S.e2p=null; S.e2k={}; S.pk={}; S.e2pubSent=''; S.rt=null; S.me=null; S.chans={}; S.sendCh={}; S.msgs={}; S.unread={}; S.online={}; S.dms={}; S.gen={}; S.loaded={}; S.wins=[]; S.cur=null; S.embed=null; S.confirmDel=null; S.open=false; S.root=null; S.started=false;
 }
 var _lastPurge=0;
 function tick(){

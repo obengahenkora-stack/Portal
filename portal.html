@@ -1404,6 +1404,7 @@ function lchRender(k){
   var L=_LCH[k], box=_attCard(L.box); if(!box) return;
   var html='', lastG='', open=false;
   L.tiles.forEach(function(t){
+    if(t.id==='qrCheckinCard') return; // QR now lives inside Take Attendance
     var el=_attCard(t.id); if(!el || el.classList.contains('hidden')) return;
     if(t.g!==lastG){ if(open) html+='</div>'; html+='<div class="att-group">'+t.g+'</div><div class="att-grid">'; lastG=t.g; open=true; }
     html+='<button class="att-tile '+(t.c||'')+'" onclick="lchGo(\''+k+'\',\''+t.id+'\')"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+_ATT_IC[t.i]+'</svg></span><span class="att-tt">'+t.t+'</span><span class="att-td">'+t.d+'</span></button>';
@@ -1414,7 +1415,7 @@ function lchRender(k){
 }
 function lchApply(k){
   var L=_LCH[k];
-  L.tiles.forEach(function(t){ var el=_attCard(t.id); if(el) el.classList.toggle('pane-off', L.cur!==t.id); });
+  L.tiles.forEach(function(t){ if(t.id==='qrCheckinCard') return; var el=_attCard(t.id); if(el) el.classList.toggle('pane-off', L.cur!==t.id); });
   var w=_attCard(L.wrap), b=_attCard(L.back);
   if(w) w.classList.toggle('pane-off', !!L.cur);
   if(b) b.classList.toggle('hidden', !L.cur);

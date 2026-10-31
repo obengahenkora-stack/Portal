@@ -195,6 +195,7 @@
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
+<script src="filestore.js"></script>
 </head>
 <body>
 
@@ -490,16 +491,7 @@ async function fetchSupabaseData(){
 }
 
 async function saveSupabaseData(data){
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${SUPABASE_FILE}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "x-upsert": "true"
-    },
-    body: JSON.stringify(data)
-  });
+  const res = await _bkPutRes(SUPABASE_FILE, data);
   if(!res.ok){
     let detail = "";
     try{
@@ -691,17 +683,7 @@ async function submitComment(postId){
   msg.innerHTML = '<div class="msg ok">Posting...</div>';
 
   try{
-    const data = await fetchSupabaseData();
-    const comments = data.comments || [];
-    comments.push({
-      id: 'comment_' + Date.now(),
-      postId,
-      name,
-      text,
-      createdAt: new Date().toISOString()
-    });
-    data.comments = comments;
-    await saveSupabaseData(data);
+    await _bkAnon({action:'comment_add', postId, name, text});
 
     nameInput.value = '';
     textInput.value = '';

@@ -73,6 +73,7 @@
     .card{ border:none; box-shadow:none; }
   }
 </style>
+<script src="filestore.js"></script>
 </head>
 <body>
 
@@ -385,11 +386,7 @@ async function loadStudioData(email){
   }catch(e){ return { courses: [], weeks: [], notes: [], questions: [], institution: {}, profile: {} }; }
 }
 async function saveStudioData(email, data){
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${studioFilePath(email)}`, {
-    method: "POST", cache: "no-store",
-    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
-    body: JSON.stringify(data)
-  });
+  const res = await _bkPutRes(studioFilePath(email), data);
   if(!res.ok) throw new Error("Could not save");
 }
 let viewingAsEmail = null;
@@ -461,11 +458,7 @@ async function loadRegistry(){
   }catch(e){ return []; }
 }
 async function saveRegistry(list){
-  await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${REGISTRY_PATH}`, {
-    method: "POST", cache: "no-store",
-    headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "x-upsert": "true", "cache-control": "no-cache" },
-    body: JSON.stringify(list)
-  });
+  await _bkPutRes(REGISTRY_PATH, list);
 }
 async function registerInDirectory(email, profile){
   try{

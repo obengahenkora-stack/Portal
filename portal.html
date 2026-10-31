@@ -823,9 +823,6 @@
 <script>
 
 // ===== JSONBin.io configuration (records, courses, reports, settings) =====
-const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
-const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 // ============================================================================
 
 // ===== Supabase configuration (profile/photo, blog posts) =====
@@ -2519,68 +2516,15 @@ function escapeHtml(str){
 
 // ===== Full bin read/write (extends storage to include courses + reports) =====
 async function fetchBin(){
-  // If a previous save overflowed to Supabase, that copy is the freshest source of truth.
-  try{
-    const supaData = await fetchSupabaseData();
-    if(supaData.portalDataOverflow){
-      return supaData.portalDataOverflow;
-    }
-  }catch(e){
-    // ignore, fall through to JSONBin
-  }
-
-  const res = await fetch(`${JSONBIN_URL}/latest`, {
-    headers: { "X-Master-Key": JSONBIN_API_KEY }
-  });
-  if(!res.ok) throw new Error("Could not reach storage");
-  const data = await res.json();
-  return data.record || {};
+  const j = await teamApi({action:'bin_get'});
+  if(!j || !j.ok) throw new Error((j && j.error) || "Could not reach storage");
+  return j.bin || {};
 }
 
 async function saveBin(binData){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": JSONBIN_API_KEY
-    },
-    body: JSON.stringify(binData)
-  });
-
-  if(res.ok){
-    // Successful JSONBin save — clear any old Supabase overflow copy so we don't read stale data later.
-    try{
-      const supaData = await fetchSupabaseData();
-      if(supaData.portalDataOverflow){
-        delete supaData.portalDataOverflow;
-        await saveSupabaseData(supaData);
-      }
-    }catch(e){ /* non-critical, ignore */ }
-    return res.json();
-  }
-
-  // JSONBin save failed — check if it's specifically a size-limit issue, and if so, fall back to Supabase automatically.
-  let detail = "";
-  try{
-    const errBody = await res.json();
-    detail = errBody.message || JSON.stringify(errBody);
-  }catch(e){
-    detail = `HTTP ${res.status}`;
-  }
-
-  const isSizeLimitError = /100\s*kb|over\s*100kb|upgrade to pro/i.test(detail);
-  if(isSizeLimitError){
-    try{
-      const supaData = await fetchSupabaseData();
-      supaData.portalDataOverflow = binData;
-      await saveSupabaseData(supaData);
-      return { success: true, overflow: true };
-    }catch(overflowErr){
-      throw new Error(`JSONBin is full and the automatic backup to Supabase also failed (${overflowErr.message})`);
-    }
-  }
-
-  throw new Error(`Could not save to storage (${detail})`);
+  const j = await teamApi({action:'bin_put', bin: binData});
+  if(!j || !j.ok) throw new Error("Could not save to storage (" + ((j && j.error) || 'back end unreachable') + ")");
+  return { success: true };
 }
 
 async function isDeviceLockEnabled(){

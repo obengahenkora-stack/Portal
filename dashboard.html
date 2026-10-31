@@ -567,9 +567,6 @@
 
 <script>
 // ===== JSONBin.io configuration (records, courses, reports, settings) =====
-const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
-const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // ===== EmailJS configuration (issue report notifications) =====
 const EMAILJS_SERVICE_ID = "service_cs5nqqo";
@@ -727,69 +724,20 @@ async function saveSupabaseData(data){
   if(!res.ok) throw new Error("Could not save");
 }
 
-async function fetchBin(){
-  // If a previous save overflowed to Supabase, that copy is the freshest source of truth.
+async function _binCall(payload){
+  var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};
   try{
-    const supaData = await fetchSupabaseData();
-    if(supaData.portalDataOverflow){
-      return supaData.portalDataOverflow;
-    }
-  }catch(e){
-    // ignore, fall through to JSONBin
-  }
-
-  const res = await fetch(`${JSONBIN_URL}/latest`, {
-    headers: { "X-Master-Key": JSONBIN_API_KEY }
-  });
-  if(!res.ok) throw new Error("Could not reach storage");
-  const data = await res.json();
-  return data.record || {};
+    var staff=window._adminViaStaff&&window._adminViaStaff.auth?(await window._adminViaStaff.auth.getSession()).data.session:null;
+    if(staff&&staff.access_token) h['x-staff-token']=staff.access_token;
+    else { var st=(await supabaseClient.auth.getSession()).data.session; if(st&&st.access_token) h['x-student-token']=st.access_token; }
+  }catch(e){}
+  var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
+  return await r.json();
 }
-
-async function saveBin(binData){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Master-Key": JSONBIN_API_KEY
-    },
-    body: JSON.stringify(binData)
-  });
-
-  if(res.ok){
-    // Successful JSONBin save — clear any old Supabase overflow copy so we don't read stale data later.
-    try{
-      const supaData = await fetchSupabaseData();
-      if(supaData.portalDataOverflow){
-        delete supaData.portalDataOverflow;
-        await saveSupabaseData(supaData);
-      }
-    }catch(e){ /* non-critical, ignore */ }
-    return res.json();
-  }
-
-  // JSONBin save failed — check if it's specifically a size-limit issue, and if so, fall back to Supabase automatically.
-  let detail = "";
-  try{
-    const errBody = await res.json();
-    detail = errBody.message || JSON.stringify(errBody);
-  }catch(e){
-    detail = `HTTP ${res.status}`;
-  }
-
-  const isSizeLimitError = /100\s*kb|over\s*100kb|upgrade to pro/i.test(detail);
-  if(isSizeLimitError){
-    try{
-      const supaData = await fetchSupabaseData();
-      supaData.portalDataOverflow = binData;
-      await saveSupabaseData(supaData);
-      return { success: true, overflow: true };
-    }catch(overflowErr){
-      throw new Error(`JSONBin is full and the automatic backup to Supabase also failed (${overflowErr.message})`);
-    }
-  }
-
-  throw new Error(`Could not save to storage (${detail})`);
+async function fetchBin(){
+  const j = await _binCall({action:'student_bin'});
+  if(!j || !j.ok) throw new Error((j && j.error) || "Could not reach storage");
+  return j.bin || {};
 }
 
 // ===== Student Accounts Database Table (replaces the old shared-JSON-file approach) =====
@@ -1331,19 +1279,7 @@ async function linkIndexNumber(){
 }
 
 async function fetchJsonBinRecords(){
-  // Mirrors portal.html's overflow-aware fetch: check Supabase overflow first, fallback to JSONBin.
-  try{
-    const supaData = await fetchSupabaseData();
-    if(supaData.portalDataOverflow){
-      return supaData.portalDataOverflow;
-    }
-  }catch(e){}
-  try{
-    const res = await fetch(`${JSONBIN_URL}/latest`, { headers: { "X-Master-Key": JSONBIN_API_KEY } });
-    if(!res.ok) return {};
-    const data = await res.json();
-    return data.record || {};
-  }catch(e){ return {}; }
+  try{ return await fetchBin(); }catch(e){ return {}; }
 }
 
 async function isDeviceLockEnabled(){
@@ -1578,22 +1514,8 @@ async function submitIssueReport(){
   };
 
   try{
-    const maxAttempts = 4;
-    let saved = false;
-    for(let attempt = 1; attempt <= maxAttempts && !saved; attempt++){
-      const bin = await fetchBin();
-      const reports = bin.reports || [];
-      if(!reports.some(r => r.submittedAt === report.submittedAt && r.indexNumber === report.indexNumber)){
-        reports.push(report);
-        bin.reports = reports;
-        await saveBin(bin);
-      }
-      await new Promise(r => setTimeout(r, 200 + Math.random() * 250));
-      const verifyBin = await fetchBin();
-      saved = (verifyBin.reports || []).some(r => r.submittedAt === report.submittedAt && r.indexNumber === report.indexNumber);
-      if(!saved) await new Promise(r => setTimeout(r, 250 * attempt));
-    }
-    if(!saved) throw new Error("Could not confirm your report saved after several attempts. Please try again.");
+    const rr = await _binCall({action:'report_add', course:course, issue:issue, email:email});
+    if(!rr || !rr.ok) throw new Error((rr && rr.error) || "Could not save your report. Please try again.");
 
     if(window.emailjs){
       try{

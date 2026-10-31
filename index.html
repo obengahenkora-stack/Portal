@@ -1290,9 +1290,6 @@ html[data-theme="dark"] #proSection .pro-row{ box-shadow:0 1px 2px rgba(0,0,0,.3
 
 <script>
 // ===== JSONBin.io configuration (small, frequently-updated data: settings, subscribers) =====
-const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
-const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 // ===============================================================================
 
 // ===== Supabase configuration (larger data: profile/photo, blog posts) =====
@@ -2021,33 +2018,6 @@ async function loadLatestPosts(){
   }
 }
 
-async function fetchBin(){
-  const res = await fetch(`${JSONBIN_URL}/latest`, {
-    headers: { "X-Master-Key": JSONBIN_API_KEY }
-  });
-  if(!res.ok) throw new Error("Could not reach storage");
-  const data = await res.json();
-  return data.record || {};
-}
-
-async function saveBin(binData){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
-    body: JSON.stringify(binData)
-  });
-  if(!res.ok){
-    let detail = "";
-    try{
-      const errBody = await res.json();
-      detail = errBody.message || JSON.stringify(errBody);
-    }catch(e){
-      detail = `HTTP ${res.status}`;
-    }
-    throw new Error(`Could not save to storage (${detail})`);
-  }
-  return res.json();
-}
 
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -2545,15 +2515,13 @@ async function subscribeNewsletter(){
   msg.innerHTML = '<div class="msg ok" style="background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;">Subscribing...</div>';
 
   try{
-    const bin = await fetchBin();
-    const subscribers = bin.newsletterSubscribers || [];
-    if(subscribers.some(s => s.toLowerCase() === email.toLowerCase())){
+    const r = await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({action:'newsletter_subscribe',email:email})});
+    const nj = await r.json();
+    if(!nj.ok) throw new Error(nj.error||'failed');
+    if(nj.already){
       msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">You're already subscribed.</div>";
       return;
     }
-    subscribers.push(email);
-    bin.newsletterSubscribers = subscribers;
-    await saveBin(bin);
     msg.innerHTML = "<div class=\"msg ok\" style=\"background:rgba(255,255,255,0.15);color:#fff;border-left-color:#fff;\">Subscribed! You'll hear about new posts.</div>";
     emailInput.value = '';
   }catch(e){

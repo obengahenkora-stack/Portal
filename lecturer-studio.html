@@ -348,40 +348,18 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const ADMIN_EMAIL = "obengahenkora@gmail.com"; // change this to whoever should have admin oversight of this app
 
 // ===== JSONBin (used for Lecturer Profiles only — reuses the same bin as the main portal) =====
-const JSONBIN_BIN_ID = "6a82b31bf5f4af5e291f5192";
-const JSONBIN_API_KEY = "$2a$10$8LR9Xhpx/2..ijpG64X7ieygBgDkCWW7/YK0SodYI8Qyk4zF7TETO";
-const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
-async function fetchJsonBinData(){
-  try{
-    const res = await fetch(JSONBIN_URL + '/latest', {
-      headers: { "X-Master-Key": JSONBIN_API_KEY },
-      cache: "no-store"
-    });
-    if(!res.ok) return {};
-    const json = await res.json();
-    return json.record || {};
-  }catch(e){ return {}; }
-}
-async function saveJsonBinData(data){
-  const res = await fetch(JSONBIN_URL, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
-    body: JSON.stringify(data)
-  });
-  if(!res.ok) throw new Error("Could not save to JSONBin");
+async function _studioCall(payload){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const r = await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+  return await r.json();
 }
 async function loadLecturerProfile(email){
-  const data = await fetchJsonBinData();
-  const profiles = data.lecturerProfiles || {};
-  return profiles[email] || {};
+  try{ const j = await _studioCall({action:'profile_get'}); return (j && j.ok && j.profile) || {}; }catch(e){ return {}; }
 }
 async function saveLecturerProfile(email, profile){
-  const data = await fetchJsonBinData();
-  const profiles = data.lecturerProfiles || {};
-  profiles[email] = profile;
-  data.lecturerProfiles = profiles;
-  await saveJsonBinData(data);
+  const j = await _studioCall({action:'profile_save', profile: profile});
+  if(!j || !j.ok) throw new Error((j && j.error) || "Could not save");
 }
 
 let currentEmail = null;

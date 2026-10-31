@@ -195,7 +195,7 @@ async function verifyAndShowForm(){
         return;
       }
 
-      verifiedSession = { course, date, sessionKey, startedBy: session.startedBy || null };
+      verifiedSession = { course, date, sessionKey, token, lat: position.coords.latitude, lng: position.coords.longitude, startedBy: session.startedBy || null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
@@ -226,18 +226,10 @@ async function isDbMigrated(){
   if(_dbsMigrated === null){ const j = await fetchSupabaseData(true); _dbsMigrated = !!j.dbMigrated; }
   return _dbsMigrated;
 }
-async function dbMarkExists(sessionKey, idx){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/attendance_marks?select=index_number&session_key=eq.${encodeURIComponent(sessionKey)}&index_number=eq.${encodeURIComponent(String(idx).trim())}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, cache: 'no-store' });
-  if(!r.ok) throw new Error('Could not read attendance (' + r.status + ')');
-  return (await r.json()).length > 0;
-}
-
 async function attemptCheckinWrite(idx){
   if(await isDbMigrated()){
     if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
-    const had = await dbMarkExists(verifiedSession.sessionKey, idx);
-    if(!had) await DBS.checkIn(verifiedSession.sessionKey, verifiedSession.course, verifiedSession.date, idx, verifiedSession.startedBy || null);
-    return had;
+    return await DBS.qrCheckIn(verifiedSession.course, verifiedSession.date, verifiedSession.token, idx, verifiedSession.lat, verifiedSession.lng);
   }
   const data = await fetchSupabaseData();
   const attendanceRecords = data.attendance || [];
@@ -259,7 +251,7 @@ async function attemptCheckinWrite(idx){
 }
 
 async function verifyCheckinSaved(idx){
-  if(await isDbMigrated()) return await dbMarkExists(verifiedSession.sessionKey, idx);
+  if(await isDbMigrated()) return true; // the back end already confirmed the save
   // Re-fetch fresh data and confirm this student's index actually made it into storage,
   // guarding against a near-simultaneous check-in from another student overwriting this one.
   const data = await fetchSupabaseData();

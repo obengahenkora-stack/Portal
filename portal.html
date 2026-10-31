@@ -2776,8 +2776,7 @@ async function dbmCheck(){
   try{
     if(!DBS.url) DBS.init(SUPABASE_URL,SUPABASE_KEY);
     for(const t of ['attendance_sessions','attendance_marks','roster_entries']){
-      const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}?select=*&limit=1`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
-      if(!r.ok) throw new Error(`Table "${t}" is not ready (${r.status}). Run the database set-up SQL first.`);
+      try{ await DBS.api({action:'db_op',op:'getAll',table:t,order:''}); }catch(e){ throw new Error(`Table "${t}" is not ready (${e.message}).`); }
     }
     // write test: insert and remove a throw-away row
     await DBS.upsert('roster_entries',[{course:'__test__',index_number:'__test__',name:''}],'course,index_number');

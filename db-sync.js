@@ -9,27 +9,27 @@
     init:function(url,key){ this.url=url; this.key=key; },
     H:function(extra){ return Object.assign({apikey:this.key,Authorization:'Bearer '+this.key},extra||{}); },
     err:function(m){ var e=new Error(m); e.dbs=true; return e; },
+    api:async function(payload){
+      var cl=null, adm=null; try{ cl=(0,eval)('typeof supabaseClient!=="undefined"?supabaseClient:null'); }catch(e){} try{ adm=window._adminViaStaff||null; }catch(e){}
+      var get=async function(c){ try{ var r=await c.auth.getSession(); return r&&r.data&&r.data.session?r.data.session.access_token:''; }catch(e){ return ''; } };
+      var tok=adm?await get(adm):''; if(!tok&&cl) tok=await get(cl);
+      var h={'Content-Type':'application/json',apikey:this.key};
+      if(tok){ var iss=''; try{ iss=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).iss||''; }catch(e){} h[iss.indexOf('qqnsbuirelhwfrshafay')>=0?'x-student-token':'x-staff-token']=tok; }
+      var r=await fetch(this.url+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
+      var j=null; try{ j=await r.json(); }catch(e){}
+      if(!j||!j.ok) throw this.err((j&&j.error)||('The back end did not answer ('+r.status+')'));
+      return j;
+    },
     getAll:async function(table,order){
-      var out=[], size=1000;
-      for(var off=0;;off+=size){
-        var r=await fetch(this.url+'/rest/v1/'+table+'?select=*&order='+order+'&limit='+size+'&offset='+off,{headers:this.H(),cache:'no-store'});
-        if(!r.ok) throw this.err('Could not read '+table+' ('+r.status+'). Has the database set-up SQL been run?');
-        var rows=await r.json(); for(var i=0;i<rows.length;i++) out.push(rows[i]);
-        if(rows.length<size) break;
-      }
-      return out;
+      var j=await this.api({action:'db_op',op:'getAll',table:table,order:order});
+      return j.rows||[];
     },
     upsert:async function(table,rows,conflict,ignore){
-      for(var i=0;i<rows.length;i+=400){
-        var r=await fetch(this.url+'/rest/v1/'+table+'?on_conflict='+conflict,{method:'POST',
-          headers:this.H({'Content-Type':'application/json','Prefer':'resolution='+(ignore?'ignore':'merge')+'-duplicates,return=minimal'}),
-          body:JSON.stringify(rows.slice(i,i+400))});
-        if(!r.ok) throw this.err('Could not write '+table+' ('+r.status+' '+(await r.text().catch(function(){return '';}))+')');
-      }
+      if(!rows.length) return;
+      await this.api({action:'db_op',op:'upsert',table:table,rows:rows,conflict:conflict,ignore:!!ignore});
     },
     del:async function(table,filter){
-      var r=await fetch(this.url+'/rest/v1/'+table+'?'+filter,{method:'DELETE',headers:this.H({'Prefer':'return=minimal'})});
-      if(!r.ok) throw this.err('Could not delete from '+table+' ('+r.status+')');
+      await this.api({action:'db_op',op:'del',table:table,filter:filter});
     },
     inList:function(vals){ return 'in.('+vals.map(function(v){ return '"'+String(v).replace(/"/g,'\\"')+'"'; }).join(',')+')'; },
 
@@ -105,10 +105,10 @@
       return out;
     },
 
-    /* QR check-in: add one student to one session without touching anything else */
-    checkIn:async function(sessionKey,course,date,idx,startedBy){
-      await this.upsert('attendance_sessions',[Object.assign({session_key:sessionKey,course:course,date:date,updated_at:new Date().toISOString()},startedBy?{taken_by:Object.assign({},startedBy,{how:'QR check-in'})}:{})],'session_key',true);
-      await this.upsert('attendance_marks',[{session_key:sessionKey,index_number:String(idx).trim(),checked_at:new Date().toISOString()}],'session_key,index_number',true);
+    /* QR check-in: the back end checks the QR code, time and place, then adds one student to one session */
+    qrCheckIn:async function(course,date,token,idx,lat,lng){
+      var j=await this.api({action:'checkin',course:course,date:date,token:token,idx:String(idx).trim(),lat:lat,lng:lng});
+      return !!j.had;
     },
 
     /* one-time copy of the old data into the tables; returns counts that were verified */

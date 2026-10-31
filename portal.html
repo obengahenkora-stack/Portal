@@ -488,6 +488,7 @@
       <div id="teamMemberMsg"></div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);">
         <button type="button" class="secondary" onclick="testBackend()" style="padding:6px 12px;font-size:.78rem;text-transform:none;">Test the back end</button>
+        <button type="button" class="secondary" onclick="migrateTeam()" style="padding:6px 12px;font-size:.78rem;text-transform:none;margin-left:6px;">Copy staff list to the private store</button>
         <div id="backendTestMsg" style="margin-top:8px;font-size:.84rem;"></div>
       </div>
 
@@ -1180,6 +1181,15 @@ function applyPerms(){
   var ta=document.querySelector('#hubTiles .row2 .card[onclick*="teacher"]'), aa=document.querySelector('#hubTiles .row2 .card[onclick*="attendance"]');
   if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
   if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
+}
+async function migrateTeam(){
+  const m=document.getElementById('backendTestMsg'); m.textContent='Copying...';
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify({action:'team_migrate'})});
+    const j=await r.json();
+    m.innerHTML=j.ok ? ('<span style="color:var(--ok);font-weight:700;">Done.</span> '+j.copied+' team member'+(j.copied===1?'':'s')+' copied. The private store now holds '+j.inTable+'.') : ('<span style="color:var(--danger);">'+escapeHtml(j.error||'Error')+'</span>');
+  }catch(e){ m.innerHTML='<span style="color:var(--danger);">Could not reach the back end: '+escapeHtml(e.message)+'</span>'; }
 }
 async function testBackend(){
   const m=document.getElementById('backendTestMsg'); m.textContent='Asking the back end...';

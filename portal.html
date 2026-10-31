@@ -293,7 +293,10 @@
 #hubTiles .row2>.card,#hubTiles .row2>a.card{padding:16px 14px !important;grid-column:auto !important;border-radius:16px;transition:transform .15s,box-shadow .15s}
 #hubTiles .row2>.card:hover,#hubTiles .row2>a.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.08)}
 #hubTiles .row2 .card>div[style*="font-size:2rem"]{font-size:1.5rem !important;margin-bottom:6px !important}
-#hubTiles .row2 h2{font-size:1rem !important;margin:0 0 4px !important}
+#hubTiles .row2>.card,#hubTiles .row2>a.card{background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important;border:0 !important;color:#fff !important;min-height:140px;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 8px 20px rgba(80,90,200,.18)}
+#hubTiles .row2>.card:hover,#hubTiles .row2>a.card:hover{box-shadow:0 14px 28px rgba(80,90,200,.28)}
+#hubTiles .row2 .card h2{color:#fff !important;font-size:1.25rem !important;margin:0 0 4px !important}
+#hubTiles .row2 .card p{color:#fff !important;opacity:.88}
 #hubTiles .row2 p{font-size:.76rem !important;line-height:1.35}
 </style>
 <div id="hubTiles" class="hidden">
@@ -324,6 +327,11 @@
         <h2 style="justify-content:center;">Chat <span id="hubChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 9px;margin-left:6px;text-transform:none;letter-spacing:0"></span></h2>
         <p style="color:var(--muted);font-size:0.85rem;margin:0;">Message students and colleagues. See who is online.</p>
       </div>
+      <div class="card" onclick="switchTab('qa')" style="cursor:pointer;text-align:center;padding:32px 20px;grid-column:1 / -1;">
+        <div style="font-size:2rem;margin-bottom:10px;">❓</div>
+        <h2 style="justify-content:center;">Q&amp;A Board</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin:0;">See student questions and post answers.</p>
+      </div>
       <a id="hubStudentTile" class="card hidden" href="dashboard.html" style="cursor:pointer;text-align:center;padding:32px 20px;text-decoration:none;color:inherit;grid-column:1 / -1;">
         <div style="font-size:2rem;margin-bottom:10px;">🎓</div>
         <h2 style="justify-content:center;">Students Dashboard</h2>
@@ -339,6 +347,21 @@
     <div class="card" id="portalChatCard">
       <h2 style="margin-top:0">Chat</h2>
       <p class="cc-ph" style="color:var(--muted)">Loading chat...</p>
+    </div>
+  </div>
+
+  <!-- Q&A VIEW -->
+  <div id="qaView" class="hidden">
+    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <div class="card" id="pqaCard">
+      <h2 style="margin-top:0">Q&amp;A Board</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:180px;"><label>Course</label><select id="pqaCourse"><option value="General">General</option></select></div></div>
+      <label>Post a question</label>
+      <textarea id="pqaText" rows="3" maxlength="1000" placeholder="Type here..."></textarea>
+      <button type="button" id="pqaAsk" style="margin-top:8px;">Post question</button>
+      <div id="pqaMsg"></div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:18px 0 8px;"><div style="flex:1;min-width:180px;"><label>Show</label><select id="pqaFilter"><option value="">All courses</option></select></div><button type="button" class="secondary" id="pqaRefresh">Refresh</button></div>
+      <div id="pqaList"><div class="empty">Loading...</div></div>
     </div>
   </div>
 
@@ -1318,8 +1341,9 @@ function switchTab(tab){
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
   var _cv=document.getElementById('chatView'); if(_cv) _cv.classList.toggle('hidden', tab!=='chat');
+  var _qv=document.getElementById('qaView'); if(_qv) _qv.classList.toggle('hidden', tab!=='qa'); if(tab==='qa' && window.pqaOpen) window.pqaOpen();
   try{ if(window.ChatUI){ if(tab==='chat') ChatUI.embed(document.getElementById('portalChatCard')); else ChatUI.unembed(); } }catch(e){}
-  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat');
+  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat' || tab==='qa');
   if(tab === 'attendance'){
     loadAttendanceSummaryCourseOptions();
   }
@@ -4188,5 +4212,54 @@ function updateWhoBar(){
 </script>
 <script src="chat.js"></script>
 <script src="darkfix.js"></script>
+<script>
+(function(){
+  var S={me:'',mod:false,list:[]};
+  function E(i){ return document.getElementById(i); }
+  function esc(s){ return escapeHtml(s); }
+  function ago(iso){ var m=Math.floor((Date.now()-Date.parse(iso))/60000); if(m<1) return 'just now'; if(m<60) return m+' min ago'; var h=Math.floor(m/60); if(h<24) return h+' hr ago'; var d=Math.floor(h/24); return d+' day'+(d>1?'s':'')+' ago'; }
+  function tag(t){ return t?' <span style="background:rgba(31,138,76,.12);padding:1px 7px;border-radius:999px;font-size:.7rem;">'+esc(t)+'</span>':''; }
+  async function courses(){
+    var set={General:1};
+    try{ var d=await fetchSupabaseData(); (d.courseList||[]).forEach(function(c){ if(c) set[c]=1; }); Object.keys(d.rosters||{}).forEach(function(c){ set[c]=1; }); }catch(e){}
+    S.list.forEach(function(q){ set[q.course]=1; });
+    var names=Object.keys(set).sort(), cur=E('pqaCourse').value, fc=E('pqaFilter').value;
+    E('pqaCourse').innerHTML=names.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join(''); if(cur) E('pqaCourse').value=cur;
+    E('pqaFilter').innerHTML='<option value="">All courses</option>'+names.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join(''); E('pqaFilter').value=fc;
+  }
+  function render(){
+    var f=E('pqaFilter').value, box=E('pqaList'), list=S.list.filter(function(q){ return !f||q.course===f; });
+    if(!list.length){ box.innerHTML='<div class="empty">No questions yet.</div>'; return; }
+    var keep={}; box.querySelectorAll('textarea[data-r]').forEach(function(t){ if(t.value) keep[t.getAttribute('data-r')]=t.value; });
+    box.innerHTML=list.map(function(q){
+      var ans=(q.answers||[]).map(function(a){ var good=q.accepted===a.id;
+        return '<div style="border-left:3px solid '+(good?'#1f8a4c':'#d9e4e0')+';padding:6px 10px;margin:8px 0;"><div style="font-size:.82rem;color:var(--muted);"><b style="color:inherit">'+esc(a.authorName)+'</b>'+tag(a.authorTag)+' &middot; '+ago(a.createdAt)+(good?' &middot; <b style="color:#1f8a4c">&#10003; Best answer</b>':'')+'</div><div style="white-space:pre-wrap;">'+esc(a.text)+'</div><div style="margin-top:4px;font-size:.78rem;"><a href="javascript:void(0)" data-acc="'+q.id+'|'+(good?'':a.id)+'">'+(good?'Remove best answer':'Mark as best answer')+'</a> &nbsp; <a href="javascript:void(0)" data-del="'+q.id+'|'+a.id+'" style="color:#b4281e;">Delete</a></div></div>'; }).join('');
+      return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;"><div style="font-size:.78rem;color:var(--muted);"><span style="background:rgba(0,0,0,.06);padding:1px 8px;border-radius:999px;">'+esc(q.course)+'</span> &middot; <b style="color:inherit">'+esc(q.authorName)+'</b>'+tag(q.authorTag)+' &middot; '+ago(q.createdAt)+'</div><div style="white-space:pre-wrap;font-weight:600;margin:6px 0;">'+esc(q.text)+'</div>'+ans+'<textarea data-r="'+q.id+'" rows="2" maxlength="1000" placeholder="Write an answer..." style="margin-top:6px;"></textarea><div style="margin-top:6px;display:flex;gap:10px;align-items:center;"><button type="button" data-ans="'+q.id+'" style="padding:6px 14px;font-size:.8rem;">Answer</button><a href="javascript:void(0)" data-del="'+q.id+'|" style="color:#b4281e;font-size:.8rem;">Delete question</a></div></div>';
+    }).join('');
+    Object.keys(keep).forEach(function(k){ var t=box.querySelector('textarea[data-r="'+k+'"]'); if(t) t.value=keep[k]; });
+  }
+  async function load(){
+    var j=await teamApi({action:'qa_list'});
+    if(!j||!j.ok){ E('pqaList').innerHTML='<div class="empty">'+esc((j&&j.error)||'Could not load')+'</div>'; return; }
+    S.me=j.me; S.mod=!!j.moderator; S.list=j.questions||[]; await courses(); render();
+  }
+  function say(t,ok){ E('pqaMsg').innerHTML=t?'<div class="msg '+(ok?'ok':'err')+'">'+esc(t)+'</div>':''; }
+  window.pqaOpen=function(){ load(); };
+  document.addEventListener('DOMContentLoaded',function(){
+    E('pqaRefresh').onclick=load; E('pqaFilter').onchange=render;
+    E('pqaAsk').onclick=async function(){
+      var t=E('pqaText').value.trim(); if(t.length<5){ say('Please write your question first.'); return; }
+      var j=await teamApi({action:'qa_ask',course:E('pqaCourse').value,text:t});
+      if(!j||!j.ok){ say((j&&j.error)||'Could not post'); return; } E('pqaText').value=''; say('Posted.',true); load();
+    };
+    E('pqaList').addEventListener('click',async function(e){
+      var b=e.target.closest('[data-ans]'), dl=e.target.closest('[data-del]'), ac=e.target.closest('[data-acc]');
+      if(b){ var id=b.getAttribute('data-ans'), t=E('pqaList').querySelector('textarea[data-r="'+id+'"]'); if(!t||t.value.trim().length<2) return; var j=await teamApi({action:'qa_answer',qid:id,text:t.value}); if(!j||!j.ok){ alert((j&&j.error)||'Could not post'); return; } t.value=''; load(); }
+      else if(dl){ var p=dl.getAttribute('data-del').split('|'); if(!confirm(p[1]?'Delete this answer?':'Delete this question and all its answers?')) return; await teamApi({action:'qa_delete',qid:p[0],aid:p[1]||''}); load(); }
+      else if(ac){ var q=ac.getAttribute('data-acc').split('|'); await teamApi({action:'qa_accept',qid:q[0],aid:q[1]||''}); load(); }
+    });
+  });
+})();
+</script>
 </body>
 </html>

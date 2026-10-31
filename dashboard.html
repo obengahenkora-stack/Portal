@@ -208,13 +208,13 @@
   .dash-nav a.on{ background:var(--accent); color:#fff; }
   html[data-theme="dark"] .dash-nav a.on{ color:#08161d; }
   .ov-links{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
-  .ov-link{ text-align:left !important; background:var(--card) !important; color:var(--ink) !important; border:1px solid var(--line) !important; border-radius:14px !important; padding:14px 16px !important; display:flex; flex-direction:column; gap:4px; }
-  .ov-link:hover{ border-color:var(--accent) !important; background:var(--tint) !important; }
+  .ov-link{ text-align:center !important; background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important; color:#fff !important; border:0 !important; border-radius:18px !important; padding:16px !important; min-height:150px; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(80,90,200,.18); transition:transform .15s,box-shadow .15s; }
+  .ov-link:hover{ transform:translateY(-3px); box-shadow:0 14px 28px rgba(80,90,200,.28); }
   .dash-nav#dashNav{ display:none; }
   .ov-link i{ font-style:normal; font-size:1.5rem; line-height:1; margin-bottom:4px; }
   #dashBack{ margin:0 0 12px; }
-  .ov-link b{ font-family:'Fraunces',serif; font-size:0.98rem; }
-  .ov-link span{ font-size:0.8rem; color:var(--muted); font-weight:400; }
+  .ov-link b{ font-family:inherit; font-size:1.35rem; letter-spacing:-.01em; color:#fff; }
+  .ov-link span{ font-size:0.78rem; color:#fff; opacity:.88; font-weight:400; }
   .pct-badge{ padding:3px 10px !important; }
   .report-item{ border:1px solid var(--line) !important; border-radius:12px; padding:14px !important; margin-bottom:10px; }
   .empty{ text-align:center; padding:18px 0 !important; }

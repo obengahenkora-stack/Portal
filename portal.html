@@ -955,9 +955,16 @@ async function resolveCurrentUserRole(){
   currentUserEmail = email;
   if(email === OWNER_EMAIL.toLowerCase()){ currentUserRole = 'owner'; currentUserName = 'Owner'; return; }
   try{
-    const data = await fetchSupabaseData();
-    const members = data.teamMembers || [];
-    const me = members.find(m => (m.email || '').toLowerCase() === email);
+    let me = null, viaBackend = false;
+    try{
+      const r = await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session.access_token},body:JSON.stringify({action:'whoami'})});
+      if(r.ok){ const j = await r.json(); if(j && j.ok && j.signedIn){ viaBackend = true; me = j.role ? { role:j.role, name:j.name, perms:j.perms, courses:j.courses } : null; } }
+    }catch(be){}
+    if(!viaBackend){
+      const data = await fetchSupabaseData();
+      const members = data.teamMembers || [];
+      me = members.find(m => (m.email || '').toLowerCase() === email);
+    }
     currentUserRole = me ? me.role : null;
     currentUserName = me ? me.name : null;
     currentUserCourses = (me && Array.isArray(me.courses)) ? me.courses : null;

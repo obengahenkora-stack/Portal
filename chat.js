@@ -30,7 +30,7 @@ function identity(){
   var adm=!!G('typeof isAdminUser==="function"&&isAdminUser()');
   if(!em) return null;
   if(a && a.indexNumber) return { id:'s'+hash(String(em).toLowerCase()), name:shortName(a.name), staff:adm, g:a.gender||'' };
-  if(adm) return { id:'s'+hash(String(em).toLowerCase()), name:'Lecturer', staff:true, g:'' };
+  if(adm) return { id:'s'+hash(String(em).toLowerCase()), name:(String(em).toLowerCase()==='obengahenkora@gmail.com'?OWNER_FULL:'Lecturer'), staff:true, g:'' };
   return null;
 }
 function portalIdentity(){

@@ -2257,6 +2257,17 @@ function handleRestoreFileSelect(){
         `;
       }
 
+      const tmRows = parsed.teamMembersDb;
+      if(Array.isArray(tmRows) && tmRows.length > 0){
+        categoryList.innerHTML += `<div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin:12px 0 6px;">From Staff List</div>`;
+        categoryList.innerHTML += `
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;text-transform:none;letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;margin-bottom:8px;">
+            <input type="checkbox" id="restoreTeamCheck" style="width:auto;margin:0;">
+            Team members (${tmRows.length}: roles, courses and access)
+          </label>
+        `;
+      }
+
       categoryList.classList.remove('hidden');
       restoreBtn.classList.remove('hidden');
     }catch(err){
@@ -2276,10 +2287,13 @@ async function performRestore(){
   const studentDbCheck = document.getElementById('restoreStudentDbCheck');
   const restoringStudentDb = studentDbCheck && studentDbCheck.checked;
 
-  if(checks.length === 0 && !restoringStudentDb){ alert('Please select at least one category to restore.'); return; }
+  const teamCheck = document.getElementById('restoreTeamCheck');
+  const restoringTeam = teamCheck && teamCheck.checked;
+  if(checks.length === 0 && !restoringStudentDb && !restoringTeam){ alert('Please select at least one category to restore.'); return; }
 
   const labels = checks.map(c => RESTORE_CATEGORY_LABELS[c.dataset.section][c.dataset.key]);
   if(restoringStudentDb) labels.push(`Registered Students (${pendingRestoreBackup.studentAccountsDb.length} records)`);
+  if(restoringTeam) labels.push(`Team members (${pendingRestoreBackup.teamMembersDb.length})`);
   if(!confirm(`This will overwrite the following on the live site with data from the backup:\n\n${labels.join('\n')}\n\nEverything else stays untouched. Continue?`)) return;
 
   const msg = document.getElementById('restoreMsg');
@@ -2307,6 +2321,13 @@ async function performRestore(){
       if(!rr || !rr.ok) throw new Error((rr && rr.error) || 'Could not restore student accounts');
     }
 
+    if(restoringTeam){
+      for(const m of pendingRestoreBackup.teamMembersDb){
+        const rr = await teamApi({action:'team_upsert', member:{ email:m.email, name:m.name, role:m.role, courses:m.courses, perms:m.perms }});
+        if(!rr || !rr.ok) throw new Error((rr && rr.error) || ('Could not restore '+m.email));
+      }
+    }
+
     msg.innerHTML = `<div class="msg ok">Restored: ${labels.join(', ')}.</div>`;
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not restore: ${escapeHtml(e.message)}</div>`;
@@ -2320,16 +2341,18 @@ async function downloadBackup(){
   const msg = document.getElementById('backupMsg');
   msg.innerHTML = '<div class="msg ok">Preparing backup...</div>';
   try{
-    const [jsonBinData, supabaseData, studentAccountsDb] = await Promise.all([
+    const [jsonBinData, supabaseData, studentAccountsDb, teamMembersDb] = await Promise.all([
       fetchBin().catch(() => ({})),
       fetchSupabaseData().catch(() => ({})),
-      teamApi({action:'stu_list'}).then(j => (j && j.ok) ? j.rows : []).catch(() => [])
+      teamApi({action:'stu_list'}).then(j => (j && j.ok) ? j.rows : []).catch(() => []),
+      teamApi({action:'team_list'}).then(j => (j && j.ok) ? j.members : []).catch(() => [])
     ]);
 
     const fullBackup = {
       exportedAt: new Date().toISOString(),
       jsonBinData,   // records, courses, reports, settings (or overflow)
       supabaseData,  // profile (incl. photo), blogPosts, resources, comments, rosters, attendance, team members, and everything else in the shared file
+      teamMembersDb,  // staff list: names, roles, courses and per-person access
       studentAccountsDb  // student records from the database table (index number, name, level — never includes passwords, those are never exportable)
     };
 

@@ -619,6 +619,19 @@ function ringStart(kind){
     : function(){ tone([440,480],1.2,.35); };
   play(); RING=setInterval(play,kind==='in'?2200:3000);
 }
+var WL=null;
+function wlOn(){ try{ if(navigator.wakeLock&&!WL){ navigator.wakeLock.request('screen').then(function(l){ WL=l; l.addEventListener('release',function(){ WL=null; }); }).catch(function(){}); } }catch(e){} }
+function wlOff(){ try{ if(WL){ WL.release(); WL=null; } }catch(e){} }
+document.addEventListener('visibilitychange',function(){
+  if(!CALL) return;
+  if(document.visibilityState==='visible'){
+    wlOn();
+    try{ if(CALL.stream) CALL.stream.getAudioTracks().forEach(function(t){ t.enabled=!CALL.muted; }); }catch(e){}
+    var a=document.getElementById('ceCallAudio'); if(a){ try{ a.play(); }catch(e){} }
+    var el=document.getElementById('ceCallNote'); if(el) el.style.display='block';
+    setTimeout(function(){ var n=document.getElementById('ceCallNote'); if(n) n.style.display='none'; },5000);
+  }
+});
 function callUi(html){
   var el=document.getElementById('ceCall');
   if(!html){ if(el&&el.parentNode) el.parentNode.removeChild(el); return null; }
@@ -627,11 +640,11 @@ function callUi(html){
 }
 function cbtn(id,label,bg){ return '<button type="button" id="'+id+'" style="margin:8px;padding:14px 22px !important;border:none !important;border-radius:999px !important;font:700 16px inherit;color:#fff !important;background:'+bg+' !important;cursor:pointer">'+label+'</button>'; }
 function callScreen(title,sub,btns){
-  callUi('<div style="width:96px;height:96px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:44px">&#128222;</div><div style="font-size:22px;font-weight:800">'+esc(title)+'</div><div id="ceCallSub" style="opacity:.8;margin:8px 0 22px">'+esc(sub)+'</div>'+btns);
+  callUi('<div style="width:96px;height:96px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:44px">&#128222;</div><div style="font-size:22px;font-weight:800">'+esc(title)+'</div><div id="ceCallSub" style="opacity:.8;margin:8px 0 22px">'+esc(sub)+'</div>'+btns+'<div id="ceCallNote" style="display:none;margin-top:14px;font-size:13px;opacity:.85">Stay on this screen during the call. Phones mute the microphone when you leave the app or lock the screen.</div><div style="margin-top:14px;font-size:12px;opacity:.6">Keep this screen open during the call</div>');
 }
 function callSend(peer,ev){ ev.from=S.me.id; ev.name=S.me.name; sendTo('inbox:'+peer,'call',ev).catch(function(){}); }
 function callEnd(notify,missed){
-  var c=CALL; if(!c) return; ringStop(); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
+  var c=CALL; if(!c) return; ringStop(); wlOff(); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
   if(notify) callSend(c.peer,{t:'end',cid:c.cid});
   try{ if(c.pc) c.pc.close(); }catch(e){}
   try{ if(c.stream) c.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
@@ -640,7 +653,7 @@ function callEnd(notify,missed){
   if(missed&&c.out) { S.lastSend=0; send(c.room,'📞 Missed voice call'); }
 }
 function callConnected(){
-  var c=CALL; if(!c||c.on) return; c.on=1; ringStop(); clearTimeout(c.tm); clearTimeout(c.ak); var t0=Date.now();
+  var c=CALL; if(!c||c.on) return; c.on=1; ringStop(); wlOn(); clearTimeout(c.tm); clearTimeout(c.ak); var t0=Date.now();
   var draw=function(){ var s=Math.floor((Date.now()-t0)/1000), m=Math.floor(s/60); var el=document.getElementById('ceCallSub'); if(el) el.textContent='Connected · '+m+':'+('0'+(s%60)).slice(-2); };
   callScreen(c.name,'Connected',cbtn('ceCallMute','Mute','#475569')+cbtn('ceCallEnd','End call','#dc2626')); draw(); c.iv=setInterval(draw,1000);
   document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };

@@ -603,17 +603,29 @@ function renderTabs(p){
   });
   if(t.__h!==h){ t.innerHTML=h; t.__h=h; }
 }
+function callLink(t){
+  var x=esc(t), m=String(t).match(/https:\/\/meet\.jit\.si\/CEcall[A-Za-z0-9]{12,40}/);
+  if(!m) return x;
+  return x.replace(esc(m[0]),'<a href="'+m[0]+'#config.startWithVideoMuted=true&config.prejoinConfig.enabled=false" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">\ud83d\udcde Join call</a>');
+}
+function startCall(room){
+  var a=new Uint8Array(12); (window.crypto||{getRandomValues:function(v){for(var i=0;i<v.length;i++)v[i]=Math.random()*256;}}).getRandomValues(a);
+  var tok='CEcall'+Array.prototype.map.call(a,function(b){return b.toString(36);}).join('').replace(/[^a-z0-9]/g,'a').slice(0,16).padEnd(14,'x');
+  var url='https://meet.jit.si/'+tok;
+  S.lastSend=0; send(room,'\ud83d\udcde '+shortName(S.me.name)+' is calling you. '+url);
+  window.open(url+'#config.startWithVideoMuted=true&config.prejoinConfig.enabled=false','_blank','noopener');
+}
 function ensureWin(room){
   var el=winEl(room); if(el) return el;
   el=document.createElement('div'); el.id='ceWin-'+hash(room); el.className='cc-win';
   el.innerHTML='<div class="cc-b" style="display:flex;flex-direction:column"></div>'
    +'<div class="cc-eb" style="display:none"><span>Editing message</span><button type="button" data-a="ecancel">Cancel</button></div>'
    +'<div class="cc-lock">\ud83d\udd12 '+(isDm(room)?'Private chat':'Encrypted room')+' \u00b7 messages disappear after 24 hours</div>'
-   +'<div class="cc-in"><textarea rows="1" maxlength="500" placeholder="Type a message..." autocomplete="off" enterkeyhint="send"></textarea><button type="button">Send</button></div>';
+   +'<div class="cc-in">'+(isDm(room)?'<button type="button" data-a="call" title="Voice call" aria-label="Voice call">\ud83d\udcde</button>':'')+'<textarea rows="1" maxlength="500" placeholder="Type a message..." autocomplete="off" enterkeyhint="send"></textarea><button type="button">Send</button></div>';
   var inp=el.querySelector('textarea'), grow=function(){ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,110)+'px'; }, stopEdit=function(){ el.__edit=null; el.querySelector('.cc-eb').style.display='none'; inp.value=''; grow(); }, go=function(){ var v=inp.value; if(!v.trim()) return; if(el.__edit){ editMsg(room,el.__edit,v); stopEdit(); } else send(room,v); inp.value=''; grow(); inp.focus(); };
   el.querySelector('[data-a=ecancel]').onclick=stopEdit;
   inp.addEventListener('input',function(){ grow(); var b=el.querySelector('.cc-b'); b.scrollTop=b.scrollHeight; });
-  el.querySelector('.cc-in button').onclick=go;
+  el.querySelector('.cc-in button:last-child').onclick=go; var cb=el.querySelector('[data-a=call]'); if(cb) cb.onclick=function(){ startCall(room); };
   inp.onkeydown=function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); go(); } else if(e.key==='Escape'&&el.__edit){ stopEdit(); } };
   el.querySelector('.cc-b').addEventListener('click',function(e){ var x=e.target.closest('[data-del]'); if(x){ removeMsg(room,x.getAttribute('data-del')); return; } var ed=e.target.closest('[data-edit]'); if(ed){ var id=ed.getAttribute('data-edit'), m=(S.msgs[room]||[]).filter(function(q){return q.id===id;})[0]; if(!m) return; el.__edit=id; inp.value=m.text; el.querySelector('.cc-eb').style.display='flex'; grow(); inp.focus(); } });
   inp.addEventListener('focus',function(){ if(S.unread[room]){ S.unread[room]=0; scheduleRender(); } markSeen(room); sendRead(room); setTimeout(fitKeyboard,300); });
@@ -634,7 +646,7 @@ function renderWins(){
     if(!list.length) h+='<div class="cc-note">No messages yet. Say hello.</div>';
     list.forEach(function(m){
       var me=m.from_id===S.me.id;
-      h+='<div class="cc-line'+(me?' me':'')+'">'+(me?'':avatar(m.from_id,m.from_name,false,m.from_g,true))+'<div class="cc-msg"><div class="cc-meta">'+(me?'':esc(m.from_name)+' &middot; ')+esc(fmtTime(m.ts))+(me&&isDmRoom?(m.ts<=(S.readAt[w.room]||0)?'<span class="cc-tk rd">&#10003;&#10003; Read</span>':'<span class="cc-tk">&#10003; Sent</span>'):'')+(m.edited?'<span class="cc-tk">(edited)</span>':'')+(me?'<span class="cc-x" data-edit="'+esc(m.id)+'" title="Edit">&#9998;</span>':'')+(canDelete(m)?'<span class="cc-x" data-del="'+esc(m.id)+'" title="Delete">&times;</span>':'')+'</div><div class="cc-bub">'+esc(m.text)+'</div></div></div>';
+      h+='<div class="cc-line'+(me?' me':'')+'">'+(me?'':avatar(m.from_id,m.from_name,false,m.from_g,true))+'<div class="cc-msg"><div class="cc-meta">'+(me?'':esc(m.from_name)+' &middot; ')+esc(fmtTime(m.ts))+(me&&isDmRoom?(m.ts<=(S.readAt[w.room]||0)?'<span class="cc-tk rd">&#10003;&#10003; Read</span>':'<span class="cc-tk">&#10003; Sent</span>'):'')+(m.edited?'<span class="cc-tk">(edited)</span>':'')+(me?'<span class="cc-x" data-edit="'+esc(m.id)+'" title="Edit">&#9998;</span>':'')+(canDelete(m)?'<span class="cc-x" data-del="'+esc(m.id)+'" title="Delete">&times;</span>':'')+'</div><div class="cc-bub">'+callLink(m.text)+'</div></div></div>';
     });
     var key=list.length+':'+(list.length?list[list.length-1].id:'')+':'+Object.keys(S.gen).length+':'+(S.readAt[w.room]||0)+':'+(S.online[d.peer]?1:0)+':'+list.reduce(function(a,m){return a+m.text.length;},0);
     if(b.getAttribute('data-k')!==key||!b.getAttribute('data-init')){ b.innerHTML=h; b.setAttribute('data-k',key); if(near||!b.getAttribute('data-init')){ b.scrollTop=b.scrollHeight; b.setAttribute('data-init','1'); } }

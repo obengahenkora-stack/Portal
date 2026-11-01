@@ -121,8 +121,8 @@ var VAPID_PUB='BLZ2Kqbanm86QxK37rReWj_JmiPX4EKKS4zNjlGvhpR2wcudGhrknUzo-uXpcoS9C
 function b64u(s){ var p='='.repeat((4-s.length%4)%4), b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')), a=new Uint8Array(b.length); for(var i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
 function pushSub(){ try{ if(!S.me||!window.Notification||Notification.permission!=='granted'||!('serviceWorker' in navigator)||!('PushManager' in window)) return;
   navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription().then(function(sub){ return sub||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)}); }); })
-  .then(function(sub){ if(!sub) return; var key=S.me.id+'|'+sub.endpoint; if(S.pushKey===key) return; S.pushKey=key;
-    return chatOp('push_sub',{endpoint:sub.endpoint,sub:sub.toJSON()}); }).catch(function(){}); }catch(e){} }
+  .then(function(sub){ if(!sub) return; var pg=(location.pathname.split('/').pop()||'portal.html'); var key=S.me.id+'|'+sub.endpoint+'|'+pg; if(S.pushKey===key) return; S.pushKey=key;
+    var sj=sub.toJSON(); sj.page=pg; return chatOp('push_sub',{endpoint:sub.endpoint,sub:sj}); }).catch(function(){}); }catch(e){} }
 function askNotify(){ try{ if(window.Notification&&Notification.permission==='default'){ var p=Notification.requestPermission(); if(p&&p.then) p.then(pushSub); } else pushSub(); }catch(e){} }
 function seenGet(){ try{ return JSON.parse(localStorage.getItem('ceChatSeen')||'{}'); }catch(e){ return {}; } }
 function markSeen(room){ try{ var o=seenGet(); o[room]=Date.now(); localStorage.setItem('ceChatSeen',JSON.stringify(o)); }catch(e){} seenPush(); }
@@ -247,7 +247,7 @@ function loadHistory(room){
   S.loaded[room]=1;
   return chatOp('room_msgs',{room:room})
    .then(function(j){ if(!j||!j.ok) throw new Error('x'); return j.rows||[]; })
-   .then(function(rows){ return Promise.all(rows.reverse().filter(function(x){ return expOf(x)>Date.now(); }).map(function(x){ rememberGender(x.from_id,x.from_gender); return dec(x.room,x.text).then(function(t){ addMsg({id:x.id,room:x.room,from_id:x.from_id,from_name:x.from_name,from_g:x.from_gender||'',text:t,ts:new Date(x.created_at).getTime(),exp:expOf(x)},true); }); })); })
+   .then(function(rows){ return Promise.all(rows.reverse().filter(function(x){ return expOf(x)>Date.now()&&String(x.id).indexOf('call-')!==0; }).map(function(x){ rememberGender(x.from_id,x.from_gender); return dec(x.room,x.text).then(function(t){ addMsg({id:x.id,room:x.room,from_id:x.from_id,from_name:x.from_name,from_g:x.from_gender||'',text:t,ts:new Date(x.created_at).getTime(),exp:expOf(x)},true); }); })); })
    .catch(function(){});
 }
 function loadDmList(){ seenPull(_loadDm); }
@@ -257,7 +257,7 @@ function _loadDm(){
   pick.then(function(){ return chatOp('dm_msgs'); })
    .then(function(j){ if(!j||!j.ok) throw new Error('x'); return j.rows||[]; })
    .then(function(rows){ var seen=seenGet(), fresh=0;
-     rows.forEach(function(x){ if(expOf(x)<=Date.now()||new Date(x.created_at).getTime()<=(S.cl[x.room]||0)) return; var peer=peerOf(x.room); if(!S.dms[x.room]) S.dms[x.room]={peer:peer,name:nameOf(peer)}; S.dms[x.room].until=Math.max(S.dms[x.room].until||0,expOf(x));
+     rows.forEach(function(x){ if(String(x.id).indexOf('call-')===0) return; if(expOf(x)<=Date.now()||new Date(x.created_at).getTime()<=(S.cl[x.room]||0)) return; var peer=peerOf(x.room); if(!S.dms[x.room]) S.dms[x.room]={peer:peer,name:nameOf(peer)}; S.dms[x.room].until=Math.max(S.dms[x.room].until||0,expOf(x));
        if(x.from_id===S.me.id && x.to_name){ S.dms[x.room].name=x.to_name; rememberName(peer,x.to_name); }
        if(x.from_id!==S.me.id){ if(x.from_name) S.dms[x.room].name=(S.dir&&S.dir[x.from_id])||x.from_name; rememberGender(x.from_id,x.from_gender);
          if(new Date(x.created_at).getTime()>(seen[x.room]||0) && !winOpen(x.room)){ S.unread[x.room]=(S.unread[x.room]||0)+1; fresh++; } } });
@@ -279,6 +279,7 @@ function removeRow(id){ if(!S.histOK) return; chatOp('del',{id:id}).catch(functi
 
 /* ---------- messages ---------- */
 function addMsg(m,silent){
+  if(m&&String(m.id).indexOf('call-')===0) return false;
   if(m&&m.from_id===ownerId()&&!m.exp) m.exp=Date.now()+FOREVER;
   if(S.dir&&S.dir[m.from_id]) m.from_name=S.dir[m.from_id];
   if(m.ts<=(S.cl[m.room]||0)) return false;
@@ -646,7 +647,7 @@ function callScreen(title,sub,btns){
 }
 function callSend(peer,ev){ ev.from=S.me.id; ev.name=S.me.name; sendTo('inbox:'+peer,'call',ev).catch(function(){}); }
 function callEnd(notify,missed){
-  var c=CALL; if(!c) return; ringStop(); wlOff(); mediaOff(); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
+  var c=CALL; if(!c) return; ringStop(); wlOff(); mediaOff(); callRowDel(c); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
   if(notify) callSend(c.peer,{t:'end',cid:c.cid});
   try{ if(c.pc) c.pc.close(); }catch(e){}
   try{ if(c.stream) c.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
@@ -691,43 +692,65 @@ function callPc(){
   return pc;
 }
 function micErr(e){ var n=(e&&e.name)||'Error', m=(e&&e.message)||''; alert('Could not use the microphone ('+n+'). '+(n==='NotAllowedError'?'The microphone is blocked for this site or app. ':n==='NotFoundError'?'No microphone was found. ':'')+m); }
+function gather(pc,cap){ return new Promise(function(res){ if(pc.iceGatheringState==='complete') return res(); var done=function(){ pc.removeEventListener('icegatheringstatechange',chk); res(); }, chk=function(){ if(pc.iceGatheringState==='complete') done(); }; pc.addEventListener('icegatheringstatechange',chk); setTimeout(done,cap); }); }
+function callRowPut(c,sdp){
+  var j=JSON.stringify({c:c.cid,s:sdp});
+  return enc(c.room,j).then(function(ct){
+    var t=Date.now(); c.rowId='call-'+c.cid;
+    return chatOp('put',{row:{id:c.rowId,room:c.room,from_id:S.me.id,from_name:S.me.name,text:ct,created_at:new Date(t).toISOString(),expires_at:new Date(t+120000).toISOString()}});
+  }).catch(function(){});
+}
+function callRowDel(c){ if(c&&c.rowId) chatOp('del',{id:c.rowId}).catch(function(){}); }
+var CSEEN={};
+function pendingCall(room,cid){
+  if(!S.me||!S.histOK||CALL) return;
+  var op=room?chatOp('room_msgs',{room:room}):chatOp('dm_msgs');
+  op.then(function(j){ return (j&&j.rows)||[]; }).then(function(rows){
+    var now=Date.now(), hit=rows.filter(function(x){ return String(x.id).indexOf('call-')===0&&x.from_id!==S.me.id&&now-new Date(x.created_at).getTime()<55000&&(!cid||x.id==='call-'+cid)&&!CSEEN[x.id]; })[0];
+    if(!hit){ if(cid&&room){ var nm=nameOf(peerOfRoom(room))||'Someone'; toast({from_id:peerOfRoom(room),from_name:nm,text:'Missed voice call'}); } return; }
+    CSEEN[hit.id]=1;
+    return dec(hit.room,hit.text).then(function(t){ var o=JSON.parse(t); if(!o||!o.s||CALL) return; showIncoming(hit.from_id,hit.from_name,o.c,o.s,hit.room); });
+  }).catch(function(){});
+}
+function showIncoming(from,name,cid,sdp,room){
+  if(CALL||CSEEN['in-'+cid]) return; CSEEN['in-'+cid]=1;
+  var nm=nameOf(from)||name||'Someone'; rememberName(from,nm);
+  var cc=CALL={cid:cid,peer:from,name:nm,room:room,out:0,offer:sdp,on:0,pend:[]};
+  callSend(from,{t:'ring',cid:cid}); callScreen(nm,'Incoming voice call…',cbtn('ceCallYes','Accept','#16a34a')+cbtn('ceCallNo','Decline','#dc2626'));
+  ringStart('in');
+  cc.tm=setTimeout(function(){ if(CALL===cc&&!cc.on) callEnd(false); },55000);
+  document.getElementById('ceCallNo').onclick=function(){ callEnd(true); };
+  document.getElementById('ceCallYes').onclick=function(){
+    cc.acc=1; ringStop(); callScreen(nm,'Connecting…',cbtn('ceCallEnd','End','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(stream){
+      if(CALL!==cc){ stream.getTracks().forEach(function(t){t.stop();}); return; }
+      cc.stream=stream; var pc=callPc();
+      pc.setRemoteDescription({type:'offer',sdp:cc.offer}).then(function(){ return pc.createAnswer(); }).then(function(a){ return pc.setLocalDescription(a); }).then(function(){ return gather(pc,3000); }).then(function(){ callSend(cc.peer,{t:'answer',cid:cc.cid,sdp:pc.localDescription.sdp}); (cc.pend||[]).forEach(function(x){ pc.addIceCandidate(x).catch(function(){}); }); cc.pend=[]; }).catch(function(){ callEnd(true); });
+    }).catch(function(er){ callEnd(true); micErr(er); });
+  };
+}
 function startCall(room){
   if(CALL) return;
   if(!window.RTCPeerConnection||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert('This browser cannot make voice calls. Please update it or use Chrome or Safari.'); return; }
   var peer=peerOf(room), nm=roomTitle(room)||'Contact';
-  if(!S.online[peer]){ S.lastSend=0; send(room,'📞 Missed voice call'); alert(nm+' is offline. A missed-call message was sent.'); return; }
   navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(stream){
     var c=CALL={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,6),peer:peer,name:nm,room:room,out:1,stream:stream,on:0};
     callScreen(nm,'Calling\u2026 (reaching them)',cbtn('ceCallEnd','Cancel','#dc2626')); crCtx(); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true,true); };
     var pc=callPc();
-    pc.createOffer().then(function(o){ return pc.setLocalDescription(o).then(function(){ callSend(peer,{t:'offer',cid:c.cid,sdp:pc.localDescription.sdp}); }); }).catch(function(){ callEnd(true); });
-    c.ak=setTimeout(function(){ if(CALL===c&&!c.on&&!c.ringing){ var el=document.getElementById('ceCallSub'); if(el) el.textContent='Not reaching them yet. Their app may need to be refreshed or reopened.'; } },6000);
-    c.tm=setTimeout(function(){ if(CALL===c&&!c.on) callEnd(true,true); },45000);
+    pc.createOffer().then(function(o){ return pc.setLocalDescription(o); }).then(function(){ return gather(pc,3000); }).then(function(){ if(CALL!==c) return; var sdp=pc.localDescription.sdp; callSend(peer,{t:'offer',cid:c.cid,sdp:sdp}); return callRowPut(c,sdp); }).catch(function(){ callEnd(true); });
+    c.ak=setTimeout(function(){ if(CALL===c&&!c.on&&!c.ringing){ var el=document.getElementById('ceCallSub'); if(el) el.textContent='Ringing their phone…'; } },6000);
+    c.tm=setTimeout(function(){ if(CALL===c&&!c.on) callEnd(true,true); },55000);
   }).catch(micErr);
 }
 function inCall(p){
   if(!p||!p.payload||!S.me) return; var e=p.payload, c=CALL;
   if(e.t==='offer'){
-    if(c){ callSend(e.from,{t:'busy',cid:e.cid}); return; }
-    var nm=nameOf(e.from)||e.name||'Someone'; rememberName(e.from,nm);
-    var cc=CALL={cid:e.cid,peer:e.from,name:nm,out:0,offer:e.sdp,on:0,pend:[]};
-    callSend(e.from,{t:'ring',cid:e.cid}); callScreen(nm,'Incoming voice call\u2026',cbtn('ceCallYes','Accept','#16a34a')+cbtn('ceCallNo','Decline','#dc2626'));
-    ringStart('in');
-    cc.tm=setTimeout(function(){ if(CALL===cc&&!cc.on) callEnd(false); },45000);
-    document.getElementById('ceCallNo').onclick=function(){ callEnd(true); };
-    document.getElementById('ceCallYes').onclick=function(){
-      cc.acc=1; ringStop(); callScreen(nm,'Connecting…',cbtn('ceCallEnd','End','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };
-      navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(stream){
-        if(CALL!==cc){ stream.getTracks().forEach(function(t){t.stop();}); return; }
-        cc.stream=stream; var pc=callPc();
-        pc.setRemoteDescription({type:'offer',sdp:cc.offer}).then(function(){ return pc.createAnswer(); }).then(function(a){ return pc.setLocalDescription(a).then(function(){ callSend(cc.peer,{t:'answer',cid:cc.cid,sdp:pc.localDescription.sdp}); }); }).then(function(){ (cc.pend||[]).forEach(function(x){ pc.addIceCandidate(x).catch(function(){}); }); cc.pend=[]; }).catch(function(){ callEnd(true); });
-      }).catch(function(er){ callEnd(true); micErr(er); });
-    };
-    return;
+    if(c){ if(c.cid!==e.cid) callSend(e.from,{t:'busy',cid:e.cid}); return; }
+    showIncoming(e.from,e.name,e.cid,e.sdp,dmRoom(S.me.id,e.from)); return;
   }
   if(!c||e.cid!==c.cid||e.from!==c.peer) return;
   if(e.t==='ring'&&c.out&&!c.on){ c.ringing=1; var sb=document.getElementById('ceCallSub'); if(sb) sb.textContent='Ringing\u2026'; ringStart('out'); }
-  else if(e.t==='answer'&&c.pc){ c.pc.setRemoteDescription({type:'answer',sdp:e.sdp}).then(function(){ (c.q||[]).forEach(function(x){ c.pc.addIceCandidate(x).catch(function(){}); }); c.q=[]; }).catch(function(){}); }
+  else if(e.t==='answer'&&c.pc){ callRowDel(c); c.pc.setRemoteDescription({type:'answer',sdp:e.sdp}).then(function(){ (c.q||[]).forEach(function(x){ c.pc.addIceCandidate(x).catch(function(){}); }); c.q=[]; }).catch(function(){}); }
   else if(e.t==='ice'&&e.cand){ if(c.pc&&c.pc.remoteDescription&&c.pc.remoteDescription.type) c.pc.addIceCandidate(e.cand).catch(function(){}); else if(c.out) (c.q=c.q||[]).push(e.cand); else (c.pend=c.pend||[]).push(e.cand); }
   else if(e.t==='busy'){ callScreen(c.name,'Busy on another call',cbtn('ceCallEnd','Close','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(false); }; }
   else if(e.t==='end'){ var miss=!c.out&&!c.on; callEnd(false); if(miss) toast({from_id:e.from,from_name:nameOf(e.from)||e.name,text:'Missed voice call'}); }
@@ -821,6 +844,16 @@ function unembed(){
   var b=document.getElementById('ceChatBtn'); if(b) b.style.display='';
   S.open=false; render();
 }
+
+(function(){
+  var qs=''; try{ qs=location.search; }catch(e){}
+  var m=qs.match(/[?&]ccall=([A-Za-z0-9]+)/), r=qs.match(/[?&]croom=([^&]+)/);
+  var want=m?{cid:m[1],room:r?decodeURIComponent(r[1]):''}:null;
+  var tryWant=function(){ if(!want) return; if(!(S.started&&S.histOK&&S.me)){ setTimeout(tryWant,700); return; } var w=want; want=null; pendingCall(w.room,w.cid); try{ history.replaceState(null,'',location.pathname); }catch(e){} };
+  if(want) setTimeout(tryWant,900);
+  if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',function(ev){ var d=ev.data||{}; if(d.type==='call'){ want={cid:d.cid,room:d.room}; tryWant(); } });
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible'&&S.started&&!CALL) setTimeout(function(){ pendingCall(); },600); });
+})();
 window.ChatUI={tick:tick,stop:stop,embed:embed,unembed:unembed,_state:S};
 setInterval(tick,1500);
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tick); else setTimeout(tick,300);

@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "xyz.obengahenkora.app",
+        "sha256_cert_fingerprints": ["47:65:F3:5A:70:EF:89:AB:EF:8C:7F:E9:10:5D:A0:96:91:86:1C:F4:DF:A4:45:44:C9:81:04:6E:35:39:97:09"]
+      }
+    }]

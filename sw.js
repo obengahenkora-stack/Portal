@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ce-portal-v17';
+const CACHE_NAME = 'ce-portal-v20';
 const urlsToCache = [
   'index.html',
   'theme.css',
@@ -7,6 +7,8 @@ const urlsToCache = [
   'motion.js',
   'services-motion.js',
   'pw-tools.js',
+  'gate.js',
+  'chat.js',
   'db-sync.js',
   'blog.html','services.html',
   'portal.html',
@@ -46,5 +48,27 @@ self.addEventListener('fetch', (event) => {
       }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }))
+  );
+});
+
+self.addEventListener('push', (event) => {
+  let d = {}; try { d = event.data ? event.data.json() : {}; } catch(e) {}
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cl) => {
+      if (cl.some(c => c.visibilityState === 'visible')) return;
+      return self.registration.showNotification(d.title || 'New message', {
+        body: d.body || 'Sent you a message', icon: 'icon-192.png', badge: 'icon-192.png',
+        tag: d.room || 'chat', renotify: true, data: { room: d.room }
+      });
+    })
+  );
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cl) => {
+      if (cl.length) return cl[0].focus();
+      return self.clients.openWindow('./');
+    })
   );
 });

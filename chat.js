@@ -625,7 +625,7 @@ function wlOff(){ try{ if(WL){ WL.release(); WL=null; } }catch(e){} }
 document.addEventListener('visibilitychange',function(){
   if(!CALL) return;
   if(document.visibilityState==='visible'){
-    wlOn();
+    wlOn(); crCtx();
     try{ if(CALL.stream) CALL.stream.getAudioTracks().forEach(function(t){ t.enabled=!CALL.muted; }); }catch(e){}
     var a=document.getElementById('ceCallAudio'); if(a){ try{ a.play(); }catch(e){} }
   }
@@ -642,7 +642,7 @@ function callScreen(title,sub,btns){
 }
 function callSend(peer,ev){ ev.from=S.me.id; ev.name=S.me.name; sendTo('inbox:'+peer,'call',ev).catch(function(){}); }
 function callEnd(notify,missed){
-  var c=CALL; if(!c) return; ringStop(); wlOff(); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
+  var c=CALL; if(!c) return; ringStop(); wlOff(); mediaOff(); CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
   if(notify) callSend(c.peer,{t:'end',cid:c.cid});
   try{ if(c.pc) c.pc.close(); }catch(e){}
   try{ if(c.stream) c.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
@@ -650,18 +650,39 @@ function callEnd(notify,missed){
   callUi(null);
   if(missed&&c.out) { S.lastSend=0; send(c.room,'📞 Missed voice call'); }
 }
+var IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function spkSet(c,on){
+  c.spk=on; var a=document.getElementById('ceCallAudio'), btn=document.getElementById('ceCallSpk');
+  try{
+    if(on){ if(!c.remote) throw 0; if(!c.gn){ var ctx=crCtx(); c.src=ctx.createMediaStreamSource(c.remote); c.gn=ctx.createGain(); c.gn.gain.value=2.5; c.src.connect(c.gn); c.gn.connect(ctx.destination); } if(a) a.muted=true; }
+    else { if(c.src) c.src.disconnect(); if(c.gn) c.gn.disconnect(); c.src=c.gn=null; if(a){ a.muted=false; try{ a.play(); }catch(x){} } }
+  }catch(x){ c.spk=false; if(a) a.muted=false; }
+  try{ if(a&&a.setSinkId&&navigator.mediaDevices.enumerateDevices) navigator.mediaDevices.enumerateDevices().then(function(d){ var sp=d.filter(function(q){return q.kind==='audiooutput'&&/speaker/i.test(q.label);})[0]; a.setSinkId(c.spk&&sp?sp.deviceId:'default').catch(function(){}); }).catch(function(){}); }catch(x){}
+  if(btn){ btn.textContent=c.spk?'Speaker on':'Speaker off'; btn.style.setProperty('background',c.spk?'#16a34a':'#475569','important'); }
+}
+function mediaOn(c){
+  try{ if(!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata=new MediaMetadata({title:'Voice call',artist:c.name,album:'Obeng-Ahenkora Portal'});
+    navigator.mediaSession.playbackState='playing';
+    try{ navigator.mediaSession.setActionHandler('hangup',function(){ callEnd(true); }); }catch(e){}
+    try{ navigator.mediaSession.setActionHandler('togglemicrophone',function(){ c.muted=!c.muted; c.stream.getAudioTracks().forEach(function(t){ t.enabled=!c.muted; }); }); }catch(e){}
+  }catch(e){}
+}
+function mediaOff(){ try{ if('mediaSession' in navigator){ navigator.mediaSession.playbackState='none'; navigator.mediaSession.metadata=null; try{ navigator.mediaSession.setActionHandler('hangup',null); }catch(e){} } }catch(e){} }
 function callConnected(){
   var c=CALL; if(!c||c.on) return; c.on=1; ringStop(); wlOn(); clearTimeout(c.tm); clearTimeout(c.ak); var t0=Date.now();
   var draw=function(){ var s=Math.floor((Date.now()-t0)/1000), m=Math.floor(s/60); var el=document.getElementById('ceCallSub'); if(el) el.textContent='Connected · '+m+':'+('0'+(s%60)).slice(-2); };
-  callScreen(c.name,'Connected',cbtn('ceCallMute','Mute','#475569')+cbtn('ceCallEnd','End call','#dc2626')); draw(); c.iv=setInterval(draw,1000);
+  callScreen(c.name,'Connected',cbtn('ceCallMute','Mute','#475569')+(IOS?'':cbtn('ceCallSpk','Speaker on','#16a34a'))+cbtn('ceCallEnd','End call','#dc2626')); draw(); c.iv=setInterval(draw,1000);
   document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };
+  var sk=document.getElementById('ceCallSpk'); if(sk){ sk.onclick=function(){ spkSet(c,!c.spk); }; spkSet(c,true); }
+  mediaOn(c);
   document.getElementById('ceCallMute').onclick=function(e){ c.muted=!c.muted; c.stream.getAudioTracks().forEach(function(t){ t.enabled=!c.muted; }); e.target.textContent=c.muted?'Unmute':'Mute'; };
 }
 function callPc(){
   var c=CALL, pc=new RTCPeerConnection({iceServers:ICE}); c.pc=pc; c.q=[];
   c.stream.getTracks().forEach(function(t){ pc.addTrack(t,c.stream); });
   pc.onicecandidate=function(e){ if(e.candidate) callSend(c.peer,{t:'ice',cid:c.cid,cand:e.candidate}); };
-  pc.ontrack=function(e){ var a=document.getElementById('ceCallAudio'); if(!a){ a=document.createElement('audio'); a.id='ceCallAudio'; a.autoplay=true; a.setAttribute('playsinline',''); document.body.appendChild(a); } a.srcObject=e.streams[0]; try{ a.play(); }catch(x){} };
+  pc.ontrack=function(e){ var a=document.getElementById('ceCallAudio'); if(!a){ a=document.createElement('audio'); a.id='ceCallAudio'; a.autoplay=true; a.setAttribute('playsinline',''); document.body.appendChild(a); } c.remote=e.streams[0]; a.srcObject=e.streams[0]; try{ a.play(); }catch(x){} };
   pc.onconnectionstatechange=function(){ if(!CALL||CALL!==c) return; var st=pc.connectionState; if(st==='connected') callConnected(); else if(st==='failed'||st==='closed'){ callScreen('Call failed','Could not connect. Check your network.',cbtn('ceCallEnd','Close','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); }; } else if(st==='disconnected'){ setTimeout(function(){ if(CALL===c&&pc.connectionState==='disconnected') callEnd(true); },8000); } };
   return pc;
 }

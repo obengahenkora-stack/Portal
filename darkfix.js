@@ -60,3 +60,45 @@ function add(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',add); else add();
 })();
+
+/* ---- "Install this app" banner (shows only when the site is not already installed) ---- */
+(function(){
+var KEY='ceInstallHide', DAYS=14, dp=null;
+function stored(){ try{ return parseInt(localStorage.getItem(KEY)||'0',10)||0; }catch(e){ return 0; } }
+function hide(){ try{ localStorage.setItem(KEY,String(Date.now()+DAYS*864e5)); }catch(e){} var b=document.getElementById('ceInstall'); if(b&&b.parentNode) b.parentNode.removeChild(b); }
+function installed(){
+  try{ if(window.matchMedia&&(matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: minimal-ui)').matches)) return true; }catch(e){}
+  if(window.navigator.standalone) return true;
+  if(String(document.referrer).indexOf('android-app://')===0) return true;
+  return false;
+}
+var ua=navigator.userAgent||'';
+var IOS=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+var ANDROID=/Android/i.test(ua);
+var INAPP=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|WhatsApp|Snapchat|TikTok|; wv\)/i.test(ua);
+var SAFARI=IOS&&/Safari/.test(ua)&&!/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua)&&!INAPP;
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); dp=e; setTimeout(show,800); });
+window.addEventListener('appinstalled',function(){ hide(); try{ localStorage.setItem(KEY,String(Date.now()+3650*864e5)); }catch(e){} });
+function css(el,t){ el.style.cssText=t; }
+function btn(txt,bg,fn){ var b=document.createElement('button'); b.type='button'; b.textContent=txt; css(b,'all:unset;box-sizing:border-box;cursor:pointer;padding:9px 16px !important;border-radius:999px !important;font:700 14px/1 system-ui,sans-serif !important;color:#fff !important;background:'+bg+' !important;margin:0 !important;border:none !important;'); b.addEventListener('click',fn); return b; }
+function show(){
+  if(document.getElementById('ceInstall')||installed()||Date.now()<stored()) return;
+  var steps='', actions=[];
+  if(dp){ steps='Add this portal to your home screen so it opens like an app.'; }
+  else if(IOS&&SAFARI){ steps='Tap the Share button (square with an arrow), then choose Add to Home Screen, then Add.'; }
+  else if(IOS){ steps='To install: open this page in Safari, tap Share, then Add to Home Screen.'; }
+  else if(ANDROID){ steps='To install: tap the ⋮ menu in Chrome, then Install app (or Add to Home screen).'; }
+  else return;
+  var w=document.createElement('div'); w.id='ceInstall'; w.setAttribute('role','dialog'); w.setAttribute('aria-label','Install this app');
+  css(w,'position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:9997;max-width:340px;width:calc(100% - 24px);box-sizing:border-box;padding:14px 14px 12px !important;border-radius:16px !important;background:linear-gradient(135deg,#0b1e3a,#312e81) !important;color:#fff !important;box-shadow:0 10px 30px rgba(0,0,0,.35);font:500 14px/1.4 system-ui,sans-serif;');
+  var t=document.createElement('div'); css(t,'font:800 15px/1.3 system-ui,sans-serif;margin:0 0 4px;color:#fff;'); t.textContent='Install the Obeng-Ahenkora app';
+  var d=document.createElement('div'); css(d,'margin:0 0 10px;color:#e0e7ff;opacity:.95;'); d.textContent=steps;
+  var row=document.createElement('div'); css(row,'display:flex;gap:8px;justify-content:flex-end;');
+  row.appendChild(btn('Not now','rgba(255,255,255,.18)',hide));
+  if(dp) row.appendChild(btn('Install','linear-gradient(135deg,#0ea5e9,#8b5cf6)',function(){ var p=dp; dp=null; try{ p.prompt(); p.userChoice.then(function(){ hide(); }); }catch(e){ hide(); } }));
+  else row.appendChild(btn('Got it','linear-gradient(135deg,#0ea5e9,#8b5cf6)',hide));
+  w.appendChild(t); w.appendChild(d); w.appendChild(row); document.body.appendChild(w);
+}
+function start(){ if(installed()) return; setTimeout(function(){ if(!dp) show(); },6000); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+})();

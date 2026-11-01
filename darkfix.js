@@ -47,14 +47,14 @@ function add(){
   st.textContent='#ceRefreshBtn{position:fixed;right:12px;top:calc(env(safe-area-inset-top,0px) + 74px);z-index:9998;width:40px;height:40px;border-radius:50%;border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important;color:#fff !important;box-shadow:0 6px 16px rgba(30,41,90,.3);-webkit-tap-highlight-color:transparent;transition:transform .15s}'
    +'#ceRefreshBtn:hover,#ceRefreshBtn:focus,#ceRefreshBtn:active{background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important;color:#fff !important}'
    +'#ceRefreshBtn:active{transform:scale(.92)}'
-   +'#ceRefreshBtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}'
+   +'#ceRefreshBtn svg{display:block !important;width:20px !important;height:20px !important;fill:none !important;stroke:#fff !important;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:1 !important}#ceRefreshBtn svg *{stroke:#fff !important;fill:none !important}'
    +'#ceRefreshBtn.spin svg{animation:ceSpin .7s linear infinite}'
    +'@keyframes ceSpin{to{transform:rotate(360deg)}}'
    +'@media print{#ceRefreshBtn{display:none}}';
   document.head.appendChild(st);
   var b=document.createElement('button');
   b.id='ceRefreshBtn'; b.type='button'; b.setAttribute('aria-label','Refresh page'); b.title='Refresh';
-  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg>';
+  b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg>';
   b.addEventListener('click',function(){ b.classList.add('spin'); setTimeout(function(){ location.reload(); },200); });
   document.body.appendChild(b);
 }

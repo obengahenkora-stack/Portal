@@ -120,6 +120,8 @@
   }
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('ce-hold');setTimeout(function(){document.documentElement.classList.remove('ce-hold');},3500);</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 <style id="adminHubCss">
@@ -1544,7 +1546,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(session){
-    await onStudentSignedIn();
+    try{ await onStudentSignedIn(); }finally{ document.documentElement.classList.remove('ce-hold'); }
   } else {
     // Owner already signed in on the Faculty Console: no second sign-in needed here
     try{
@@ -1561,6 +1563,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         loadRegisteredStudents();
       }
     }catch(e){ console.warn('staff session check', e); }
+    document.documentElement.classList.remove('ce-hold');
   }
 });
 </script>

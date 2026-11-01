@@ -314,6 +314,7 @@ function joinInbox(){
   getChan('inbox:'+S.me.id,function(ch){
     ch.on('broadcast',{event:'msg'},inMsg);
     ch.on('broadcast',{event:'read'},inRead);
+    ch.on('broadcast',{event:'call'},inCall);
     ch.on('broadcast',{event:'clear'},inClear);
     ch.on('broadcast',{event:'edit'},inEdit);
     ch.on('broadcast',{event:'del'},function(p){ if(p&&p.payload) delMsg(p.payload.room,p.payload.id); });
@@ -603,17 +604,83 @@ function renderTabs(p){
   });
   if(t.__h!==h){ t.innerHTML=h; t.__h=h; }
 }
-function callLink(t){
-  var x=esc(t), m=String(t).match(/https:\/\/meet\.jit\.si\/CEcall[A-Za-z0-9]{12,40}/);
-  if(!m) return x;
-  return x.replace(esc(m[0]),'<a href="'+m[0]+'#config.startWithVideoMuted=true&config.prejoinConfig.enabled=false" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">\ud83d\udcde Join call</a>');
+
+/* ---------- voice calls (WebRTC, signalling over the chat inbox) ---------- */
+var CALL=null, ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}];
+function callUi(html){
+  var el=document.getElementById('ceCall');
+  if(!html){ if(el&&el.parentNode) el.parentNode.removeChild(el); return null; }
+  if(!el){ el=document.createElement('div'); el.id='ceCall'; el.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(7,16,33,.92);font-family:inherit;color:#fff'; document.body.appendChild(el); }
+  el.innerHTML='<div style="text-align:center;padding:24px;max-width:340px;width:100%">'+html+'</div>'; return el;
 }
+function cbtn(id,label,bg){ return '<button type="button" id="'+id+'" style="margin:8px;padding:14px 22px !important;border:none !important;border-radius:999px !important;font:700 16px inherit;color:#fff !important;background:'+bg+' !important;cursor:pointer">'+label+'</button>'; }
+function callScreen(title,sub,btns){
+  callUi('<div style="width:96px;height:96px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:44px">&#128222;</div><div style="font-size:22px;font-weight:800">'+esc(title)+'</div><div id="ceCallSub" style="opacity:.8;margin:8px 0 22px">'+esc(sub)+'</div>'+btns);
+}
+function callSend(peer,ev){ ev.from=S.me.id; ev.name=S.me.name; sendTo('inbox:'+peer,'call',ev).catch(function(){}); }
+function callEnd(notify,missed){
+  var c=CALL; if(!c) return; CALL=null; clearTimeout(c.tm); clearInterval(c.iv);
+  if(notify) callSend(c.peer,{t:'end',cid:c.cid});
+  try{ if(c.pc) c.pc.close(); }catch(e){}
+  try{ if(c.stream) c.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+  var a=document.getElementById('ceCallAudio'); if(a&&a.parentNode) a.parentNode.removeChild(a);
+  callUi(null);
+  if(missed&&c.out) { S.lastSend=0; send(c.room,'📞 Missed voice call'); }
+}
+function callConnected(){
+  var c=CALL; if(!c||c.on) return; c.on=1; clearTimeout(c.tm); var t0=Date.now();
+  var draw=function(){ var s=Math.floor((Date.now()-t0)/1000), m=Math.floor(s/60); var el=document.getElementById('ceCallSub'); if(el) el.textContent='Connected · '+m+':'+('0'+(s%60)).slice(-2); };
+  callScreen(c.name,'Connected',cbtn('ceCallMute','Mute','#475569')+cbtn('ceCallEnd','End call','#dc2626')); draw(); c.iv=setInterval(draw,1000);
+  document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };
+  document.getElementById('ceCallMute').onclick=function(e){ c.muted=!c.muted; c.stream.getAudioTracks().forEach(function(t){ t.enabled=!c.muted; }); e.target.textContent=c.muted?'Unmute':'Mute'; };
+}
+function callPc(){
+  var c=CALL, pc=new RTCPeerConnection({iceServers:ICE}); c.pc=pc; c.q=[];
+  c.stream.getTracks().forEach(function(t){ pc.addTrack(t,c.stream); });
+  pc.onicecandidate=function(e){ if(e.candidate) callSend(c.peer,{t:'ice',cid:c.cid,cand:e.candidate}); };
+  pc.ontrack=function(e){ var a=document.getElementById('ceCallAudio'); if(!a){ a=document.createElement('audio'); a.id='ceCallAudio'; a.autoplay=true; a.setAttribute('playsinline',''); document.body.appendChild(a); } a.srcObject=e.streams[0]; try{ a.play(); }catch(x){} };
+  pc.onconnectionstatechange=function(){ if(!CALL||CALL!==c) return; var st=pc.connectionState; if(st==='connected') callConnected(); else if(st==='failed'||st==='closed'){ callScreen('Call failed','Could not connect. Check your network.',cbtn('ceCallEnd','Close','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); }; } else if(st==='disconnected'){ setTimeout(function(){ if(CALL===c&&pc.connectionState==='disconnected') callEnd(true); },8000); } };
+  return pc;
+}
+function micErr(e){ alert('Allow the microphone to make or answer calls. In your browser or phone settings, turn the microphone on for this site.'); }
 function startCall(room){
-  var a=new Uint8Array(12); (window.crypto||{getRandomValues:function(v){for(var i=0;i<v.length;i++)v[i]=Math.random()*256;}}).getRandomValues(a);
-  var tok='CEcall'+Array.prototype.map.call(a,function(b){return b.toString(36);}).join('').replace(/[^a-z0-9]/g,'a').slice(0,16).padEnd(14,'x');
-  var url='https://meet.jit.si/'+tok;
-  S.lastSend=0; send(room,'\ud83d\udcde '+shortName(S.me.name)+' is calling you. '+url);
-  window.open(url+'#config.startWithVideoMuted=true&config.prejoinConfig.enabled=false','_blank','noopener');
+  if(CALL) return;
+  if(!window.RTCPeerConnection||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert('This browser cannot make voice calls. Please update it or use Chrome or Safari.'); return; }
+  var peer=peerOf(room), nm=roomTitle(room)||'Contact';
+  if(!S.online[peer]){ S.lastSend=0; send(room,'📞 Missed voice call'); alert(nm+' is offline. A missed-call message was sent.'); return; }
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(stream){
+    var c=CALL={cid:Date.now().toString(36)+Math.random().toString(36).slice(2,6),peer:peer,name:nm,room:room,out:1,stream:stream,on:0};
+    callScreen(nm,'Calling…',cbtn('ceCallEnd','Cancel','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true,true); };
+    var pc=callPc();
+    pc.createOffer().then(function(o){ return pc.setLocalDescription(o).then(function(){ callSend(peer,{t:'offer',cid:c.cid,sdp:pc.localDescription.sdp}); }); }).catch(function(){ callEnd(true); });
+    c.tm=setTimeout(function(){ if(CALL===c&&!c.on) callEnd(true,true); },45000);
+  }).catch(micErr);
+}
+function inCall(p){
+  if(!p||!p.payload||!S.me) return; var e=p.payload, c=CALL;
+  if(e.t==='offer'){
+    if(c){ callSend(e.from,{t:'busy',cid:e.cid}); return; }
+    var nm=nameOf(e.from)||e.name||'Someone'; rememberName(e.from,nm);
+    var cc=CALL={cid:e.cid,peer:e.from,name:nm,out:0,offer:e.sdp,on:0,pend:[]};
+    callScreen(nm,'Incoming voice call…',cbtn('ceCallYes','Accept','#16a34a')+cbtn('ceCallNo','Decline','#dc2626'));
+    var ring=setInterval(function(){ if(CALL!==cc||cc.on||cc.acc){ clearInterval(ring); return; } try{ beep(); }catch(x){} if(navigator.vibrate) navigator.vibrate(200); },1800); try{ beep(); }catch(x){}
+    cc.tm=setTimeout(function(){ if(CALL===cc&&!cc.on) callEnd(false); },45000);
+    document.getElementById('ceCallNo').onclick=function(){ callEnd(true); };
+    document.getElementById('ceCallYes').onclick=function(){
+      cc.acc=1; callScreen(nm,'Connecting…',cbtn('ceCallEnd','End','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); };
+      navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(function(stream){
+        if(CALL!==cc){ stream.getTracks().forEach(function(t){t.stop();}); return; }
+        cc.stream=stream; var pc=callPc();
+        pc.setRemoteDescription({type:'offer',sdp:cc.offer}).then(function(){ return pc.createAnswer(); }).then(function(a){ return pc.setLocalDescription(a).then(function(){ callSend(cc.peer,{t:'answer',cid:cc.cid,sdp:pc.localDescription.sdp}); }); }).then(function(){ (cc.pend||[]).forEach(function(x){ pc.addIceCandidate(x).catch(function(){}); }); cc.pend=[]; }).catch(function(){ callEnd(true); });
+      }).catch(function(er){ callEnd(true); micErr(er); });
+    };
+    return;
+  }
+  if(!c||e.cid!==c.cid||e.from!==c.peer) return;
+  if(e.t==='answer'&&c.pc){ c.pc.setRemoteDescription({type:'answer',sdp:e.sdp}).then(function(){ (c.q||[]).forEach(function(x){ c.pc.addIceCandidate(x).catch(function(){}); }); c.q=[]; }).catch(function(){}); }
+  else if(e.t==='ice'&&e.cand){ if(c.pc&&c.pc.remoteDescription&&c.pc.remoteDescription.type) c.pc.addIceCandidate(e.cand).catch(function(){}); else if(c.out) (c.q=c.q||[]).push(e.cand); else (c.pend=c.pend||[]).push(e.cand); }
+  else if(e.t==='busy'){ callScreen(c.name,'Busy on another call',cbtn('ceCallEnd','Close','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(false); }; }
+  else if(e.t==='end'){ var miss=!c.out&&!c.on; callEnd(false); if(miss) toast({from_id:e.from,from_name:nameOf(e.from)||e.name,text:'Missed voice call'}); }
 }
 function ensureWin(room){
   var el=winEl(room); if(el) return el;
@@ -646,7 +713,7 @@ function renderWins(){
     if(!list.length) h+='<div class="cc-note">No messages yet. Say hello.</div>';
     list.forEach(function(m){
       var me=m.from_id===S.me.id;
-      h+='<div class="cc-line'+(me?' me':'')+'">'+(me?'':avatar(m.from_id,m.from_name,false,m.from_g,true))+'<div class="cc-msg"><div class="cc-meta">'+(me?'':esc(m.from_name)+' &middot; ')+esc(fmtTime(m.ts))+(me&&isDmRoom?(m.ts<=(S.readAt[w.room]||0)?'<span class="cc-tk rd">&#10003;&#10003; Read</span>':'<span class="cc-tk">&#10003; Sent</span>'):'')+(m.edited?'<span class="cc-tk">(edited)</span>':'')+(me?'<span class="cc-x" data-edit="'+esc(m.id)+'" title="Edit">&#9998;</span>':'')+(canDelete(m)?'<span class="cc-x" data-del="'+esc(m.id)+'" title="Delete">&times;</span>':'')+'</div><div class="cc-bub">'+callLink(m.text)+'</div></div></div>';
+      h+='<div class="cc-line'+(me?' me':'')+'">'+(me?'':avatar(m.from_id,m.from_name,false,m.from_g,true))+'<div class="cc-msg"><div class="cc-meta">'+(me?'':esc(m.from_name)+' &middot; ')+esc(fmtTime(m.ts))+(me&&isDmRoom?(m.ts<=(S.readAt[w.room]||0)?'<span class="cc-tk rd">&#10003;&#10003; Read</span>':'<span class="cc-tk">&#10003; Sent</span>'):'')+(m.edited?'<span class="cc-tk">(edited)</span>':'')+(me?'<span class="cc-x" data-edit="'+esc(m.id)+'" title="Edit">&#9998;</span>':'')+(canDelete(m)?'<span class="cc-x" data-del="'+esc(m.id)+'" title="Delete">&times;</span>':'')+'</div><div class="cc-bub">'+esc(m.text)+'</div></div></div>';
     });
     var key=list.length+':'+(list.length?list[list.length-1].id:'')+':'+Object.keys(S.gen).length+':'+(S.readAt[w.room]||0)+':'+(S.online[d.peer]?1:0)+':'+list.reduce(function(a,m){return a+m.text.length;},0);
     if(b.getAttribute('data-k')!==key||!b.getAttribute('data-init')){ b.innerHTML=h; b.setAttribute('data-k',key); if(near||!b.getAttribute('data-init')){ b.scrollTop=b.scrollHeight; b.setAttribute('data-init','1'); } }

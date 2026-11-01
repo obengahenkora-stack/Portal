@@ -1,12 +1,19 @@
 {
+  "id": "/",
   "name": "Obeng-Ahenkora Ph.D.",
-  "short_name": "Obeng-Ahenkora Ph.D.",
+  "short_name": "Obeng-Ahenkora",
   "description": "Construction management, research, services and student resources.",
+  "lang": "en",
   "start_url": "index.html",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f4faf8",
   "theme_color": "#0b1e3a",
   "orientation": "portrait-primary",
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icon-192.png",

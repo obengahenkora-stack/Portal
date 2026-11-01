@@ -628,8 +628,6 @@ document.addEventListener('visibilitychange',function(){
     wlOn();
     try{ if(CALL.stream) CALL.stream.getAudioTracks().forEach(function(t){ t.enabled=!CALL.muted; }); }catch(e){}
     var a=document.getElementById('ceCallAudio'); if(a){ try{ a.play(); }catch(e){} }
-    var el=document.getElementById('ceCallNote'); if(el) el.style.display='block';
-    setTimeout(function(){ var n=document.getElementById('ceCallNote'); if(n) n.style.display='none'; },5000);
   }
 });
 function callUi(html){
@@ -640,7 +638,7 @@ function callUi(html){
 }
 function cbtn(id,label,bg){ return '<button type="button" id="'+id+'" style="margin:8px;padding:14px 22px !important;border:none !important;border-radius:999px !important;font:700 16px inherit;color:#fff !important;background:'+bg+' !important;cursor:pointer">'+label+'</button>'; }
 function callScreen(title,sub,btns){
-  callUi('<div style="width:96px;height:96px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:44px">&#128222;</div><div style="font-size:22px;font-weight:800">'+esc(title)+'</div><div id="ceCallSub" style="opacity:.8;margin:8px 0 22px">'+esc(sub)+'</div>'+btns+'<div id="ceCallNote" style="display:none;margin-top:14px;font-size:13px;opacity:.85">Stay on this screen during the call. Phones mute the microphone when you leave the app or lock the screen.</div><div style="margin-top:14px;font-size:12px;opacity:.6">Keep this screen open during the call</div>');
+  callUi('<div style="width:96px;height:96px;margin:0 auto 18px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:44px">&#128222;</div><div style="font-size:22px;font-weight:800">'+esc(title)+'</div><div id="ceCallSub" style="opacity:.8;margin:8px 0 22px">'+esc(sub)+'</div>'+btns);
 }
 function callSend(peer,ev){ ev.from=S.me.id; ev.name=S.me.name; sendTo('inbox:'+peer,'call',ev).catch(function(){}); }
 function callEnd(notify,missed){
@@ -667,7 +665,7 @@ function callPc(){
   pc.onconnectionstatechange=function(){ if(!CALL||CALL!==c) return; var st=pc.connectionState; if(st==='connected') callConnected(); else if(st==='failed'||st==='closed'){ callScreen('Call failed','Could not connect. Check your network.',cbtn('ceCallEnd','Close','#dc2626')); document.getElementById('ceCallEnd').onclick=function(){ callEnd(true); }; } else if(st==='disconnected'){ setTimeout(function(){ if(CALL===c&&pc.connectionState==='disconnected') callEnd(true); },8000); } };
   return pc;
 }
-function micErr(e){ alert('Allow the microphone to make or answer calls. In your browser or phone settings, turn the microphone on for this site.'); }
+function micErr(e){ var n=(e&&e.name)||'Error', m=(e&&e.message)||''; alert('Could not use the microphone ('+n+'). '+(n==='NotAllowedError'?'The microphone is blocked for this site or app. ':n==='NotFoundError'?'No microphone was found. ':'')+m); }
 function startCall(room){
   if(CALL) return;
   if(!window.RTCPeerConnection||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ alert('This browser cannot make voice calls. Please update it or use Chrome or Safari.'); return; }

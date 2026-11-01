@@ -250,6 +250,8 @@
 </style>
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
+<script>document.documentElement.classList.add('ce-hold');setTimeout(function(){document.documentElement.classList.remove('ce-hold');},4500);</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 <script src="db-sync.js"></script>
@@ -4211,7 +4213,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   loadHeroProfile();
   const footerYearEl = document.getElementById('footerYear');
   if(footerYearEl) footerYearEl.textContent = new Date().getFullYear();
-  await onAuthReady(false); // checks for an existing Supabase Auth session and renders accordingly, no toast on plain page load
+  try{ await onAuthReady(false); }finally{ document.documentElement.classList.remove('ce-hold'); } // checks for an existing Supabase Auth session and renders accordingly, no toast on plain page load
   const params = new URLSearchParams(window.location.search);
   if(params.get('view') === 'attendance'){
     switchTab('attendance');

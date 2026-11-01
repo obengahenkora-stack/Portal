@@ -1575,7 +1575,7 @@ if ('serviceWorker' in navigator) {
 <script src="theme.js"></script>
 <script src="pw-tools.js"></script>
 <script>try{PW.pair("profileNewPasswordInput");}catch(e){}</script>
-<div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:flex;gap:10px;align-items:center;">
+<div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:none;gap:10px;align-items:center;">
   <span id="whoDot" style="width:10px;height:10px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
   <div style="min-width:0;"><div id="whoLine1" style="font-weight:700;">Not signed in</div><div id="whoLine2" style="color:var(--muted,#64748b);word-break:break-word;"></div></div>
 </div>
@@ -1584,7 +1584,12 @@ function _who(signed,l1,l2){
   var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
   d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
   a.textContent=l1; b.textContent=l2||'';
-  var w=document.getElementById('whoBar'); if(w) w.title=(l1+' '+(l2||'')).trim();
+  var w=document.getElementById('whoBar');
+  if(w){
+    w.title=(l1+' '+(l2||'')).trim();
+    if(signed){ clearTimeout(w._t); w.style.display='flex'; }
+    else if(!w._t){ w._t=setTimeout(function(){ w.style.display='flex'; },4000); } // don't flash "Not signed in" while the check runs
+  }
 }
 function updateWhoBar(){
   try{
@@ -1831,12 +1836,24 @@ function renderWelcome(){
   function set(id,v){ var e=$(id); if(e) e.textContent=v; }
   function stats(){
     var c=[]; try{ c=registeredStudentsCache||[]; }catch(e){}
+    var ids=['ahTotal','ahL100','ahL200','ahL300','ahL400','ahCivil','ahEnv','ahNew'];
+    if(!c.length){
+      // data not loaded yet: show the last known numbers (or a dash), never a misleading 0
+      var old=null; try{ old=JSON.parse(localStorage.getItem('ceAhStats')||'null'); }catch(e){}
+      ids.forEach(function(k){ set(k, old&&old[k]!=null ? old[k] : '–'); });
+      var on0=0; try{ on0=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){}
+      set('ahOnline', on0 || (old&&old.ahOnline!=null ? old.ahOnline : '–'));
+      return;
+    }
     var n=function(f){ return c.filter(f).length; }, wk=Date.now()-7*864e5;
-    set('ahTotal',c.length);
-    ['100','200','300','400'].forEach(function(l){ set('ahL'+l,n(function(s){ return String(s.level||'').replace(/\D/g,'')===l; })); });
-    set('ahCivil',n(function(s){ return /civil/i.test(s.department||''); }));
-    set('ahEnv',n(function(s){ return /env/i.test(s.department||''); }));
-    set('ahNew',n(function(s){ return s.linkedAt && new Date(s.linkedAt).getTime()>wk; }));
+    var st={};
+    st.ahTotal=c.length;
+    ['100','200','300','400'].forEach(function(l){ st['ahL'+l]=n(function(s){ return String(s.level||'').replace(/\D/g,'')===l; }); });
+    st.ahCivil=n(function(s){ return /civil/i.test(s.department||''); });
+    st.ahEnv=n(function(s){ return /env/i.test(s.department||''); });
+    st.ahNew=n(function(s){ return s.linkedAt && new Date(s.linkedAt).getTime()>wk; });
+    ids.forEach(function(k){ set(k,st[k]); });
+    try{ localStorage.setItem('ceAhStats',JSON.stringify(st)); }catch(e){}
     var on=0; try{ on=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){} set('ahOnline',on);
   }
   function init(){

@@ -1,0 +1,17 @@
+name: Cancel stuck deployments
+on:
+  workflow_dispatch:
+permissions:
+  pages: write
+  contents: read
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for sha in c46c2d9f23b5fcaff8863db4ed0b547e45190c92 83fa7362a39bb988a93f84f472d159e13c4aa2a0 36ce5ffdb326ac3e4dc35c170995345b94bbe235; do
+            gh api -X POST repos/${{ github.repository }}/pages/deployments/$sha/cancel || true
+          done

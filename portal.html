@@ -459,6 +459,7 @@
       <label>Gradebook (whole class, one column per assessment)</label>
       <div class="hint">Upload the class roster once under Attendance. Every assessment you upload then becomes a column here. Students on the roster with no score for an assessment show 0.</div>
       <select id="gradebookCourse" onchange="renderGradebook()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Select a course...</option></select>
+      <input type="search" id="gbSearch" placeholder="Search by index number or name..." oninput="gbFilter()" autocomplete="off" style="margin-bottom:10px">
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <button onclick="downloadGradebook()" style="margin-top:12px">Download Gradebook (Excel)</button>
       <div id="gbMsgTop"></div>
@@ -540,6 +541,20 @@
         <span id="deviceLockStatusText" style="font-size:0.9rem;font-weight:600;">Loading...</span>
       </div>
       <div id="deviceLockMsg"></div>
+    </div>
+
+    <div class="card hidden" id="pendingCard">
+      <label>Pending approvals (uploads from TAs)</label>
+      <div class="hint">Scores a TA uploads wait here. Students and the gradebook do not see them until you approve. Rejecting throws the upload away.</div>
+      <div id="pendingList"><div class="hint">Loading...</div></div>
+      <button class="secondary" onclick="loadPending()" style="margin-top:10px">Refresh</button>
+    </div>
+
+    <div class="card hidden" id="activityCard">
+      <label>Activity log</label>
+      <div class="hint">What TAs uploaded, added and changed, with the name and time. The newest is at the top.</div>
+      <div id="activityList" style="overflow-x:auto"><div class="hint">Loading...</div></div>
+      <button class="secondary" onclick="loadActivity()" style="margin-top:10px">Refresh</button>
     </div>
 
     <div class="card hidden" id="teamAccessCard">
@@ -1255,7 +1270,7 @@ async function testBackend(){
   }catch(e){ m.innerHTML='<span style="color:var(--danger);">Could not reach the back end: '+escapeHtml(e.message)+'</span>'; }
 }
 // ===== Per-person feature access (the owner ticks what each team member may use) =====
-var _PERM_SKIP={teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
+var _PERM_SKIP={pendingCard:1,activityCard:1,teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
 function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); return out; }
 var _PERM_ROLE_DEF={ ta:['takeAttendanceCard','qrCheckinCard','attendanceSummaryCard','reportsCard','lectureMaterialsCard'] };
 function _permDefaults(role){ if(_PERM_ROLE_DEF[role]) return _PERM_ROLE_DEF[role]; var no={backupCard:1,digestCard:1,rosterEditCard:1,allSessionsCard:1}; return _permTiles().map(function(t){return t.id;}).filter(function(i){return !no[i];}); }
@@ -1437,6 +1452,8 @@ var _TCH_TILES=[
  {g:'Teaching',id:'lectureMaterialsCard',t:'Lecture Hall',d:'Post materials and announcements to students.',i:'file',c:'t-go'},
  {g:'Teaching',id:'manageCoursesCard',t:'Manage Courses',d:'Courses students can report issues on.',i:'list'},
  {g:'Teaching',id:'reportsCard',t:'Issue Reports',d:'Read and reply to student reports.',i:'users'},
+ {g:'Administration',id:'pendingCard',t:'Pending Approvals',d:'Review TA uploads before students see them.',i:'check'},
+ {g:'Administration',id:'activityCard',t:'Activity Log',d:'What TAs uploaded, added and changed.',i:'list'},
  {g:'Administration',id:'teamAccessCard',t:'Team Access',d:'Who can sign in and their role.',i:'users'},
  {g:'Administration',id:'settingsCard',t:'Device Lock',d:'Student lookup device settings.',i:'db'},
  {g:'Administration',id:'backupCard',t:'Backup Data',d:'Download a copy of all results.',i:'upload'},
@@ -1600,6 +1617,7 @@ async function onAuthReady(showToast){
     document.getElementById('digestCard').classList.remove('hidden');
     document.getElementById('settingsCard').classList.remove('hidden');
     document.getElementById('teamAccessCard').classList.remove('hidden');
+    document.getElementById('pendingCard').classList.remove('hidden'); document.getElementById('activityCard').classList.remove('hidden'); try{ loadPending(); loadActivity(); }catch(e){}
     document.getElementById('attendanceCleanupCard').classList.remove('hidden');
     loadDeviceLockSetting();
     loadTeamMemberList();
@@ -1618,6 +1636,55 @@ async function onAuthReady(showToast){
 
 
 var _gb={cols:[],rows:[]};
+async function submitPending(newRecords, assessmentName){
+  const by={}; newRecords.forEach(r=>{ const c=r.course||'General'; (by[c]=by[c]||[]).push(r); });
+  const mxEl=document.getElementById('assessmentMax'); const mx=mxEl?parseFloat(mxEl.value):0;
+  let total=0;
+  for(const c of Object.keys(by)){
+    const j=await teamApi({action:'pending_add',course:c,assessmentName:assessmentName,max:mx>0?mx:null,records:by[c]});
+    if(!j||!j.ok) throw new Error((j&&j.error)||'Could not send for approval');
+    total+=j.count||by[c].length;
+  }
+  return total;
+}
+async function loadPending(){
+  const box=document.getElementById('pendingList'); if(!box) return;
+  try{
+    const j=await teamApi({action:'pending_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
+    const wait=(j.items||[]).filter(i=>i.status==='pending'), done=(j.items||[]).filter(i=>i.status!=='pending').slice(0,10);
+    try{ const t=_TCH_TILES.filter(x=>x.id==='pendingCard')[0]; if(t){ t.d=wait.length?(wait.length+' waiting for you'):'Review TA uploads before students see them.'; t.c=wait.length?'t-lab':''; attRenderTiles(); } }catch(e){}
+    let h='';
+    if(!wait.length) h+='<div class="hint">Nothing is waiting for approval.</div>';
+    wait.forEach(i=>{
+      h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">'
+       +'<div style="font-weight:700">'+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+'</div>'
+       +'<div class="hint">From '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+' &middot; '+i.count+' students'+(i.max?' &middot; out of '+escapeHtml(String(i.max)):'')+(i.top!==null&&i.top!==undefined?' &middot; scores '+escapeHtml(String(i.low))+' to '+escapeHtml(String(i.top)):'')+'</div>'
+       +'<table style="font-size:.8rem;margin:6px 0"><tr><th>Index #</th><th>Score</th></tr>'+(i.sample||[]).map(r=>'<tr><td>'+escapeHtml(r.indexNumber)+'</td><td>'+escapeHtml(r.score)+'</td></tr>').join('')+'</table>'
+       +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
+       +'<div style="display:flex;gap:10px;margin-top:8px"><button onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">Approve</button><button class="secondary" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div></div>';
+    });
+    if(done.length) h+='<div class="hint" style="margin-top:14px;font-weight:700">Recently decided</div>'+done.map(i=>'<div class="hint">'+(i.status==='approved'?'Approved':'Rejected')+': '+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+' from '+escapeHtml(i.byName||i.by)+'</div>').join('');
+    box.innerHTML=h;
+  }catch(e){ box.innerHTML='<div class="hint">Could not load. '+escapeHtml(e.message||'')+'</div>'; }
+}
+async function decidePending(id,decision){
+  if(decision==='reject' && !confirm('Reject this upload? It will be thrown away.')) return;
+  if(decision==='approve' && !confirm('Approve this upload? Students will see it.')) return;
+  const box=document.getElementById('pendingList'); if(box) box.insertAdjacentHTML('afterbegin','<div class="msg ok">Working...</div>');
+  const j=await teamApi({action:'pending_decide',id:id,decision:decision});
+  if(!j||!j.ok){ alert('Could not do that: '+((j&&j.error)||'try again')); }
+  await loadPending(); loadActivity();
+  if(j&&j.ok&&decision==='approve'){ try{ loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook(); }catch(e){} }
+}
+async function loadActivity(){
+  const box=document.getElementById('activityList'); if(!box) return;
+  try{
+    const j=await teamApi({action:'audit_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
+    const rows=j.items||[];
+    if(!rows.length){ box.innerHTML='<div class="hint">Nothing recorded yet.</div>'; return; }
+    box.innerHTML='<table style="font-size:.82rem"><tr><th>When</th><th>Who</th><th>What</th></tr>'+rows.map(r=>'<tr><td style="white-space:nowrap">'+escapeHtml(new Date(r.at).toLocaleString())+'</td><td>'+escapeHtml(r.byName||r.by)+'<div class="hint" style="margin:0">'+escapeHtml(r.role||'')+'</div></td><td>'+escapeHtml(r.detail||'')+(r.course?'<div class="hint" style="margin:0">'+escapeHtml(r.course)+'</div>':'')+'</td></tr>').join('')+'</table>';
+  }catch(e){ box.innerHTML='<div class="hint">Could not load. '+escapeHtml(e.message||'')+'</div>'; }
+}
 var _ea={groups:[]};
 async function loadEditAssess(){
   try{
@@ -1644,7 +1711,7 @@ async function eaPick(){
 }
 async function eaApply(){
   const msg=document.getElementById('eaMsg');
-  if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have permission to do this.</div>'; return; }
+  if(!canUploadScores() || currentUserRole==='ta'){ msg.innerHTML='<div class="msg err">TAs cannot change uploaded scores. Ask the owner.</div>'; return; }
   const i=document.getElementById('eaGroup').value; if(i===''){ msg.innerHTML='<div class="msg err">Pick an uploaded assessment first.</div>'; return; }
   const g=_ea.groups[i]; const newCourse=document.getElementById('eaCourse').value.trim(); const newName=document.getElementById('eaName').value.trim();
   const mxv=parseFloat(document.getElementById('eaMax').value);
@@ -1712,25 +1779,52 @@ async function renderGradebook(){
   const missing=cols.filter((c,i)=>!(numOf(maxes[i])>0));
   let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final (out of 40)</th></tr>';
   h+='<tr style="background:rgba(14,165,233,.08)"><td colspan="2"><b>Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:74px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
-  rows.forEach(r=>{ h+='<tr><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map(v=>'<td>'+escapeHtml(v)+'</td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
+  rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:70px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
   h+='</table>';
   if(missing.length) h+='<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>';
   const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
-  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label><button onclick="saveGradebookMarks()">Save marks</button></div><div id="gbMsg"></div>';
+  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label><button onclick="saveGradebookMarks()">Save changes</button></div><div id="gbMsg"></div>';
   box.innerHTML=h;
 }
+function gbFilter(){
+  const q=String((document.getElementById('gbSearch')||{}).value||'').trim().toLowerCase();
+  document.querySelectorAll('#gradebookTable tr[data-s]').forEach(tr=>{ tr.style.display=(!q||tr.getAttribute('data-s').indexOf(q)>=0)?'':'none'; });
+}
+function gbMark(el){ const ch=el.value.trim()!==el.getAttribute('data-o'); el.style.outline=ch?'2px solid #f59e0b':''; el.style.background=ch?'rgba(245,158,11,.18)':''; }
 async function saveGradebookMarks(){
   const msg=document.getElementById('gbMsg');
-  if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have permission to do this.</div>'; return; }
+  if(!canUploadScores() || currentUserRole==='ta'){ msg.innerHTML='<div class="msg err">TAs cannot change marks. Ask the owner.</div>'; return; }
   if(!_gb.course) return;
   msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
     const bin=await fetchBin(); bin.assessmentMax=bin.assessmentMax||{}; bin.finalShow=bin.finalShow||{};
     document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ const c=_gb.cols[parseInt(el.getAttribute('data-i'),10)]; const v=parseFloat(el.value); const k=amKey(_gb.course,c); if(v>0) bin.assessmentMax[k]=v; else delete bin.assessmentMax[k]; });
+    // changed scores only
+    const ch=[]; let bad='';
+    document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{
+      const v=el.value.trim(), o=el.getAttribute('data-o'); if(v===''||v===o) return;
+      const row=_gb.rows[parseInt(el.getAttribute('data-r'),10)], col=_gb.cols[parseInt(el.getAttribute('data-c'),10)];
+      if(!isFinite(parseFloat(v))){ bad='"'+v+'" is not a number ('+row.index+', '+col+').'; return; }
+      ch.push({row:row,col:col,v:v});
+    });
+    if(bad){ msg.innerHTML='<div class="msg err">'+escapeHtml(bad)+'</div>'; return; }
+    const over=ch.filter(c=>{ const mx=numOf(bin.assessmentMax[amKey(_gb.course,c.col)]); return mx>0 && parseFloat(c.v)>mx; });
+    if(over.length && !confirm(over.length+' score(s) are higher than the "marked out of" total (for example '+over[0].row.index+': '+over[0].v+'). Save anyway?')){ msg.innerHTML=''; return; }
+    if(ch.length){
+      const cb=lmBase(_gb.course).toLowerCase(); const recs=bin.records||[];
+      ch.forEach(c=>{
+        const idx=String(c.row.index||'').toLowerCase();
+        const hit=recs.find(r=>String(r.indexNumber||'').toLowerCase()===idx && lmBase(r.course||'General').toLowerCase()===cb && String(r.assessmentName||'Untitled')===c.col);
+        if(hit){ hit.score=c.v; }
+        else { const ref=recs.find(r=>lmBase(r.course||'General').toLowerCase()===cb && String(r.assessmentName||'Untitled')===c.col); recs.push({indexNumber:c.row.index,score:c.v,assessmentName:c.col,course:ref?ref.course:_gb.course,level:''}); }
+      });
+      bin.records=recs;
+    }
+    _gb.savedChanged=ch.length;
     bin.finalShow[String(_gb.course).trim().toLowerCase()]=!!document.getElementById('gbShowFinal').checked;
     await saveBin(bin);
     await renderGradebook();
-    const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.</div>';
+    const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.'+(_gb.savedChanged?' '+_gb.savedChanged+' score(s) changed. Everything else is untouched.':'')+'</div>';
   }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
 function downloadGradebook(){
@@ -1843,6 +1937,11 @@ async function uploadScores(){
   msg.innerHTML = '<div class="msg ok">Uploading...</div>';
 
   try{
+    if(currentUserRole === 'ta'){
+      const _n = await submitPending(newRecords, assessmentName);
+      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it.</div>`;
+      return;
+    }
     const existing = await fetchAllRecords();
     const _guard = courseGuard(existing, newRecords);
     if(_guard) throw new Error(_guard);
@@ -2317,6 +2416,11 @@ async function uploadScoresFromFile(){
   msg.innerHTML = '<div class="msg ok">Uploading...</div>';
 
   try{
+    if(currentUserRole === 'ta'){
+      const _n = await submitPending(newRecords, assessmentName);
+      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it.</div>`;
+      return;
+    }
     const existing = await fetchAllRecords();
     const _guard = courseGuard(existing, newRecords);
     if(_guard) throw new Error(_guard);
@@ -2368,6 +2472,7 @@ async function deleteCourse(){
   msg.innerHTML = '<div class="msg ok">Deleting...</div>';
 
   try{
+    if(currentUserRole==='ta') throw new Error('TAs cannot delete scores. Ask the owner.');
     if(!isAdmin() && !visibleCourses([course]).length) throw new Error('You are not assigned to this course.');
     const existing = await fetchAllRecords();
     const remaining = existing.filter(r => (r.course || 'General') !== course);

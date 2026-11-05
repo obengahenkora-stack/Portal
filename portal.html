@@ -823,12 +823,12 @@
     <div class="card hidden" id="signupRosterCard">
       <label>Class List from Sign-ups</label>
       <div class="hint">Builds a class list from students who registered on the site. Pick a level and class and it fills itself. Run it again later to pick up late registrants.</div>
-      <label>Course name (this is the name used in attendance)</label>
-      <input type="text" id="srCourse" placeholder="e.g. CIVL 101 A">
+      <label>Course name (A, B or C is added for you)</label>
+      <input type="text" id="srCourse" placeholder="e.g. CIVL 101">
       <label>Level</label>
       <select id="srLevel"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
       <label>Class group</label>
-      <select id="srGroup"><option value="A">Class A</option><option value="B">Class B</option><option value="C">Class C</option><option value="">Everyone at this level</option></select>
+      <select id="srGroup"><option value="SPLIT">Split into A, B and C (separate lists)</option><option value="A">Class A</option><option value="B">Class B</option><option value="C">Class C</option><option value="">Everyone at this level</option></select>
       <button id="srBtn" onclick="buildRosterFromSignups()">Build Class List</button>
       <div id="srMsg"></div>
     </div>
@@ -3648,19 +3648,28 @@ async function buildRosterFromSignups(){
   const course=document.getElementById('srCourse').value.trim();
   const level=document.getElementById('srLevel').value;
   const group=document.getElementById('srGroup').value;
-  if(!course){ msg.innerHTML='<div class="msg err">Please enter a course name.</div>'; return; }
+  if(!course){ msg.innerHTML='<div class="msg err">Please enter a course name, for example CIVL 101.</div>'; return; }
   btn.disabled=true; msg.innerHTML='<div class="msg ok">Finding students...</div>';
   try{
-    const j=await teamApi({action:'stu_class',level:level,group:group});
+    const split=group==='SPLIT';
+    const j=await teamApi({action:'stu_class',level:level,group:split?'':group});
     if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
-    const roster=normRoster((j.rows||[]).map(r=>({indexNumber:r.index_number,name:r.name||''})));
-    if(!roster.length){ msg.innerHTML='<div class="msg err">No registered students found for Level '+escapeHtml(level)+(group?' Class '+escapeHtml(group):'')+' yet.</div>'; return; }
+    const rows=j.rows||[];
+    if(!rows.length){ msg.innerHTML='<div class="msg err">No registered students found for Level '+escapeHtml(level)+' yet.</div>'; return; }
     const data=await fetchSupabaseData();
     data.rosters=data.rosters||{};
-    data.rosters[course]=roster;
+    const mk=list=>normRoster(list.map(r=>({indexNumber:r.index_number,name:r.name||''})));
+    let out=[], names=[];
+    if(split){
+      ['A','B','C'].forEach(g=>{ const r=mk(rows.filter(x=>String(x.class_group||'').toUpperCase()===g)); const nm=course+' '+g; if(r.length){ data.rosters[nm]=r; names.push(nm); out.push('Class '+g+': '+r.length); } else out.push('Class '+g+': none yet'); });
+      const none=rows.filter(x=>!x.class_group).length; if(none) out.push(none+' student(s) have not picked a class yet');
+    }else{
+      const r=mk(rows); data.rosters[course]=r; names.push(course); out.push(course+': '+r.length);
+    }
+    if(!names.length){ msg.innerHTML='<div class="msg err">Nobody has picked a class yet. '+escapeHtml(out.join(' · '))+'</div>'; return; }
     await saveSupabaseData(data);
-    await grantMeCourse(course);
-    msg.innerHTML='<div class="msg ok">Saved "'+escapeHtml(course)+'" with '+roster.length+' student(s). Open Take Attendance and choose it.</div>';
+    for(const n of names) await grantMeCourse(n);
+    msg.innerHTML='<div class="msg ok">Saved. '+escapeHtml(out.join(' · '))+'. Open Take Attendance and choose the list you want.</div>';
     loadAttendanceCourseOptions();
   }catch(e){
     msg.innerHTML='<div class="msg err">Could not build the list: '+escapeHtml(e.message)+'</div>';

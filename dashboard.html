@@ -354,6 +354,13 @@
     </select>
     <label>Your Phone Number</label>
     <input type="text" id="linkPhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
+    <label>Your Class Group (Level 100 only)</label>
+    <select id="linkClassInput">
+      <option value="">Select your class...</option>
+      <option value="A">Class A</option>
+      <option value="B">Class B</option>
+      <option value="C">Class C</option>
+    </select>
     <button onclick="linkIndexNumber()">Link Account</button>
     <div id="linkIndexMsg"></div>
   </div>
@@ -438,6 +445,13 @@
     </select>
     <label>Your Phone Number</label>
     <input type="text" id="profilePhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
+    <label>Your Class Group (Level 100 only)</label>
+    <select id="profileClassInput">
+      <option value="">Select your class...</option>
+      <option value="A">Class A</option>
+      <option value="B">Class B</option>
+      <option value="C">Class C</option>
+    </select>
     <button onclick="saveProfileDetails()">Save Details</button>
     <div id="profileDetailsMsg"></div>
 
@@ -793,7 +807,7 @@ async function fetchBin(){
 // ===== Student Accounts Database Table (replaces the old shared-JSON-file approach) =====
 
 function dbRowToRecord(row){
-  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
+  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', classGroup: row.class_group || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
 }
 
 async function _stu(payload){
@@ -810,7 +824,7 @@ async function dbFindStudentByEmail(email){
   return j.row ? dbRowToRecord(j.row) : null;
 }
 async function dbUpsertStudent(record){
-  await _stu({action:'stu_save_me', record:{ index_number: record.indexNumber, name: record.name, level: record.level, department: record.department||null, gender: record.gender||null, phone: record.phone||null, linked_at: record.linkedAt }});
+  await _stu({action:'stu_save_me', record:{ index_number: record.indexNumber, name: record.name, level: record.level, department: record.department||null, gender: record.gender||null, phone: record.phone||null, class_group: record.classGroup||null, linked_at: record.linkedAt }});
   return true;
 }
 async function dbMigrateLevel(fromLevel, toLevel){
@@ -932,6 +946,7 @@ function toggleProfileSection(){
     document.getElementById('profileDeptInput').value = studentCurrentAccount.department || '';
     document.getElementById('profileGenderInput').value = studentCurrentAccount.gender || '';
     document.getElementById('profilePhoneInput').value = studentCurrentAccount.phone || '';
+    document.getElementById('profileClassInput').value = studentCurrentAccount.classGroup || '';
     document.getElementById('profileNewEmailInput').value = '';
     document.getElementById('profileNewPasswordInput').value = ''; PW.reset('profileNewPasswordInput');
   }
@@ -944,6 +959,7 @@ async function saveProfileDetails(){
   const department = document.getElementById('profileDeptInput').value;
   const gender = document.getElementById('profileGenderInput').value;
   const phone = normPhone(document.getElementById('profilePhoneInput').value);
+  const classGroup = document.getElementById('profileClassInput').value;
   const msg = document.getElementById('profileDetailsMsg');
 
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
@@ -952,10 +968,11 @@ async function saveProfileDetails(){
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
+  if(level==='100' && !classGroup){ msg.innerHTML = '<div class="msg err">Please select your class (A, B or C).</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, classGroup, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
     await dbUpsertStudent(record);
     studentCurrentAccount = record; renderWelcome();
 
@@ -1252,6 +1269,7 @@ async function linkIndexNumber(){
   const department = document.getElementById('linkDeptInput').value;
   const gender = document.getElementById('linkGenderInput').value;
   const phone = normPhone(document.getElementById('linkPhoneInput').value);
+  const classGroup = document.getElementById('linkClassInput').value;
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
@@ -1259,11 +1277,12 @@ async function linkIndexNumber(){
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
+  if(level==='100' && !classGroup){ msg.innerHTML = '<div class="msg err">Please select your class (A, B or C).</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
   try{
-    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, hasDeptCol: true, linkedAt: new Date().toISOString() };
+    const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, classGroup, hasDeptCol: true, linkedAt: new Date().toISOString() };
     await dbUpsertStudent(record);
     studentCurrentAccount = record; renderWelcome();
 

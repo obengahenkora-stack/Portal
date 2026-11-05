@@ -412,8 +412,13 @@
     </div>
 
     <div class="card hidden" id="uploadCard">
+      <label>Course (the ones already created for attendance)</label>
+      <select id="uploadCourse" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Use the course written in the file</option></select>
+      <div class="hint" style="margin-top:-6px">Pick a course here and every score in the file or paste goes to that exact course, so it matches the attendance and class list. No need to edit the file.</div>
       <label>Assessment Name (e.g. "Mid-Term 2026")</label>
       <input type="text" id="assessmentName" placeholder="Assessment name">
+      <label>Marked out of (e.g. 10, 20)</label>
+      <input type="number" id="assessmentMax" min="1" step="any" placeholder="Total marks for this assessment">
 
       <label>Upload Assessment Sheet (.csv)</label>
       <div class="hint">Reads the official sheet format automatically — columns IndexNumber, Name, Level, CourseCode, ClassScore. Name is ignored; Level, Course, and Score are kept.</div>
@@ -456,6 +461,21 @@
       <select id="gradebookCourse" onchange="renderGradebook()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Select a course...</option></select>
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <button onclick="downloadGradebook()" style="margin-top:12px">Download Gradebook (Excel)</button>
+      <div id="gbMsgTop"></div>
+    </div>
+
+    <div class="card hidden" id="editAssessCard">
+      <label>Fix an uploaded assessment (course, name, marks)</label>
+      <div class="hint">Pick something you already uploaded, change the course or the name, and apply. It updates every student's record in one go, with no re-uploading. Classes with groups A and B appear as one course.</div>
+      <select id="eaGroup" onchange="eaPick()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:12px;background:rgba(0,0,0,0.2);color:var(--ink);"></select>
+      <label>Course</label>
+      <select id="eaCourse" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:12px;background:rgba(0,0,0,0.2);color:var(--ink);"></select>
+      <label>Assessment name</label>
+      <input type="text" id="eaName" placeholder="Assessment name">
+      <label>Marked out of</label>
+      <input type="number" id="eaMax" min="0" step="any" placeholder="Total marks">
+      <button onclick="eaApply()">Apply to all records</button>
+      <div id="eaMsg"></div>
     </div>
 
     <div class="card hidden" id="exportScoresCard">
@@ -1562,7 +1582,7 @@ async function onAuthReady(showToast){
     document.getElementById('uploadCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
     document.getElementById('exportScoresCard').classList.remove('hidden');
-    document.getElementById('gradebookCard').classList.remove('hidden'); loadGradebookCourses();
+    document.getElementById('gradebookCard').classList.remove('hidden'); document.getElementById('editAssessCard').classList.remove('hidden'); loadGradebookCourses(); loadUploadCourses(); loadEditAssess();
     document.getElementById('fillSheetCard').classList.remove('hidden');
     document.getElementById('transferScoresCard').classList.remove('hidden');
     loadCourseManageList();
@@ -1597,12 +1617,77 @@ async function onAuthReady(showToast){
 
 
 var _gb={cols:[],rows:[]};
+var _ea={groups:[]};
+async function loadEditAssess(){
+  try{
+    const sel=document.getElementById('eaGroup'); if(!sel) return;
+    const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
+    const map={}; recs.forEach(r=>{ const c=r.course||'General', a=r.assessmentName||'Untitled', k=c+'||'+a; (map[k]=map[k]||{course:c,name:a,n:0}).n++; });
+    _ea.groups=Object.keys(map).sort().map(k=>map[k]);
+    const keep=sel.value;
+    sel.innerHTML='<option value="">Select an uploaded assessment...</option>'+_ea.groups.map((g,i)=>'<option value="'+i+'">'+escapeHtml(g.course)+' | '+escapeHtml(g.name)+' ('+g.n+' students)</option>').join('');
+    if(keep!=='' && _ea.groups[keep]) sel.value=keep;
+    const names=Object.keys(data.rosters||{}).concat(data.courseList||[], recs.map(r=>r.course));
+    const cs=document.getElementById('eaCourse'); const cur=cs.value;
+    const list=courseBases(names); cs.innerHTML=list.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join('');
+    if(cur&&list.indexOf(cur)>=0) cs.value=cur;
+  }catch(e){}
+}
+async function eaPick(){
+  const i=document.getElementById('eaGroup').value; if(i===''){ return; }
+  const g=_ea.groups[i]; if(!g) return;
+  const cs=document.getElementById('eaCourse'); const b=lmBase(g.course);
+  if(![...cs.options].some(o=>o.value===b)){ const o=document.createElement('option'); o.value=b; o.textContent=b; cs.appendChild(o); }
+  cs.value=b; document.getElementById('eaName').value=g.name;
+  try{ const bin=await fetchBin(); const mx=(bin.assessmentMax||{})[amKey(g.course,g.name)]; document.getElementById('eaMax').value=mx||''; }catch(e){}
+}
+async function eaApply(){
+  const msg=document.getElementById('eaMsg');
+  if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have permission to do this.</div>'; return; }
+  const i=document.getElementById('eaGroup').value; if(i===''){ msg.innerHTML='<div class="msg err">Pick an uploaded assessment first.</div>'; return; }
+  const g=_ea.groups[i]; const newCourse=document.getElementById('eaCourse').value.trim(); const newName=document.getElementById('eaName').value.trim();
+  const mxv=parseFloat(document.getElementById('eaMax').value);
+  if(!newCourse||!newName){ msg.innerHTML='<div class="msg err">Course and name are needed.</div>'; return; }
+  if(!confirm('Change '+g.n+' record(s) from "'+g.course+' | '+g.name+'" to "'+newCourse+' | '+newName+'"?')) return;
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    const bin=await fetchBin(); const recs=bin.records||[];
+    const same=(r)=>String(r.course||'General')===g.course && String(r.assessmentName||'Untitled')===g.name;
+    const moved=recs.filter(same).map(r=>Object.assign({},r,{course:newCourse,assessmentName:newName}));
+    const k=r=>[String(r.indexNumber||'').toLowerCase(),String(r.course||'General').toLowerCase(),String(r.assessmentName||'Untitled').toLowerCase()].join('|');
+    const mk=new Set(moved.map(k));
+    bin.records=recs.filter(r=>!same(r)&&!mk.has(k(r))).concat(moved);
+    bin.assessmentMax=bin.assessmentMax||{};
+    const oldK=amKey(g.course,g.name), newK=amKey(newCourse,newName);
+    if(oldK!==newK) delete bin.assessmentMax[oldK];
+    if(mxv>0) bin.assessmentMax[newK]=mxv; else if(oldK!==newK && (bin.assessmentMax[oldK]===undefined)) { /* nothing to carry */ }
+    await saveBin(bin);
+    msg.innerHTML='<div class="msg ok">Done. '+moved.length+' record(s) now sit under "'+escapeHtml(newCourse)+' | '+escapeHtml(newName)+'".</div>';
+    document.getElementById('eaGroup').value='';
+    loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook();
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
+}
+function courseBases(names){
+  const seen={}, out=[];
+  (names||[]).forEach(c=>{ if(!c) return; if(!isOwner() && /^\[TEST\]/i.test(String(c))) return; if(!lmAllowed(c)) return; const b=lmBase(c); const k=b.toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(b); } });
+  return out.sort();
+}
+async function loadUploadCourses(){
+  try{
+    const sel=document.getElementById('uploadCourse'); if(!sel) return;
+    const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
+    const names=Object.keys(data.rosters||{}).concat(data.courseList||[], recs.map(r=>r.course));
+    const list=courseBases(names); const cur=sel.value;
+    sel.innerHTML='<option value="">Use the course written in the file</option>'+list.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join('');
+    if(cur&&list.indexOf(cur)>=0) sel.value=cur;
+  }catch(e){}
+}
 async function loadGradebookCourses(){
   try{
     const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
-    const set=new Set(recs.map(r=>r.course||'General')); visibleCourses(Object.keys(data.rosters||{})).forEach(c=>set.add(c));
+    const set=courseBases(recs.map(r=>r.course||'General').concat(Object.keys(data.rosters||{})));
     const sel=document.getElementById('gradebookCourse'), cur=sel.value;
-    sel.innerHTML='<option value="">Select a course...</option>'+[...set].sort().map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    sel.innerHTML='<option value="">Select a course...</option>'+set.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     sel.value=cur;
   }catch(e){}
 }
@@ -1610,35 +1695,60 @@ async function renderGradebook(){
   const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
   if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; return; }
   box.innerHTML='<div class="empty">Loading...</div>';
-  const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
-  const cr=recs.filter(r=>(r.course||'General')===course);
+  const [recs,data,bin]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData(),fetchBin()]);
+  const cb=lmBase(course).toLowerCase();
+  const cr=recs.filter(r=>lmBase(r.course||'General').toLowerCase()===cb);
   const cols=[]; cr.forEach(r=>{ const a=r.assessmentName||'Untitled'; if(cols.indexOf(a)<0) cols.push(a); });
-  const roster=(data.rosters||{})[course]||[];
+  let roster=[]; Object.keys(data.rosters||{}).forEach(k=>{ if(lmBase(k).toLowerCase()===cb) roster=roster.concat(data.rosters[k]||[]); });
   const stu={}; roster.forEach(s=>{ stu[(s.indexNumber||'').toLowerCase()]={index:s.indexNumber,name:s.name||'',scores:{}}; });
   cr.forEach(r=>{ const k=(r.indexNumber||'').toLowerCase(); if(!stu[k]) stu[k]={index:r.indexNumber,name:'',scores:{}}; stu[k].scores[r.assessmentName||'Untitled']=r.score; });
-  const rows=Object.keys(stu).sort().map(k=>{ const o=stu[k]; return {index:o.index,name:o.name,vals:cols.map(c=>o.scores.hasOwnProperty(c)?o.scores[c]:'0')}; });
-  _gb={cols:cols,rows:rows,course:course};
+  const am=bin.assessmentMax||{};
+  const maxes=cols.map(c=>am[amKey(course,c)]||'');
+  const totalMax=maxes.reduce((t,v)=>t+numOf(v),0);
+  const rows=Object.keys(stu).sort().map(k=>{ const o=stu[k]; const vals=cols.map(c=>o.scores.hasOwnProperty(c)?o.scores[c]:'0'); const f=finalOf(course,o.scores,cols,bin); return {index:o.index,name:o.name,vals:vals,total:f?f.score:'',final:f?f.final:''}; });
+  _gb={cols:cols,rows:rows,course:course,maxes:maxes,totalMax:totalMax};
   if(!rows.length){ box.innerHTML='<div class="empty">No students or scores for this course yet.</div>'; return; }
-  let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'</tr>';
-  rows.forEach(r=>{ h+='<tr><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map(v=>'<td>'+escapeHtml(v)+'</td>').join('')+'</tr>'; });
-  box.innerHTML=h+'</table>';
+  const missing=cols.filter((c,i)=>!(numOf(maxes[i])>0));
+  let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final (out of 40)</th></tr>';
+  h+='<tr style="background:rgba(14,165,233,.08)"><td colspan="2"><b>Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:74px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
+  rows.forEach(r=>{ h+='<tr><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map(v=>'<td>'+escapeHtml(v)+'</td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
+  h+='</table>';
+  if(missing.length) h+='<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>';
+  const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
+  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label><button onclick="saveGradebookMarks()">Save marks</button></div><div id="gbMsg"></div>';
+  box.innerHTML=h;
+}
+async function saveGradebookMarks(){
+  const msg=document.getElementById('gbMsg');
+  if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have permission to do this.</div>'; return; }
+  if(!_gb.course) return;
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    const bin=await fetchBin(); bin.assessmentMax=bin.assessmentMax||{}; bin.finalShow=bin.finalShow||{};
+    document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ const c=_gb.cols[parseInt(el.getAttribute('data-i'),10)]; const v=parseFloat(el.value); const k=amKey(_gb.course,c); if(v>0) bin.assessmentMax[k]=v; else delete bin.assessmentMax[k]; });
+    bin.finalShow[String(_gb.course).trim().toLowerCase()]=!!document.getElementById('gbShowFinal').checked;
+    await saveBin(bin);
+    await renderGradebook();
+    const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.</div>';
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
 function downloadGradebook(){
   if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
-  const aoa=[['IndexNumber','Name'].concat(_gb.cols)].concat(_gb.rows.map(r=>[r.index,r.name].concat(r.vals)));
+  const aoa=[['IndexNumber','Name'].concat(_gb.cols,['Total','Final (out of 40)'])];
+  aoa.push(['Marked out of',''].concat(_gb.maxes,[_gb.totalMax||'',40]));
+  _gb.rows.forEach(r=>aoa.push([r.index,r.name].concat(r.vals,[r.total,r.final])));
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'Gradebook');
   XLSX.writeFile(wb,(_gb.course||'class')+'-gradebook-'+new Date().toISOString().split('T')[0]+'.xlsx');
 }
 async function fetchVisibleRecords(){
   const all = await fetchAllRecords();
   if(isAdmin() || !Array.isArray(currentUserCourses)) return all;
-  const ok = new Set(visibleCourses([...new Set(all.map(r => r.course || 'General'))]).map(c => String(c).toLowerCase()));
-  return all.filter(r => ok.has(String(r.course || 'General').toLowerCase()));
+  return all.filter(r => { const c = r.course || 'General'; return lmAllowed(c) && (isOwner() || !/^\[TEST\]/i.test(String(c))); });
 }
 function courseGuard(existing, newRecords){
   if(isAdmin() || !Array.isArray(currentUserCourses)) return '';
   const known = new Set(existing.map(r => String(r.course || 'General').toLowerCase()));
-  const bad = [...new Set(newRecords.map(r => r.course || 'General'))].filter(c => known.has(String(c).toLowerCase()) && !visibleCourses([c]).length);
+  const bad = [...new Set(newRecords.map(r => r.course || 'General'))].filter(c => known.has(String(c).toLowerCase()) && !lmAllowed(c));
   return bad.length ? 'You are not assigned to: ' + bad.join(', ') + '. Ask the owner to assign it to you.' : '';
 }
 async function fetchAllRecords(){
@@ -1646,9 +1756,18 @@ async function fetchAllRecords(){
   return bin.records || [];
 }
 
-async function saveAllRecords(records){
+function amKey(c,a){ return String(lmBase(c||'General')).trim().toLowerCase()+'|'+String(a||'Untitled').trim().toLowerCase(); }
+function numOf(v){ const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
+function finalOf(course,scores,cols,bin){
+  const am=(bin&&bin.assessmentMax)||{}; let s=0,m=0;
+  cols.forEach(a=>{ const mx=numOf(am[amKey(course,a)]); if(mx>0){ m+=mx; s+=numOf(scores[a]); } });
+  return m>0?{score:Math.round(s*100)/100,max:m,final:Math.round(s/m*4000)/100}:null;
+}
+function _mxArg(name,recs){ const el=document.getElementById('assessmentMax'); const v=el?parseFloat(el.value):NaN; if(!(v>0)) return null; return {name:name,max:v,courses:[...new Set(recs.map(r=>lmBase(r.course||'General')))]}; }
+async function saveAllRecords(records,mx){
   const bin = await fetchBin();
   bin.records = records;
+  if(mx && mx.max>0){ bin.assessmentMax = bin.assessmentMax || {}; mx.courses.forEach(c=>{ bin.assessmentMax[amKey(c,mx.name)] = mx.max; }); }
   return saveBin(bin);
 }
 
@@ -1705,8 +1824,11 @@ async function uploadScores(){
   const newRecords = [];
   for(const line of lines){
     const parts = line.split(',').map(p=>p.trim());
-    if(parts.length < 3) continue;
-    const [indexNumber, course, score] = parts;
+    const _pc = ((document.getElementById('uploadCourse')||{}).value || '').trim();
+    let indexNumber, course, score;
+    if(parts.length >= 3){ indexNumber = parts[0]; course = _pc || parts[1]; score = parts[2]; }
+    else if(parts.length === 2 && _pc){ indexNumber = parts[0]; course = _pc; score = parts[1]; }
+    else continue;
     if(!indexNumber) continue;
     newRecords.push({ indexNumber, score, assessmentName, course: course || 'General' });
   }
@@ -1726,11 +1848,11 @@ async function uploadScores(){
     const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
     const _n=new Set(newRecords.map(_k));
     const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
-    await saveAllRecords(combined);
+    await saveAllRecords(combined, _mxArg(assessmentName,newRecords));
     for(const _c of [...new Set(newRecords.map(r => r.course || 'General'))]) await grantMeCourse(_c);
     msg.innerHTML = `<div class="msg ok">Uploaded ${newRecords.length} record(s) for "${assessmentName}". Total now: ${combined.length}.</div>`;
     document.getElementById('csvInput').value = '';
-    loadRecords(); loadGradebookCourses(); renderGradebook();
+    loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
   }finally{
@@ -1808,9 +1930,9 @@ async function loadFillAssessmentOptions(){
   }
   try{
     const records = await fetchVisibleRecords();
-    const assessments = [...new Set(records.filter(r => r.course === course).map(r => r.assessmentName).filter(Boolean))].sort();
+    const assessments = [...new Set(records.filter(r => lmBase(r.course||'General').toLowerCase() === lmBase(course).toLowerCase()).map(r => r.assessmentName).filter(Boolean))].sort();
     select.innerHTML = assessments.length
-      ? assessments.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('')
+      ? '<option value="__FINAL40__">Final (out of 40), all assessments combined</option>' + assessments.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('')
       : '<option value="">No assessments found for this course</option>';
   }catch(e){
     select.innerHTML = '<option value="">Could not load assessments</option>';
@@ -1821,7 +1943,7 @@ async function loadFillAssessmentOptions(){
 async function loadFillCourseOptions(){
   try{
     const records = await fetchVisibleRecords();
-    const courses = [...new Set(records.map(r => r.course).filter(Boolean))].sort();
+    const courses = courseBases(records.map(r => r.course).filter(Boolean));
     const select = document.getElementById('fillCourseSelect');
     if(select){
       select.innerHTML = '<option value="">Select course...</option>' + courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
@@ -1856,8 +1978,14 @@ async function fillOfficialSheet(){
     const records = await fetchVisibleRecords();
     const scoreMap = {};
     records
-      .filter(r => r.course === course && r.assessmentName === assessmentName)
+      .filter(r => lmBase(r.course||'General').toLowerCase() === lmBase(course).toLowerCase() && r.assessmentName === assessmentName)
       .forEach(r => { scoreMap[(r.indexNumber || '').toLowerCase()] = r.score; });
+    if(assessmentName === '__FINAL40__'){
+      const _bin = await fetchBin(); const _cr = records.filter(r => lmBase(r.course||'General').toLowerCase() === lmBase(course).toLowerCase());
+      const _cols = [...new Set(_cr.map(r => r.assessmentName || 'Untitled'))]; const _by = {};
+      _cr.forEach(r => { const k = (r.indexNumber || '').toLowerCase(); (_by[k] = _by[k] || {})[r.assessmentName || 'Untitled'] = r.score; });
+      Object.keys(_by).forEach(k => { const f = finalOf(course, _by[k], _cols, _bin); if(f) scoreMap[k] = f.final; });
+    }
 
     const file = fileInput.files[0];
     const isExcel = /\.(xlsx|xls)$/i.test(file.name);
@@ -2159,7 +2287,8 @@ async function uploadScoresFromFile(){
   const courseCol = headers.indexOf('coursecode');
   const scoreCol = headers.indexOf('classscore');
 
-  if(idxCol === -1 || courseCol === -1 || scoreCol === -1){
+  const _pickedC = ((document.getElementById('uploadCourse')||{}).value || '').trim();
+  if(idxCol === -1 || (courseCol === -1 && !_pickedC) || scoreCol === -1){
     msg.innerHTML = '<div class="msg err">Could not find expected columns (IndexNumber, CourseCode, ClassScore) in this file.</div>';
     return;
   }
@@ -2170,7 +2299,7 @@ async function uploadScoresFromFile(){
     const cols = parseCsvLine(lines[i]);
     const indexNumber = (cols[idxCol] || '').trim();
     const level = levelCol !== -1 ? (cols[levelCol] || '').trim() : '';
-    const course = (cols[courseCol] || '').trim() || 'General';
+    const course = _pickedC || (courseCol !== -1 ? (cols[courseCol] || '').trim() : '') || 'General';
     const score = (cols[scoreCol] || '').trim();
     if(!indexNumber) continue;
     if(!score){ skippedEmpty++; continue; } // no score yet for this student
@@ -2193,14 +2322,14 @@ async function uploadScoresFromFile(){
     const _k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
     const _n=new Set(newRecords.map(_k));
     const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
-    await saveAllRecords(combined);
+    await saveAllRecords(combined, _mxArg(assessmentName,newRecords));
     for(const _c of [...new Set(newRecords.map(r => r.course || 'General'))]) await grantMeCourse(_c);
     let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}".`;
     if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
     note += ` Total now: ${combined.length}.`;
     msg.innerHTML = `<div class="msg ok">${note}</div>`;
     fileInput.value = '';
-    loadRecords(); loadGradebookCourses(); renderGradebook();
+    loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
   }finally{

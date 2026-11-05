@@ -1352,6 +1352,14 @@ async function loadDashboard(skipLock){
       });
       html += '</table>';
       scoresContainer.innerHTML = html;
+      try{
+        const _am=jsonBinData.assessmentMax||{}, _fs=jsonBinData.finalShow||{}, _by={};
+        const _bs=n=>{ const t=String(n||'').trim(); const m=t.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():t; };
+        _rows.forEach(r=>{ const c=_bs(r.course||'General'); (_by[c]=_by[c]||{})[r.assessmentName||'Untitled']=r.score; });
+        let _fh='';
+        Object.keys(_by).sort().forEach(c=>{ const ck=String(c).trim().toLowerCase(); if(!_fs[ck]) return; let s=0,m=0; Object.keys(_by[c]).forEach(a=>{ const mx=parseFloat(_am[ck+'|'+String(a).trim().toLowerCase()]); if(mx>0){ m+=mx; const n=parseFloat(String(_by[c][a]).replace(/[^0-9.\-]/g,'')); s+=isFinite(n)?n:0; } }); if(m>0) _fh+='<tr><td>'+escapeHtml(c)+'</td><td>'+(Math.round(s*100)/100)+' / '+m+'</td><td><b>'+(Math.round(s/m*4000)/100)+'</b> / 40</td></tr>'; });
+        if(_fh) scoresContainer.innerHTML += '<div style="margin-top:16px;font-weight:700;">Continuous assessment (out of 40)</div><table><tr><th>Course</th><th>Total</th><th>Final</th></tr>'+_fh+'</table>';
+      }catch(e){}
     }
 
     // ----- Attendance -----

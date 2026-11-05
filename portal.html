@@ -820,6 +820,19 @@
       <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
     </div>
 
+    <div class="card hidden" id="signupRosterCard">
+      <label>Class List from Sign-ups</label>
+      <div class="hint">Builds a class list from students who registered on the site. Pick a level and class and it fills itself. Run it again later to pick up late registrants.</div>
+      <label>Course name (this is the name used in attendance)</label>
+      <input type="text" id="srCourse" placeholder="e.g. CIVL 101 A">
+      <label>Level</label>
+      <select id="srLevel"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <label>Class group</label>
+      <select id="srGroup"><option value="A">Class A</option><option value="B">Class B</option><option value="C">Class C</option><option value="">Everyone at this level</option></select>
+      <button id="srBtn" onclick="buildRosterFromSignups()">Build Class List</button>
+      <div id="srMsg"></div>
+    </div>
+
     <div class="card hidden" id="rosterUploadCard">
       <label>Upload Class Roster (once per course)</label>
       <div class="hint">Uploading again for the same course replaces its roster.</div>
@@ -1432,6 +1445,7 @@ var _ATT_TILES=[
  {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
  {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
  {g:'Records',id:'attendanceEditCard',t:'Review & Edit',d:'Fix a saved session before it becomes final.',i:'edit'},
+ {g:'Records',id:'signupRosterCard',t:'Class List from Sign-ups',d:'Pick a level and class; registered students fill in.',i:'users'},
  {g:'Records',id:'rosterUploadCard',t:'Upload Class List',d:'Add a course list from Excel or CSV.',i:'upload'},
  {g:'Records',id:'attPdfCard',t:'Import from PDF',d:'Bring in attendance from a PDF sheet.',i:'file'},
  {g:'Records',id:'attendanceDeleteCard',t:'Delete a Session',d:'Remove one date for a course.',i:'trash',c:'t-danger'},
@@ -1608,6 +1622,7 @@ async function onAuthReady(showToast){
     loadFillCourseOptions();
 
     document.getElementById('rosterUploadCard').classList.remove('hidden');
+    document.getElementById('signupRosterCard').classList.remove('hidden');
   }
 
   if(isAdmin()){
@@ -3625,6 +3640,31 @@ async function loadAttendanceSummaryCourseOptions(){
     const summarySelect = document.getElementById('attendanceSummaryCourseSelect');
     if(summarySelect) summarySelect.innerHTML = options;
   }catch(e){}
+}
+
+async function buildRosterFromSignups(){
+  const msg=document.getElementById('srMsg'), btn=document.getElementById('srBtn');
+  if(!canManageRosters()){ msg.innerHTML='<div class="msg err">You do not have permission to manage rosters.</div>'; return; }
+  const course=document.getElementById('srCourse').value.trim();
+  const level=document.getElementById('srLevel').value;
+  const group=document.getElementById('srGroup').value;
+  if(!course){ msg.innerHTML='<div class="msg err">Please enter a course name.</div>'; return; }
+  btn.disabled=true; msg.innerHTML='<div class="msg ok">Finding students...</div>';
+  try{
+    const j=await teamApi({action:'stu_class',level:level,group:group});
+    if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
+    const roster=normRoster((j.rows||[]).map(r=>({indexNumber:r.index_number,name:r.name||''})));
+    if(!roster.length){ msg.innerHTML='<div class="msg err">No registered students found for Level '+escapeHtml(level)+(group?' Class '+escapeHtml(group):'')+' yet.</div>'; return; }
+    const data=await fetchSupabaseData();
+    data.rosters=data.rosters||{};
+    data.rosters[course]=roster;
+    await saveSupabaseData(data);
+    await grantMeCourse(course);
+    msg.innerHTML='<div class="msg ok">Saved "'+escapeHtml(course)+'" with '+roster.length+' student(s). Open Take Attendance and choose it.</div>';
+    loadAttendanceCourseOptions();
+  }catch(e){
+    msg.innerHTML='<div class="msg err">Could not build the list: '+escapeHtml(e.message)+'</div>';
+  }finally{ btn.disabled=false; }
 }
 
 async function uploadRoster(){

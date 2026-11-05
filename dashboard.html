@@ -1347,8 +1347,11 @@ async function loadDashboard(skipLock){
         names.forEach(a => { if(!myRecords.some(m => (m.course||'General')===course && (m.assessmentName||'Untitled')===a)) _rows.push({course:course, level:'', assessmentName:a, score:'0'}); });
       });
       _rows.sort((x,y) => String(x.course).localeCompare(String(y.course)));
+      const _am0 = jsonBinData.assessmentMax || {};
+      const _bs0 = n => { const t=String(n||'').trim(); const m=t.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():t; };
       _rows.forEach(r => {
-        html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.level)}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}</td></tr>`;
+        const _mx = parseFloat(_am0[_bs0(r.course||'General').toLowerCase()+'|'+String(r.assessmentName||'Untitled').trim().toLowerCase()]);
+        html += `<tr><td>${escapeHtml(r.course)}</td><td>${escapeHtml(r.level)}</td><td>${escapeHtml(r.assessmentName)}</td><td>${escapeHtml(r.score)}${_mx>0 ? ' <span style="opacity:.7">/ '+_mx+'</span>' : ''}</td></tr>`;
       });
       html += '</table>';
       scoresContainer.innerHTML = html;

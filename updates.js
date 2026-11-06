@@ -1,6 +1,18 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-06b', date:'6 Nov 2026', title:'Please check your attendance',
+      all:[],
+      student:[
+        'Open My Attendance and check that every class you attended is counted.',
+        'If something is wrong or missing, use Report an Issue on your dashboard. Say the course and the date, so it can be sorted out.',
+        'Also new: choose your class (A, B or C) the first time you sign in, and your scores now show what each assessment was marked out of.'
+      ],
+      staff:[
+        'Students have been asked to check their attendance and report any problem through Report an Issue. Reports appear in your Reports list.',
+        'Class Check shows each student\u2019s list class next to the class they confirmed.',
+        'Absent with permission is now saved properly.'
+      ] },
     { id:'2026-11-06', date:'6 Nov 2026', title:'What is new',
       all:[],
       student:[

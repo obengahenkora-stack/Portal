@@ -720,6 +720,17 @@
       <div id="asMsg" style="margin-top:10px;"></div>
     </div>
 
+    <div class="card hidden" id="renameCourseCard">
+      <label>Rename a Course</label>
+      <div class="hint">Changes the course name everywhere at once: class lists (A, B and C), attendance, scores, marked-out-of values, lecture hall, notices and lecturer assignments. You see a preview first, and nothing changes until you confirm.</div>
+      <label>Course</label>
+      <select id="rcOld"></select>
+      <label>New name</label>
+      <input type="text" id="rcNew" placeholder="e.g. CIVL 102">
+      <button onclick="renamePreview()">Preview</button>
+      <div id="rcBox"></div>
+    </div>
+
     <div class="card hidden" id="rosterEditCard">
       <label>Edit Class List (no re-upload needed)</label>
       <div class="hint">Add a student to several class lists at once, fix a name or index number, or remove someone. Changes save straight away. Newly added students count as absent until you mark them under Review &amp; Edit Saved Attendance.</div>
@@ -1468,6 +1479,7 @@ var _ATT_TILES=[
  {g:'Records',id:'rosterUploadCard',t:'Upload Class List',d:'Add a course list from Excel or CSV.',i:'upload'},
  {g:'Records',id:'attPdfCard',t:'Import from PDF',d:'Bring in attendance from a PDF sheet.',i:'file'},
  {g:'Records',id:'attendanceDeleteCard',t:'Delete a Session',d:'Remove one date for a course.',i:'trash',c:'t-danger'},
+ {g:'Owner tools',id:'renameCourseCard',t:'Rename a Course',d:'Fix a course name everywhere at once.',i:'edit'},
  {g:'Owner tools',id:'rosterEditCard',t:'Edit Class List',d:'Add, rename or remove students. Download lists.',i:'users'},
  {g:'Owner tools',id:'allSessionsCard',t:'All Saved Sessions',d:'See every session and who took it.',i:'list'},
  {g:'Owner tools',id:'practiceCard',t:'Practice Lab',d:'A safe test course to try everything.',i:'flask',c:'t-lab'},
@@ -1646,6 +1658,7 @@ async function onAuthReady(showToast){
   }
 
   if(isAdmin()){
+    try{ document.getElementById('renameCourseCard').classList.remove('hidden'); fillRenameCourses(); }catch(e){}
     document.getElementById('deleteCourseCard').classList.remove('hidden');
     document.getElementById('backupCard').classList.remove('hidden');
     document.getElementById('restoreCard').classList.remove('hidden');
@@ -3744,6 +3757,41 @@ async function runClassCheck(){
     });
     box.innerHTML='<div class="hint" style="margin-top:10px;">'+ros.length+' on this list: <b>'+ok+'</b> confirmed, <b>'+none+'</b> not chosen yet, <b>'+diff+'</b> chose a different class, <b>'+unreg+'</b> not registered on the site.</div><table style="width:100%;"><tr><th>Index</th><th>Name</th><th>List says</th><th>Student chose</th><th>Status</th></tr>'+rows+'</table>';
   }catch(e){ box.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message)+'</div>'; }
+}
+
+async function fillRenameCourses(){
+  const sel=document.getElementById('rcOld'); if(!sel) return;
+  try{
+    const data=await fetchSupabaseData(); const bin=await fetchBin().catch(()=>({}));
+    const names=Object.keys(data.rosters||{}).concat(data.courseList||[], (bin.records||[]).map(r=>r.course), (bin.courses||[]).filter(x=>typeof x==='string'));
+    const seen={}, out=[]; names.forEach(c=>{ if(!c) return; const b=lmBase(c); const k=b.toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(b); } });
+    out.sort(); sel.innerHTML='<option value="">Choose the course...</option>'+out.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');
+  }catch(e){}
+}
+async function renamePreview(){
+  const box=document.getElementById('rcBox');
+  const old=document.getElementById('rcOld').value, neu=document.getElementById('rcNew').value.trim();
+  if(!old||!neu){ box.innerHTML='<div class="msg err">Choose the course and type the new name.</div>'; return; }
+  box.innerHTML='<div class="msg ok">Checking...</div>';
+  try{
+    const j=await teamApi({action:'course_rename',old:old,neu:neu});
+    if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
+    const c=j.counts||{}, m=j.mapping||{};
+    const lines=[['Class list entries',c.classListEntries],['Attendance dates',c.attendanceDates],['Attendance marks',c.attendanceMarks],['Scores and reports',c.scoresAndReports],['Marked-out-of settings',c.markedOutOf],['Connected lists',c.connectedLists],['Lecture hall, notices and other items',c.siteItems],['Lecturers assigned',c.assignedStaff],['Open QR sessions',c.qrSessions]].filter(x=>x[1]);
+    box.innerHTML='<div class="hint" style="margin-top:10px;"><b>These names will change:</b><br>'+Object.keys(m).map(k=>escapeHtml(k)+' &rarr; '+escapeHtml(m[k])).join('<br>')+'</div><div class="hint">'+lines.map(x=>x[0]+': <b>'+x[1]+'</b>').join('<br>')+'</div><button onclick="renameApply()" style="margin-top:8px;">Yes, rename now</button><div class="hint" style="margin-top:8px;">A backup of the site data is saved first. This can take up to a minute. Do not close the page while it runs.</div>';
+  }catch(e){ box.innerHTML='<div class="msg err">'+escapeHtml(e.message)+'</div>'; }
+}
+async function renameApply(){
+  const box=document.getElementById('rcBox');
+  const old=document.getElementById('rcOld').value, neu=document.getElementById('rcNew').value.trim();
+  if(!confirm('Rename "'+old+'" to "'+neu+'" everywhere?')) return;
+  box.innerHTML='<div class="msg ok">Renaming... please wait.</div>';
+  try{
+    const j=await teamApi({action:'course_rename',old:old,neu:neu,confirm:true});
+    if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
+    try{ localStorage.removeItem('ceRosterCache'); }catch(e){}
+    box.innerHTML='<div class="msg ok">Done. "'+escapeHtml(old)+'" is now "'+escapeHtml(neu)+'". Close the portal completely and open it again to see it everywhere.</div>';
+  }catch(e){ box.innerHTML='<div class="msg err">Stopped: '+escapeHtml(e.message)+' Tell me before trying again, so nothing is renamed twice.</div>'; }
 }
 
 async function loadConnectLists(){

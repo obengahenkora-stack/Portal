@@ -1,7 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-06d', date:'6 Nov 2026', title:'Important notice and what is new',
+    { id:'2026-11-06e', date:'6 Nov 2026', title:'Important notice and what is new',
       all:[],
       student:[
         'NOTICE: Please open My Attendance and check that every class you attended is counted. If anything is wrong or missing, use Report an Issue on your dashboard and say the course and the date, so it can be resolved.',
@@ -19,6 +19,8 @@
         'Registered Students now shows each student\u2019s class, with a filter for those who have not chosen yet.',
         'Absent with permission is now saved properly.',
         'Students already on your class lists stay on them until they choose a class, and choosing No group never removes anyone. A student is only moved when a real list for their new class exists.',
+        'Assessment upload now reads any Excel or CSV file and finds the headings itself. Download Sheet to Fill gives you a ready sheet with the class list.',
+        'Owner tools: Rename a Course changes a course name everywhere at once, with a preview first.',
         'Gradebook: edit a single score, set what each assessment is marked out of, and show the Final out of 40.'
       ] }
   ];

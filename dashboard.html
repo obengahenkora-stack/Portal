@@ -2000,6 +2000,17 @@ function renderWelcome(){
 })();
 </script>
 <script src="chat.js?v=4"></script>
+<style>@media (max-width:640px){ body{padding-bottom:150px !important;} #dashAttendance,#dashScores{overflow-x:auto;-webkit-overflow-scrolling:touch;} #dashAttendance table td,#dashAttendance table th{padding-left:8px;padding-right:8px;} }</style>
+<script>
+(function(){ try{
+  if(!(window.matchMedia && matchMedia('(max-width:640px)').matches)) return;
+  var n=0, iv=setInterval(function(){
+    var w=document.getElementById('whoBar');
+    if(w && getComputedStyle(w).display!=='none'){ clearInterval(iv); setTimeout(function(){ w.style.transition='opacity .5s'; w.style.opacity='0'; setTimeout(function(){ w.style.display='none'; w.style.opacity=''; },600); },6000); }
+    if(++n>80) clearInterval(iv);
+  },500);
+}catch(e){} })();
+</script>
 <script src="darkfix.js"></script>
 <script src="updates.js?v=4"></script>
 </body>

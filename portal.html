@@ -820,6 +820,17 @@
       <button class="secondary" onclick="printAtRiskStudents()" style="margin-top:14px;margin-left:8px;">Print At-Risk Students Only</button>
     </div>
 
+    <div class="card hidden" id="classCheckCard">
+      <label>Class Check</label>
+      <div class="hint">Pick a class list to see, for every student on it, the class the list puts them in next to the class the student confirmed on their own dashboard.</div>
+      <label>Class list</label>
+      <select id="ccList"></select>
+      <label>Level</label>
+      <select id="ccLevel"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <button onclick="runClassCheck()">Check</button>
+      <div id="ccBox"></div>
+    </div>
+
     <div class="card hidden" id="signupRosterCard">
       <label>Class List from Sign-ups</label>
       <div class="hint">Builds a class list from students who registered on the site. Pick a level and class and it fills itself. Run it again later to pick up late registrants.</div>
@@ -1451,6 +1462,7 @@ var _ATT_TILES=[
  {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
  {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
  {g:'Records',id:'attendanceEditCard',t:'Review & Edit',d:'Fix a saved session before it becomes final.',i:'edit'},
+ {g:'Records',id:'classCheckCard',t:'Class Check',d:'See who confirmed their class and who has not.',i:'users'},
  {g:'Records',id:'signupRosterCard',t:'Class List from Sign-ups',d:'Pick a level and class; registered students fill in.',i:'users'},
  {g:'Records',id:'rosterUploadCard',t:'Upload Class List',d:'Add a course list from Excel or CSV.',i:'upload'},
  {g:'Records',id:'attPdfCard',t:'Import from PDF',d:'Bring in attendance from a PDF sheet.',i:'file'},
@@ -1629,6 +1641,7 @@ async function onAuthReady(showToast){
 
     document.getElementById('rosterUploadCard').classList.remove('hidden');
     document.getElementById('signupRosterCard').classList.remove('hidden');
+    document.getElementById('classCheckCard').classList.remove('hidden'); try{ fillClassCheckLists(); }catch(e){}
   }
 
   if(isAdmin()){
@@ -3646,6 +3659,42 @@ async function loadAttendanceSummaryCourseOptions(){
     const summarySelect = document.getElementById('attendanceSummaryCourseSelect');
     if(summarySelect) summarySelect.innerHTML = options;
   }catch(e){}
+}
+
+async function fillClassCheckLists(){
+  const sel=document.getElementById('ccList'); if(!sel) return;
+  try{
+    const data=await fetchSupabaseData();
+    const names=visibleCourses(Object.keys(data.rosters||{})).sort();
+    sel.innerHTML=names.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');
+    sel.onchange=ccGuessLevel; ccGuessLevel();
+  }catch(e){}
+}
+function ccGuessLevel(){ const n=(document.getElementById('ccList').value.match(/(\d)\d\d/)||[])[1]; if(n) document.getElementById('ccLevel').value=n+'00'; }
+async function runClassCheck(){
+  const box=document.getElementById('ccBox');
+  const list=document.getElementById('ccList').value, level=document.getElementById('ccLevel').value;
+  if(!list){ box.innerHTML='<div class="msg err">No class lists found.</div>'; return; }
+  box.innerHTML='<div class="msg ok">Checking...</div>';
+  try{
+    const [data,j]=await Promise.all([fetchSupabaseData(), teamApi({action:'stu_class',level:level,group:''})]);
+    if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
+    const nz=v=>String(v||'').toLowerCase().replace(/\s/g,'');
+    const reg={}; (j.rows||[]).forEach(r=>{ reg[nz(r.index_number)]=r; });
+    const base=lmBase(list); const tail=list.slice(base.length).replace(/[^A-Za-z]/g,'').toUpperCase();
+    const listCls=/^[ABC]$/.test(tail)?tail:'';
+    const ros=(data.rosters||{})[list]||[];
+    let ok=0,none=0,diff=0,unreg=0, rows='';
+    ros.forEach(s=>{
+      const r=reg[nz(s.indexNumber)];
+      let choice,st,col;
+      if(!r){ choice='Not registered'; st='Not registered'; col='var(--danger)'; unreg++; }
+      else if(!r.class_group){ choice='Not chosen yet'; st='Waiting'; col='#b7791f'; none++; }
+      else { choice=r.class_group==='NONE'?'No group':'Class '+r.class_group; if(listCls && r.class_group!==listCls && r.class_group!=='NONE'){ st='Different'; col='var(--danger)'; diff++; } else { st='Confirmed'; col='var(--ok)'; ok++; } }
+      rows+='<tr><td>'+escapeHtml(s.indexNumber)+'</td><td>'+escapeHtml(s.name||'')+'</td><td>'+(listCls?'Class '+listCls:'-')+'</td><td>'+escapeHtml(choice)+'</td><td style="color:'+col+';font-weight:700;">'+st+'</td></tr>';
+    });
+    box.innerHTML='<div class="hint" style="margin-top:10px;">'+ros.length+' on this list: <b>'+ok+'</b> confirmed, <b>'+none+'</b> not chosen yet, <b>'+diff+'</b> chose a different class, <b>'+unreg+'</b> not registered on the site.</div><table style="width:100%;"><tr><th>Index</th><th>Name</th><th>List says</th><th>Student chose</th><th>Status</th></tr>'+rows+'</table>';
+  }catch(e){ box.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message)+'</div>'; }
 }
 
 async function loadConnectLists(){

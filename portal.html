@@ -1441,6 +1441,9 @@ function hubGreet(){
 }
 setInterval(hubGreet,2000); document.addEventListener('DOMContentLoaded',function(){ setTimeout(hubGreet,500); });
 function switchTab(tab){
+  if((tab==='attendance'||tab==='teacher') && !window._authGate && typeof supabaseClient!=='undefined'){
+    try{ supabaseClient.auth.getSession().then(function(r){ if(!r||!r.data||!r.data.session){ window._authGate=1; try{ switchTab('hub'); }finally{ window._authGate=0; } } }).catch(function(){}); }catch(e){}
+  }
   document.getElementById('hubView').classList.toggle('hidden', tab!=='hub');
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');

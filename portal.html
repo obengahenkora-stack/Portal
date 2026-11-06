@@ -3026,20 +3026,54 @@ async function loadCourseManageList(){
   const container = document.getElementById('courseListDisplay');
   container.innerHTML = '<div class="empty">Loading...</div>';
   try{
-    const bin = await fetchBin();
-    const courses = bin.courses || [];
-    if(courses.length === 0){
-      container.innerHTML = '<div class="empty">No courses added yet.</div>';
-      return;
-    }
+    const [bin, data] = await Promise.all([fetchBin(), fetchSupabaseData().catch(()=>({}))]);
+    const rows = [], seen = {};
+    const att = {};
+    Object.keys(data.rosters||{}).forEach(k=>{ const b=lmBase(k), key=b.toLowerCase(); const o=att[key]=att[key]||{name:b,names:{},dates:0}; o.names[k]=1; });
+    (data.attendance||[]).forEach(a=>{ if(!a.course) return; const b=lmBase(a.course), key=b.toLowerCase(); const o=att[key]=att[key]||{name:b,names:{},dates:0}; o.names[a.course]=1; o.dates++; });
+    (bin.courses||[]).forEach(c=>{ const key=lmBase(c).toLowerCase(); if(seen[key]) return; seen[key]=1; rows.push({name:c,key:key,att:att[key]}); });
+    Object.keys(att).sort().forEach(key=>{ if(seen[key]) return; if(!isOwner() && /^\[TEST\]/i.test(att[key].name)) return; seen[key]=1; rows.push({name:att[key].name,key:key,att:att[key]}); });
+    if(rows.length === 0){ container.innerHTML = '<div class="empty">No courses added yet.</div>'; return; }
     let html = '<table><tr><th>Course</th><th></th></tr>';
-    courses.forEach(c => {
-      html += `<tr><td>${escapeHtml(c)}</td><td><button class="secondary" style="padding:4px 10px;font-size:0.75rem;" onclick="removeCourseOption('${escapeHtml(c).replace(/'/g,"\\'")}')">Remove</button></td></tr>`;
+    rows.forEach(r => {
+      const tag = r.att ? `<div style="font-size:.74rem;color:var(--muted);">In Attendance: ${Object.keys(r.att.names).length} list(s), ${r.att.dates} date(s)</div>` : '';
+      html += `<tr><td>${escapeHtml(r.name)}${tag}</td><td><button class="secondary" style="padding:4px 10px;font-size:0.75rem;" data-k="${escapeHtml(r.key)}" data-n="${escapeHtml(r.name)}" onclick="removeManagedCourse(this.getAttribute('data-n'))">Remove</button></td></tr>`;
     });
-    html += '</table>';
+    html += '</table><div class="hint" style="margin-top:8px;">Courses that have a class list or attendance appear here automatically. Removing one of those also deletes it from Attendance (class lists and every attendance date). Scores are kept.</div>';
     container.innerHTML = html;
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load courses.</div>';
+  }
+}
+
+async function removeManagedCourse(base){
+  if(!isAdmin()){ alert('Only the Main Instructor can manage courses.'); return; }
+  const msg = document.getElementById('courseManageMsg');
+  const bl = lmBase(base).toLowerCase();
+  try{
+    const data = await fetchSupabaseData(); const bin = await fetchBin();
+    const rKeys = Object.keys(data.rosters||{}).filter(k=>lmBase(k).toLowerCase()===bl);
+    const sess = (data.attendance||[]).filter(a=>lmBase(a.course||'').toLowerCase()===bl);
+    const names = [...new Set(rKeys.concat(sess.map(a=>a.course)))];
+    if(!names.length){
+      if(!confirm(`Remove "${base}" from the course list? (Existing scores/reports for it are not deleted.)`)) return;
+    } else {
+      const t = prompt(`This will DELETE "${base}" from Attendance:\n- ${names.length} class list(s): ${names.join(', ')}\n- ${sess.length} attendance date(s) with all their marks\n\nScores are not deleted. This cannot be undone.\n\nType the course name exactly to confirm:`);
+      if(t === null) return;
+      if(t.trim().toLowerCase() !== lmBase(base).toLowerCase() && t.trim().toLowerCase() !== String(base).trim().toLowerCase()){ alert('The name did not match, so nothing was deleted.'); return; }
+      msg.innerHTML = '<div class="msg ok">Deleting from Attendance...</div>';
+      data.attendance = (data.attendance||[]).filter(a=>lmBase(a.course||'').toLowerCase()!==bl);
+      rKeys.forEach(k=>{ delete data.rosters[k]; });
+      await saveSupabaseData(data);
+    }
+    bin.courses = (bin.courses||[]).filter(c=>lmBase(c).toLowerCase()!==bl);
+    if(bin.rosterMeta) Object.keys(bin.rosterMeta).forEach(k=>{ if(lmBase(k).toLowerCase()===bl) delete bin.rosterMeta[k]; });
+    await saveBin(bin);
+    msg.innerHTML = `<div class="msg ok">Removed "${escapeHtml(base)}"${names.length?' from the list and from Attendance':''}.</div>`;
+    loadCourseManageList();
+    try{ loadAttendanceCourseOptions(); loadAttendanceSummaryCourseOptions(); loadCleanupCourseOptions(); }catch(e){}
+  }catch(e){
+    msg.innerHTML = `<div class="msg err">Could not remove course: ${escapeHtml(e.message)}</div>`;
   }
 }
 

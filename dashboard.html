@@ -1538,7 +1538,13 @@ async function loadCourseOptionsForStudents(){
   const select = document.getElementById('reportCourseSelect');
   try{
     const bin = await fetchBin();
-    const courses = bin.courses || [];
+    const courses = (bin.courses || []).slice();
+    try{
+      const _sd = await fetchSupabaseData();
+      const _bs = n => { const t=String(n||'').trim(); const m=t.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():t; };
+      const _have = {}; courses.forEach(c => { _have[_bs(c).toLowerCase()] = 1; });
+      Object.keys(_sd.rosters || {}).sort().forEach(k => { const b=_bs(k); if(b && !/^\[TEST\]/i.test(b) && !_have[b.toLowerCase()]){ _have[b.toLowerCase()]=1; courses.push(b); } });
+    }catch(_e){}
     select.innerHTML = '<option value="">Select your course...</option>' +
       courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   }catch(e){

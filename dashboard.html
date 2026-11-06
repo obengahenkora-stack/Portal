@@ -564,6 +564,7 @@
     <div id="dashBack" class="hidden"><button type="button" class="secondary" data-go="dashOverviewCard">&larr; Back to dashboard</button></div>
     <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
+      <div id="ovClassLine" style="font-size:.88rem;margin:-4px 0 12px;"></div>
       <div class="overview-grid" id="dashOverview">
         <div class="overview-item">
           <div class="overview-num" id="ovAvgScore">–</div>
@@ -1369,6 +1370,19 @@ async function loadDashboard(skipLock){
     const _ix = _nz(idx);
     let _acct = studentCurrentAccount;
     if(skipLock){ try{ const _all = await dbFetchAllStudents(); const _k = String(idx||'').toLowerCase().replace(/[^a-z0-9]/g,''); const _kd = _k.replace(/\D/g,''); _acct = _all.find(a => String(a.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'') === _k) || _all.find(a => _kd.length>=5 && String(a.indexNumber||'').replace(/\D/g,'') === _kd) || null; }catch(e){ _acct = null; } }
+    try{
+      const _cl=document.getElementById('ovClassLine');
+      if(_cl){
+        const _g=_acct&&_acct.classGroup;
+        const _conf=!_acct?'':(_g?(_g==='NONE'?'No group':'Class '+_g)+' <span style="color:var(--ok);font-weight:700;">(confirmed)</span>':'<span style="color:var(--danger);font-weight:700;">Not chosen yet</span>');
+        const _rs=supaData.rosters||{}, _on=[];
+        const _nm=v=>String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
+        Object.keys(_rs).forEach(c=>{ if((_rs[c]||[]).some(s=>_nm(s.indexNumber)===_ix)) _on.push(c); });
+        let _diff='';
+        _on.forEach(c=>{ const m=c.match(/\d\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*([ABC])\s*\)?$/i); if(m && _g && _g!=='NONE' && m[1].toUpperCase()!==_g) _diff+=' <span style="color:var(--danger);">('+escapeHtml(c)+' is a different class)</span>'; });
+        _cl.innerHTML=_acct?('<b>Class:</b> '+_conf+(_on.length?' &middot; <b>On lists:</b> '+_on.map(escapeHtml).join(', '):'')+_diff):'';
+      }
+    }catch(_e){}
     const _toks = v => String(v||'').toLowerCase().replace(/\((ms|mr)\)/g,'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort();
     const _myToks = _toks((_acct&&_acct.name)||'');
     const _sameName = n => { const t=_toks(n); return _myToks.length>=2 && t.length===_myToks.length && t.every((x,i)=>x===_myToks[i]); };

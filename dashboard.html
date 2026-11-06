@@ -137,6 +137,11 @@
   .ah-actions button:hover{background:rgba(255,255,255,.3) !important}
   .ah-bd{background:#f43f5e;color:#fff;border-radius:999px;font-size:.7rem;padding:1px 7px;margin-left:4px}
   .ah-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .ah-go{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+  .ah-go a,.ah-go button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:18px 10px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--text,inherit);text-decoration:none;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.05);transition:transform .15s;width:100%}
+  .ah-go a:hover,.ah-go button:hover{transform:translateY(-2px)}
+  .ah-go .gi{font-size:1.8rem}.ah-go small{font-weight:400;color:var(--muted);font-size:.74rem}
+  .ah-gt{margin:20px 0 0;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
   .ah-tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 16px 14px;box-shadow:0 6px 18px rgba(0,0,0,.05);transition:transform .15s}
   .ah-tile:hover{transform:translateY(-2px)}
   .ah-tile.big{grid-column:span 2;background:linear-gradient(135deg,var(--tint,#eef6ee),var(--card))}
@@ -424,6 +429,18 @@
         <div class="ah-tile"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahCivil">0</div><div class="ah-l">Civil Engineering</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahEnv">0</div><div class="ah-l">Environmental Eng.</div></div>
+      </div>
+      <div class="ah-gt">Where do you want to go?</div>
+      <div class="ah-go">
+        <button type="button" data-ago="adminStudents"><span class="gi">&#128269;</span>Find a student<small>Scores, attendance, reports</small></button>
+        <button type="button" onclick="adminTab('adminStudents');setTimeout(openIndexCheck,300)"><span class="gi">&#129529;</span>Check index numbers<small>Fix typos</small></button>
+        <a href="portal.html"><span class="gi">&#128202;</span>Assessment Portal<small>Scores &amp; gradebook</small></a>
+        <a href="portal.html"><span class="gi">&#9989;</span>Attendance Portal<small>Lists &amp; QR check-in</small></a>
+        <button type="button" data-ago="adminChat"><span class="gi">&#128172;</span>Chat<small>Students &amp; staff</small></button>
+        <button type="button" data-ago="adminQa"><span class="gi">&#10067;</span>Q&amp;A Board<small>Student questions</small></button>
+        <a href="lecture-hall.html"><span class="gi">&#127979;</span>Lecture Hall<small>Materials</small></a>
+        <a href="announcements.html"><span class="gi">&#128226;</span>Announcements<small>Notices</small></a>
+        <button type="button" onclick="toggleProfileSection()"><span class="gi">&#128100;</span>My profile<small>Your details</small></button>
       </div>
     </div>
     <div class="card pane-off" id="adminChatCard">

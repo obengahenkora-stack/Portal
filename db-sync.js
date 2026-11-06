@@ -39,14 +39,14 @@
       var res=await Promise.all([this.getAll('attendance_sessions','session_key'),this.getAll('attendance_marks','session_key,index_number'),this.getAll('roster_entries','course,index_number')]);
       var sess=res[0], marks=res[1], ros=res[2];
       var att={}, order=[];
-      sess.forEach(function(s){ att[s.session_key]={sessionKey:s.session_key,course:s.course,date:s.date,present:[],checkInTimes:{},takenBy:s.taken_by||undefined,editedBy:s.edited_by||undefined}; order.push(s.session_key); });
-      marks.forEach(function(m){ var a=att[m.session_key]; if(!a){ return; } a.present.push(m.index_number); if(m.checked_at) a.checkInTimes[m.index_number]=m.checked_at; });
+      sess.forEach(function(s){ att[s.session_key]={sessionKey:s.session_key,course:s.course,date:s.date,present:[],excused:[],checkInTimes:{},takenBy:s.taken_by||undefined,editedBy:s.edited_by||undefined}; order.push(s.session_key); });
+      marks.forEach(function(m){ var a=att[m.session_key]; if(!a){ return; } if(m.excused){ a.excused.push(m.index_number); return; } a.present.push(m.index_number); if(m.checked_at) a.checkInTimes[m.index_number]=m.checked_at; });
       var rosters={}; ros.forEach(function(r){ (rosters[r.course]=rosters[r.course]||[]).push({indexNumber:r.index_number,name:r.name||''}); });
-      var attList=order.map(function(k){ var a=att[k]; if(!a.takenBy) delete a.takenBy; if(!a.editedBy) delete a.editedBy; return a; });
+      var attList=order.map(function(k){ var a=att[k]; if(!a.excused.length) delete a.excused; if(!a.takenBy) delete a.takenBy; if(!a.editedBy) delete a.editedBy; return a; });
       raw.attendance=attList; raw.rosters=rosters;
       // snapshot of what the database held when this copy was read (used to work out what changed on save)
       var sa={}, sr={};
-      attList.forEach(function(a){ var m={}; a.present.forEach(function(p){ m[nk(p)]=p; }); sa[a.sessionKey]={course:a.course,date:a.date,tb:JSON.stringify(a.takenBy||null),eb:JSON.stringify(a.editedBy||null),marks:m}; });
+      attList.forEach(function(a){ var m={}, ex={}; a.present.forEach(function(p){ m[nk(p)]=p; }); (a.excused||[]).forEach(function(p){ ex[nk(p)]=p; }); sa[a.sessionKey]={course:a.course,date:a.date,tb:JSON.stringify(a.takenBy||null),eb:JSON.stringify(a.editedBy||null),marks:m,exc:ex}; });
       Object.keys(rosters).forEach(function(c){ var m={}; rosters[c].forEach(function(e){ m[nk(e.indexNumber)]={index:e.indexNumber,name:e.name||''}; }); sr[c]=m; });
       Object.defineProperty(raw,'__snap',{value:{att:sa,ros:sr},enumerable:false,writable:true,configurable:true});
       return raw;
@@ -61,17 +61,21 @@
         if(!a) return;
         var course=String(a.course||'').trim(), date=String(a.date||'').trim().slice(0,10);
         var key=a.sessionKey||(course+'__'+date);
-        var t=nAtt[key]; if(!t){ t=nAtt[key]={course:course,date:date,tb:JSON.stringify(a.takenBy||null),eb:JSON.stringify(a.editedBy||null),takenBy:a.takenBy||null,editedBy:a.editedBy||null,marks:{},times:{}}; }
+        var t=nAtt[key]; if(!t){ t=nAtt[key]={course:course,date:date,tb:JSON.stringify(a.takenBy||null),eb:JSON.stringify(a.editedBy||null),takenBy:a.takenBy||null,editedBy:a.editedBy||null,marks:{},exc:{},times:{}}; }
         (a.present||[]).forEach(function(p){ var k=nk(p); if(k && !t.marks[k]) t.marks[k]=String(p).trim(); });
+        (a.excused||[]).forEach(function(p){ var k=nk(p); if(k && !t.exc[k]) t.exc[k]=String(p).trim(); });
         var ct=a.checkInTimes||{}; Object.keys(ct).forEach(function(k){ t.times[nk(k)]=ct[k]; });
       });
+      Object.keys(nAtt).forEach(function(key){ var t=nAtt[key]; Object.keys(t.exc).forEach(function(k){ if(t.marks[k]) delete t.exc[k]; }); });
       var sessUp=[], markUp=[], sessDel=[], markDel={};
       Object.keys(nAtt).forEach(function(key){
         var n=nAtt[key], o=snap.att[key];
         if(!o || o.course!==n.course || o.date!==n.date || o.tb!==n.tb || o.eb!==n.eb)
           sessUp.push({session_key:key,course:n.course,date:n.date,taken_by:n.takenBy,edited_by:n.editedBy,updated_at:now});
-        Object.keys(n.marks).forEach(function(k){ if(!o || !(k in o.marks)) markUp.push({session_key:key,index_number:n.marks[k],checked_at:n.times[k]||now}); });
-        if(o) Object.keys(o.marks).forEach(function(k){ if(!(k in n.marks)){ (markDel[key]=markDel[key]||[]).push(o.marks[k]); } });
+        Object.keys(n.marks).forEach(function(k){ if(!o || !(k in o.marks)) markUp.push({session_key:key,index_number:n.marks[k],checked_at:n.times[k]||now,excused:false}); });
+        Object.keys(n.exc).forEach(function(k){ if(!o || !o.exc || !(k in o.exc)) markUp.push({session_key:key,index_number:n.exc[k],checked_at:now,excused:true}); });
+        if(o){ Object.keys(o.marks).forEach(function(k){ if(!(k in n.marks) && !(k in n.exc)){ (markDel[key]=markDel[key]||[]).push(o.marks[k]); } });
+          Object.keys(o.exc||{}).forEach(function(k){ if(!(k in n.exc) && !(k in n.marks)){ (markDel[key]=markDel[key]||[]).push(o.exc[k]); } }); }
       });
       Object.keys(snap.att).forEach(function(key){ if(!(key in nAtt)) sessDel.push(key); });
 
@@ -95,7 +99,7 @@
 
       // refresh the snapshot so a second save of the same object only sends new changes
       var sa={}, sr={};
-      Object.keys(nAtt).forEach(function(k){ var n=nAtt[k]; sa[k]={course:n.course,date:n.date,tb:n.tb,eb:n.eb,marks:Object.assign({},n.marks)}; });
+      Object.keys(nAtt).forEach(function(k){ var n=nAtt[k]; sa[k]={course:n.course,date:n.date,tb:n.tb,eb:n.eb,marks:Object.assign({},n.marks),exc:Object.assign({},n.exc)}; });
       Object.keys(nRos).forEach(function(c){ sr[c]=Object.assign({},nRos[c]); });
       try{ Object.defineProperty(data,'__snap',{value:{att:sa,ros:sr},enumerable:false,writable:true,configurable:true}); }catch(e){}
 
@@ -120,6 +124,7 @@
         var ct=a.checkInTimes||{}, ctn={}; Object.keys(ct).forEach(function(k){ ctn[nk(k)]=ct[k]; });
         (a.present||[]).forEach(function(p){ var k=nk(p); if(!k||seen[key][k]) return; seen[key][k]=1; marks.push({session_key:key,index_number:String(p).trim(),checked_at:ctn[k]||new Date().toISOString()}); });
       });
+      (attendance||[]).forEach(function(a){ var course=String(a.course||'').trim(), date=String(a.date||'').trim().slice(0,10), key=a.sessionKey||(course+'__'+date); (a.excused||[]).forEach(function(p){ var k=nk(p); if(!k||(seen[key]&&seen[key][k])) return; seen[key]=seen[key]||{}; seen[key][k]=1; marks.push({session_key:key,index_number:String(p).trim(),checked_at:new Date().toISOString(),excused:true}); }); });
       var rseen={};
       Object.keys(rosters||{}).forEach(function(c){ (rosters[c]||[]).forEach(function(e){ var k=c+'||'+nk(e.indexNumber); if(!nk(e.indexNumber)||rseen[k]) return; rseen[k]=1; ros.push({course:c,index_number:String(e.indexNumber).trim(),name:e.name||''}); }); });
       await this.upsert('attendance_sessions',sess,'session_key');

@@ -420,10 +420,11 @@
       <label>Marked out of (e.g. 10, 20)</label>
       <input type="number" id="assessmentMax" min="1" step="any" placeholder="Total marks for this assessment">
 
-      <label>Upload Assessment Sheet (.csv)</label>
-      <div class="hint">Reads the official sheet format automatically — columns IndexNumber, Name, Level, CourseCode, ClassScore. Name is ignored; Level, Course, and Score are kept.</div>
-      <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom:14px;">
+      <label>Upload Assessment Sheet (any Excel or CSV file)</label>
+      <div class="hint">Works with any Excel or CSV file. It finds the headings itself: an index number column (IndexNumber, Index No, Student ID...) and a score column (Score, Marks, Total, or a column named like your assessment). If it cannot tell, it asks you to choose. Names are ignored.</div>
+      <input type="file" id="csvFileInput" style="margin-bottom:14px;">
       <button id="uploadFileBtn" onclick="uploadScoresFromFile()">Upload From File</button>
+      <button class="secondary" onclick="downloadAssessmentSheet()" style="margin-left:8px;">Download Sheet to Fill</button>
       <div id="fileUploadMsg"></div>
 
       <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
@@ -2395,60 +2396,87 @@ async function transferScores(){
   }
 }
 
+/* ---- read any Excel/CSV file, whatever its extension, and find the headings ---- */
+const _ixNames=['indexnumber','indexno','indexnum','index','studentindex','studentid','studentno','studentnumber','matricno','matricnumber','matric','regno','regnumber','registrationnumber','idnumber','id'];
+const _scNames=['classscore','score','scores','mark','marks','total','totalscore','result','finalscore','ca','continuousassessment','assessment'];
+function _nzh(s){ return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,''); }
+function _isIdxHead(h){ return !!h && (_ixNames.indexOf(h)>=0 || h.indexOf('index')>=0); }
+function _isScoreHead(h){ return !!h && (_scNames.indexOf(h)>=0 || h.indexOf('score')>=0 || /^marks?/.test(h)); }
+async function _readAnySheet(file){
+  const buf=await file.arrayBuffer();
+  let wb=null; try{ wb=XLSX.read(buf,{type:'array'}); }catch(e){ wb=null; }
+  if(!wb||!wb.SheetNames||!wb.SheetNames.length) throw new Error('Could not read this file. Save it as Excel (.xlsx) or CSV and try again.');
+  return wb.SheetNames.map(n=>({name:n,aoa:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''})}));
+}
+function _findHeaderRow(aoa){
+  for(let r=0;r<Math.min(aoa.length,25);r++){
+    const raw=(aoa[r]||[]).map(x=>String(x==null?'':x).trim()); const heads=raw.map(_nzh);
+    const idx=heads.findIndex(_isIdxHead);
+    if(idx>=0) return {row:r,heads:heads,raw:raw,idx:idx};
+  }
+  return null;
+}
+function _pickScoreCol(hr,assessName,aoa){
+  const an=_nzh(assessName);
+  let c=an?hr.heads.findIndex((h,i)=>i!==hr.idx&&h&&h===an):-1; if(c>=0) return c;
+  c=hr.heads.findIndex((h,i)=>i!==hr.idx&&_isScoreHead(h)); if(c>=0) return c;
+  const skip=/^(name|fullname|studentname|surname|othernames|firstname|lastname|level|course|coursecode|programme|program|department|sn|no|sno|serial|gender|sex|group|class)$/;
+  const cand=[];
+  hr.heads.forEach((h,i)=>{ if(i===hr.idx||!h||skip.test(h)) return; let n=0,t=0; for(let r=hr.row+1;r<Math.min(aoa.length,hr.row+60);r++){ const v=String((aoa[r]||[])[i]==null?'':(aoa[r]||[])[i]).trim(); if(v==='') continue; t++; if(!isNaN(parseFloat(v))) n++; } if(t&&n/t>=0.8) cand.push(i); });
+  return cand.length===1?cand[0]:-1;
+}
+let _upPend=null;
+function _upShowMapping(aoa,hr,note){
+  const msg=document.getElementById('fileUploadMsg');
+  const row=hr?hr.row:0, raw=hr?hr.raw:((aoa[0]||[]).map(x=>String(x==null?'':x).trim()));
+  const opts=(sel)=>'<option value="">Choose...</option>'+raw.map((h,i)=>'<option value="'+i+'"'+(i===sel?' selected':'')+'>'+escapeHtml(h||('Column '+(i+1)))+'</option>').join('');
+  _upPend={aoa:aoa,row:row,heads:raw.map(_nzh)};
+  msg.innerHTML='<div class="msg err">'+escapeHtml(note)+'</div><label>Which column has the index numbers?</label><select id="upMapIdx">'+opts(hr?hr.idx:-1)+'</select><label>Which column has the scores?</label><select id="upMapScore">'+opts(-1)+'</select><button onclick="_upContinue()" style="margin-top:8px;">Continue</button>';
+}
+async function _upContinue(){
+  const i=parseInt(document.getElementById('upMapIdx').value,10), sc=parseInt(document.getElementById('upMapScore').value,10);
+  if(isNaN(i)||isNaN(sc)||i===sc){ alert('Please choose a different column for the index numbers and for the scores.'); return; }
+  const P=_upPend; await _upFinish(P.aoa,P.row,i,sc,P.heads);
+}
 async function uploadScoresFromFile(){
   if(!canUploadScores()){ document.getElementById('fileUploadMsg').innerHTML = '<div class="msg err">You do not have permission to upload scores.</div>'; return; }
   const fileInput = document.getElementById('csvFileInput');
   const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
   const msg = document.getElementById('fileUploadMsg');
-
-  if(!fileInput.files || fileInput.files.length === 0){
-    msg.innerHTML = '<div class="msg err">Please choose a CSV file first.</div>';
-    return;
-  }
-
-  const file = fileInput.files[0];
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-
-  if(lines.length < 2){
-    msg.innerHTML = '<div class="msg err">File looks empty or missing data rows.</div>';
-    return;
-  }
-
-  const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
-  const idxCol = headers.indexOf('indexnumber');
-  const levelCol = headers.indexOf('level');
-  const courseCol = headers.indexOf('coursecode');
-  const scoreCol = headers.indexOf('classscore');
-
+  if(!fileInput.files || fileInput.files.length === 0){ msg.innerHTML = '<div class="msg err">Please choose a file first.</div>'; return; }
+  msg.innerHTML = '<div class="msg ok">Reading the file...</div>';
+  try{
+    const sheets=await _readAnySheet(fileInput.files[0]);
+    let pick=null; for(const s of sheets){ const hr=_findHeaderRow(s.aoa); if(hr){ pick={s:s,hr:hr}; break; } }
+    if(!pick){ const s0=sheets.find(s=>s.aoa.length>1)||sheets[0]; if(!s0||s0.aoa.length<2){ msg.innerHTML='<div class="msg err">The file looks empty or has no data rows.</div>'; return; } _upShowMapping(s0.aoa,null,'I could not find an index number heading in this file. Choose the columns below.'); return; }
+    const sc=_pickScoreCol(pick.hr,assessmentName,pick.s.aoa);
+    if(sc<0){ _upShowMapping(pick.s.aoa,pick.hr,'I found the index numbers but could not tell which column holds the scores. Choose it below.'); return; }
+    await _upFinish(pick.s.aoa,pick.hr.row,pick.hr.idx,sc,pick.hr.heads);
+  }catch(e){ msg.innerHTML='<div class="msg err">'+escapeHtml(e.message)+'</div>'; }
+}
+async function _upFinish(aoa,hrow,idxCol,scoreCol,heads){
+  const fileInput = document.getElementById('csvFileInput');
+  const assessmentName = document.getElementById('assessmentName').value.trim() || "Untitled Assessment";
+  const msg = document.getElementById('fileUploadMsg');
+  const levelCol = heads.indexOf('level');
+  let courseCol = heads.indexOf('coursecode'); if(courseCol<0) courseCol = heads.indexOf('course');
   const _pickedC = ((document.getElementById('uploadCourse')||{}).value || '').trim();
-  if(idxCol === -1 || (courseCol === -1 && !_pickedC) || scoreCol === -1){
-    msg.innerHTML = '<div class="msg err">Could not find expected columns (IndexNumber, CourseCode, ClassScore) in this file.</div>';
-    return;
-  }
-
-  const newRecords = [];
-  let skippedEmpty = 0;
-  for(let i=1;i<lines.length;i++){
-    const cols = parseCsvLine(lines[i]);
-    const indexNumber = (cols[idxCol] || '').trim();
-    const level = levelCol !== -1 ? (cols[levelCol] || '').trim() : '';
-    const course = _pickedC || (courseCol !== -1 ? (cols[courseCol] || '').trim() : '') || 'General';
-    const score = (cols[scoreCol] || '').trim();
+  if(courseCol === -1 && !_pickedC){ msg.innerHTML = '<div class="msg err">Please pick the course above first, because this file has no course column.</div>'; return; }
+  const cell=(r,c)=>{ const v=(aoa[r]||[])[c]; return v==null?'':String(v).trim(); };
+  const newRecords = []; let skippedEmpty = 0;
+  for(let i=hrow+1;i<aoa.length;i++){
+    const indexNumber = cell(i,idxCol);
+    const level = levelCol !== -1 ? cell(i,levelCol) : '';
+    const course = _pickedC || (courseCol !== -1 ? cell(i,courseCol) : '') || 'General';
+    const score = cell(i,scoreCol);
     if(!indexNumber) continue;
-    if(!score){ skippedEmpty++; continue; } // no score yet for this student
+    if(!score){ skippedEmpty++; continue; }
     newRecords.push({ indexNumber, score, assessmentName, course, level });
   }
-
-  if(newRecords.length === 0){
-    msg.innerHTML = `<div class="msg err">No rows with scores found (${skippedEmpty} row(s) had blank scores and were skipped).</div>`;
-    return;
-  }
-
+  if(newRecords.length === 0){ msg.innerHTML = `<div class="msg err">No rows with scores found (${skippedEmpty} row(s) had blank scores and were skipped).</div>`; return; }
   const btn = document.getElementById('uploadFileBtn');
   btn.disabled = true;
   msg.innerHTML = '<div class="msg ok">Uploading...</div>';
-
   try{
     if(currentUserRole === 'ta'){
       const _n = await submitPending(newRecords, assessmentName);
@@ -2463,7 +2491,7 @@ async function uploadScoresFromFile(){
     const combined = existing.filter(function(r){return !_n.has(_k(r));}).concat(newRecords);
     await saveAllRecords(combined, _mxArg(assessmentName,newRecords));
     for(const _c of [...new Set(newRecords.map(r => r.course || 'General'))]) await grantMeCourse(_c);
-    let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}".`;
+    let note = `Uploaded ${newRecords.length} record(s) for "${assessmentName}" (index numbers from "${escapeHtml(String((aoa[hrow]||[])[idxCol]||''))}", scores from "${escapeHtml(String((aoa[hrow]||[])[scoreCol]||''))}").`;
     if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
     note += ` Total now: ${combined.length}.`;
     msg.innerHTML = `<div class="msg ok">${note}</div>`;
@@ -2474,6 +2502,27 @@ async function uploadScoresFromFile(){
   }finally{
     btn.disabled = false;
   }
+}
+
+/* ---- download a ready-to-fill assessment sheet for a course ---- */
+async function downloadAssessmentSheet(){
+  const msg=document.getElementById('fileUploadMsg');
+  const course=((document.getElementById('uploadCourse')||{}).value||'').trim();
+  const an=document.getElementById('assessmentName').value.trim()||'Assessment';
+  if(!course){ msg.innerHTML='<div class="msg err">Pick the course above first.</div>'; return; }
+  try{
+    const data=await fetchSupabaseData();
+    const cb=lmBase(course).toLowerCase(); const rows=[]; const seen={};
+    Object.keys(data.rosters||{}).sort().forEach(k=>{ if(lmBase(k).toLowerCase()!==cb) return; const tail=k.slice(lmBase(k).length).replace(/[^A-Za-z]/g,'').toUpperCase();
+      (data.rosters[k]||[]).forEach(s=>{ const key=String(s.indexNumber||'').toLowerCase().replace(/\s/g,''); if(!key||seen[key]) return; seen[key]=1; rows.push([s.indexNumber,s.name||'',tail,'']); }); });
+    if(!rows.length){ msg.innerHTML='<div class="msg err">No class list found for this course yet. Build or upload the class list first.</div>'; return; }
+    rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
+    const aoa=[['IndexNumber','Name','Class',an]].concat(rows);
+    const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:16},{wch:34},{wch:7},{wch:Math.max(14,an.length+2)}];
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Scores');
+    XLSX.writeFile(wb,(lmBase(course)+' - '+an).replace(/[\\/:*?"<>|]/g,'')+'.xlsx');
+    msg.innerHTML='<div class="msg ok">Downloaded a sheet with '+rows.length+' student(s). Fill in the last column, then upload it here. The score column is named after your assessment.</div>';
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not make the sheet: '+escapeHtml(e.message)+'</div>'; }
 }
 
 async function clearAllData(){

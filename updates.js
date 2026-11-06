@@ -1,29 +1,21 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-06b', date:'6 Nov 2026', title:'Please check your attendance',
+    { id:'2026-11-06c', date:'6 Nov 2026', title:'Important notice and what is new',
       all:[],
       student:[
-        'Open My Attendance and check that every class you attended is counted.',
-        'If something is wrong or missing, use Report an Issue on your dashboard. Say the course and the date, so it can be sorted out.',
-        'Also new: choose your class (A, B or C) the first time you sign in, and your scores now show what each assessment was marked out of.'
+        'NOTICE: Please open My Attendance and check that every class you attended is counted. If anything is wrong or missing, use Report an Issue on your dashboard and say the course and the date, so it can be resolved.',
+        'Choose your class (A, B or C) the first time you sign in. Your attendance lists are set up from it, and you can change it later.',
+        'Your Overview now shows your confirmed class and the class lists you are on.',
+        'My Scores now shows what each assessment was marked out of, for example 5 / 10, and your continuous assessment total out of 40 once your lecturer turns it on.',
+        'Absent with permission is now recorded and kept in your attendance.'
       ],
       staff:[
-        'Students have been asked to check their attendance and report any problem through Report an Issue. Reports appear in your Reports list.',
+        'NOTICE: Students have been asked to check My Attendance and report any problem through Report an Issue. Their reports arrive in your Reports list.',
+        'Class List from Sign-ups builds separate A, B and C attendance lists from registered students.',
+        'Connect lists you already uploaded, so a student who picks a class is added to the right lists, and moved with their attendance if they change class.',
         'Class Check shows each student\u2019s list class next to the class they confirmed.',
-        'Absent with permission is now saved properly.'
-      ] },
-    { id:'2026-11-06', date:'6 Nov 2026', title:'What is new',
-      all:[],
-      student:[
-        'Choose your class (A, B or C) the first time you sign in. Your attendance list is set up from it.',
-        'Your scores now show what each assessment was marked out of, for example 5 / 10.',
-        'Your Overview shows your confirmed class and the lists you are on.'
-      ],
-      staff:[
-        'Class List from Sign-ups builds A, B and C attendance lists straight from registered students.',
-        'Connect lists you already uploaded, so students who pick a class are added or moved automatically.',
-        'Class Check shows each student’s list class next to the class they confirmed.',
+        'Registered Students now shows each student\u2019s class, with a filter for those who have not chosen yet.',
         'Absent with permission is now saved properly.',
         'Gradebook: edit a single score, set what each assessment is marked out of, and show the Final out of 40.'
       ] }

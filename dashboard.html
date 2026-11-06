@@ -1456,7 +1456,7 @@ async function loadDashboard(skipLock){
       }));
       attContainer.innerHTML = '<div class="empty" style="text-align:left;line-height:1.55;">We could not find attendance for index number <b>'+escapeHtml(String(idx))+'</b> yet.<br><span style="color:var(--muted);">You are not on a class list under this index. If you registered late, ask your lecturer to add you. If your index is wrong, correct it under My Profile.</span>'+(_sug.length?'<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint);"><b>Is this you?</b> A class list has your name under a different index number:<br>'+_sug.slice(0,3).join('<br>')+'</div>':'')+'</div>';
     } else {
-      let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>';
+      let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>'; let _attN = 0;
       let _shown = 0;
       myCourses.forEach(course => {
         const courseSessions = attendanceRecords.filter(a => a.course === course);
@@ -1468,7 +1468,15 @@ async function loadDashboard(skipLock){
         const _cnt = totalSessions - excusedN;
         const pct = _cnt > 0 ? Math.round((attended/_cnt)*100) : 0;
         const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
-        html += `<tr><td>${escapeHtml(course)}</td><td>${attended}</td><td>${_cnt}${excusedN?' <span style="font-size:.72rem;opacity:.8;">(+'+excusedN+' excused)</span>':''}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr>`;
+        const _aid = 'attd' + (++_attN);
+        const _fmt = d => { const s=String(d||'').slice(0,10); const t=new Date(s+'T00:00:00'); return isNaN(t) ? s : t.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); };
+        const _rows = courseSessions.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(a => {
+          const here = (a.present||[]).some(_isMe), exc = !here && (a.excused||[]).some(_isMe);
+          let tm = ''; try{ const ct=a.checkInTimes||{}; const k=Object.keys(ct).find(x=>_isMe(x)); if(here && k){ const d=new Date(ct[k]); if(!isNaN(d)) tm=' <span style="opacity:.7;font-size:.74rem;">'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span>'; } }catch(e){}
+          const st = here ? '<b style="color:var(--ok);">Present</b>'+tm : (exc ? '<b style="color:var(--gold-dark);">Absent with permission</b>' : '<b style="color:var(--danger);">Absent</b>');
+          return '<tr><td>'+escapeHtml(_fmt(a.date))+'</td><td>'+st+'</td></tr>';
+        }).join('');
+        html += `<tr><td>${escapeHtml(course)}<div><button type="button" class="secondary" style="padding:3px 10px;font-size:.74rem;margin-top:6px;" onclick="var e=document.getElementById('${_aid}');e.classList.toggle('hidden');this.textContent=e.classList.contains('hidden')?'Show dates (${totalSessions})':'Hide dates';">Show dates (${totalSessions})</button></div></td><td>${attended}</td><td>${_cnt}${excusedN?' <span style="font-size:.72rem;opacity:.8;">(+'+excusedN+' excused)</span>':''}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr><tr id="${_aid}" class="hidden"><td colspan="4"><table style="width:100%;"><tr><th>Date</th><th>Status</th></tr>${_rows}</table></td></tr>`;
       });
       html += '</table>';
       attContainer.innerHTML = _shown ? html : '<div class="empty">No attendance sessions have been recorded for your courses yet.</div>';

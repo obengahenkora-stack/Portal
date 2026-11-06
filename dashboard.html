@@ -87,6 +87,8 @@
   .msg.ok{background:rgba(31,138,76,0.08);color:var(--ok);border-left-color:var(--ok);}
   .msg.err{background:rgba(192,57,43,0.08);color:var(--danger);border-left-color:var(--danger);}
   .hidden{display:none;}
+  .att-p{color:#1e7a3c;} .att-a{color:#b3261e;} .att-x{color:#9a6700;}
+  html[data-theme="dark"] .att-p{color:#5ee08a;} html[data-theme="dark"] .att-a{color:#ff8a80;} html[data-theme="dark"] .att-x{color:#f2c14e;}
   table{width:100%;border-collapse:collapse;margin-top:8px;}
   th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-size:0.85rem;}
   th{color:var(--navy);font-weight:700;text-transform:uppercase;font-size:0.7rem;letter-spacing:0.05em;}
@@ -502,6 +504,8 @@
       <h2 style="margin:0;">All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
       <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="hideRegisteredStudentsList()">Hide List</button>
     </div>
+    <button class="secondary" style="margin-top:10px;" onclick="openIndexCheck()">Check Index Numbers</button>
+    <div id="indexCheckBox"></div>
     <label>Filter by Name, Index Number, or Email</label>
     <input type="text" id="adminRegisteredFilter" placeholder="Type to filter..." oninput="renderRegisteredStudents()">
     <label>Filter by Level</label>
@@ -993,6 +997,7 @@ async function saveProfileDetails(){
   const msg = document.getElementById('profileDetailsMsg');
 
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+  if(!/^UEB\d{7}$/i.test(indexNumber) && !confirm('"'+indexNumber+'" does not look like a normal index number (UEB followed by 7 digits, for example UEB0700123).\n\nA wrong index number means your attendance and scores will not show. Please check it carefully.\n\nSave it anyway?')) return;
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
@@ -1297,6 +1302,50 @@ function renderRegisteredStudents(){
 // Since many students can register at nearly the same moment, a plain
 // fetch -> modify -> save cycle can lose a registration if two saves overlap.
 // This retries with a fresh fetch and verifies the record actually landed.
+async function openIndexCheck(){
+  const box=document.getElementById('indexCheckBox');
+  box.innerHTML='<div class="msg ok">Checking every registered student against the class lists...</div>';
+  try{
+    const [studs, sd] = await Promise.all([dbFetchAllStudents(), fetchSupabaseData()]);
+    const nz=v=>String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const toks=v=>String(v||'').toLowerCase().replace(/\((ms|mr)\)/g,'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(t=>t.length>1);
+    const lev=(a,b)=>{ const m=a.length,n=b.length; if(Math.abs(m-n)>2) return 9; let prev=[...Array(n+1).keys()]; for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; } return prev[n]; };
+    const ros={};
+    Object.keys(sd.rosters||{}).forEach(c=>(sd.rosters[c]||[]).forEach(r=>{ const k=nz(r.indexNumber); if(!k) return; const o=ros[k]=ros[k]||{index:r.indexNumber,name:r.name||'',lists:[]}; o.lists.push(c); }));
+    const rlist=Object.keys(ros).map(k=>({k:k,index:ros[k].index,name:ros[k].name,lists:ros[k].lists,t:toks(ros[k].name)}));
+    const taken={}; studs.forEach(s=>{ taken[nz(s.indexNumber)]=1; });
+    const rows=[]; let ok=0, none=0;
+    studs.forEach(s=>{
+      const k=nz(s.indexNumber); if(!k) return;
+      if(ros[k]){ ok++; return; }
+      const st=toks(s.name); const cands=[];
+      rlist.forEach(r=>{ const common=r.t.filter(t=>st.indexOf(t)>=0).length; const d=lev(k,r.k); if(common>=2 || d<=2) cands.push({r:r,common:common,d:d,taken:!!taken[r.k]}); });
+      cands.sort((a,b)=>((b.common>=2)-(a.common>=2))||(a.d-b.d)||(b.common-a.common));
+      if(cands.length) rows.push({s:s,c:cands.slice(0,3)}); else none++;
+    });
+    let h='<div class="hint" style="margin-top:10px;"><b>'+ok+'</b> registered students match a class list exactly. <b>'+rows.length+'</b> have an index number that matches no list but look like a typo (below). <b>'+none+'</b> are on no class list at all (for example levels you have not uploaded).</div>';
+    if(rows.length){
+      h+='<div style="max-height:420px;overflow:auto;margin-top:8px;"><table style="width:100%;"><tr><th>Student</th><th>Suggested fix</th></tr>';
+      rows.slice(0,300).forEach(x=>{
+        h+='<tr><td>'+escapeHtml(x.s.name||'')+'<div style="font-size:.74rem;color:var(--muted);">Registered as <b>'+escapeHtml(x.s.indexNumber)+'</b> &middot; Level '+escapeHtml(x.s.level||'?')+'</div></td><td>'
+          +x.c.map(c=>'<div style="margin-bottom:6px;">'+escapeHtml(c.r.index)+' &middot; '+escapeHtml(c.r.name)+'<div style="font-size:.72rem;color:var(--muted);">'+escapeHtml(c.r.lists.slice(0,2).join(', '))+(c.taken?' &middot; <span style="color:var(--danger);">already registered by another student</span>':'')+'</div>'
+          +(c.taken?'':'<button type="button" class="secondary" style="padding:3px 10px;font-size:.74rem;margin-top:4px;" data-em="'+escapeHtml(x.s.email||'')+'" data-nm="'+escapeHtml(x.s.name||'')+'" data-old="'+escapeHtml(x.s.indexNumber)+'" data-new="'+escapeHtml(c.r.index)+'" onclick="fixStudentIndex(this)">Use '+escapeHtml(c.r.index)+'</button>')+'</div>').join('')
+          +'</td></tr>';
+      });
+      h+='</table></div>';
+    }
+    box.innerHTML=h;
+  }catch(e){ box.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message)+'</div>'; }
+}
+async function fixStudentIndex(btn){
+  const em=btn.getAttribute('data-em'), nm=btn.getAttribute('data-nm'), o=btn.getAttribute('data-old'), n=btn.getAttribute('data-new');
+  if(!em){ alert('This student has no email on record, so it cannot be changed from here.'); return; }
+  if(!confirm('Change '+nm+'\'s index number from '+o+' to '+n+'?')) return;
+  btn.disabled=true; btn.textContent='Saving...';
+  try{ await _stu({action:'stu_update', email:em, patch:{index_number:n}}); btn.textContent='Fixed'; btn.parentNode.style.opacity='.6'; }
+  catch(e){ btn.disabled=false; btn.textContent='Use '+n; alert('Could not save: '+e.message); }
+}
+
 async function linkIndexNumber(){
   const indexNumber = document.getElementById('linkIndexInput').value.trim();
   const name = document.getElementById('linkNameInput').value.trim();
@@ -1307,6 +1356,7 @@ async function linkIndexNumber(){
   const classGroup = document.getElementById('linkClassInput').value;
   const msg = document.getElementById('linkIndexMsg');
   if(!indexNumber){ msg.innerHTML = '<div class="msg err">Please enter your index number.</div>'; return; }
+  if(!/^UEB\d{7}$/i.test(indexNumber) && !confirm('"'+indexNumber+'" does not look like a normal index number (UEB followed by 7 digits, for example UEB0700123).\n\nA wrong index number means your attendance and scores will not show. Please check it carefully.\n\nSave it anyway?')) return;
   if(!name){ msg.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
   if(!level){ msg.innerHTML = '<div class="msg err">Please select your level.</div>'; return; }
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
@@ -1473,7 +1523,7 @@ async function loadDashboard(skipLock){
         const _rows = courseSessions.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(a => {
           const here = (a.present||[]).some(_isMe), exc = !here && (a.excused||[]).some(_isMe);
           let tm = ''; try{ const ct=a.checkInTimes||{}; const k=Object.keys(ct).find(x=>_isMe(x)); if(here && k){ const d=new Date(ct[k]); if(!isNaN(d)) tm=' <span style="opacity:.7;font-size:.74rem;">'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</span>'; } }catch(e){}
-          const st = here ? '<b style="color:var(--ok);">Present</b>'+tm : (exc ? '<b style="color:var(--gold-dark);">Absent with permission</b>' : '<b style="color:var(--danger);">Absent</b>');
+          const st = here ? '<b class="att-p">Present</b>'+tm : (exc ? '<b class="att-x">Absent with permission</b>' : '<b class="att-a">Absent</b>');
           return '<tr><td>'+escapeHtml(_fmt(a.date))+'</td><td>'+st+'</td></tr>';
         }).join('');
         html += `<tr><td>${escapeHtml(course)}<div><button type="button" class="secondary" style="padding:3px 10px;font-size:.74rem;margin-top:6px;" onclick="var e=document.getElementById('${_aid}');e.classList.toggle('hidden');this.textContent=e.classList.contains('hidden')?'Show dates (${totalSessions})':'Hide dates';">Show dates (${totalSessions})</button></div></td><td>${attended}</td><td>${_cnt}${excusedN?' <span style="font-size:.72rem;opacity:.8;">(+'+excusedN+' excused)</span>':''}</td><td><span class="pct-badge" style="background:${pctColor};color:#fff;">${pct}%</span></td></tr><tr id="${_aid}" class="hidden"><td colspan="4"><table style="width:100%;"><tr><th>Date</th><th>Status</th></tr>${_rows}</table></td></tr>`;
@@ -2001,7 +2051,7 @@ function renderWelcome(){
 })();
 </script>
 <script src="chat.js?v=4"></script>
-<style>@media (max-width:640px){ body{padding-bottom:150px !important;} #dashAttendance,#dashScores{overflow-x:auto;-webkit-overflow-scrolling:touch;} #dashAttendance table td,#dashAttendance table th{padding-left:8px;padding-right:8px;} }</style>
+<style>@media (max-width:640px){ body{padding-bottom:190px !important;} #dashAttendance,#dashScores{overflow-x:auto;-webkit-overflow-scrolling:touch;} #dashAttendance table td,#dashAttendance table th{padding-left:8px;padding-right:8px;} }</style>
 <script>
 (function(){ try{
   if(!(window.matchMedia && matchMedia('(max-width:640px)').matches)) return;

@@ -1486,7 +1486,8 @@ async function loadDashboard(skipLock){
       try{
         const _dbg=document.createElement('div');
         _dbg.style.cssText='margin-top:12px;padding:8px 10px;border:1px dashed var(--line);border-radius:8px;font-size:.74rem;color:var(--muted);';
-        _dbg.innerHTML='<b>Admin check</b> &middot; index searched: '+escapeHtml(String(idx))+' &middot; account found: '+(_acct?escapeHtml((_acct.name||'')+' / '+(_acct.indexNumber||'')+' / Level '+(_acct.level||'?')):'no')+' &middot; class lists loaded: '+Object.keys(rosters).length+' &middot; attendance sessions loaded: '+attendanceRecords.length+' &middot; courses matched: '+myCourses.length;
+        const _withDates=myCourses.filter(c=>attendanceRecords.some(a=>a.course===c)).length;
+        _dbg.innerHTML='<b>Admin check</b> &middot; Searched: '+escapeHtml(String(idx))+' &middot; Account: '+(_acct?escapeHtml((_acct.name||'')+' / '+(_acct.indexNumber||'')+' / Level '+(_acct.level||'?')):'none found')+' &middot; On '+myCourses.length+' class list(s), '+_withDates+' with attendance dates';
         attContainer.appendChild(_dbg);
       }catch(e){}
     }

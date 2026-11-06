@@ -3669,6 +3669,11 @@ async function buildRosterFromSignups(){
     if(!names.length){ msg.innerHTML='<div class="msg err">Nobody has picked a class yet. '+escapeHtml(out.join(' · '))+'</div>'; return; }
     await saveSupabaseData(data);
     for(const n of names) await grantMeCourse(n);
+    try{
+      const meta={};
+      names.forEach(n=>{ const g=split?n.slice(-1):group; meta[n]={level:level,group:g,base:split?course:n}; });
+      await teamApi({action:'stu_roster_meta',meta:meta});
+    }catch(_e){}
     msg.innerHTML='<div class="msg ok">Saved. '+escapeHtml(out.join(' · '))+'. Open Take Attendance and choose the list you want.</div>';
     loadAttendanceCourseOptions();
   }catch(e){

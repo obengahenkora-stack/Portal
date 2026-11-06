@@ -214,6 +214,8 @@
   .overview-grid{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
   .overview-item{ min-width:0 !important; padding-left:6px !important; padding-right:6px !important; }
   .pane-off{ display:none !important; }
+  .cg-g.sel{ background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+  html[data-theme="dark"] .cg-g.sel{ color:#08161d !important; }
   .pg-g.sel{ background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
   html[data-theme="dark"] .pg-g.sel{ color:#08161d !important; }
   #welcomeAvatar svg{ width:100%; height:100%; overflow:visible; }
@@ -325,6 +327,21 @@
     </div>
   </div>
 
+  <div id="classGate" class="hidden" style="position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.78);display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card,#fff);color:var(--ink,#111);max-width:440px;width:100%;border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <h2 style="margin:0 0 6px;">Choose your class</h2>
+      <p style="color:var(--muted);font-size:0.88rem;margin:0 0 14px;">Pick the class group you attend. Your attendance lists are set up from this. You can change it later and your records will move with you.</p>
+      <div id="cgBtns" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <button type="button" class="secondary cg-g" data-g="A" onclick="cgPick('A')" style="flex:1;">Class A</button>
+        <button type="button" class="secondary cg-g" data-g="B" onclick="cgPick('B')" style="flex:1;">Class B</button>
+        <button type="button" class="secondary cg-g" data-g="C" onclick="cgPick('C')" style="flex:1;">Class C</button>
+        <button type="button" class="secondary cg-g" id="cgNone" data-g="NONE" onclick="cgPick('NONE')" style="flex:1 0 100%;">No group (my class has no A, B or C)</button>
+      </div>
+      <button style="width:100%;" onclick="saveClassGate()">Save and continue</button>
+      <div id="classGateMsg" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
   <div class="card hidden" id="linkIndexCard">
     <h2>Link Your Index Number</h2>
     <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">One-time step — this connects your account to your student records.</p>
@@ -354,12 +371,13 @@
     </select>
     <label>Your Phone Number</label>
     <input type="text" id="linkPhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
-    <label>Your Class Group (Level 100 only)</label>
+    <label>Your Class Group</label>
     <select id="linkClassInput">
       <option value="">Select your class...</option>
       <option value="A">Class A</option>
       <option value="B">Class B</option>
       <option value="C">Class C</option>
+      <option value="NONE">No group (my class has no A, B or C)</option>
     </select>
     <button onclick="linkIndexNumber()">Link Account</button>
     <div id="linkIndexMsg"></div>
@@ -445,12 +463,13 @@
     </select>
     <label>Your Phone Number</label>
     <input type="text" id="profilePhoneInput" inputmode="tel" placeholder="e.g. 024 123 4567">
-    <label>Your Class Group (Level 100 only)</label>
+    <label>Your Class Group</label>
     <select id="profileClassInput">
       <option value="">Select your class...</option>
       <option value="A">Class A</option>
       <option value="B">Class B</option>
       <option value="C">Class C</option>
+      <option value="NONE">No group (my class has no A, B or C)</option>
     </select>
     <button onclick="saveProfileDetails()">Save Details</button>
     <div id="profileDetailsMsg"></div>
@@ -968,12 +987,14 @@ async function saveProfileDetails(){
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
-  if(level==='100' && !classGroup){ msg.innerHTML = '<div class="msg err">Please select your class (A, B or C).</div>'; return; }
+  if(!classGroup){ msg.innerHTML = '<div class="msg err">Please select your class.</div>'; return; }
+  if(level==='100' && classGroup==='NONE'){ msg.innerHTML = '<div class="msg err">Level 100 students must pick A, B or C.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
     const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, classGroup, hasDeptCol: true, linkedAt: (studentCurrentAccount && studentCurrentAccount.linkedAt) || new Date().toISOString() };
     await dbUpsertStudent(record);
+    try{ await setMyGroup(classGroup); }catch(_e){}
     studentCurrentAccount = record; renderWelcome();
 
     msg.innerHTML = '<div class="msg ok">Saved.</div>';
@@ -1277,13 +1298,15 @@ async function linkIndexNumber(){
   if(!department){ msg.innerHTML = '<div class="msg err">Please select your department.</div>'; return; }
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
-  if(level==='100' && !classGroup){ msg.innerHTML = '<div class="msg err">Please select your class (A, B or C).</div>'; return; }
+  if(!classGroup){ msg.innerHTML = '<div class="msg err">Please select your class.</div>'; return; }
+  if(level==='100' && classGroup==='NONE'){ msg.innerHTML = '<div class="msg err">Level 100 students must pick A, B or C.</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
   try{
     const record = { email: studentCurrentEmail, indexNumber, name, level, department, gender, phone, classGroup, hasDeptCol: true, linkedAt: new Date().toISOString() };
     await dbUpsertStudent(record);
+    try{ await setMyGroup(classGroup); }catch(_e){}
     studentCurrentAccount = record; renderWelcome();
 
     document.getElementById('linkIndexCard').classList.add('hidden');
@@ -1770,12 +1793,42 @@ setInterval(updateWhoBar,1500);
 <script>
 /* ===== Gender + phone gate, dancing welcome avatar ===== */
 var _pgGender='';
-function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone); }
+function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone || !a.classGroup); }
 function showGate(){
   var a=studentCurrentAccount; if(!a) return;
   if(!a.department){ showDeptGate(); return; }
   if(!a.gender || !a.phone){ showProfileGate(); return; }
+  if(!a.classGroup){ showClassGate(); return; }
 }
+var _cgPick='';
+function showClassGate(){
+  var g=document.getElementById('classGate'); if(!g) return;
+  var a=studentCurrentAccount||{};
+  var n=document.getElementById('cgNone'); if(n) n.style.display=(String(a.level)==='100')?'none':'';
+  _cgPick=''; cgPick('');
+  g.classList.remove('hidden'); g.style.display='flex'; document.body.style.overflow='hidden';
+}
+function cgPick(v){
+  _cgPick=v||'';
+  document.querySelectorAll('.cg-g').forEach(function(b){ b.classList.toggle('sel', b.getAttribute('data-g')===_cgPick); });
+}
+async function setMyGroup(v){
+  return await _stu({action:'stu_set_group', group:v});
+}
+async function saveClassGate(){
+  var msg=document.getElementById('classGateMsg');
+  if(!_cgPick){ msg.innerHTML='<div class="msg err">Please choose your class.</div>'; return; }
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    await setMyGroup(_cgPick);
+    studentCurrentAccount.classGroup=_cgPick;
+    var g=document.getElementById('classGate'); g.classList.add('hidden'); g.style.display='none'; document.body.style.overflow='';
+    var pc=document.getElementById('profileClassInput'); if(pc) pc.value=_cgPick;
+    renderWelcome();
+    if(needsGate(studentCurrentAccount)) showGate(); else loadDashboard();
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
+}
+
 function showProfileGate(){
   var g=document.getElementById('profileGate'); if(!g) return;
   var a=studentCurrentAccount||{};

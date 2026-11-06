@@ -521,6 +521,7 @@
       <option value="Civil Engineering">Civil Engineering</option>
       <option value="Environmental Engineering">Environmental Engineering</option>
       <option value="missing">Department not set</option>
+      <option value="noclass">Class not chosen yet</option>
     </select>
 
     <label>Filter by Year (last 2 digits of the index number, e.g. 24)</label>
@@ -1234,6 +1235,7 @@ function renderRegisteredStudents(){
   let filtered = registeredStudentsCache;
   const deptVal = (document.getElementById('adminRegisteredDeptFilter')||{}).value || '';
   if(deptVal === 'missing') filtered = filtered.filter(a => !a.department);
+  else if(deptVal === 'noclass') filtered = filtered.filter(a => !a.classGroup);
   else if(deptVal) filtered = filtered.filter(a => a.department === deptVal);
   if(filterVal){
     filtered = filtered.filter(a =>
@@ -1268,7 +1270,7 @@ function renderRegisteredStudents(){
       <input type="checkbox" class="stuSel" style="width:auto;margin:0;" data-email="${escapeHtml(a.email)}" ${_sel.has(a.email)?'checked':''} onchange="toggleStudent(this.dataset.email,this.checked)">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; ${a.gender ? escapeHtml(a.gender) : 'Gender not set'} &middot; ${a.phone ? escapeHtml(a.phone) : 'Phone not set'} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; <span style="color:${a.classGroup ? 'inherit' : 'var(--danger)'};">${a.classGroup ? (a.classGroup==='NONE' ? 'No group' : 'Class ' + escapeHtml(a.classGroup)) : 'Class not chosen yet'}</span> &middot; ${a.gender ? escapeHtml(a.gender) : 'Gender not set'} &middot; ${a.phone ? escapeHtml(a.phone) : 'Phone not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
         <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
@@ -1793,12 +1795,12 @@ setInterval(updateWhoBar,1500);
 <script>
 /* ===== Gender + phone gate, dancing welcome avatar ===== */
 var _pgGender='';
-function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone || !a.classGroup); }
+function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone || (!a.classGroup && String(a.email||'').toLowerCase()!==ADMIN_EMAIL)); }
 function showGate(){
   var a=studentCurrentAccount; if(!a) return;
   if(!a.department){ showDeptGate(); return; }
   if(!a.gender || !a.phone){ showProfileGate(); return; }
-  if(!a.classGroup){ showClassGate(); return; }
+  if(!a.classGroup && String(a.email||'').toLowerCase()!==ADMIN_EMAIL){ showClassGate(); return; }
 }
 var _cgPick='';
 function showClassGate(){

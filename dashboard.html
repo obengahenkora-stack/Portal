@@ -521,7 +521,16 @@
       <option value="Civil Engineering">Civil Engineering</option>
       <option value="Environmental Engineering">Environmental Engineering</option>
       <option value="missing">Department not set</option>
-      <option value="noclass">Class not chosen yet</option>
+    </select>
+
+    <label>Filter by Class Group</label>
+    <select id="adminRegisteredClassFilter" onchange="renderRegisteredStudents()">
+      <option value="">All classes</option>
+      <option value="A">Class A</option>
+      <option value="B">Class B</option>
+      <option value="C">Class C</option>
+      <option value="NONE">No group</option>
+      <option value="noclass">Not chosen yet</option>
     </select>
 
     <label>Filter by Year (last 2 digits of the index number, e.g. 24)</label>
@@ -1236,8 +1245,10 @@ function renderRegisteredStudents(){
   let filtered = registeredStudentsCache;
   const deptVal = (document.getElementById('adminRegisteredDeptFilter')||{}).value || '';
   if(deptVal === 'missing') filtered = filtered.filter(a => !a.department);
-  else if(deptVal === 'noclass') filtered = filtered.filter(a => !a.classGroup);
   else if(deptVal) filtered = filtered.filter(a => a.department === deptVal);
+  const clsVal = (document.getElementById('adminRegisteredClassFilter')||{}).value || '';
+  if(clsVal === 'noclass') filtered = filtered.filter(a => !a.classGroup);
+  else if(clsVal) filtered = filtered.filter(a => String(a.classGroup||'').toUpperCase() === clsVal);
   if(filterVal){
     filtered = filtered.filter(a =>
       (a.name || '').toLowerCase().includes(filterVal) ||

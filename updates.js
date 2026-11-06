@@ -1,14 +1,15 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-06c', date:'6 Nov 2026', title:'Important notice and what is new',
+    { id:'2026-11-06d', date:'6 Nov 2026', title:'Important notice and what is new',
       all:[],
       student:[
         'NOTICE: Please open My Attendance and check that every class you attended is counted. If anything is wrong or missing, use Report an Issue on your dashboard and say the course and the date, so it can be resolved.',
         'Choose your class (A, B or C) the first time you sign in. Your attendance lists are set up from it, and you can change it later.',
         'Your Overview now shows your confirmed class and the class lists you are on.',
         'My Scores now shows what each assessment was marked out of, for example 5 / 10, and your continuous assessment total out of 40 once your lecturer turns it on.',
-        'Absent with permission is now recorded and kept in your attendance.'
+        'Absent with permission is now recorded and kept in your attendance.',
+        'Your place on your class list stays as it is until you choose your class. Choosing No group never removes you from a list.'
       ],
       staff:[
         'NOTICE: Students have been asked to check My Attendance and report any problem through Report an Issue. Their reports arrive in your Reports list.',
@@ -17,6 +18,7 @@
         'Class Check shows each student\u2019s list class next to the class they confirmed.',
         'Registered Students now shows each student\u2019s class, with a filter for those who have not chosen yet.',
         'Absent with permission is now saved properly.',
+        'Students already on your class lists stay on them until they choose a class, and choosing No group never removes anyone. A student is only moved when a real list for their new class exists.',
         'Gradebook: edit a single score, set what each assessment is marked out of, and show the Final out of 40.'
       ] }
   ];

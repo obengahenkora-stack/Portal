@@ -929,9 +929,10 @@
       <label>End of Semester Cleanup</label>
       <div class="hint">Choose a course, then pick what to clear before starting a new semester.</div>
       <label>Course</label>
-      <select id="cleanupCourseSelect">
+      <select id="cleanupCourseSelect" onchange="cleanupSummary()">
         <option value="">Select course...</option>
       </select>
+      <div id="cleanupInfo" class="hint" style="margin-top:8px;"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
         <button class="secondary" onclick="clearAttendanceHistory()">Clear Attendance Records Only</button>
         <button class="secondary" onclick="clearRosterAndAttendance()">Delete Roster &amp; All Attendance</button>
@@ -3688,6 +3689,25 @@ async function loadCleanupCourseOptions(){
   }catch(e){}
 }
 
+async function _cleanupFacts(course){
+  const data = await fetchSupabaseData();
+  const ros = (data.rosters||{})[course]||[];
+  const sess = (data.attendance||[]).filter(a=>a.course===course);
+  const marks = sess.reduce((n,a)=>n+(a.present||[]).length,0);
+  const excused = sess.reduce((n,a)=>n+(a.excused||[]).length,0);
+  const dates = sess.map(a=>String(a.date||'').slice(0,10)).filter(Boolean).sort();
+  return {students:ros.length, dates:sess.length, marks:marks, excused:excused, first:dates[0]||'', last:dates[dates.length-1]||''};
+}
+function _cleanupText(f){
+  return f.students+' student(s) on the class list; '+f.dates+' attendance date(s)'+(f.dates?' ('+f.first+' to '+f.last+')':'')+' with '+f.marks+' present mark(s)'+(f.excused?' and '+f.excused+' absent-with-permission':'')+'.';
+}
+async function cleanupSummary(){
+  const box=document.getElementById('cleanupInfo'); const course=document.getElementById('cleanupCourseSelect').value;
+  if(!box) return; if(!course){ box.innerHTML=''; return; }
+  box.innerHTML='Checking...';
+  try{ const f=await _cleanupFacts(course); box.innerHTML='<b>What is in this list:</b> '+escapeHtml(_cleanupText(f)); }catch(e){ box.innerHTML=''; }
+}
+
 async function clearAttendanceHistory(){
   const course = document.getElementById('cleanupCourseSelect').value;
   const msg = document.getElementById('cleanupMsg');
@@ -3695,7 +3715,8 @@ async function clearAttendanceHistory(){
     msg.innerHTML = '<div class="msg err">Select a course first.</div>';
     return;
   }
-  if(!confirm(`Delete ALL attendance session records for "${course}"? The roster stays intact. This cannot be undone.`)) return;
+  let _f; try{ _f = await _cleanupFacts(course); }catch(e){ _f = null; }
+  if(!confirm(`Delete ALL attendance session records for "${course}"?\n\n${_f?'This will remove: '+_cleanupText(_f)+'\n\n':''}The roster stays intact. This cannot be undone.`)) return;
 
   msg.innerHTML = '<div class="msg ok">Clearing...</div>';
   try{
@@ -3715,7 +3736,8 @@ async function clearRosterAndAttendance(){
     msg.innerHTML = '<div class="msg err">Select a course first.</div>';
     return;
   }
-  if(!confirm(`Delete the ROSTER and ALL attendance records for "${course}"? This fully removes the course from Attendance. This cannot be undone.`)) return;
+  let _f; try{ _f = await _cleanupFacts(course); }catch(e){ _f = null; }
+  if(!confirm(`Delete the ROSTER and ALL attendance records for "${course}"?\n\n${_f?'This will remove: '+_cleanupText(_f)+'\n\n':''}This fully removes the course from Attendance. This cannot be undone.`)) return;
 
   msg.innerHTML = '<div class="msg ok">Deleting...</div>';
   try{

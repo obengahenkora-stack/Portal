@@ -52,7 +52,7 @@
 <script>(function(){var d=document.documentElement;d.classList.add('ce-hold');var r=function(){d.classList.remove('ce-hold');};document.addEventListener('DOMContentLoaded',function(){setTimeout(r,60);});setTimeout(r,2500);})();</script>
 <link rel="stylesheet" href="theme.css">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
-<script src="db-sync.js?v=2"></script>
+<script src="db-sync.js?v=3"></script>
 <script src="filestore.js"></script>
 </head>
 <body>
@@ -178,7 +178,7 @@ async function verifyAndShowForm(){
         return;
       }
 
-      verifiedSession = { course, date, sessionKey, token, lat: position.coords.latitude, lng: position.coords.longitude, startedBy: null };
+      verifiedSession = { course, date, sessionKey, token, pass: chk.pass || '', lat: position.coords.latitude, lng: position.coords.longitude, startedBy: null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
@@ -212,7 +212,7 @@ async function isDbMigrated(){
 async function attemptCheckinWrite(idx){
   if(await isDbMigrated()){
     if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
-    return await DBS.qrCheckIn(verifiedSession.course, verifiedSession.date, verifiedSession.token, idx, verifiedSession.lat, verifiedSession.lng);
+    return await DBS.qrCheckIn(verifiedSession.course, verifiedSession.date, verifiedSession.token, idx, verifiedSession.lat, verifiedSession.lng, verifiedSession.pass);
   }
   const data = await fetchSupabaseData();
   const attendanceRecords = data.attendance || [];

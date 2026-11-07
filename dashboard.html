@@ -125,6 +125,28 @@
   .navback:not(.hidden):hover{background:rgba(214,58,58,.18)!important}
   .navback:not(.hidden):active{transform:scale(.97)}
   .navback svg{flex:none}
+
+  /* Students pane: calm, tidy cards */
+  .adm-card{position:relative}
+  .adm-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .adm-h h2{margin:0 !important;font-size:1.12rem !important;display:flex;align-items:center;gap:8px}
+  .adm-badge{display:inline-block;padding:2px 10px;border-radius:999px;background:rgba(127,127,127,.18);font-size:.78rem;font-weight:700;letter-spacing:0}
+  .adm-sub{color:var(--muted);font-size:.86rem;margin:-4px 0 14px}
+  .adm-acts{display:flex;gap:8px;flex-wrap:wrap}
+  .adm-chip{width:auto !important;padding:7px 14px !important;border-radius:999px !important;font-size:.78rem !important;font-weight:700 !important;text-transform:none !important;letter-spacing:0 !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--ink) !important;box-shadow:none !important;margin:0 !important}
+  .adm-chip:hover{background:rgba(127,127,127,.14) !important}
+  .adm-chip.danger{border-color:rgba(214,58,58,.6) !important;color:#d23a3a !important}
+  .adm-card input[type=text],.adm-card select{background:var(--bg) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:12px !important;padding:11px 12px !important;margin:0 !important;width:100%;box-sizing:border-box}
+  .adm-row{display:flex;gap:8px}
+  .adm-row input{flex:1;min-width:0}
+  .adm-row button{width:auto !important;margin:0 !important;padding:0 20px !important;border-radius:12px !important}
+  .adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
+  .adm-f span{display:block;font-size:.72rem;color:var(--muted);margin:0 0 4px 2px;font-weight:600;text-transform:none;letter-spacing:0}
+  .adm-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--bg);margin:0 0 12px}
+  .adm-bar label{display:flex;align-items:center;gap:6px;font-size:.82rem;margin:0;text-transform:none;letter-spacing:0;color:var(--ink)}
+  .adm-bar select{width:auto !important;padding:7px 10px !important}
+  .adm-bar .adm-chip{margin:0 !important}
+  #adminRegisteredList{background:transparent;border-radius:14px;padding:0;color:var(--ink);max-height:480px}
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
@@ -161,16 +183,6 @@
   .ah-tile .ah-n,.ah-tile .ah-l{color:#fff;position:relative;z-index:1}
   .ah-tile .ah-l{opacity:.92}
   /* play-card look: admin search + registered students */
-  #adminSearchCard,#adminRegisteredCard{position:relative;overflow:hidden;border:none !important;border-radius:22px !important;color:#fff;box-shadow:0 10px 24px rgba(30,41,90,.24) !important}
-  #adminSearchCard{background:linear-gradient(135deg,#0ea5e9,#8b5cf6) !important}
-  #adminRegisteredCard{background:linear-gradient(135deg,#10b981,#0ea5e9 55%,#6366f1) !important}
-  #adminSearchCard::after,#adminRegisteredCard::after{content:"";position:absolute;right:-40px;top:-44px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none}
-  #adminSearchCard h2,#adminRegisteredCard h2,#adminSearchCard p,#adminSearchCard label,#adminRegisteredCard label{color:#fff !important;position:relative;z-index:1}
-  #adminSearchCard input,#adminRegisteredCard input[type=text],#adminRegisteredCard select{background:rgba(255,255,255,.96) !important;color:#10222c !important;border:none !important;border-radius:14px !important}
-  #adminSearchCard > button:not(.secondary),#adminRegisteredCard button,#adminRegisteredCard button:hover,#adminRegisteredCard button:focus,#adminRegisteredCard button:active,#adminSearchCard > button:hover{background:rgba(255,255,255,.95) !important;color:#10222c !important;border:none !important;border-radius:999px !important;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.18)}
-  #adminRegisteredCard #adminDeleteSelBtn,#adminRegisteredCard #adminDeleteLevelBtn{background:linear-gradient(135deg,#ef4444,#9f1239) !important;color:#fff !important}
-  #adminMovePanel,#adminBulkActions{background:rgba(255,255,255,.16) !important;border:1px solid rgba(255,255,255,.3) !important;border-radius:16px !important}
-  #adminMovePanel label{color:#fff !important}
   #adminRegisteredList{background:var(--card);border-radius:16px;padding:6px;color:var(--ink)}
   #adminRegisteredList label{color:inherit !important}
   .ah-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
@@ -496,69 +508,70 @@
     </div>
   </div>
 
-  <div class="card hidden" id="adminSearchCard">
-    <h2>Admin: Search Any Student</h2>
-    <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Look up any student's scores, attendance, and reports by index number.</p>
-    <label>Student Index Number</label>
-    <input type="text" id="adminSearchIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') adminSearchStudent()">
-    <button onclick="adminSearchStudent()">Search</button>
+  <div class="card hidden adm-card" id="adminSearchCard">
+    <div class="adm-h"><h2>Find a student</h2></div>
+    <div class="adm-sub">Look up scores, attendance and reports by index number.</div>
+    <div class="adm-row">
+      <input type="text" id="adminSearchIndexInput" placeholder="e.g. UEB0700123" onkeydown="if(event.key==='Enter') adminSearchStudent()">
+      <button onclick="adminSearchStudent()">Search</button>
+    </div>
   </div>
 
-  <div class="card hidden" id="adminRegisteredCard">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h2 style="margin:0;">All Registered Students (<span id="adminRegisteredCount">0</span>)</h2>
-      <button class="secondary" style="padding:6px 14px;font-size:0.75rem;" onclick="hideRegisteredStudentsList()">Hide List</button>
+  <div class="card hidden adm-card" id="adminRegisteredCard">
+    <div class="adm-h">
+      <h2>Registered students <span class="adm-badge" id="adminRegisteredCountWrap"><span id="adminRegisteredCount">0</span></span></h2>
+      <div class="adm-acts">
+        <button class="adm-chip" onclick="openIndexCheck()">Check index numbers</button>
+        <button class="adm-chip" onclick="hideRegisteredStudentsList()">Hide</button>
+      </div>
     </div>
-    <button class="secondary" style="margin-top:10px;" onclick="openIndexCheck()">Check Index Numbers</button>
     <div id="indexCheckBox"></div>
-    <label>Filter by Name, Index Number, or Email</label>
-    <input type="text" id="adminRegisteredFilter" placeholder="Type to filter..." oninput="renderRegisteredStudents()">
-    <label>Filter by Level</label>
-    <select id="adminRegisteredLevelFilter" onchange="renderRegisteredStudents()">
-      <option value="" selected disabled>Select a level to view students...</option>
-      <option value="all">Show All Levels</option>
-      <option value="100">Level 100</option>
-      <option value="200">Level 200</option>
-      <option value="300">Level 300</option>
-      <option value="400">Level 400</option>
-      <option value="missing">Missing Level Only</option>
-    </select>
-
-    <label>Filter by Department</label>
-    <select id="adminRegisteredDeptFilter" onchange="renderRegisteredStudents()">
-      <option value="">All departments</option>
-      <option value="Civil Engineering">Civil Engineering</option>
-      <option value="Environmental Engineering">Environmental Engineering</option>
-      <option value="missing">Department not set</option>
-    </select>
-
-    <label>Filter by Class Group</label>
-    <select id="adminRegisteredClassFilter" onchange="renderRegisteredStudents()">
-      <option value="">All classes</option>
-      <option value="A">Class A</option>
-      <option value="B">Class B</option>
-      <option value="C">Class C</option>
-      <option value="NONE">No group</option>
-      <option value="noclass">Not chosen yet</option>
-    </select>
-
-    <label>Filter by Year (last 2 digits of the index number, e.g. 24)</label>
-    <select id="adminRegisteredYearFilter" onchange="renderRegisteredStudents()"><option value="">All years</option></select>
-
-    <div id="adminMovePanel" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
-      <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;margin:0;"><input type="checkbox" id="adminSelectAll" onchange="toggleSelectAllShown(this.checked)" style="width:auto;margin:0;"> Select all shown</label>
-      <span id="adminMoveLabel" style="font-size:0.82rem;"></span>
-      <select id="adminMoveTarget" style="width:auto;"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
-      <button class="secondary" id="adminMoveBtn" style="font-size:0.78rem;" onclick="moveShownStudents()">Move selected</button>
-      <button class="secondary" id="adminDeleteSelBtn" style="font-size:0.78rem;border-color:var(--danger);color:var(--danger);" onclick="deleteSelectedStudents()">Delete selected</button>
+    <input type="text" id="adminRegisteredFilter" placeholder="Search name, index number or email" oninput="renderRegisteredStudents()">
+    <div class="adm-grid">
+      <div class="adm-f"><span>Level</span>
+        <select id="adminRegisteredLevelFilter" onchange="renderRegisteredStudents()">
+          <option value="" selected disabled>Choose a level</option>
+          <option value="all">All levels</option>
+          <option value="100">Level 100</option>
+          <option value="200">Level 200</option>
+          <option value="300">Level 300</option>
+          <option value="400">Level 400</option>
+          <option value="missing">Level missing</option>
+        </select></div>
+      <div class="adm-f"><span>Department</span>
+        <select id="adminRegisteredDeptFilter" onchange="renderRegisteredStudents()">
+          <option value="">All departments</option>
+          <option value="Civil Engineering">Civil Engineering</option>
+          <option value="Environmental Engineering">Environmental Engineering</option>
+          <option value="missing">Not set</option>
+        </select></div>
+      <div class="adm-f"><span>Class group</span>
+        <select id="adminRegisteredClassFilter" onchange="renderRegisteredStudents()">
+          <option value="">All classes</option>
+          <option value="A">Class A</option>
+          <option value="B">Class B</option>
+          <option value="C">Class C</option>
+          <option value="NONE">No group</option>
+          <option value="noclass">Not chosen yet</option>
+        </select></div>
+      <div class="adm-f"><span>Year (index ends with)</span>
+        <select id="adminRegisteredYearFilter" onchange="renderRegisteredStudents()"><option value="">All years</option></select></div>
     </div>
 
-    <div id="adminBulkActions" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
-      <button id="adminMigrateBtn" class="secondary" style="font-size:0.78rem;" onclick="migrateSelectedLevel()">Migrate to Next Level</button>
-      <button id="adminDeleteLevelBtn" class="secondary" style="font-size:0.78rem;border-color:var(--danger);color:var(--danger);" onclick="deleteSelectedLevel()">Delete All in This Level</button>
+    <div id="adminMovePanel" class="hidden adm-bar">
+      <label><input type="checkbox" id="adminSelectAll" onchange="toggleSelectAllShown(this.checked)" style="width:auto;margin:0;"> Select all shown</label>
+      <span id="adminMoveLabel" style="font-size:.82rem;"></span>
+      <select id="adminMoveTarget"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <button class="adm-chip" id="adminMoveBtn" onclick="moveShownStudents()">Move selected</button>
+      <button class="adm-chip danger" id="adminDeleteSelBtn" onclick="deleteSelectedStudents()">Delete selected</button>
     </div>
 
-    <div id="adminRegisteredList" style="max-height:400px;overflow-y:auto;"><div class="empty">Loading...</div></div>
+    <div id="adminBulkActions" class="hidden adm-bar">
+      <button id="adminMigrateBtn" class="adm-chip" onclick="migrateSelectedLevel()">Migrate to next level</button>
+      <button id="adminDeleteLevelBtn" class="adm-chip danger" onclick="deleteSelectedLevel()">Delete all in this level</button>
+    </div>
+
+    <div id="adminRegisteredList"><div class="empty">Loading...</div></div>
   </div>
 
   <input type="hidden" id="dashIndexInput">
@@ -2065,6 +2078,6 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=10"></script>
+<script src="updates.js?v=11"></script>
 </body>
 </html>

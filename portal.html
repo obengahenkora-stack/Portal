@@ -713,6 +713,19 @@
       <div id="dbmMsg" style="margin-top:12px;"></div>
     </div>
 
+    <div class="card hidden" id="selfieCard">
+      <label>Selfie Review</label>
+      <div class="hint">Photos taken when students checked in by QR. Each photo is kept for 90 days, then removed unless you tick <b>Keep</b>. Use this to settle a student's attendance complaint.</div>
+      <label>Course</label>
+      <select id="sfCourse" onchange="sfCourseChanged()"></select>
+      <label>Date</label>
+      <select id="sfDate"></select>
+      <button onclick="sfLoad()">Show photos</button>
+      <button class="secondary hidden" id="sfPrintBtn" onclick="sfPrint()">Print or save as PDF</button>
+      <div id="sfMsg" style="margin-top:10px;"></div>
+      <div id="sfBody" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card hidden" id="allSessionsCard">
       <label>All Saved Attendance Sessions</label>
       <div class="hint">Every attendance session stored in the system, including courses with no class list. Students see these counts on their dashboards. Delete any session that should not exist.</div>
@@ -1459,6 +1472,82 @@ function switchTab(tab){
 }
 
 
+/* ===== Selfie Review ===== */
+var _sfData=null, _sfRows=[];
+async function sfInit(){
+  const cs=document.getElementById('sfCourse'); if(!cs) return;
+  try{
+    const data=await fetchSupabaseData(); _sfData=data;
+    const courses=[...new Set((data.attendance||[]).map(a=>a.course))].filter(c=>visibleCourses([c]).length).sort();
+    cs.innerHTML=courses.length?courses.map(c=>`<option>${escapeHtml(c)}</option>`).join(''):'<option value="">No attendance sessions yet</option>';
+    sfCourseChanged();
+  }catch(e){ document.getElementById('sfMsg').innerHTML='<div class="msg err">Could not load courses.</div>'; }
+}
+function sfCourseChanged(){
+  const c=document.getElementById('sfCourse').value, ds=document.getElementById('sfDate');
+  const dates=((_sfData&&_sfData.attendance)||[]).filter(a=>a.course===c).map(a=>a.date).sort().reverse();
+  ds.innerHTML=dates.map(d=>`<option>${escapeHtml(d)}</option>`).join('');
+}
+async function sfLoad(){
+  const course=document.getElementById('sfCourse').value, date=document.getElementById('sfDate').value;
+  const msg=document.getElementById('sfMsg'), body=document.getElementById('sfBody');
+  if(!course||!date){ msg.innerHTML='<div class="msg err">Pick a course and a date.</div>'; return; }
+  msg.innerHTML='<div class="msg ok">Loading...</div>'; body.innerHTML='';
+  try{
+    const data=await fetchSupabaseData(true); const full=await fetchSupabaseData();
+    const rec=(full.attendance||[]).find(a=>a.course===course&&a.date===date);
+    const roster=(full.rosters&&full.rosters[course])||[];
+    const nm={}; roster.forEach(r=>{ nm[String(r.indexNumber).toUpperCase().replace(/[^A-Z0-9]/g,'')]=r.name||''; });
+    const present=(rec&&rec.present)||[], times=(rec&&rec.checkInTimes)||{};
+    if(!present.length){ msg.innerHTML='<div class="msg err">Nobody is marked present on that date.</div>'; return; }
+    if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+    const l=await DBS.api({action:'selfie_list',course,date});
+    if(!l||!l.ok) throw new Error((l&&l.error)||'Could not load photos');
+    const has={}; (l.items||[]).forEach(i=>{ has[i.idx]=i; });
+    _sfRows=present.map(i=>{ const k=String(i).toUpperCase().replace(/[^A-Z0-9]/g,''); return {idx:i,key:k,name:nm[k]||'',time:times[i]||'',item:has[k]||null}; })
+      .sort((a,b)=>String(a.time).localeCompare(String(b.time)));
+    const withPic=_sfRows.filter(r=>r.item).length;
+    msg.innerHTML=`<div class="msg ok">${withPic} of ${_sfRows.length} present students have a selfie. Photos older than ${l.days||90} days are removed unless kept.</div>`;
+    let h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">';
+    _sfRows.forEach((r,n)=>{
+      const t=r.time?new Date(r.time).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}):'';
+      h+=`<div style="border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;font-size:.78rem;">
+        <div id="sfImg${n}" style="width:100%;aspect-ratio:1;border-radius:8px;background:var(--bg2,#eee);display:flex;align-items:center;justify-content:center;color:var(--muted);overflow:hidden;">${r.item?'Loading...':'No selfie'}</div>
+        <div style="font-weight:700;margin-top:6px;">${escapeHtml(r.name||'(not on list)')}</div>
+        <div style="color:var(--muted)">${escapeHtml(r.idx)}${t?' · '+t:''}</div>
+        ${r.item?`<label style="display:flex;gap:6px;justify-content:center;align-items:center;margin-top:4px;cursor:pointer;"><input type="checkbox" ${r.item.keep?'checked':''} onchange="sfKeep(${n},this.checked)"> Keep</label>`:''}
+      </div>`;
+    });
+    body.innerHTML=h+'</div>';
+    document.getElementById('sfPrintBtn').classList.toggle('hidden', !withPic);
+    let next=0; const worker=async()=>{ while(next<_sfRows.length){ const n=next++; const r=_sfRows[n]; if(!r.item) continue;
+      try{ const g=await DBS.api({action:'selfie_get',course,date,idx:r.key}); const el=document.getElementById('sfImg'+n);
+        if(g&&g.ok){ r.photo=g.photo; el.innerHTML=`<img src="${g.photo}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" onclick="sfZoom(${n})">`; } else if(el) el.textContent='Removed'; }catch(e){ const el=document.getElementById('sfImg'+n); if(el) el.textContent='Could not load'; } } };
+    await Promise.all([worker(),worker(),worker(),worker()]);
+  }catch(e){ msg.innerHTML=`<div class="msg err">${escapeHtml(e.message)}</div>`; }
+}
+async function sfKeep(n,on){
+  const r=_sfRows[n], course=document.getElementById('sfCourse').value, date=document.getElementById('sfDate').value;
+  try{ const j=await DBS.api({action:'selfie_keep',course,date,idx:r.key,keep:!!on}); if(!j||!j.ok) throw new Error((j&&j.error)||'failed'); }
+  catch(e){ alert('Could not save: '+e.message); }
+}
+function sfZoom(n){
+  const r=_sfRows[n]; if(!r||!r.photo) return;
+  const o=document.createElement('div'); o.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:16px;';
+  o.innerHTML=`<img src="${r.photo}" style="width:min(86vw,420px);height:min(86vw,420px);object-fit:cover;border-radius:12px;"><div style="margin-top:10px;font-weight:700">${escapeHtml(r.name||'(not on list)')}</div><div>${escapeHtml(r.idx)}</div><div style="opacity:.7;margin-top:8px;font-size:.85rem">Tap anywhere to close</div>`;
+  o.onclick=function(){ o.remove(); }; document.body.appendChild(o);
+}
+function sfPrint(){
+  const course=document.getElementById('sfCourse').value, date=document.getElementById('sfDate').value;
+  const rows=_sfRows.filter(r=>r.photo); if(!rows.length){ alert('Wait for the photos to finish loading.'); return; }
+  let st=document.getElementById('sfPrintCss'); if(!st){ st=document.createElement('style'); st.id='sfPrintCss'; st.textContent='@media print{body.sfPrinting *{visibility:hidden!important}body.sfPrinting #sfPrintArea,body.sfPrinting #sfPrintArea *{visibility:visible!important}body.sfPrinting #sfPrintArea{position:absolute;left:0;top:0;width:100%;background:#fff;color:#000}}#sfPrintArea{display:none}@media print{#sfPrintArea{display:block}}'; document.head.appendChild(st); }
+  let a=document.getElementById('sfPrintArea'); if(a) a.remove(); a=document.createElement('div'); a.id='sfPrintArea';
+  a.innerHTML=`<h2 style="font-family:sans-serif">${escapeHtml(course)} — ${escapeHtml(date)}: check-in photos</h2><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-family:sans-serif;font-size:11px">`+rows.map(r=>`<div style="text-align:center;break-inside:avoid"><img src="${r.photo}" style="width:100%;aspect-ratio:1;object-fit:cover"><div style="font-weight:700">${escapeHtml(r.name||'(not on list)')}</div><div>${escapeHtml(r.idx)}</div></div>`).join('')+'</div>';
+  document.body.appendChild(a); document.body.classList.add('sfPrinting');
+  const done=function(){ document.body.classList.remove('sfPrinting'); window.removeEventListener('afterprint',done); };
+  window.addEventListener('afterprint',done); setTimeout(function(){ window.print(); },100);
+}
+
 /* ===== Attendance tile launcher ===== */
 var _ATT_IC={
  check:'<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
@@ -1478,6 +1567,7 @@ var _ATT_TILES=[
  {g:'Every class',id:'takeAttendanceCard',t:'Take Attendance',d:'Tick students as they arrive. Saves automatically.',i:'check',c:'t-go'},
  {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
  {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
+ {g:'Records',id:'selfieCard',t:'Selfie Review',d:'See check-in photos. Keep or print them.',i:'users'},
  {g:'Records',id:'attendanceEditCard',t:'Review & Edit',d:'Fix a saved session before it becomes final.',i:'edit'},
  {g:'Records',id:'classCheckCard',t:'Class Check',d:'See who confirmed their class and who has not.',i:'users'},
  {g:'Records',id:'signupRosterCard',t:'Class List from Sign-ups',d:'Pick a level and class; registered students fill in.',i:'users'},
@@ -1640,6 +1730,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
+  var _sc=document.getElementById('selfieCard'); if(_sc){ _sc.classList.remove('hidden'); try{ sfInit(); }catch(e){} }
   if(canManageRosters()){ document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(isOwner()){ document.getElementById('dbMigrateCard').classList.remove('hidden'); try{dbmStatus();}catch(e){} document.getElementById('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} } document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} if(isOwner()){ document.getElementById('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} } } try{delAttInit();}catch(e){}
   lmInit();
   loadAttendanceCourseOptions();

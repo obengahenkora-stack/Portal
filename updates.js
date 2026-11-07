@@ -1,10 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-07g', date:'7 Nov 2026', title:'Cleaner navigation',
+    { id:'2026-11-07h', date:'7 Nov 2026', title:'Cleaner navigation',
       all:['The Back buttons are now neat rounded red buttons with an arrow, and sit side by side so they take less room.'],
       student:['The Signed in line is now small and sits at the bottom of the page instead of floating over your screen.'],
-      staff:['The Signed in line is now small and sits at the bottom of the page.','The Students page (Find a student and Registered students) has a calmer, tidier layout: one search box, four neat filters in a grid, and small rounded action buttons.'] },
+      staff:['The Signed in line is now small and sits at the bottom of the page.','The Students page (Find a student and Registered students) has a calmer, tidier layout: one search box, four neat filters in a grid, and small rounded action buttons.','The tool tiles in the Assessment Portal, Attendance Portal and Faculty Console are now compact cards in a tidy list, with a coloured icon, a title and one short line, instead of big colour blocks.'] },
     { id:'2026-11-07c', date:'7 Nov 2026', title:'Take Attendance is tidier',
       all:[],
       student:[],

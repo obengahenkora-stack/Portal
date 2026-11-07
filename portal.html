@@ -691,6 +691,8 @@
       </div>
     </div>
       <div id="attChecklistBlock">
+      <button type="button" onclick="tagScanOpen()" style="margin-bottom:12px;">&#128247; Scan student tags</button>
+      <div class="hint" style="margin:-4px 0 12px;">Scan each student's tag QR code. They are ticked present as you scan. The course and date above are used.</div>
       <label>Search Index Number</label>
       <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
 
@@ -1471,6 +1473,67 @@ function switchTab(tab){
   if(tab === 'attendance'){ attGo(null); } if(tab === 'teacher'){ tchGo(null); }
 }
 
+
+/* ===== Scan student tags (QR on the tag holds a link ending with the index number) ===== */
+var _tagS=null;
+function tagIdxFrom(txt){
+  txt=String(txt||'').trim(); var m=txt.match(/[A-Za-z]{3}\d{7}/); if(m) return m[0].toUpperCase();
+  try{ var u=new URL(txt); var seg=u.pathname.split('/').filter(Boolean).pop()||''; if(/^[A-Za-z0-9]{5,16}$/.test(seg)) return seg.toUpperCase(); }catch(e){}
+  if(/^[A-Za-z0-9]{5,16}$/.test(txt)) return txt.toUpperCase();
+  return '';
+}
+function tagBeep(ok){ try{ var C=window.AudioContext||window.webkitAudioContext; if(!C) return; _tagS.ac=_tagS.ac||new C(); var o=_tagS.ac.createOscillator(), g=_tagS.ac.createGain(); o.connect(g); g.connect(_tagS.ac.destination); o.frequency.value=ok?880:220; g.gain.value=.08; o.start(); o.stop(_tagS.ac.currentTime+(ok?.12:.3)); }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(ok?60:[80,60,80]); }catch(e){} }
+function tagLoadLib(){ return new Promise(function(res,rej){ if(window.jsQR) return res(); var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'; s.onload=res; s.onerror=function(){ rej(new Error('Could not load the scanner. Check your internet.')); }; document.head.appendChild(s); }); }
+async function tagScanOpen(){
+  const course=document.getElementById('attendanceCourseSelect').value, date=document.getElementById('attendanceDateInput').value;
+  if(!course||!date){ alert('Select a course and date first.'); return; }
+  if(!document.querySelectorAll('#attendanceChecklist .attendance-row').length){ alert('The class list has not loaded yet. Pick the course and date and wait for the names to appear.'); return; }
+  if(_tagS) return;
+  _tagS={course:course,date:date,n:0,last:'',lastAt:0,stream:null,raf:0,busy:false};
+  const o=document.createElement('div'); o.id='tagOv'; o.style.cssText='position:fixed;inset:0;z-index:99990;background:#000;color:#fff;display:flex;flex-direction:column;font-family:inherit';
+  o.innerHTML='<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0b2e1f"><div><div style="font-weight:700">'+escapeHtml(course)+'</div><div style="font-size:.8rem;opacity:.8">'+escapeHtml(date)+' · marked <b id="tagN">0</b></div></div><button type="button" id="tagDone" style="background:#fff;color:#0b2e1f;border:0;border-radius:10px;padding:10px 16px;font-weight:700">Done</button></div>'
+   +'<div style="position:relative;flex:1;min-height:0"><video id="tagVid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:50%;top:50%;width:62%;max-width:300px;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div></div>'
+   +'<div id="tagRes" style="padding:16px;text-align:center;font-weight:700;min-height:84px;background:#0b2e1f">Point the camera at a student tag</div><canvas id="tagCv" style="display:none"></canvas>';
+  document.body.appendChild(o);
+  document.getElementById('tagDone').onclick=tagScanClose;
+  const res=document.getElementById('tagRes');
+  try{
+    await tagLoadLib();
+    _tagS.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    const v=document.getElementById('tagVid'); v.srcObject=_tagS.stream; await v.play().catch(function(){});
+  }catch(e){ res.style.background='#8a1f15'; res.textContent=(e&&e.name==='NotAllowedError')?'Camera access was refused. Allow the camera for this page, then try again.':('Could not start the camera. '+(e&&e.message||'')); return; }
+  const cv=document.getElementById('tagCv'), g=cv.getContext('2d',{willReadFrequently:true});
+  const loop=function(){
+    if(!_tagS) return; const v=document.getElementById('tagVid');
+    if(v && v.videoWidth && !_tagS.busy){
+      const sc=Math.min(1,640/v.videoWidth); cv.width=Math.round(v.videoWidth*sc); cv.height=Math.round(v.videoHeight*sc);
+      g.drawImage(v,0,0,cv.width,cv.height);
+      const im=g.getImageData(0,0,cv.width,cv.height), q=window.jsQR(im.data,im.width,im.height,{inversionAttempts:'attemptBoth'});
+      if(q && q.data) tagHandle(q.data);
+    }
+    _tagS.raf=setTimeout(loop,140);
+  };
+  loop();
+}
+function tagShow(ok,html){ const r=document.getElementById('tagRes'); if(!r) return; r.style.background=ok==='ok'?'#1f8a4c':(ok==='warn'?'#b7791f':'#8a1f15'); r.innerHTML=html; }
+function tagHandle(raw){
+  const idx=tagIdxFrom(raw), now=Date.now();
+  if(!idx){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; _tagS.last=''; tagBeep(false); tagShow('bad','Not a student tag'); } return; }
+  if(idx===_tagS.last && now-_tagS.lastAt<2500) return;      // same tag still in view
+  _tagS.last=idx; _tagS.lastAt=now;
+  const key=idx.replace(/[^A-Z0-9]/g,'');
+  let row=null; document.querySelectorAll('#attendanceChecklist .attendance-row').forEach(function(r){ if(String(r.getAttribute('data-index')).toUpperCase().replace(/[^A-Z0-9]/g,'')===key) row=r; });
+  if(!row){ tagBeep(false); tagShow('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list. Not marked.'); return; }
+  const name=(row.querySelector('div > div')||{}).textContent||idx, st=row.querySelector('.attendance-status');
+  if(st.textContent==='PRESENT'){ tagBeep(false); tagShow('warn','<div style="font-size:1.1rem">'+escapeHtml(name)+'</div>Already marked present'); return; }
+  toggleAttendanceRow(row); _tagS.n++; const n=document.getElementById('tagN'); if(n) n.textContent=_tagS.n;
+  tagBeep(true); tagShow('ok','<div style="font-size:1.2rem">&#10003; '+escapeHtml(name)+'</div>'+escapeHtml(idx)+' marked present');
+}
+function tagScanClose(){
+  if(!_tagS) return; clearTimeout(_tagS.raf); try{ if(_tagS.stream) _tagS.stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+  const n=_tagS.n; _tagS=null; const o=document.getElementById('tagOv'); if(o) o.remove();
+  const m=document.getElementById('saveAttendanceMsg'); if(m) m.innerHTML='<div class="msg ok">'+n+' student'+(n===1?'':'s')+' marked by tag scan. Changes save automatically.</div>';
+}
 
 /* ===== Selfie Review ===== */
 var _sfData=null, _sfRows=[];

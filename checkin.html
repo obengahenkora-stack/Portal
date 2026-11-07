@@ -46,6 +46,17 @@
   .msg.err{ background:rgba(192,57,43,0.08); color:var(--danger); }
   .success-icon{ font-size:3rem; margin-bottom:10px; }
   .hidden{ display:none; }
+
+  #selfieOv{position:fixed;inset:0;z-index:99;background:#0b2e1f;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;font-family:inherit}
+  #selfieOv.hidden{display:none}
+  #selfieOv h2{margin:0 0 6px;font-size:1.35rem}
+  #selfieOv p{margin:0 0 14px;opacity:.85;font-size:.95rem;max-width:340px}
+  #selfieRing{width:min(72vw,300px);height:min(72vw,300px);border-radius:50%;overflow:hidden;border:5px solid #3fbf7f;background:#000;box-shadow:0 0 0 8px rgba(63,191,127,.25);margin-bottom:14px}
+  #selfieRing video,#selfieRing canvas{width:100%;height:100%;object-fit:cover;display:block}
+  #selfieVid{transform:scaleX(-1)}
+  #selfieOv button{margin-top:10px;min-width:220px;padding:13px 18px;border-radius:12px;border:0;font-weight:700;font-size:1rem;cursor:pointer;background:#fff;color:#0b2e1f}
+  #selfieOv button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
+  #selfieSt{min-height:1.4em;font-weight:700;margin-bottom:4px}
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
@@ -79,6 +90,17 @@
     <h1>Checked In!</h1>
     <p class="sub" id="successText">You've been marked present.</p>
   </div>
+</div>
+
+<div id="selfieOv" class="hidden">
+  <h2>Face the camera</h2>
+  <p id="selfieHelp">Hold the phone close to your face. Good light, no cap or dark glasses.</p>
+  <div id="selfieRing"><video id="selfieVid" playsinline muted autoplay></video><canvas id="selfieCv" class="hidden"></canvas></div>
+  <div id="selfieSt">Opening camera...</div>
+  <button id="selfieSnap" type="button">Take photo</button>
+  <button id="selfieUse" type="button" class="hidden">Use this photo</button>
+  <button id="selfieRetake" type="button" class="ghost hidden">Retake</button>
+  <button id="selfieSkip" type="button" class="ghost hidden">Continue without a selfie</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -259,6 +281,56 @@ async function safeCheckinWrite(idx){
   throw new Error("Check-in could not be confirmed after several attempts — please tap Check In again.");
 }
 
+/* ===== Selfie at check-in: 320px JPEG, taken automatically when a face is seen (or with the button) ===== */
+function takeSelfie(){
+  return new Promise(function(resolve){
+    var ov=document.getElementById('selfieOv'), vid=document.getElementById('selfieVid'), cv=document.getElementById('selfieCv');
+    var st=document.getElementById('selfieSt'), snap=document.getElementById('selfieSnap'), use=document.getElementById('selfieUse'), re=document.getElementById('selfieRetake'), skip=document.getElementById('selfieSkip');
+    var stream=null, timer=null, done=false, shot=null;
+    function show(el,on){ el.classList.toggle('hidden',!on); }
+    function stop(){ try{ clearInterval(timer); }catch(e){} try{ if(stream) stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} stream=null; }
+    function finish(v){ if(done) return; done=true; stop(); ov.classList.add('hidden'); resolve(v); }
+    function capture(){
+      if(!vid.videoWidth) return;
+      var s=Math.min(vid.videoWidth,vid.videoHeight), sx=(vid.videoWidth-s)/2, sy=(vid.videoHeight-s)/2;
+      cv.width=320; cv.height=320; var g=cv.getContext('2d');
+      g.translate(320,0); g.scale(-1,1); g.drawImage(vid,sx,sy,s,s,0,0,320,320);   // mirrored like the preview
+      shot=cv.toDataURL('image/jpeg',0.6); stop();
+      show(vid,false); show(cv,true); show(snap,false); show(use,true); show(re,true); show(skip,false);
+      st.textContent='Is this clear?';
+    }
+    function begin(){
+      shot=null; show(cv,false); show(vid,true); show(snap,true); show(use,false); show(re,false); show(skip,false);
+      st.textContent='Opening camera...'; ov.classList.remove('hidden');
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ fail('This phone or browser cannot open the camera.'); return; }
+      navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:640}},audio:false}).then(function(s){
+        if(done){ s.getTracks().forEach(function(t){t.stop();}); return; }
+        stream=s; vid.srcObject=s; var p=vid.play&&vid.play(); if(p&&p.catch) p.catch(function(){});
+        var det=null; try{ if('FaceDetector' in window) det=new FaceDetector({fastMode:true,maxDetectedFaces:1}); }catch(e){ det=null; }
+        if(det){
+          st.textContent='Looking for your face...'; var seen=0;
+          timer=setInterval(function(){ if(!vid.videoWidth) return; det.detect(vid).then(function(f){ seen = (f&&f.length)? seen+1 : 0; if(seen>=3) capture(); }).catch(function(){ clearInterval(timer); st.textContent='Face the camera, then tap Take photo'; }); },450);
+        } else { st.textContent='Face the camera, then tap Take photo'; }
+      }).catch(function(e){ fail((e&&e.name==='NotAllowedError')?'Camera access was refused. Allow the camera for this page and try again.':'The camera could not be opened.'); });
+    }
+    function fail(msg){ stop(); st.textContent=msg; show(snap,false); show(re,true); re.textContent='Try again'; show(skip,true); }
+    snap.onclick=capture; re.onclick=function(){ re.textContent='Retake'; begin(); }; use.onclick=function(){ finish(shot); }; skip.onclick=function(){ finish(null); };
+    begin();
+  });
+}
+async function uploadSelfie(idx, photo){
+  if(!photo) return false;
+  for(var i=0;i<3;i++){
+    try{
+      if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+      var j=await DBS.api({action:'selfie_put', course:verifiedSession.course, date:verifiedSession.date, token:verifiedSession.token, pass:verifiedSession.pass||'', lat:verifiedSession.lat, lng:verifiedSession.lng, idx:idx, photo:photo});
+      if(j && j.ok) return true;
+    }catch(e){}
+    await new Promise(function(r){ setTimeout(r,700*(i+1)); });
+  }
+  return false;
+}
+
 async function submitCheckin(){
   const idx = document.getElementById('checkinIndexInput').value.trim();
   const msg = document.getElementById('checkinMsg');
@@ -282,10 +354,14 @@ async function submitCheckin(){
   }
 
   btn.disabled = true;
+  let selfie = null;
+  if(!isStaffDevice){ selfie = await takeSelfie(); }
   msg.innerHTML = '<div class="msg ok">Checking in...</div>';
 
   try{
     const alreadyIn = await safeCheckinWrite(idx);
+    let selfieOk = !selfie;
+    if(selfie){ msg.innerHTML = '<div class="msg ok">Saving your photo...</div>'; selfieOk = await uploadSelfie(idx, selfie); }
 
     if(!isStaffDevice && !localStorage.getItem(LOCK_KEY)){
       localStorage.setItem(LOCK_KEY, idx);
@@ -304,7 +380,7 @@ async function submitCheckin(){
     document.getElementById('successView').classList.remove('hidden');
     document.getElementById('successText').textContent = alreadyIn
       ? "You were already checked in for this session."
-      : `You've been marked present for ${verifiedSession.course}.`;
+      : `You've been marked present for ${verifiedSession.course}.` + (isStaffDevice ? '' : (!selfie ? ' (No selfie was taken.)' : (selfieOk ? '' : ' Your photo could not be saved, but your attendance is recorded.')));
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not check in: ${escapeHtml(e.message)}</div>`;
     btn.disabled = false;

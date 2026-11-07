@@ -1,6 +1,13 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-07b', date:'7 Nov 2026', title:'New: scan student tags',
+      all:[],
+      student:[],
+      staff:[
+        'NEW: Scan student tags. In Take Attendance, pick the course and date, then tap Scan student tags. Hold each student\u2019s tag QR code to the camera: they are ticked present with their name and a beep. A tag scanned twice shows Already marked, and a student who is not on the class list is not marked.',
+        'Changes made while scanning save automatically, including when the internet is off.'
+      ] },
     { id:'2026-11-07a', date:'7 Nov 2026', title:'New: selfie at QR check-in',
       all:[],
       student:[
@@ -49,23 +56,24 @@
   }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function items(n){ return (n.all||[]).concat(n[role]||[]); }
-  function show(n,force){
-    if(!n||document.getElementById('ceUpdateBox')) return;
-    var list=items(n); if(!list.length) return;
+  function unseen(){ var sid=seenId(), out=[]; for(var i=0;i<NOTES.length;i++){ if(NOTES[i].id===sid) break; out.push(NOTES[i]); } return out.slice(0,4).filter(function(n){ return items(n).length; }); }
+  function show(arr,force){
+    if(!arr||!arr.length||document.getElementById('ceUpdateBox')) return;
+    var n=arr[0];
     var o=document.createElement('div'); o.id='ceUpdateBox';
     o.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(10,20,30,.7);display:flex;align-items:center;justify-content:center;padding:20px;';
     o.innerHTML='<div style="background:var(--card,#fff);color:var(--ink,#111);max-width:460px;width:100%;max-height:85vh;overflow:auto;border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:inherit;">'
-      +'<div style="font-size:.78rem;color:var(--muted,#667);margin-bottom:4px;">'+esc(n.date)+'</div>'
-      +'<h2 style="margin:0 0 12px;">'+esc(n.title)+'</h2>'
-      +'<ul style="margin:0 0 16px;padding-left:20px;line-height:1.5;">'+list.map(function(t){ return '<li style="margin-bottom:6px;">'+esc(t)+'</li>'; }).join('')+'</ul>'
+      +arr.map(function(m,k){ return '<div style="'+(k?'margin-top:18px;padding-top:14px;border-top:1px solid var(--line,#ddd);':'')+'"><div style="font-size:.78rem;color:var(--muted,#667);margin-bottom:4px;">'+esc(m.date)+'</div>'
+      +'<h2 style="margin:0 0 12px;">'+esc(m.title)+'</h2>'
+      +'<ul style="margin:0 0 16px;padding-left:20px;line-height:1.5;">'+items(m).map(function(t){ return '<li style="margin-bottom:6px;">'+esc(t)+'</li>'; }).join('')+'</ul></div>'; }).join('')
       +'<button type="button" id="ceUpdateOk" style="width:100%;">Got it</button></div>';
     document.body.appendChild(o);
-    document.getElementById('ceUpdateOk').onclick=function(){ markSeen(n.id); o.remove(); };
+    document.getElementById('ceUpdateOk').onclick=function(){ markSeen(NOTES[0].id); o.remove(); };
   }
-  window.ceShowUpdates=function(){ show(NOTES[0],true); };
+  window.ceShowUpdates=function(){ show(NOTES.filter(function(n){ return items(n).length; }).slice(0,1),true); };
   var tries=0;
   function tick(){
-    if(signedIn()){ if(seenId()!==NOTES[0].id) setTimeout(function(){ show(NOTES[0]); },900); return; }
+    if(signedIn()){ var u=unseen(); if(u.length) setTimeout(function(){ show(u); },900); return; }
     if(++tries<120) setTimeout(tick,1000);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tick); else tick();

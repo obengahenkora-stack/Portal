@@ -290,11 +290,16 @@ function takeSelfie(){
     function show(el,on){ el.classList.toggle('hidden',!on); }
     function stop(){ try{ clearInterval(timer); }catch(e){} try{ if(stream) stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} stream=null; }
     function finish(v){ if(done) return; done=true; stop(); ov.classList.add('hidden'); resolve(v); }
+    var readyAt=0;
     function capture(){
-      if(!vid.videoWidth) return;
+      if(!vid.videoWidth || vid.readyState<2 || Date.now()<readyAt) return;
       var s=Math.min(vid.videoWidth,vid.videoHeight), sx=(vid.videoWidth-s)/2, sy=(vid.videoHeight-s)/2;
       cv.width=320; cv.height=320; var g=cv.getContext('2d');
-      g.translate(320,0); g.scale(-1,1); g.drawImage(vid,sx,sy,s,s,0,0,320,320);   // mirrored like the preview
+      g.save(); g.translate(320,0); g.scale(-1,1); g.drawImage(vid,sx,sy,s,s,0,0,320,320); g.restore();   // mirrored like the preview
+      // refuse a black / almost black picture (camera still adjusting, or too dark)
+      var d=g.getImageData(0,0,320,320).data, sum=0, n=0, i;
+      for(i=0;i<d.length;i+=64){ sum+=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11; n++; }
+      if(sum/n<22){ st.textContent='Too dark. Move to better light, then tap Take photo.'; return; }
       shot=cv.toDataURL('image/jpeg',0.6); stop();
       show(vid,false); show(cv,true); show(snap,false); show(use,true); show(re,true); show(skip,false);
       st.textContent='Is this clear?';
@@ -305,7 +310,7 @@ function takeSelfie(){
       if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ fail('This phone or browser cannot open the camera.'); return; }
       navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:640}},audio:false}).then(function(s){
         if(done){ s.getTracks().forEach(function(t){t.stop();}); return; }
-        stream=s; vid.srcObject=s; var p=vid.play&&vid.play(); if(p&&p.catch) p.catch(function(){});
+        stream=s; readyAt=Date.now()+900; vid.srcObject=s; var p=vid.play&&vid.play(); if(p&&p.catch) p.catch(function(){});
         var det=null; try{ if('FaceDetector' in window) det=new FaceDetector({fastMode:true,maxDetectedFaces:1}); }catch(e){ det=null; }
         if(det){
           st.textContent='Looking for your face...'; var seen=0;

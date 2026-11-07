@@ -1735,7 +1735,7 @@ if ('serviceWorker' in navigator) {
 <script>
 function _who(signed,l1,l2){
   var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
-  d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
+  d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 3px rgba(34,165,89,.22)':'none';
   a.textContent=l1; b.textContent=l2||'';
   var w=document.getElementById('whoBar');
   if(w){
@@ -2058,16 +2058,13 @@ function renderWelcome(){
 <script src="chat.js?v=4"></script>
 <style>@media (max-width:640px){ body{padding-bottom:190px !important;} #dashAttendance,#dashScores{overflow-x:auto;-webkit-overflow-scrolling:touch;} #dashAttendance table td,#dashAttendance table th{padding-left:8px;padding-right:8px;} }</style>
 <script>
-(function(){ try{
-  if(!(window.matchMedia && matchMedia('(max-width:640px)').matches)) return;
-  var n=0, iv=setInterval(function(){
-    var w=document.getElementById('whoBar');
-    if(w && getComputedStyle(w).display!=='none'){ clearInterval(iv); setTimeout(function(){ w.style.transition='opacity .5s'; w.style.opacity='0'; setTimeout(function(){ w.style.display='none'; w.style.opacity=''; },600); },6000); }
-    if(++n>80) clearInterval(iv);
-  },500);
-}catch(e){} })();
+(function(){ function mv(){ var w=document.querySelector('.wrap'), e=document.getElementById('whoBar'); if(!w||!e) return;
+  e.style.cssText='position:static;display:'+(e.style.display==='none'?'none':'flex')+';align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:28px auto 14px;padding:4px 10px;border:0;background:transparent;box-shadow:none;max-width:none;font-size:.7rem;opacity:.7;';
+  var d=document.getElementById('whoDot'); if(d){ d.style.width='7px'; d.style.height='7px'; }
+  w.appendChild(e); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=9"></script>
+<script src="updates.js?v=10"></script>
 </body>
 </html>

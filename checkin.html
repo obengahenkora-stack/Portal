@@ -200,7 +200,7 @@ async function verifyAndShowForm(){
         return;
       }
 
-      verifiedSession = { course, date, sessionKey, token, pass: chk.pass || '', lat: position.coords.latitude, lng: position.coords.longitude, startedBy: null };
+      verifiedSession = { course, date, sessionKey, token, lock: chk.lock !== false, pass: chk.pass || '', lat: position.coords.latitude, lng: position.coords.longitude, startedBy: null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
@@ -209,7 +209,7 @@ async function verifyAndShowForm(){
         document.getElementById('checkinIndexInput').value = '';
         document.getElementById('checkinIndexInput').disabled = false;
       } else {
-        const lockedIndex = localStorage.getItem(LOCK_KEY);
+        const lockedIndex = verifiedSession.lock ? localStorage.getItem(LOCK_KEY) : null;
         if(lockedIndex){
           // This device already checked someone in — lock it to that same person only.
           document.getElementById('checkinIndexInput').value = lockedIndex;
@@ -350,7 +350,7 @@ async function submitCheckin(){
     return;
   }
 
-  if(!isStaffDevice){
+  if(!isStaffDevice && verifiedSession.lock){
     const lockedIndex = localStorage.getItem(LOCK_KEY);
     if(lockedIndex && lockedIndex.toLowerCase() !== idx.toLowerCase()){
       msg.innerHTML = "<div class=\"msg err\">This device already checked in a different student and can't be used to check in someone else.</div>";
@@ -368,7 +368,7 @@ async function submitCheckin(){
     let selfieOk = !selfie;
     if(selfie){ msg.innerHTML = '<div class="msg ok">Saving your photo...</div>'; selfieOk = await uploadSelfie(idx, selfie); }
 
-    if(!isStaffDevice && !localStorage.getItem(LOCK_KEY)){
+    if(!isStaffDevice && verifiedSession.lock && !localStorage.getItem(LOCK_KEY)){
       localStorage.setItem(LOCK_KEY, idx);
     }
 

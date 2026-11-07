@@ -680,6 +680,7 @@
     <div class="hidden" id="qrCheckinCard" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;">
       <label>QR Check-In</label>
       <div class="hint">Uses the Course and Date selected above. Ticks appear in the list below as students scan. Display this QR code in class — students scan it, allow location access, and mark themselves present. The code auto-refreshes every 90 seconds and only works within 100 meters of where you started the session, so it can't be shared with someone outside class.</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:.9rem;cursor:pointer;"><input type="checkbox" id="qrDeviceLock" checked style="margin-top:3px;"><span><b>One phone = one student</b> (recommended). A phone that has checked in one student cannot check in another. Untick this only for testing.</span></label>
       <button id="startQrBtn" onclick="startQrCheckin()">Start QR Check-In Session</button>
       <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-left:8px;">Stop Session</button>
       <div id="qrCheckinMsg"></div>
@@ -4392,7 +4393,7 @@ async function refreshQrSession(course, date, lat, lng){
     const qrData = await fetchQrSessions();
     const existing = qrData[sessionKey];
     const sessionStartTime = (existing && existing.sessionStartTime) ? existing.sessionStartTime : new Date().toISOString();
-    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
+    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, deviceLock: !(document.getElementById('qrDeviceLock') && !document.getElementById('qrDeviceLock').checked), course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
     await saveQrSessions(qrData);
 
     const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;

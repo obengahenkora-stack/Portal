@@ -247,6 +247,16 @@
     .stat-item{ min-width:100%; border-right:none; border-bottom:1px solid var(--line); }
   }
 
+
+  .att-modes{display:flex;gap:4px;background:rgba(127,127,127,.14);padding:4px;border-radius:14px;margin:4px 0 16px}
+  .att-modes button{flex:1;border:0!important;background:transparent!important;box-shadow:none!important;padding:10px 6px!important;border-radius:10px!important;font-weight:700;font-size:.82rem!important;color:var(--muted)!important;text-transform:none!important;letter-spacing:0!important;margin:0!important;width:auto}
+  .att-modes button.on{background:var(--card)!important;color:var(--ink,inherit)!important;box-shadow:0 2px 10px rgba(0,0,0,.18)!important}
+  .att-panel{border:1px solid var(--line);border-radius:16px;padding:18px;margin:0 0 16px}
+  .att-ptitle{font-weight:800;font-size:1.02rem;margin-bottom:4px}
+  .att-psub{color:var(--muted);font-size:.86rem;line-height:1.45;margin-bottom:14px}
+  .att-big{width:100%;padding:15px 18px!important;font-size:1rem!important;border-radius:14px!important}
+  .att-opt{margin:0 0 12px;font-size:.84rem;color:var(--muted)}
+  .att-opt summary{cursor:pointer;font-weight:700}
 </style>
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
@@ -677,12 +687,24 @@
           <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
         </div>
       </div>
-    <div class="hidden" id="qrCheckinCard" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;">
-      <label>QR Check-In</label>
-      <div class="hint">Uses the Course and Date selected above. Ticks appear in the list below as students scan. Display this QR code in class — students scan it, allow location access, and mark themselves present. The code auto-refreshes every 90 seconds and only works within 100 meters of where you started the session, so it can't be shared with someone outside class.</div>
-      <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:.9rem;cursor:pointer;"><input type="checkbox" id="qrDeviceLock" checked style="margin-top:3px;"><span><b>One phone = one student</b> (recommended). A phone that has checked in one student cannot check in another. Untick this only for testing.</span></label>
-      <button id="startQrBtn" onclick="startQrCheckin()">Start QR Check-In Session</button>
-      <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-left:8px;">Stop Session</button>
+    <div class="att-modes" id="attModes">
+      <button type="button" data-m="list" class="on" onclick="attMode('list')">Tick list</button>
+      <button type="button" data-m="scan" onclick="attMode('scan')">Scan tags</button>
+      <button type="button" data-m="qr" onclick="attMode('qr')">QR code</button>
+    </div>
+    <div id="attScanPanel" class="att-panel pane-off">
+      <div class="att-ptitle">Scan student tags</div>
+      <div class="att-psub">Hold each student's tag to the camera. They are ticked present with a beep.</div>
+      <button type="button" class="att-big" onclick="tagScanOpen()">&#128247;&nbsp; Start scanning</button>
+    </div>
+    <div class="hidden att-panel pane-off" id="qrCheckinCard">
+      <div class="att-ptitle">QR check-in</div>
+      <div class="att-psub">Show the code. Students scan it with their phone. It refreshes every 90 seconds and only works within 100 m of you.</div>
+      <details class="att-opt"><summary>Options</summary>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0 2px;font-size:.88rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;"><input type="checkbox" id="qrDeviceLock" checked style="margin-top:3px;width:auto;"><span><b>One phone = one student</b> (recommended). Untick only for testing.</span></label>
+      </details>
+      <button id="startQrBtn" class="att-big" onclick="startQrCheckin()">Start QR session</button>
+      <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-top:8px;">Stop session</button>
       <div id="qrCheckinMsg"></div>
       <div id="qrCheckinDisplay" class="hidden" style="text-align:center;margin-top:16px;">
         <img id="qrCheckinImage" src="" alt="QR code" style="width:220px;height:220px;border-radius:8px;border:1px solid var(--line);">
@@ -691,8 +713,6 @@
       </div>
     </div>
       <div id="attChecklistBlock">
-      <button type="button" onclick="tagScanOpen()" style="margin-bottom:12px;">&#128247; Scan student tags</button>
-      <div class="hint" style="margin:-4px 0 12px;">Scan each student's tag QR code. They are ticked present as you scan. The course and date above are used.</div>
       <label>Search Index Number</label>
       <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
 
@@ -1473,6 +1493,13 @@ function switchTab(tab){
   if(tab === 'attendance'){ attGo(null); } if(tab === 'teacher'){ tchGo(null); }
 }
 
+
+function attMode(m){
+  document.querySelectorAll('#attModes button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-m')===m); });
+  var sp=document.getElementById('attScanPanel'), qr=document.getElementById('qrCheckinCard');
+  if(sp) sp.classList.toggle('pane-off', m!=='scan');
+  if(qr) qr.classList.toggle('pane-off', m!=='qr');
+}
 
 /* ===== Scan student tags (QR on the tag holds a link ending with the index number) ===== */
 var _tagS=null;
@@ -4951,7 +4978,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=6"></script>
+<script src="updates.js?v=7"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};

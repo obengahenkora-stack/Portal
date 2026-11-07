@@ -1,6 +1,13 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-07c', date:'7 Nov 2026', title:'Take Attendance is tidier',
+      all:[],
+      student:[],
+      staff:[
+        'Take Attendance now has three clear choices at the top: Tick list, Scan tags and QR code. Only the one you pick is shown, so the page is much less crowded.',
+        'The One phone = one student switch is now tucked under Options in the QR code choice.'
+      ] },
     { id:'2026-11-07b', date:'7 Nov 2026', title:'New: scan student tags',
       all:[],
       student:[],

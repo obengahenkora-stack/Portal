@@ -262,6 +262,16 @@
   .navback:not(.hidden):hover{background:rgba(214,58,58,.18)!important}
   .navback:not(.hidden):active{transform:scale(.97)}
   .navback svg{flex:none}
+
+  /* Staff tool cards: calm, tidy forms (Assessment and Attendance) */
+  :is(#teacherView,#attendanceView) .card>label{font-family:inherit!important;text-transform:none!important;letter-spacing:0!important;font-size:.84rem!important;font-weight:700!important;margin:16px 0 6px!important;display:block}
+  :is(#teacherView,#attendanceView) .card>label:first-child{margin-top:2px!important;font-size:.98rem!important}
+  :is(#teacherView,#attendanceView) .card>.hint{font-size:.8rem!important;line-height:1.5!important;margin:-2px 0 10px!important;opacity:.85}
+  :is(#teacherView,#attendanceView) .card>:is(input[type=text],input[type=date],input[type=number],input[type=password],input[type=email],select,textarea){border-radius:12px!important;padding:11px 12px!important;width:100%;box-sizing:border-box;margin-bottom:4px}
+  :is(#teacherView,#attendanceView) .card>input[type=file]{width:100%;font-size:.84rem;margin:2px 0 10px}
+  :is(#teacherView,#attendanceView) input[type=file]::file-selector-button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:999px;padding:7px 14px;margin-right:10px;font-weight:700;cursor:pointer}
+  :is(#teacherView,#attendanceView) .card>button{width:auto!important;text-transform:none!important;letter-spacing:0!important;border-radius:12px!important;padding:11px 18px!important;font-size:.9rem!important;font-weight:700!important;margin:10px 8px 0 0!important}
+  :is(#teacherView,#attendanceView) .card{padding:20px!important;border-radius:18px!important}
 </style>
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>

@@ -190,6 +190,13 @@
   .ah-grid .ah-tile:nth-child(6n+7){--g1:#84cc16;--g2:#10b981}
   .ah-tile .ah-n,.ah-tile .ah-l{color:#fff;position:relative;z-index:1}
   .ah-tile .ah-l{opacity:.92}
+  /* calm tiles */
+  .ah-grid .ah-tile,.ah-grid .ah-tile.big{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-left:4px solid var(--g1) !important;border-radius:16px !important;box-shadow:none !important;padding:14px 16px !important}
+  .ah-grid .ah-tile::after{display:none !important}
+  .ah-grid .ah-tile:hover{transform:none !important;box-shadow:none !important}
+  .ah-grid .ah-tile .ah-n{color:var(--ink) !important;font-family:inherit !important;font-size:1.7rem !important}
+  .ah-grid .ah-tile.big .ah-n{font-size:2rem !important}
+  .ah-grid .ah-tile .ah-l{color:var(--muted) !important;opacity:1 !important}
   /* play-card look: admin search + registered students */
   #adminRegisteredList{background:var(--card);border-radius:16px;padding:6px;color:var(--ink)}
   #adminRegisteredList label{color:inherit !important}

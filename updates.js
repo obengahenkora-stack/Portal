@@ -1,6 +1,21 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-07a', date:'7 Nov 2026', title:'New: selfie at QR check-in',
+      all:[],
+      student:[
+        'NEW: When you check in by scanning the QR code, your phone camera opens and takes a quick selfie. Face the camera in good light, with no cap or dark glasses, and allow camera access when asked.',
+        'The selfie is only used to settle attendance complaints. Only your lecturer can see it, and it is deleted after 90 days.',
+        'After you scan the QR code you now have about 6 minutes to finish, so there is no rush.',
+        'Each phone can check in one student only. Do not use your phone to sign in for a friend.',
+        'NOTICE: Please open My Attendance and check that every class you attended is counted. If anything is wrong or missing, use Report an Issue on your dashboard and say the course and the date, so it can be resolved.'
+      ],
+      staff:[
+        'NEW: Selfie Review (Attendance, under Records) shows the check-in photos for a course and date. Tick Keep on a photo to stop it being deleted after 90 days, or print the photos as a PDF.',
+        'Students now take a selfie when they check in by QR. Your own device skips the selfie.',
+        'Before you start a QR session you can tick or untick One phone = one student. Untick it only for testing.',
+        'After scanning, a student has about 6 minutes to finish checking in, even though the QR code itself changes every 90 seconds.'
+      ] },
     { id:'2026-11-06e', date:'6 Nov 2026', title:'Important notice and what is new',
       all:[],
       student:[

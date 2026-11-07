@@ -3,7 +3,7 @@
   var NOTES=[
     { id:'2026-11-07i', date:'7 Nov 2026', title:'Calmer home screens',
       all:[],
-      student:[],
+      student:['The big blue tiles on your dashboard (Lecture Hall, Chat, My Scores and the rest) are now neat list cards, and Sign Out sits small at the bottom.'],
       staff:['The greeting card and the student-count tiles on the Students Dashboard now use a calm card look instead of bright gradients.','The Sign Out button and welcome line now sit small at the bottom of the page.'] },
     { id:'2026-11-07h', date:'7 Nov 2026', title:'Cleaner navigation',
       all:['The Back buttons are now neat rounded red buttons with an arrow, and sit side by side so they take less room.'],

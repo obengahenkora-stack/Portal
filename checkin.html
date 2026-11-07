@@ -97,6 +97,7 @@
   <p id="selfieHelp">Hold the phone close to your face. Good light, no cap or dark glasses.</p>
   <div id="selfieRing"><video id="selfieVid" playsinline muted autoplay></video><canvas id="selfieCv" class="hidden"></canvas></div>
   <div id="selfieSt">Opening camera...</div>
+  <div id="selfieDiag" style="font-size:.7rem;opacity:.6;min-height:1em"></div>
   <button id="selfieSnap" type="button">Take photo</button>
   <button id="selfieUse" type="button" class="hidden">Use this photo</button>
   <button id="selfieRetake" type="button" class="ghost hidden">Retake</button>
@@ -299,10 +300,11 @@ function takeSelfie(){
       // refuse a black / almost black picture (camera still adjusting, or too dark)
       var d=g.getImageData(0,0,320,320).data, sum=0, n=0, i;
       for(i=0;i<d.length;i+=64){ sum+=d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11; n++; }
+      var lum=Math.round(sum/n); window._selfieDiag='selfie v3 · light '+lum+' · '+vid.videoWidth+'x'+vid.videoHeight;
       if(sum/n<22){ st.textContent='Too dark. Move to better light, then tap Take photo.'; return; }
       shot=cv.toDataURL('image/jpeg',0.6); stop();
       show(vid,false); show(cv,true); show(snap,false); show(use,true); show(re,true); show(skip,false);
-      st.textContent='Is this clear?';
+      st.textContent='Is this clear?'; var dg=document.getElementById('selfieDiag'); if(dg) dg.textContent=window._selfieDiag||'';
     }
     function begin(){
       shot=null; show(cv,false); show(vid,true); show(snap,true); show(use,false); show(re,false); show(skip,false);

@@ -1,10 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-07d', date:'7 Nov 2026', title:'Cleaner navigation',
-      all:['The Back buttons are now neat rounded buttons with an arrow, and sit side by side so they take less room.'],
+    { id:'2026-11-07e', date:'7 Nov 2026', title:'Cleaner navigation',
+      all:['The Back buttons are now neat rounded red buttons with an arrow, and sit side by side so they take less room.'],
       student:[],
-      staff:[] },
+      staff:['The Signed in line is now small and sits at the bottom of the page.'] },
     { id:'2026-11-07c', date:'7 Nov 2026', title:'Take Attendance is tidier',
       all:[],
       student:[],

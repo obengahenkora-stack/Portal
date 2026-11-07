@@ -258,10 +258,10 @@
   .att-opt{margin:0 0 12px;font-size:.84rem;color:var(--muted)}
   .att-opt summary{cursor:pointer;font-weight:700}
 
-  .navback:not(.hidden){display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:8px 15px 8px 10px!important;border-radius:999px!important;border:1px solid var(--line)!important;background:var(--card)!important;color:var(--ink,inherit)!important;font-size:.84rem!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;box-shadow:none!important;margin:0 8px 14px 0!important;cursor:pointer;transition:background .15s,transform .1s}
-  .navback:not(.hidden):hover{background:rgba(127,127,127,.12)!important}
+  .navback:not(.hidden){display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:8px 15px 8px 10px!important;border-radius:999px!important;border:1px solid rgba(214,58,58,.6)!important;background:rgba(214,58,58,.09)!important;color:#d23a3a!important;font-size:.84rem!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important;box-shadow:none!important;margin:0 8px 14px 0!important;cursor:pointer;transition:background .15s,transform .1s}
+  .navback:not(.hidden):hover{background:rgba(214,58,58,.18)!important}
   .navback:not(.hidden):active{transform:scale(.97)}
-  .navback svg{flex:none;opacity:.75}
+  .navback svg{flex:none}
 </style>
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
@@ -4953,6 +4953,13 @@ if ('serviceWorker' in navigator) {
 <script src="theme.js"></script>
 <script src="pw-tools.js"></script>
 <script>try{PW.pair("newOwnPasscodeInput");}catch(e){}</script>
+<script>
+(function(){ function mv(){ var w=document.querySelector('.wrap'), e=document.getElementById('whoInline'); if(!w||!e) return;
+  e.style.cssText='display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:28px 0 14px;padding:4px 10px;border:0;background:transparent;font-size:.7rem;opacity:.7;';
+  var d=document.getElementById('whoInDot'); if(d){ d.style.width='7px'; d.style.height='7px'; }
+  w.appendChild(e); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
+</script>
 <style>#whoBar{display:none !important}</style>
 <div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:flex;gap:10px;align-items:center;">
   <span id="whoDot" style="width:10px;height:10px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
@@ -4962,7 +4969,7 @@ if ('serviceWorker' in navigator) {
 function _who(signed,l1,l2){
   var d=document.getElementById('whoDot'),a=document.getElementById('whoLine1'),b=document.getElementById('whoLine2'); if(!d) return;
   try{ var i1=document.getElementById('whoInDot'),i2=document.getElementById('whoInText'),i3=document.getElementById('whoInSub');
-    if(i1){ i1.style.background=signed?'#22a559':'#9aa3ad'; i1.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none'; i2.textContent=l1; i3.textContent=l2||''; i3.style.marginLeft=l2?'8px':'0'; i3.style.color='var(--muted,#64748b)'; } }catch(e){}
+    if(i1){ i1.style.background=signed?'#22a559':'#9aa3ad'; i1.style.boxShadow=signed?'0 0 0 3px rgba(34,165,89,.22)':'none'; i2.textContent=l1; i3.textContent=l2||''; i3.style.marginLeft=l2?'8px':'0'; i3.style.color='var(--muted,#64748b)'; } }catch(e){}
   d.style.background=signed?'#22a559':'#9aa3ad'; d.style.boxShadow=signed?'0 0 0 4px rgba(34,165,89,.22)':'none';
   a.textContent=l1; b.textContent=l2||'';
   var w=document.getElementById('whoBar'); if(w) w.title=(l1+' '+(l2||'')).trim();
@@ -4983,7 +4990,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=8"></script>
+<script src="updates.js?v=9"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};

@@ -1483,7 +1483,7 @@ function tagIdxFrom(txt){
   return '';
 }
 function tagBeep(ok){ try{ var C=window.AudioContext||window.webkitAudioContext; if(!C) return; _tagS.ac=_tagS.ac||new C(); var o=_tagS.ac.createOscillator(), g=_tagS.ac.createGain(); o.connect(g); g.connect(_tagS.ac.destination); o.frequency.value=ok?880:220; g.gain.value=.08; o.start(); o.stop(_tagS.ac.currentTime+(ok?.12:.3)); }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(ok?60:[80,60,80]); }catch(e){} }
-function tagLoadLib(){ return new Promise(function(res,rej){ if(window.jsQR) return res(); var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'; s.onload=res; s.onerror=function(){ rej(new Error('Could not load the scanner. Check your internet.')); }; document.head.appendChild(s); }); }
+function tagLoadLib(){ return new Promise(function(res,rej){ if(window.jsQR) return res(); var urls=['jsQR.js?v=1','https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'], i=0; (function next(){ if(window.jsQR) return res(); if(i>=urls.length) return rej(new Error('Could not load the scanner. Check your internet.')); var s=document.createElement('script'); s.src=urls[i++]; s.onload=function(){ window.jsQR?res():next(); }; s.onerror=next; document.head.appendChild(s); })(); }); }
 async function tagScanOpen(){
   const course=document.getElementById('attendanceCourseSelect').value, date=document.getElementById('attendanceDateInput').value;
   if(!course||!date){ alert('Select a course and date first.'); return; }

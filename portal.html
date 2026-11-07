@@ -257,6 +257,11 @@
   .att-big{width:100%;padding:15px 18px!important;font-size:1rem!important;border-radius:14px!important}
   .att-opt{margin:0 0 12px;font-size:.84rem;color:var(--muted)}
   .att-opt summary{cursor:pointer;font-weight:700}
+
+  .navback:not(.hidden){display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:8px 15px 8px 10px!important;border-radius:999px!important;border:1px solid var(--line)!important;background:var(--card)!important;color:var(--ink,inherit)!important;font-size:.84rem!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;box-shadow:none!important;margin:0 8px 14px 0!important;cursor:pointer;transition:background .15s,transform .1s}
+  .navback:not(.hidden):hover{background:rgba(127,127,127,.12)!important}
+  .navback:not(.hidden):active{transform:scale(.97)}
+  .navback svg{flex:none;opacity:.75}
 </style>
 
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
@@ -380,7 +385,7 @@
 
   <!-- CHAT VIEW -->
   <div id="chatView" class="hidden">
-    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Faculty Console</button>
     <div class="card" id="portalChatCard">
       <h2 style="margin-top:0">Chat</h2>
       <p class="cc-ph" style="color:var(--muted)">Loading chat...</p>
@@ -389,7 +394,7 @@
 
   <!-- Q&A VIEW -->
   <div id="qaView" class="hidden">
-    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Faculty Console</button>
     <div class="card" id="pqaCard">
       <h2 style="margin-top:0">Q&amp;A Board</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap;"><div style="flex:1;min-width:180px;"><label>Course</label><select id="pqaCourse"><option value="General">General</option></select></div></div>
@@ -404,13 +409,13 @@
 
   <!-- TEACHER VIEW -->
   <div id="teacherView" class="hidden">
-    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Faculty Console</button>
     <div id="tchTilesWrap">
       <div class="att-title">Assessment</div>
       <div class="hint" style="margin-bottom:4px;">Pick a tool. Everything you are allowed to use is shown below.</div>
       <div id="tchTiles"></div>
     </div>
-    <button class="secondary hidden" id="tchBackBar" onclick="tchGo(null)" style="margin-bottom:14px;">&larr; All assessment tools</button>
+    <button class="navback hidden" id="tchBackBar" onclick="tchGo(null)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>All assessment tools</button>
 
     <div class="card hidden" id="changePasscodeCard">
       <label>Change My Password</label>
@@ -659,13 +664,13 @@
 
   <!-- ATTENDANCE VIEW -->
   <div id="attendanceView" class="hidden">
-    <button class="secondary" onclick="switchTab('hub')" style="margin-bottom:16px;">&larr; Back to Faculty Console</button>
+    <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Faculty Console</button>
     <div id="attTilesWrap">
       <div class="att-title">Attendance</div>
       <div class="hint" style="margin-bottom:4px;">Pick a tool. Everything you are allowed to use is shown below.</div>
       <div id="attTiles"></div>
     </div>
-    <button class="secondary hidden" id="attBackBar" onclick="attGo(null)" style="margin-bottom:14px;">&larr; All attendance tools</button>
+    <button class="navback hidden" id="attBackBar" onclick="attGo(null)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>All attendance tools</button>
 
     <div class="card" id="takeAttendanceLoginCard">
       <div class="msg err">Please sign in from the Faculty Console first. <button class="secondary" onclick="switchTab('hub')" style="margin-left:8px;padding:6px 12px;">Go to sign in</button></div>
@@ -4978,7 +4983,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=7"></script>
+<script src="updates.js?v=8"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};

@@ -120,6 +120,11 @@
     input, button{ font-size:1rem !important; }
     p{ font-size:1rem; }
   }
+
+  .navback:not(.hidden){display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:8px 15px 8px 10px!important;border-radius:999px!important;border:1px solid var(--line)!important;background:var(--card)!important;color:var(--ink,inherit)!important;font-size:.84rem!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;box-shadow:none!important;margin:0 8px 14px 0!important;cursor:pointer;transition:background .15s,transform .1s}
+  .navback:not(.hidden):hover{background:rgba(127,127,127,.12)!important}
+  .navback:not(.hidden):active{transform:scale(.97)}
+  .navback svg{flex:none;opacity:.75}
 </style>
 <script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
@@ -562,7 +567,7 @@
 
   <div id="dashResults" class="hidden">
     <div class="hidden" id="adminHideResultsWrap" style="text-align:right;margin-bottom:12px;">
-      <button class="secondary" onclick="hideAdminViewedStudent()">&larr; Hide / Back to List</button>
+      <button class="navback" onclick="hideAdminViewedStudent()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Back to list</button>
     </div>
     <nav class="dash-nav" id="dashNav">
       <a href="javascript:void(0)" data-tab="dashOverviewCard" class="on">Overview</a>
@@ -574,7 +579,7 @@
       <a href="javascript:void(0)" data-tab="dashQaCard">Q&amp;A</a>
       <a href="javascript:void(0)" data-tab="dashChatCard">Chat <span id="dashChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;vertical-align:middle;text-transform:none;letter-spacing:0"></span></a>
     </nav>
-    <div id="dashBack" class="hidden"><button type="button" class="secondary" data-go="dashOverviewCard">&larr; Back to dashboard</button></div>
+    <div id="dashBack" class="hidden"><button type="button" class="navback" data-go="dashOverviewCard"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>Dashboard</button></div>
     <div class="card dash-sec" id="dashOverviewCard">
       <h2>Overview</h2>
       <div id="ovClassLine" style="font-size:.88rem;margin:-4px 0 12px;"></div>
@@ -2063,6 +2068,6 @@ function renderWelcome(){
 }catch(e){} })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=7"></script>
+<script src="updates.js?v=8"></script>
 </body>
 </html>

@@ -2100,5 +2100,11 @@ function renderWelcome(){
 .ov-links .ov-link b{color:var(--ink) !important;font-size:1rem !important;display:block}
 .ov-links .ov-link span{color:var(--muted) !important;opacity:1 !important;font-size:.8rem !important;grid-column:2}
 .ov-links .ov-link b span{display:inline !important;grid-column:auto}</style>
+<style id="modernBtns">
+.card button:not([class]):not([data-m]):not([style*="padding"]):not([style*="font-size"]){background:linear-gradient(135deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important;border-radius:14px !important;padding:13px 20px !important;font-size:.95rem !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;box-shadow:0 6px 16px rgba(22,163,74,.25) !important;transition:transform .12s,box-shadow .12s}
+.card button:not([class]):not([data-m]):not([style*="padding"]):not([style*="font-size"]):active{transform:scale(.98)}
+.card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
+.card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
+</style>
 </body>
 </html>

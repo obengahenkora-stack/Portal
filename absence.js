@@ -66,6 +66,26 @@ window.absExcusedFor=async function(course,date){
     return _cache.list.filter(function(x){ return x.status==='approved' && x.date===d && String(lmBase(x.course||'')).toLowerCase()===base; }).map(function(x){ return x.index; });
   }catch(e){ return []; }
 };
+/* every save of attendance (tick list, QR, scanner, edits) also applies approved excuses */
+try{ var _sv=window.saveSupabaseData; if(typeof _sv==='function' && typeof teamApi==='function' && $('absStaffBody')!==undefined){
+  window.saveSupabaseData=async function(data){
+    try{
+      if(data && Array.isArray(data.attendance) && data.attendance.length){
+        if(!_cache || Date.now()-_cache.t>30000){ var j=await teamApi({action:'stu_exc_list'}); _cache={t:Date.now(),list:(j&&j.ok&&j.list)||[]}; }
+        var ap=_cache.list.filter(function(x){ return x.status==='approved'; });
+        if(ap.length) data.attendance.forEach(function(r){
+          var d=String(r.date||'').slice(0,10), b=String(lmBase(r.course||'')).toLowerCase();
+          ap.forEach(function(x){
+            if(x.date!==d || String(lmBase(x.course||'')).toLowerCase()!==b) return; var k=key(x.index);
+            if((r.present||[]).some(function(p){ return key(p)===k; })) return;
+            r.excused=r.excused||[]; if(!r.excused.some(function(p){ return key(p)===k; })) r.excused.push(x.index);
+          });
+        });
+      }
+    }catch(e){}
+    return _sv.apply(this,arguments);
+  };
+} }catch(e){}
 window.absInit=async function(){ _cache=null;
   var box=$('absStaffBody'); if(!box) return;
   box.innerHTML='<div class="empty">Loading...</div>';

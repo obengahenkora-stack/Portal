@@ -4,7 +4,7 @@ function $(i){ return document.getElementById(i); }
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function key(x){ return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
 function fd(d){ try{ return new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d; } }
-function chip(st){ var c=st==='approved'?'#16a34a':st==='declined'?'#dc2626':'#d97706', l=st==='approved'?'Approved':st==='declined'?'Declined':'Waiting'; return '<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:700;color:'+c+';border:1px solid '+c+'">'+l+'</span>'; }
+function chip(st){ var c=st==='approved'?'#16a34a':st==='declined'?'#dc2626':st==='cancelled'?'#6b7280':'#d97706', l=st==='approved'?'Approved':st==='declined'?'Declined':st==='cancelled'?'Cancelled':'Waiting'; return '<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:700;color:'+c+';border:1px solid '+c+'">'+l+'</span>'; }
 var css=document.createElement('style');
 css.textContent='.abs-row{padding:12px 14px;border:1px solid var(--line);border-radius:14px;margin-top:8px;background:var(--card)}'
 +'.abs-row small{display:block;color:var(--muted);margin-top:2px}'
@@ -58,11 +58,20 @@ window.absStuInit=function(){
   }
   fillCourses(); absStuList();
 };
+function stuBtns(x){
+  var today=new Date().toISOString().slice(0,10), b='';
+  if(x.status==='pending' || (x.status==='approved' && x.date>today)) b='<button type="button" class="abs-b no" style="margin-top:8px" onclick="absStuCancel(\''+x.id+'\')">Cancel request</button>';
+  else if(x.status==='declined' || x.status==='cancelled') b='<button type="button" class="abs-b no" style="margin-top:8px" onclick="absStuDelete(\''+x.id+'\')">Delete</button>';
+  else if(x.status==='approved') b='<small>To withdraw this, ask your lecturer.</small>';
+  return b;
+}
+window.absStuCancel=async function(id){ if(!confirm('Cancel this request?')) return; var m=$('absMsg'); try{ await _stu({action:'stu_exc_cancel',id:id}); if(m) m.innerHTML='<div class="msg ok">Request cancelled.</div>'; absStuList(); }catch(e){ if(m) m.innerHTML='<div class="msg err">'+esc(e.message||'Could not cancel')+'</div>'; } };
+window.absStuDelete=async function(id){ if(!confirm('Delete this request from your list?')) return; var m=$('absMsg'); try{ await _stu({action:'stu_exc_delete',id:id}); if(m) m.innerHTML='<div class="msg ok">Deleted.</div>'; absStuList(); }catch(e){ if(m) m.innerHTML='<div class="msg err">'+esc(e.message||'Could not delete')+'</div>'; } };
 async function absStuList(){
   var l=$('absList'); if(!l) return;
   try{
     var j=await _stu({action:'stu_exc_mine'}), a=j.list||[];
-    l.innerHTML=a.length?'<div style="font-weight:700;margin:6px 0 0">My requests</div>'+a.map(function(x){ return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.course)+'</b>'+chip(x.status)+'</div><small>'+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+(x.note?'<small><b>Lecturer:</b> '+esc(x.note)+'</small>':'')+viewBtn(x)+'</div>'; }).join(''):'<div class="empty">No requests yet.</div>';
+    l.innerHTML=a.length?'<div style="font-weight:700;margin:6px 0 0">My requests</div>'+a.map(function(x){ return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.course)+'</b>'+chip(x.status)+'</div><small>'+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+(x.note?'<small><b>Lecturer:</b> '+esc(x.note)+'</small>':'')+viewBtn(x)+stuBtns(x)+'</div>'; }).join(''):'<div class="empty">No requests yet.</div>';
   }catch(e){ l.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+'). The back end may not be updated yet.</div>'; }
 }
 function shrink(file){ return new Promise(function(res,rej){
@@ -141,13 +150,14 @@ function absRender(){
   var h=tog+'<div class="ab-tabs">'+tabs.map(function(t){ return '<button type="button" class="ab-tab'+(_flt===t[0]?' on':'')+'" onclick="absFilter(\''+t[0]+'\')">'+t[1]+' <span>'+t[2]+'</span></button>'; }).join('')+'</div>';
   if(!rows.length){ box.innerHTML=h+'<div class="empty">'+(all.length?'Nothing in this list.':'No absence requests yet.')+'</div>'; return; }
   box.innerHTML=h+rows.slice(0,100).map(function(x){
-    var i=_L.indexOf(x), tone=x.status==='approved'?'ok':x.status==='declined'?'no':'wait';
+    var i=_L.indexOf(x), tone=x.status==='approved'?'ok':(x.status==='declined'||x.status==='cancelled')?'no':'wait';
     var acts;
     if(!x.canDecide) acts='<div class="ab-note">View only. This goes to the lecturer assigned to this course.</div>';
     else if(x.status==='pending') acts='<div class="ab-act"><button type="button" class="ab-btn ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="ab-btn no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>';
+    else if(x.status==='cancelled') acts='';
     else if(x.status==='approved') acts='<div class="ab-act"><button type="button" class="ab-btn" onclick="absApply('+i+')">Apply to attendance</button><button type="button" class="ab-btn no" onclick="absRevoke('+i+')">Revoke</button></div>';
     else acts='';
-    return '<div class="ab-card '+tone+'"><div class="ab-top"><div class="ab-av">'+esc(ini(x.name||x.index))+'</div><div style="min-width:0;flex:1"><div class="ab-nm">'+esc(x.name||x.index)+'</div><div class="ab-ix">'+esc(x.index)+'</div></div><span class="ab-st '+tone+'">'+(x.status==='approved'?'Approved':x.status==='declined'?'Declined':'Waiting')+'</span></div>'
+    return '<div class="ab-card '+tone+'"><div class="ab-top"><div class="ab-av">'+esc(ini(x.name||x.index))+'</div><div style="min-width:0;flex:1"><div class="ab-nm">'+esc(x.name||x.index)+'</div><div class="ab-ix">'+esc(x.index)+'</div></div><span class="ab-st '+tone+'">'+(x.status==='approved'?'Approved':x.status==='declined'?'Declined':x.status==='cancelled'?'Cancelled by student':'Waiting')+'</span></div>'
       +'<div class="ab-chips"><span class="ab-chip">'+esc(x.course)+'</span><span class="ab-chip d">'+esc(fd(x.date))+'</span></div>'
       +'<div class="ab-reason">'+esc(x.reason)+'</div>'+viewBtn(x)
       +((x.status!=='pending'&&(x.note||x.by))?'<div class="ab-by">'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</div>':'')+acts+'</div>';

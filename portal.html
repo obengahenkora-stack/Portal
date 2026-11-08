@@ -127,6 +127,9 @@
   .pane-off{display:none !important;}
   .att-group{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
   .att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+  #attChecklistBlock.only-pres .attendance-row:not(.pres){display:none !important}
+  #attChecklistBlock.only-pres #attSearchWrap,#attChecklistBlock.only-pres #saveAttendanceBtn{display:none !important}
+  #attChecklistBlock.only-pres .attendance-row{pointer-events:none}
   .att-tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 2px rgba(43,36,32,0.05);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;font-family:inherit;width:100%;}
   .att-tile,.att-tile *{text-transform:none !important;letter-spacing:normal !important;}
   .att-tile .att-td{font-weight:400 !important;font-family:'IBM Plex Sans',sans-serif !important;}
@@ -733,8 +736,10 @@
       </div>
     </div>
       <div id="attChecklistBlock">
-      <label>Search Index Number</label>
-      <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;">
+      <div id="attPresHead" class="hidden" style="font-weight:700;margin:4px 0 10px;display:flex;justify-content:space-between;align-items:center"><span>Marked present</span><span id="attPresN" style="font-weight:700;color:var(--ok)">0</span></div>
+      <div id="attPresEmpty" class="hidden empty" style="margin-bottom:10px">No one yet. Names appear here as you scan or as students check in.</div>
+      <div id="attSearchWrap"><label>Search Index Number</label>
+      <input type="text" id="attendanceSearchInput" placeholder="Type an index number to filter..." oninput="filterAttendanceChecklist()" style="margin-bottom:14px;"></div>
 
       <div id="attendanceChecklist"><div class="empty">Select a course and date to begin.</div></div>
       <button id="saveAttendanceBtn" onclick="saveAttendance()" style="margin-top:14px;">Save Attendance</button>
@@ -1519,7 +1524,18 @@ function attMode(m){
   var sp=document.getElementById('attScanPanel'), qr=document.getElementById('qrCheckinCard');
   if(sp) sp.classList.toggle('pane-off', m!=='scan');
   if(qr) qr.classList.toggle('pane-off', m!=='qr');
+  var blk=document.getElementById('attChecklistBlock'); if(blk) blk.classList.toggle('only-pres', m!=='list');
+  attPresSync();
 }
+
+/* Scan/QR modes: show only students already marked present */
+function attPresSync(){
+  var box=document.getElementById('attendanceChecklist'), blk=document.getElementById('attChecklistBlock'); if(!box||!blk) return;
+  var n=0; box.querySelectorAll('.attendance-row').forEach(function(r){ var p=(r.querySelector('.attendance-status')||{}).textContent==='PRESENT'; r.classList.toggle('pres',p); if(p) n++; });
+  var only=blk.classList.contains('only-pres'), h=document.getElementById('attPresHead'), e=document.getElementById('attPresEmpty'), c=document.getElementById('attPresN');
+  if(c) c.textContent=n; if(h) h.classList.toggle('hidden',!only); if(e) e.classList.toggle('hidden',!(only&&n===0&&box.querySelector('.attendance-row')));
+}
+(function(){ function go(){ var box=document.getElementById('attendanceChecklist'); if(!box||box._ps) return; box._ps=1; new MutationObserver(attPresSync).observe(box,{subtree:true,childList:true,characterData:true}); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })();
 
 /* ===== Scan student tags (QR on the tag holds a link ending with the index number) ===== */
 var _tagS=null;

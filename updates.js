@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08a', date:'8 Nov 2026', title:'Cleaner scanning',
+      all:[],
+      student:[],
+      staff:['In Scan tags and QR code modes, the full class list is now hidden. Only students who are marked present show, and names appear as you scan or as students check in. Tick list works as before.'] },
     { id:'2026-11-07i', date:'7 Nov 2026', title:'Calmer home screens',
       all:[],
       student:['The big blue tiles on your dashboard (Lecture Hall, Chat, My Scores and the rest) are now neat list cards,.'],

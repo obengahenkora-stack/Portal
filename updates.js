@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08g', date:'8 Nov 2026', title:'Gradebook charts',
+      all:[],
+      student:[],
+      staff:['The Gradebook now shows charts under the table: a class summary (average, median, pass rate, highest, lowest), a grade spread bar chart, and the average for each assessment.'] },
     { id:'2026-11-08f', date:'8 Nov 2026', title:'Regular and Weekend students',
       all:[],
       student:['New students are now asked to choose Regular or Weekend when they register.'],

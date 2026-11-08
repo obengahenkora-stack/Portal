@@ -63,13 +63,13 @@ window.oeInit=async function(){
 
 function renderList(){
   var box=$('oeBody'); msg('');
-  var h='<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
+  var h=(window.oeBanner?oeBanner(LIST):'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
   if(!LIST.length) h+='<div class="empty" style="margin-top:14px">No online exams yet.</div>';
   h+=LIST.map(function(x,i){
     var pub=x.status==='published', n=(x.questions||[]).length, marks=(x.questions||[]).reduce(function(t,q){ return t+(q.marks||0); },0);
     return '<div class="oe-card'+(pub?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+'</div></div><span class="oe-st'+(pub?' pub':'')+'">'+(pub?'Published':'Draft')+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
-      +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div></div>';
+      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div></div>';
   }).join('');
   box.innerHTML=h;
 }

@@ -4,7 +4,7 @@
     { id:'2026-11-08b', date:'8 Nov 2026', title:'Exam Sessions',
       all:[],
       student:[],
-      staff:['New Exam Sessions tile in the Attendance Portal: pick the course and exam date, then scan the barcode on each student\'s Exam Pass. Groups A, B and C of a course load together as one class list. Several phones can scan the same exam at once and everyone sees all the names. The list downloads as an Excel file, and it can download automatically when you tap Done after scanning. A new Past exam sessions button lists every saved exam so you can reopen or (owner only) delete one. You can also set a Room on each phone for a per-room count, add a student who is not on the class list as an extra candidate, print a signed attendance sheet, and see exam attendance inside Summary & Export. Exam records are kept separate from lecture attendance.'] },
+      staff:['New Exam Sessions tile in the Attendance Portal: pick the course and exam date, then scan the barcode on each student\'s Exam Pass. Groups A, B and C of a course load together as one class list. Several phones can scan the same exam at once and everyone sees all the names. The list downloads as an Excel file, and it can download automatically when you tap Done after scanning. A new Past exam sessions button lists every saved exam so you can reopen or (owner only) delete one. You can also set a Room on each phone for a per-room count, add a student who is not on the class list as an extra candidate, print an exam attendance sheet, and see exam attendance inside Summary & Export. Exam records are kept separate from lecture attendance.'] },
     { id:'2026-11-08a', date:'8 Nov 2026', title:'Cleaner scanning',
       all:[],
       student:[],

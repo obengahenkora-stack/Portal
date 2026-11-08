@@ -560,6 +560,12 @@
           <option value="Environmental Engineering">Environmental Engineering</option>
           <option value="missing">Not set</option>
         </select></div>
+      <div class="adm-f"><span>Student type</span>
+        <select id="adminRegisteredTypeFilter" onchange="renderRegisteredStudents()">
+          <option value="">All types</option>
+          <option value="Regular">Regular</option>
+          <option value="Weekend">Weekend</option>
+        </select></div>
       <div class="adm-f"><span>Class group</span>
         <select id="adminRegisteredClassFilter" onchange="renderRegisteredStudents()">
           <option value="">All classes</option>
@@ -874,7 +880,7 @@ async function fetchBin(){
 // ===== Student Accounts Database Table (replaces the old shared-JSON-file approach) =====
 
 function dbRowToRecord(row){
-  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', classGroup: row.class_group || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
+  return { email: row.email, indexNumber: row.index_number, name: row.name || '', level: row.level || '', department: row.department || '', gender: row.gender || '', phone: row.phone || '', classGroup: row.class_group || '', studentType: row.student_type || '', hasDeptCol: ('department' in row), linkedAt: row.linked_at };
 }
 
 async function _stu(payload){
@@ -891,7 +897,7 @@ async function dbFindStudentByEmail(email){
   return j.row ? dbRowToRecord(j.row) : null;
 }
 async function dbUpsertStudent(record){
-  await _stu({action:'stu_save_me', record:{ index_number: record.indexNumber, name: record.name, level: record.level, department: record.department||null, gender: record.gender||null, phone: record.phone||null, class_group: record.classGroup||null, linked_at: record.linkedAt }});
+  await _stu({action:'stu_save_me', record:{ index_number: record.indexNumber, name: record.name, level: record.level, department: record.department||null, gender: record.gender||null, phone: record.phone||null, class_group: record.classGroup||null, student_type: record.studentType||undefined, linked_at: record.linkedAt }});
   return true;
 }
 async function dbMigrateLevel(fromLevel, toLevel){
@@ -1196,8 +1202,10 @@ async function adminEditStudent(email){
   const deptIn = prompt('Department (Civil Engineering or Environmental Engineering):', s.department || 'Civil Engineering'); if(deptIn === null) return;
   const dept = /env/i.test(deptIn) ? 'Environmental Engineering' : (/civ/i.test(deptIn) ? 'Civil Engineering' : '');
   if(deptIn.trim() && !dept){ alert('Department must be Civil Engineering or Environmental Engineering.'); return; }
+  const typIn = prompt('Student type (Regular or Weekend):', s.studentType || 'Regular'); if(typIn === null) return;
+  const typ = /^w/i.test(typIn.trim()) ? 'Weekend' : 'Regular';
   try{
-    await _stu({action:'stu_update', email:email, patch:{ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null }});
+    await _stu({action:'stu_update', email:email, patch:{ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null, student_type: typ }});
     loadRegisteredStudents();
   }catch(e){ alert('Could not update: ' + e.message); }
 }
@@ -1284,6 +1292,8 @@ function renderRegisteredStudents(){
   const deptVal = (document.getElementById('adminRegisteredDeptFilter')||{}).value || '';
   if(deptVal === 'missing') filtered = filtered.filter(a => !a.department);
   else if(deptVal) filtered = filtered.filter(a => a.department === deptVal);
+  const typVal = (document.getElementById('adminRegisteredTypeFilter')||{}).value || '';
+  if(typVal) filtered = filtered.filter(a => (a.studentType||'Regular') === typVal);
   const clsVal = (document.getElementById('adminRegisteredClassFilter')||{}).value || '';
   if(clsVal === 'noclass') filtered = filtered.filter(a => !a.classGroup);
   else if(clsVal) filtered = filtered.filter(a => String(a.classGroup||'').toUpperCase() === clsVal);
@@ -1320,7 +1330,7 @@ function renderRegisteredStudents(){
       <input type="checkbox" class="stuSel" style="width:auto;margin:0;" data-email="${escapeHtml(a.email)}" ${_sel.has(a.email)?'checked':''} onchange="toggleStudent(this.dataset.email,this.checked)">
       <div style="flex:1;">
         <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(a.name || '(no name given)')}</div>
-        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; <span style="color:${a.classGroup ? 'inherit' : 'var(--danger)'};">${a.classGroup ? (a.classGroup==='NONE' ? 'No group' : 'Class ' + escapeHtml(a.classGroup)) : 'Class not chosen yet'}</span> &middot; ${a.gender ? escapeHtml(a.gender) : 'Gender not set'} &middot; ${a.phone ? escapeHtml(a.phone) : 'Phone not set'} &middot; ${escapeHtml(a.email)}</div>
+        <div style="font-size:0.78rem;color:${a.level ? 'var(--muted)' : 'var(--danger)'};">${escapeHtml(a.indexNumber)} &middot; <b>${escapeHtml(a.studentType||'Regular')}</b> &middot; ${a.level ? 'Level ' + escapeHtml(a.level) : 'Level not set'} &middot; ${a.department ? escapeHtml(a.department) : 'Department not set'} &middot; <span style="color:${a.classGroup ? 'inherit' : 'var(--danger)'};">${a.classGroup ? (a.classGroup==='NONE' ? 'No group' : 'Class ' + escapeHtml(a.classGroup)) : 'Class not chosen yet'}</span> &middot; ${a.gender ? escapeHtml(a.gender) : 'Gender not set'} &middot; ${a.phone ? escapeHtml(a.phone) : 'Phone not set'} &middot; ${escapeHtml(a.email)}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
         <button style="padding:6px 14px;font-size:0.75rem;" onclick="document.getElementById('adminSearchIndexInput').value='${escapeHtml(a.indexNumber)}'; adminSearchStudent();">View</button>
@@ -1405,6 +1415,7 @@ async function linkIndexNumber(){
     await dbUpsertStudent(record);
     try{ await setMyGroup(classGroup); }catch(_e){}
     studentCurrentAccount = record; renderWelcome();
+    try{ if(!record.studentType && String(record.email||'').toLowerCase()!==ADMIN_EMAIL) showTypeGate(); }catch(_e){}
 
     document.getElementById('linkIndexCard').classList.add('hidden');
     document.getElementById('editDetailsLink').classList.remove('hidden');
@@ -1918,12 +1929,37 @@ setInterval(updateWhoBar,1500);
 <script>
 /* ===== Gender + phone gate, dancing welcome avatar ===== */
 var _pgGender='';
-function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone || (!a.classGroup && String(a.email||'').toLowerCase()!==ADMIN_EMAIL)); }
+function needsGate(a){ return !!a && (!a.department || !a.gender || !a.phone || (!a.classGroup && String(a.email||'').toLowerCase()!==ADMIN_EMAIL) || (!a.studentType && String(a.email||'').toLowerCase()!==ADMIN_EMAIL)); }
 function showGate(){
   var a=studentCurrentAccount; if(!a) return;
   if(!a.department){ showDeptGate(); return; }
   if(!a.gender || !a.phone){ showProfileGate(); return; }
   if(!a.classGroup && String(a.email||'').toLowerCase()!==ADMIN_EMAIL){ showClassGate(); return; }
+  if(!a.studentType && String(a.email||'').toLowerCase()!==ADMIN_EMAIL){ showTypeGate(); return; }
+}
+
+var _tgPick='';
+function showTypeGate(){
+  var g=document.getElementById('typeGate');
+  if(!g){
+    g=document.createElement('div'); g.id='typeGate'; g.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.78);display:flex;align-items:center;justify-content:center;padding:20px;';
+    g.innerHTML='<div style="background:var(--card,#fff);color:var(--ink,#111);max-width:440px;width:100%;border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.4);"><h2 style="margin:0 0 6px;">Regular or Weekend?</h2><p style="color:var(--muted);font-size:0.88rem;margin:0 0 14px;">Choose the programme you are on. Your lecturer uses this to organise class lists.</p><div style="display:flex;gap:10px;margin-bottom:14px;"><button type="button" class="secondary tg-b" data-t="Regular" onclick="tgPick(\'Regular\')" style="flex:1;">Regular</button><button type="button" class="secondary tg-b" data-t="Weekend" onclick="tgPick(\'Weekend\')" style="flex:1;">Weekend</button></div><button type="button" style="width:100%;" onclick="saveTypeGate()">Save and continue</button><div id="typeGateMsg" style="margin-top:10px;"></div></div>';
+    document.body.appendChild(g);
+  }
+  _tgPick=''; tgPick(''); g.style.display='flex'; document.body.style.overflow='hidden';
+}
+function tgPick(v){ _tgPick=v||''; document.querySelectorAll('.tg-b').forEach(function(b){ var on=b.getAttribute('data-t')===_tgPick; b.style.background=on?'#16a34a':''; b.style.color=on?'#fff':''; b.style.borderColor=on?'#16a34a':''; }); }
+async function saveTypeGate(){
+  var msg=document.getElementById('typeGateMsg');
+  if(!_tgPick){ msg.innerHTML='<div class="msg err">Please choose Regular or Weekend.</div>'; return; }
+  msg.innerHTML='<div class="msg ok">Saving...</div>';
+  try{
+    await _stu({action:'stu_patch_me', patch:{student_type:_tgPick}});
+    studentCurrentAccount.studentType=_tgPick;
+    var g=document.getElementById('typeGate'); if(g) g.style.display='none'; document.body.style.overflow='';
+    renderWelcome();
+    if(needsGate(studentCurrentAccount)) showGate(); else loadDashboard();
+  }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
 var _cgPick='';
 function showClassGate(){
@@ -2093,7 +2129,7 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=18"></script>
+<script src="updates.js?v=19"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
 .ov-links .ov-link i{grid-row:1/3;width:46px;height:46px;border-radius:13px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 !important}

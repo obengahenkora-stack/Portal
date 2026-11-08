@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08f', date:'8 Nov 2026', title:'Regular and Weekend students',
+      all:[],
+      student:['New students are now asked to choose Regular or Weekend when they register.'],
+      staff:['Every existing student is tagged Regular. New students choose Regular or Weekend at sign-up. The Students page shows each student\'s type, has a new Student type filter, and Edit lets you change it.'] },
     { id:'2026-11-08e', date:'8 Nov 2026', title:'Tidier score screens',
       all:[],
       student:[],

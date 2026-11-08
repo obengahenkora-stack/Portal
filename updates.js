@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08r', date:'8 Nov 2026', title:'Who can approve absence requests',
+      all:[],
+      student:[],
+      staff:['Absence requests now go to the lecturer assigned to the course. You can only approve courses assigned to you, teaching assistants only see them, and the owner can switch on approval for TAs in Absence Excuses.'] },
     { id:'2026-11-08q', date:'8 Nov 2026', title:'Revoke an absence approval',
       all:[],
       student:[],

@@ -57,7 +57,7 @@ window.absSend=async function(){
 document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('[data-go="dashExcuseCard"]'); if(t) setTimeout(function(){ if($('absBody')) absStuInit(); },30); },true);
 
 /* ---------- lecturer side (portal.html) ---------- */
-var _L=[];
+var _L=[], _ta=false;
 var _cache=null;
 window.absExcusedFor=async function(course,date){
   try{
@@ -89,7 +89,7 @@ try{ var _sv=window.saveSupabaseData; if(typeof _sv==='function' && typeof teamA
 window.absInit=async function(){ _cache=null;
   var box=$('absStaffBody'); if(!box) return;
   box.innerHTML='<div class="empty">Loading...</div>';
-  try{ var j=await teamApi({action:'stu_exc_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Back end not updated yet (deploy step 35)'); _L=j.list||[]; absRender(); }
+  try{ var j=await teamApi({action:'stu_exc_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Back end not updated yet (deploy step 35)'); _L=j.list||[]; _ta=!!j.taApprove; absRender(); }
   catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+')</div>'; }
 };
 function absRender(){
@@ -97,10 +97,11 @@ function absRender(){
   var vis=null; try{ var v=visibleCourses(_L.map(function(x){ return x.course; })); vis={}; v.forEach(function(c){ vis[c]=1; }); }catch(e){}
   var rows=_L.filter(function(x){ return !vis||vis[x.course]; });
   if(!rows.length){ box.innerHTML='<div class="empty">No absence requests yet.</div>'; return; }
-  box.innerHTML='<div style="margin:10px 0;font-weight:700">'+pend.length+' waiting for a reply</div>'+rows.slice(0,100).map(function(x){
+  var tog=''; try{ if(isAdmin()) tog='<label style="display:flex;align-items:center;gap:10px;margin:10px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;text-transform:none;letter-spacing:0;font-size:.88rem;font-weight:600"><input type="checkbox" id="absTa" '+(_ta?'checked':'')+' onchange="absSetTa(this.checked)" style="width:auto !important;margin:0"><span>Let teaching assistants approve too<br><small style="color:var(--muted);font-weight:500">Off: requests go to the lecturer assigned to the course. Anyone can only approve courses assigned to them.</small></span></label>'; }catch(e){}
+  box.innerHTML=tog+'<div style="margin:10px 0;font-weight:700">'+pend.filter(function(x){ return x.canDecide; }).length+' waiting for your reply</div>'+rows.slice(0,100).map(function(x){
     var i=_L.indexOf(x);
     return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.name||x.index)+'</b>'+chip(x.status)+'</div><small>'+esc(x.index)+' &middot; '+esc(x.course)+' &middot; missed '+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+viewBtn(x)
-      +(x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>'+(x.status==='approved'?'<button type="button" class="abs-b" style="margin-top:8px" onclick="absApply('+i+')">Apply to attendance</button> <button type="button" class="abs-b no" style="margin-top:8px" onclick="absRevoke('+i+')">Revoke approval</button>':''))+'</div>'; }).join('');
+      +(!x.canDecide?'<small style="color:var(--muted)">View only. This goes to the lecturer assigned to this course.</small>':x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>'+(x.status==='approved'?'<button type="button" class="abs-b" style="margin-top:8px" onclick="absApply('+i+')">Apply to attendance</button> <button type="button" class="abs-b no" style="margin-top:8px" onclick="absRevoke('+i+')">Revoke approval</button>':''))+'</div>'; }).join('');
 }
 window.absApply=async function(i){
   var x=_L[i]; if(!x) return; var msg=$('absStaffMsg'); msg.innerHTML='<div class="msg ok">Checking attendance...</div>';
@@ -118,6 +119,7 @@ window.absApply=async function(i){
     else msg.innerHTML='<div class="msg err">No saved attendance for '+esc(x.course)+' on '+esc(x.date)+'. Saved dates for this course: '+(dates.length?esc(dates.sort().join(', ')):'none')+'. If you have not taken attendance that day yet, the excuse will apply automatically when you do.</div>';
   }catch(e){ msg.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
 };
+window.absSetTa=async function(on){ var m=$('absStaffMsg'); try{ var r=await teamApi({action:'stu_exc_cfg_set',taApprove:on}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed'); _ta=on; m.innerHTML='<div class="msg ok">'+(on?'Teaching assistants can now approve for their courses.':'Only lecturers can approve now.')+'</div>'; }catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; var c=$('absTa'); if(c) c.checked=!on; } };
 window.absRevoke=async function(i){
   var x=_L[i]; if(!x) return;
   if(!confirm('Revoke this approval?\n\n'+(x.name||x.index)+' will no longer be excused for '+x.course+' on '+fd(x.date)+'. If they were marked Excused in attendance, that mark is removed.')) return;

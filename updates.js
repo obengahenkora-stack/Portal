@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08d', date:'8 Nov 2026', title:'New score alerts',
+      all:[],
+      student:['When new scores are posted, or one changes, a green "New scores posted" card now appears on your dashboard with a NEW tag on My Scores. Tap Got it and it goes away.'],
+      staff:[] },
     { id:'2026-11-08c', date:'8 Nov 2026', title:'At-Risk Students',
       all:[],
       student:[],

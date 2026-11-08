@@ -2093,7 +2093,7 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=14"></script>
+<script src="updates.js?v=15"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
 .ov-links .ov-link i{grid-row:1/3;width:46px;height:46px;border-radius:13px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 !important}
@@ -2106,5 +2106,35 @@ function renderWelcome(){
 .card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
 .card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
 </style>
+<script>
+/* New-score notice: tells a student when scores were added or changed since they last looked */
+(function(){
+  function who(){ var e=document.getElementById('studentWhoAmI'); return e?String(e.textContent||'').trim().toLowerCase():''; }
+  function snap(){ var t=document.querySelector('#dashScores table'); if(!t) return null; var m={}, n=0; t.querySelectorAll('tr').forEach(function(r){ var td=r.querySelectorAll('td'); if(td.length>=4){ m[td[0].textContent.trim()+' | '+td[2].textContent.trim()]=td[3].textContent.replace(/\s+/g,' ').trim(); n++; } }); return n?m:null; }
+  var last='';
+  function check(){
+    var w=who(), m=snap(); if(!w||!m) return;
+    var sig=JSON.stringify(m); if(sig===last) return; last=sig;
+    var K='ceScoresSeen_'+w, old=null;
+    try{ old=JSON.parse(localStorage.getItem(K)||'null'); }catch(e){}
+    if(!old){ try{ localStorage.setItem(K,sig); }catch(e){} return; }
+    var fresh=Object.keys(m).filter(function(k){ return !(k in old) || old[k]!==m[k]; });
+    var box=document.getElementById('scoreNotice'); if(box) box.remove();
+    var tile=document.querySelector('.ov-link[data-go="dashScoresCard"] b'); var tb=document.getElementById('scoreNewBadge'); if(tb) tb.remove();
+    if(!fresh.length) return;
+    var ov=document.getElementById('dashOverviewCard'); if(!ov) return;
+    box=document.createElement('div'); box.id='scoreNotice';
+    box.style.cssText='margin:0 0 14px;padding:14px 16px;border-radius:16px;border:1px solid var(--line);border-left:4px solid #16a34a;background:var(--card);display:flex;gap:12px;align-items:flex-start;justify-content:space-between';
+    var list=fresh.slice(0,4).map(function(k){ return '<li>'+k.replace(/</g,'&lt;')+'</li>'; }).join('')+(fresh.length>4?'<li>and '+(fresh.length-4)+' more</li>':'');
+    box.innerHTML='<div><div style="font-weight:700">New scores posted</div><ul style="margin:6px 0 0;padding-left:18px;font-size:.85rem;color:var(--muted)">'+list+'</ul></div><div style="display:flex;flex-direction:column;gap:6px"><button type="button" id="scoreSee" style="padding:8px 14px;border-radius:999px;font-size:.8rem;font-weight:700;border:0;background:#16a34a;color:#fff;cursor:pointer">View</button><button type="button" id="scoreGot" style="padding:8px 14px;border-radius:999px;font-size:.8rem;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer">Got it</button></div>';
+    ov.insertBefore(box,ov.firstChild);
+    if(tile){ tb=document.createElement('span'); tb.id='scoreNewBadge'; tb.textContent='NEW'; tb.style.cssText='background:#f43f5e;color:#fff;border-radius:999px;font-size:.62rem;font-weight:700;padding:2px 7px;margin-left:6px;vertical-align:middle'; tile.appendChild(tb); }
+    function seen(){ try{ localStorage.setItem(K,sig); }catch(e){} var b=document.getElementById('scoreNotice'); if(b) b.remove(); var x=document.getElementById('scoreNewBadge'); if(x) x.remove(); }
+    document.getElementById('scoreGot').onclick=seen;
+    document.getElementById('scoreSee').onclick=function(){ seen(); var l=document.querySelector('.ov-link[data-go="dashScoresCard"]'); if(l) l.click(); };
+  }
+  document.addEventListener('DOMContentLoaded',function(){ var e=document.getElementById('dashScores'); if(e) new MutationObserver(function(){ setTimeout(check,50); }).observe(e,{childList:true,subtree:true}); });
+})();
+</script>
 </body>
 </html>

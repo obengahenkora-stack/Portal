@@ -4,7 +4,7 @@
     { id:'2026-11-08o', date:'8 Nov 2026', title:'Team Access redesigned',
       all:[],
       student:[],
-      staff:['Team Access now shows each person as a card with their role, courses and buttons laid out neatly. Adding a member and the rarely used maintenance tools are tucked into collapsible sections.'] },
+      staff:['Team Access now shows each person as a card (courses hide behind a tap) with their role, courses and buttons laid out neatly. Adding a member and the rarely used maintenance tools are tucked into collapsible sections.'] },
     { id:'2026-11-08n', date:'8 Nov 2026', title:'Absence excuses',
       all:[],
       student:['New Absence Excuse tile: if you missed a class for a good reason, send your lecturer a request, with an optional photo as proof, and see the reply there. If approved you are marked Excused.'],

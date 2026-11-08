@@ -19,6 +19,7 @@ css.textContent='#teamAccessCard .tm-add{margin:14px 0 4px;border:1px solid var(
 +'#teamAccessCard .tm-em{font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}'
 +'#teamAccessCard .tm-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}'
 +'#teamAccessCard .tm-chip{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;background:rgba(14,165,233,.12);color:#0369a1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}'
++'#teamAccessCard .tm-tog{border:0 !important;width:auto !important;cursor:pointer;box-shadow:none !important;text-transform:none !important;letter-spacing:0 !important;background:rgba(14,165,233,.16) !important;color:#0369a1 !important;padding:3px 10px !important;font-size:.72rem !important}'
 +'#teamAccessCard .tm-chip.r{background:rgba(139,92,246,.14);color:#6d28d9}'
 +'#teamAccessCard .tm-chip.a{background:rgba(245,158,11,.16);color:#b45309}'
 +'#teamAccessCard .tm-chip.g{background:rgba(127,127,127,.16);color:var(--muted)}'
@@ -77,16 +78,16 @@ window.loadTeamMemberList=async function(){
     if(!members.length){ box.innerHTML='<div class="empty">No additional team members added yet.</div>'; return; }
     box.innerHTML=members.map(function(m){
       var init=String(m.name||m.email||'?').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase();
-      var chips='<span class="tm-chip r">'+esc(ROLE[m.role]||m.role)+'</span>';
+      var crs=null, chips='<span class="tm-chip r">'+esc(ROLE[m.role]||m.role)+'</span>';
       if(Array.isArray(m.perms)) chips+='<span class="tm-chip a">Custom access: '+m.perms.length+'</span>';
       if(m.role==='admin') chips+='<span class="tm-chip g">All courses</span>';
       else if(Array.isArray(m.courses)){
         if(!m.courses.length) chips+='<span class="tm-chip g">No courses assigned</span>';
-        else { m.courses.slice(0,3).forEach(function(c){ chips+='<span class="tm-chip" title="'+esc(c)+'">'+esc(c)+'</span>'; }); if(m.courses.length>3) chips+='<span class="tm-chip g">+'+(m.courses.length-3)+' more</span>'; }
+        else { chips+='<button type="button" class="tm-chip tm-tog" onclick="var n=this.parentNode.nextSibling;n.style.display=n.style.display===\'flex\'?\'none\':\'flex\';this.classList.toggle(\'on\')">'+m.courses.length+' course'+(m.courses.length===1?'':'s')+' &#9662;</button>'; crs=m.courses; }
       } else chips+='<span class="tm-chip g">All courses</span>';
       var e=esc(m.email), q=esc(m.email).replace(/'/g,"\\'");
       return '<div class="tm-card"><div class="tm-top"><div class="tm-av">'+esc(init)+'</div><div style="min-width:0"><div class="tm-nm">'+esc(m.name||m.email)+'</div><div class="tm-em">'+e+'</div></div></div>'
-        +'<div class="tm-chips">'+chips+'</div>'
+        +'<div class="tm-chips">'+chips+'</div>'+'<div class="tm-chips tm-list" style="display:none">'+(crs?crs.map(function(c){ return '<span class="tm-chip" title="'+esc(c)+'">'+esc(c)+'</span>'; }).join(''):'')+'</div>'
         +'<div class="tm-act">'+(m.role==='admin'?'':'<button type="button" class="tm-b" data-email="'+e+'" onclick="openPerms(this.dataset.email)">Access</button><button type="button" class="tm-b" data-email="'+e+'" onclick="assignCourses(this.dataset.email)">Courses</button>')+'<button type="button" class="tm-b x" onclick="removeTeamMember(\''+q+'\')">Remove</button></div></div>';
     }).join('');
   }catch(err){ box.innerHTML='<div class="empty">Could not load team members.</div>'; }

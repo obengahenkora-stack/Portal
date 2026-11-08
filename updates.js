@@ -4,7 +4,7 @@
     { id:'2026-11-08u', date:'8 Nov 2026', title:'Online Exams (staff setup)',
       all:[],
       student:[],
-      staff:['New Online Exams tile on the Faculty Console for lecturers: create an exam, set the opening and closing time and duration, build multiple-choice and written questions, and choose the camera photo interval (default every 30 seconds). Students will be able to sit it from home in the next update.'] },
+      staff:['New Online Exams card on the Faculty Console for lecturers: create an exam, set the opening and closing time and duration, build multiple-choice and written questions, and choose the camera photo interval (default every 30 seconds). Students will be able to sit it from home in the next update.'] },
     { id:'2026-11-08t', date:'8 Nov 2026', title:'Cancel or delete an absence request',
       all:[],
       student:['In Absence Excuse you can now cancel a request that is waiting (or approved for a future class), and delete declined or cancelled ones from your list.'],

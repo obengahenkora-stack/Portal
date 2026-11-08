@@ -401,6 +401,7 @@
     <div class="att-grid" style="margin-top:12px;">
       <button type="button" class="att-tile" onclick="switchTab('teacher')" style="--g1:#0ea5e9;--g2:#6366f1;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="att-tt">Assessment Portal</span><span class="att-td">Upload scores, manage students, view reports.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('attendance')" style="--g1:#10b981;--g2:#0ea5e9;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="att-tt">Attendance Portal</span><span class="att-td">QR check-in, tag scanning, rosters, summaries.</span></button>
+      <button type="button" id="hubExamTile" class="att-tile hidden" onclick="switchTab('oexam')" style="--g1:#14b8a6;--g2:#6366f1;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M9 15l2 2 4-4"/></svg></span><span class="att-tt">Online Exams</span><span class="att-td">Create exams students write from home, with camera checks.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('chat')" style="--g1:#8b5cf6;--g2:#ec4899;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="att-tt">Chat <span id="hubChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 9px;margin-left:6px;text-transform:none;letter-spacing:0"></span></span><span class="att-td">Message students and colleagues. See who is online.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('qa')" style="--g1:#f59e0b;--g2:#ef4444;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="att-tt">Q&amp;A Board</span><span class="att-td">See student questions and post answers.</span></button>
       <a id="hubStudentTile" class="att-tile hidden" href="dashboard.html" style="--g1:#06b6d4;--g2:#3b82f6;text-decoration:none;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></span><span class="att-tt">Students Dashboard</span><span class="att-td">Registered students, search by index number, view any student's page.</span></a>
@@ -430,6 +431,18 @@
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:18px 0 8px;"><div style="flex:1;min-width:180px;"><label>Show</label><select id="pqaFilter"><option value="">All courses</option></select></div><button type="button" class="secondary" id="pqaRefresh">Refresh</button></div>
       <div id="pqaList"><div class="empty">Loading...</div></div>
     </div>
+  </div>
+
+  <!-- ONLINE EXAMS VIEW -->
+  <div id="oexamView" class="hidden">
+    <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg> Faculty Console</button>
+    <div class="card" id="onlineExamCard">
+      <label>Online Exams</label>
+      <div class="hint">Create timed exams that students write from home, with a required camera and random photo checks.</div>
+      <div id="oeMsg"></div>
+      <div id="oeBody"></div>
+    </div>
+
   </div>
 
   <!-- TEACHER VIEW -->
@@ -794,13 +807,6 @@
       <label class="ex-sw"><span>Download the list when I tap Done</span><input type="checkbox" id="exAuto" onchange="examAutoSet(this.checked)"><i></i></label>
       <div id="exBody"><div class="empty">Pick the course and the exam date to begin.</div></div>
       <div id="exPast"></div>
-    </div>
-
-    <div class="card hidden" id="onlineExamCard">
-      <label>Online Exams</label>
-      <div class="hint">Create timed exams that students write from home, with a required camera and random photo checks.</div>
-      <div id="oeMsg"></div>
-      <div id="oeBody"></div>
     </div>
 
     <div class="card hidden" id="absenceCard">
@@ -1579,9 +1585,10 @@ function switchTab(tab){
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
   var _cv=document.getElementById('chatView'); if(_cv) _cv.classList.toggle('hidden', tab!=='chat');
+  var _ov=document.getElementById('oexamView'); if(_ov) _ov.classList.toggle('hidden', tab!=='oexam'); if(tab==='oexam' && window.oeInit) window.oeInit();
   var _qv=document.getElementById('qaView'); if(_qv) _qv.classList.toggle('hidden', tab!=='qa'); if(tab==='qa' && window.pqaOpen) window.pqaOpen();
   try{ if(window.ChatUI){ if(tab==='chat') ChatUI.embed(document.getElementById('portalChatCard')); else ChatUI.unembed(); } }catch(e){}
-  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat' || tab==='qa');
+  document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat' || tab==='qa' || tab==='oexam');
   if(tab === 'attendance'){
     loadAttendanceSummaryCourseOptions();
   }
@@ -1795,7 +1802,6 @@ var _TCH_TILES=[
  {g:'Scores',id:'exportScoresCard',t:'Download as Excel',d:'Export scores for a course or all courses.',i:'chart'},
  {g:'Scores',id:'fillSheetCard',t:'Fill Official Sheet',d:'Put scores into the university sheet.',i:'edit'},
  {g:'Scores',id:'transferScoresCard',t:'Transfer Between Files',d:'Copy columns from one Excel file to another.',i:'reset'},
- {g:'Exams',id:'onlineExamCard',t:'Online Exams',d:'Create and run exams students write from home.',i:'check',c:'t-go'},
  {g:'Teaching',id:'lectureMaterialsCard',t:'Lecture Hall',d:'Post materials and announcements to students.',i:'file',c:'t-go'},
  {g:'Teaching',id:'manageCoursesCard',t:'Manage Courses',d:'Courses students can report issues on.',i:'list'},
  {g:'Teaching',id:'reportsCard',t:'Issue Reports',d:'Read and reply to student reports.',i:'users'},
@@ -1937,7 +1943,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
-  var _oe=document.getElementById('onlineExamCard'); if(_oe && (isAdmin()||currentUserRole==='lecturer')){ _oe.classList.remove('hidden'); try{ oeInit(); }catch(e){} try{ lchRender('tch'); }catch(e){} }
+  var _he=document.getElementById('hubExamTile'); if(_he && (isAdmin()||currentUserRole==='lecturer')) _he.classList.remove('hidden');
   var _ab=document.getElementById('absenceCard'); if(_ab){ _ab.classList.remove('hidden'); try{ absInit(); }catch(e){} }
   var _us=document.getElementById('usageCard'); if(_us){ _us.classList.remove('hidden'); try{ usageInit(); }catch(e){} }
   var _at=document.getElementById('atRiskCard'); if(_at){ _at.classList.remove('hidden'); try{ atrInit(); }catch(e){} }

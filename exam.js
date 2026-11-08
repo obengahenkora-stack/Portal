@@ -122,6 +122,34 @@ async function flush(){
 window.addEventListener('online',function(){ if(qGet().length) flush(); });
 window.addEventListener('beforeunload',function(e){ if(SC || qGet().some(function(o){ return o.course===S.course; })){ if(SC || qGet().length){ e.preventDefault(); e.returnValue=''; } } });
 
+
+/* ---------- past sessions ---------- */
+var _past=null, _pastOpen=false;
+window.examPast=async function(){
+  _pastOpen=!_pastOpen; var box=$('exPast'); if(!box) return;
+  if(!_pastOpen){ box.innerHTML=''; $('exPastBtn').textContent='Past exam sessions'; return; }
+  $('exPastBtn').textContent='Hide past sessions';
+  box.innerHTML='<div class="empty">Loading...</div>';
+  var j=await teamApi({action:'exam_sessions'});
+  if(!j||!j.ok){ box.innerHTML='<div class="empty">Could not load ('+escapeHtml((j&&j.error)||'no answer')+'). If this says Unknown action, deploy backend step 31.</div>'; return; }
+  _past=j.sessions||[];
+  if(!_past.length){ box.innerHTML='<div class="empty">No exam sessions saved yet.</div>'; return; }
+  var own=false; try{ own=isOwner(); }catch(e){}
+  box.innerHTML=_past.map(function(x,i){ return '<div class="ex-row"><div><b>'+escapeHtml(x.course)+'</b><small>'+escapeHtml(x.date)+' · '+x.count+' present</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="exb" onclick="examOpen('+i+')">Open</button>'+(own?'<button type="button" class="exb x" onclick="examDel('+i+')">Delete</button>':'')+'</div></div>'; }).join('');
+};
+window.examOpen=function(i){
+  var x=_past&&_past[i]; if(!x) return; var sel=$('exCourse');
+  if(![].some.call(sel.options,function(o){ return o.value===x.course; })){ var o=document.createElement('option'); o.value=x.course; o.textContent=x.course; sel.appendChild(o); }
+  sel.value=x.course; $('exDate').value=x.date; examLoad(); window.scrollTo({top:0,behavior:'smooth'});
+};
+window.examDel=async function(i){
+  var x=_past&&_past[i]; if(!x) return;
+  if(!confirm('Delete the exam session for '+x.course+' on '+x.date+' ('+x.count+' present)? This cannot be undone.')) return;
+  var j=await teamApi({action:'exam_delete',course:x.course,date:x.date});
+  if(!j||!j.ok){ alert((j&&j.error)||'Could not delete'); return; }
+  _pastOpen=false; examPast();
+};
+
 /* ---------- download ---------- */
 window.examCsv=function(){ examDownload(); };
 function examDownload(){

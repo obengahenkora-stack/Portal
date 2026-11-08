@@ -773,11 +773,13 @@
       <div class="ex-fields">
         <div><div class="ex-l">Course</div><select id="exCourse" onchange="examLoad()"><option value="">Select course...</option></select></div>
         <div><div class="ex-l">Exam date</div><input type="date" id="exDate" onchange="examLoad()"></div>
+        <div><div class="ex-l">Room (optional, this phone)</div><input type="text" id="exRoom" placeholder="e.g. Hall A" maxlength="20" oninput="examRoomSet(this.value)"></div>
       </div>
       <button type="button" class="ex-scan" onclick="examScan()"><span>&#128247;</span> Scan exam passes</button>
       <div class="ex-two">
         <button type="button" class="exb" onclick="examDownload()">&#11015;&nbsp; Excel</button>
-        <button type="button" class="exb" id="exPastBtn" onclick="examPast()">Past sessions</button>
+        <button type="button" class="exb" onclick="examPrint()">&#128438;&nbsp; Print</button>
+        <button type="button" class="exb" id="exPastBtn" onclick="examPast()">Past</button>
       </div>
       <label class="ex-sw"><span>Download the list when I tap Done</span><input type="checkbox" id="exAuto" onchange="examAutoSet(this.checked)"><i></i></label>
       <div id="exBody"><div class="empty">Pick the course and the exam date to begin.</div></div>
@@ -900,6 +902,7 @@
       </div>
 
       <div id="atRiskBannerDisplay"></div>
+      <div id="exSummary"></div>
       <div id="attendanceSummaryByStudent"><div class="empty">Select a course to view attendance.</div></div>
       <div id="attendanceSummaryBySession" class="hidden"><div class="empty">Select a course to view attendance.</div></div>
       <div id="attendanceSummaryTimes" class="hidden">
@@ -5108,6 +5111,6 @@ function updateWhoBar(){
 .card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
 .card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
 </style>
-<script src="exam.js?v=5"></script>
+<script src="exam.js?v=6"></script>
 </body>
 </html>

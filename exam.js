@@ -5,6 +5,8 @@ var S={course:'',date:'',roster:[],present:{},ready:false,busy:false};
 var SC=null, _flushing=null, _retryT=null, _inited=false;
 function $(i){ return document.getElementById(i); }
 function key(x){ return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function roomGet(){ try{ return localStorage.getItem('ceExamRoom')||''; }catch(e){ return ''; } }
+window.examRoomSet=function(v){ try{ localStorage.setItem('ceExamRoom',String(v||'').trim()); }catch(e){} };
 function qGet(){ try{ return JSON.parse(localStorage.getItem(QK)||'[]'); }catch(e){ return []; } }
 function qSet(a){ try{ localStorage.setItem(QK,JSON.stringify(a)); }catch(e){} }
 function today(){ try{ return new Date().toLocaleDateString('en-CA'); }catch(e){ return new Date().toISOString().slice(0,10); } }
@@ -15,7 +17,7 @@ css.textContent='#examCard .ex-fields{display:grid;gap:12px;margin:14px 0}'
 +'#examCard .ex-l{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}'
 +'#examCard .ex-fields select,#examCard .ex-fields input{width:100% !important;max-width:100% !important;box-sizing:border-box !important;min-width:0}'
 +'#examCard .ex-scan{width:100% !important;display:flex !important;align-items:center;justify-content:center;gap:10px;background:#0b2e1f !important;color:#fff !important;border:0 !important;border-radius:16px !important;padding:15px !important;font-size:1rem !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;box-shadow:none !important}'
-+'#examCard .ex-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}'
++'#examCard .ex-two{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0 4px}'
 +'#examCard .exb{width:100% !important;display:flex !important;align-items:center;justify-content:center;gap:6px;padding:11px 12px !important;font-size:.88rem !important;border-radius:14px !important;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important}'
 +'#examCard .ex-row .exb{width:auto !important;padding:7px 12px !important;font-size:.78rem !important;border-radius:999px !important}'
 +'#examCard .exb.x{color:var(--danger) !important}'
@@ -54,7 +56,7 @@ async function loadCourses(){
   if(keep) sel.value=keep;
 }
 window.examInit=function(){
-  if(!_inited){ _inited=true; var d=$('exDate'); if(d && !d.value) d.value=today(); var au=$('exAuto'); if(au) au.checked=autoOn(); }
+  if(!_inited){ _inited=true; var d=$('exDate'); if(d && !d.value) d.value=today(); var au=$('exAuto'); if(au) au.checked=autoOn(); var rm=$('exRoom'); if(rm) rm.value=roomGet(); }
   loadCourses();
   if(qGet().length) flush();
 };
@@ -77,9 +79,9 @@ async function poll(force){
   var j=await teamApi({action:'exam_list',course:S.course,date:S.date});
   if(!j || !j.ok){ S.err=(j&&j.error)||'Could not reach the server'; if(force){ render(); } else status(); return; } S.err='';
   if(S.course!==$('exCourse').value) return;
-  var m={}; (j.items||[]).forEach(function(it){ m[key(it.idx)]=it.at||new Date().toISOString(); });
-  qGet().forEach(function(o){ if(o.course===S.course && o.date===S.date){ if(o.present) m[key(o.index)]=new Date(o.ts).toISOString(); else delete m[key(o.index)]; } });
-  var sig=Object.keys(m).sort().join(',');
+  var m={}; S.room={}; (j.items||[]).forEach(function(it){ m[key(it.idx)]=it.at||new Date().toISOString(); if(it.room) S.room[key(it.idx)]=it.room; });
+  qGet().forEach(function(o){ if(o.course===S.course && o.date===S.date){ if(o.present){ m[key(o.index)]=new Date(o.ts).toISOString(); if(o.room) S.room[key(o.index)]=o.room; } else delete m[key(o.index)]; } });
+  var sig=Object.keys(m).sort().map(function(k){ return k+(S.room[k]||''); }).join(',');
   S.present=m;
   if(force || sig!==_sig){ _sig=sig; render(); var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length; }
 }
@@ -88,16 +90,23 @@ function find(idx){ var k=key(idx); for(var i=0;i<S.roster.length;i++){ if(key(S
 
 /* ---------- render ---------- */
 var tab='in';
+function extras(){ var inRos={}; S.roster.forEach(function(s){ inRos[key(s.indexNumber)]=1; }); return Object.keys(S.present).filter(function(k){ return !inRos[k]; }); }
+function roomTxt(k){ var r=S.room&&S.room[k]; return r?' · '+escapeHtml(String(r).replace(/-/g,' ')):''; }
 function render(){
   if(!S.ready) return;
   var tot=S.roster.length, rows=S.roster.filter(function(s){ return S.present[key(s.indexNumber)]; });
   rows.sort(function(a,b){ return String(S.present[key(b.indexNumber)]).localeCompare(String(S.present[key(a.indexNumber)])); });
   var abs=S.roster.filter(function(s){ return !S.present[key(s.indexNumber)]; });
-  var h='<div class="ex-stat"><div><span class="ex-big">'+rows.length+'</span> <span class="ex-of">of '+tot+' present</span></div><div class="ex-bar"><i style="width:'+(tot?Math.round(rows.length*100/tot):0)+'%"></i></div></div>'
-   +'<div class="ex-tabs"><button type="button" class="'+(tab==='in'?'on':'')+'" onclick="examTab(\'in\')">Present ('+rows.length+')</button><button type="button" class="'+(tab==='out'?'on':'')+'" onclick="examTab(\'out\')">Not yet ('+abs.length+')</button></div>';
-  if(tab==='in') h+= rows.length ? rows.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[key(s.indexNumber)])+'</div><button type="button" class="exb x" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; }).join('')
-    : '<div class="empty">No one yet. Scan an exam pass and the name appears here.</div>';
-  else h+= abs.length ? abs.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><button type="button" class="exb" onclick="examAdd(\''+ix.replace(/'/g,'')+'\')">Mark present</button></div>'; }).join('') : '<div class="empty">Everyone is present.</div>';
+  var ex=extras(), rc={}; Object.keys(S.present).forEach(function(k){ var r=(S.room&&S.room[k])||''; if(r) rc[r]=(rc[r]||0)+1; });
+  var rooms=Object.keys(rc).sort().map(function(r){ return escapeHtml(r.replace(/-/g,' '))+' <b>'+rc[r]+'</b>'; }).join(' &nbsp;·&nbsp; ');
+  var h='<div class="ex-stat"><div><span class="ex-big">'+rows.length+'</span> <span class="ex-of">of '+tot+' present'+(ex.length?' · +'+ex.length+' extra':'')+'</span></div><div class="ex-bar"><i style="width:'+(tot?Math.round(rows.length*100/tot):0)+'%"></i></div>'+(rooms?'<div style="font-size:.8rem;color:var(--muted);margin-top:10px">By room: '+rooms+'</div>':'')+'</div>'
+   +'<div class="ex-tabs"><button type="button" class="'+(tab==='in'?'on':'')+'" onclick="examTab(\'in\')">Present ('+(rows.length+ex.length)+')</button><button type="button" class="'+(tab==='out'?'on':'')+'" onclick="examTab(\'out\')">Not yet ('+abs.length+')</button></div>';
+  if(tab==='in'){
+    var any=false;
+    ex.forEach(function(k){ any=true; h+='<div class="ex-row" style="border-color:#f59e0b"><div><b>Extra candidate</b><small>'+escapeHtml(k)+roomTxt(k)+' · not on the class list</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[k])+'</div><button type="button" class="exb x" onclick="examRemove(\''+escapeHtml(k)+'\')">Remove</button></div></div>'; });
+    rows.forEach(function(s){ any=true; var ix=escapeHtml(s.indexNumber), k=key(s.indexNumber); h+='<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+roomTxt(k)+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[k])+'</div><button type="button" class="exb x" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; });
+    if(!any) h+='<div class="empty">No one yet. Scan an exam pass and the name appears here.</div>';
+  } else h+= abs.length ? abs.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><button type="button" class="exb" onclick="examAdd(\''+ix.replace(/'/g,'')+'\')">Mark present</button></div>'; }).join('') : '<div class="empty">Everyone is present.</div>';
   h+='<div class="ex-st" id="exSt"></div>';
   $('exBody').innerHTML=h; var au=$('exAuto'); if(au) au.checked=autoOn(); status();
 }
@@ -110,14 +119,16 @@ window.examDownload=examDownload;
 
 
 /* ---------- marking and saving ---------- */
-function mark(idx,present){
-  var s=find(idx); if(!s) return false;
-  if(present) S.present[key(s.indexNumber)]=new Date().toISOString(); else delete S.present[key(s.indexNumber)];
-  var q=qGet(); q.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),course:S.course,date:S.date,index:s.indexNumber,present:!!present,ts:Date.now()}); qSet(q);
+function mark(idx,present,extra){
+  var s=find(idx), ix=s?s.indexNumber:(extra||!present?String(idx||'').toUpperCase().replace(/[^A-Z0-9]/g,''):''); if(!ix) return false;
+  var k=key(ix), room=roomGet(); if(!S.room) S.room={};
+  if(present){ S.present[k]=new Date().toISOString(); if(room) S.room[k]=room.replace(/ +/g,'-'); } else delete S.present[k];
+  var q=qGet(); q.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),course:S.course,date:S.date,index:ix,present:!!present,room:room,ts:Date.now()}); qSet(q);
   flush(); return true;
 }
 window.examAdd=function(i){ mark(i,true); render(); };
-window.examRemove=function(i){ var s=find(i); if(!s) return; if(!confirm('Remove '+(s.name||s.indexNumber)+' from the present list?')) return; mark(i,false); render(); };
+window.examRemove=function(i){ var s=find(i); if(!confirm('Remove '+(s?(s.name||s.indexNumber):i)+' from the present list?')) return; mark(i,false); render(); };
+window.examExtra=function(i){ if(mark(i,true,true)){ if(SC){ SC.n++; var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length; show('ok','<div style="font-size:1.2rem">&#10003; '+escapeHtml(i)+'</div>Added as an extra candidate'); } render(); } };
 async function flush(){
   if(_flushing) return _flushing;
   _flushing=(async function(){
@@ -125,7 +136,7 @@ async function flush(){
       var q=qGet(); if(!q.length){ status(); return; }
       if(navigator.onLine===false) throw new Error('offline');
       for(var i=0;i<q.length;i++){
-        var o=q[i], j=await teamApi({action:'exam_mark',course:o.course,date:o.date,idx:o.index,present:!!o.present});
+        var o=q[i], j=await teamApi({action:'exam_mark',course:o.course,date:o.date,idx:o.index,room:o.room||'',present:!!o.present});
         if(!j || !j.ok) throw new Error((j&&j.error)||'failed');
         qSet(qGet().filter(function(x){ return x.id!==o.id; })); status();
       }
@@ -165,6 +176,42 @@ window.examDel=async function(i){
   _pastOpen=false; examPast();
 };
 
+/* ---------- printable signed sheet ---------- */
+window.examPrint=function(){
+  if(!S.ready){ alert('Pick the course and date first.'); return; }
+  var st=document.getElementById('exPrintCss'); if(!st){ st=document.createElement('style'); st.id='exPrintCss'; st.textContent='#exPrintArea{display:none}@media print{body.exPrinting>*:not(#exPrintArea){display:none!important}body.exPrinting #exPrintArea{display:block!important;position:static!important}}'; document.head.appendChild(st); }
+  var a=document.getElementById('exPrintArea'); if(a) a.remove(); a=document.createElement('div'); a.id='exPrintArea';
+  var n=0, pres=0, rows=S.roster.map(function(s){ var k=key(s.indexNumber), t=S.present[k]; if(t) pres++; return '<tr><td>'+(++n)+'</td><td>'+escapeHtml(s.indexNumber)+'</td><td>'+escapeHtml(s.name||'')+'</td><td>'+(t?'Present '+hhmm(t)+((S.room&&S.room[k])?' ('+escapeHtml(S.room[k].replace(/-/g,' '))+')':''):'ABSENT')+'</td><td></td></tr>'; }).join('');
+  var ex=extras(); ex.forEach(function(k){ rows+='<tr><td>'+(++n)+'</td><td>'+escapeHtml(k)+'</td><td><i>Extra candidate</i></td><td>Present '+hhmm(S.present[k])+'</td><td></td></tr>'; });
+  var who=''; try{ who=currentUserName||currentUserEmail||''; }catch(e){}
+  a.innerHTML='<div style="font-family:sans-serif;color:#000;padding:8px"><h2 style="margin:0 0 4px">Exam Attendance Sheet</h2><div style="margin-bottom:10px;font-size:14px"><b>'+escapeHtml(S.course)+'</b><br>Date: '+escapeHtml(S.date)+' &nbsp; Present: '+pres+' of '+S.roster.length+(ex.length?' (+'+ex.length+' extra)':'')+'<br>Invigilator: '+escapeHtml(who)+'</div>'
+   +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#eee">'+['No.','Index number','Name','Status','Signature'].map(function(h){ return '<th style="border:1px solid #444;padding:5px;text-align:left">'+h+'</th>'; }).join('')+'</tr></thead><tbody>'+rows.replace(/<td>/g,'<td style="border:1px solid #444;padding:5px;height:22px">')+'</tbody></table>'
+   +'<div style="margin-top:34px;display:flex;justify-content:space-between;font-size:13px"><div>Invigilator signature: ______________________</div><div>Date: ______________</div></div></div>';
+  document.body.appendChild(a); document.body.classList.add('exPrinting');
+  var done=function(){ document.body.classList.remove('exPrinting'); window.removeEventListener('afterprint',done); };
+  window.addEventListener('afterprint',done); setTimeout(function(){ window.print(); },100);
+};
+
+/* ---------- exam attendance inside Summary & Export ---------- */
+async function exSummaryLoad(){
+  var box=document.getElementById('exSummary'), sel=document.getElementById('attendanceSummaryCourseSelect'); if(!box||!sel) return;
+  var course=sel.value; if(!course){ box.innerHTML=''; return; }
+  var base; try{ base=lmBase(course); }catch(e){ base=course; }
+  var j=await teamApi({action:'exam_sessions'});
+  if(!j||!j.ok){ box.innerHTML=''; return; }
+  var mine=(j.sessions||[]).filter(function(x){ try{ return lmBase(x.course)===base || x.course===course; }catch(e){ return x.course===course; } }).sort(function(a,b){ return a.date<b.date?-1:1; });
+  if(!mine.length){ box.innerHTML=''; return; }
+  var lists=await Promise.all(mine.map(function(x){ return teamApi({action:'exam_list',course:x.course,date:x.date}); }));
+  var data=null; try{ data=await fetchSupabaseData(); }catch(e){}
+  var seen={}, roster=[]; var names=(typeof GROUPS!=='undefined'&&GROUPS[base])||[course]; names.forEach(function(n){ ((data&&data.rosters&&data.rosters[n])||[]).forEach(function(s){ var k=key(s.indexNumber); if(k&&!seen[k]){ seen[k]=1; roster.push(s); } }); });
+  var sets=lists.map(function(l){ var m={}; ((l&&l.items)||[]).forEach(function(it){ m[key(it.idx)]=1; }); return m; });
+  var h='<div style="margin-bottom:16px;border:1px solid var(--line);border-radius:14px;padding:14px"><div style="font-weight:700;margin-bottom:8px">Exam attendance</div><div style="overflow:auto"><table style="border-collapse:collapse;font-size:.8rem;width:100%"><thead><tr><th style="text-align:left;padding:4px 8px">Student</th>'+mine.map(function(x){ return '<th style="padding:4px 8px;white-space:nowrap">'+escapeHtml(x.date)+'</th>'; }).join('')+'</tr></thead><tbody>'
+   +roster.map(function(s){ var k=key(s.indexNumber); return '<tr><td style="padding:4px 8px;border-top:1px solid var(--line)">'+escapeHtml(s.name||s.indexNumber)+'<small style="display:block;color:var(--muted)">'+escapeHtml(s.indexNumber)+'</small></td>'+sets.map(function(m){ return '<td style="padding:4px 8px;text-align:center;border-top:1px solid var(--line);color:'+(m[k]?'#15803d':'#b91c1c')+';font-weight:700">'+(m[k]?'&#10003;':'&ndash;')+'</td>'; }).join('')+'</tr>'; }).join('')
+   +'</tbody></table></div><div style="font-size:.76rem;color:var(--muted);margin-top:6px">Kept separate from lecture attendance percentages.</div></div>';
+  box.innerHTML=h;
+}
+try{ var _ls=window.loadAttendanceSummary; if(typeof _ls==='function'){ window.loadAttendanceSummary=function(){ var r=_ls.apply(this,arguments); try{ exSummaryLoad(); }catch(e){} return r; }; } }catch(e){}
+
 /* ---------- download ---------- */
 window.examCsv=function(){ examDownload(); };
 function examDownload(){
@@ -193,7 +240,7 @@ function handle(text){
   if(!idx) return;
   if(idx===SC.last && now-SC.lastAt<3000) return; SC.last=idx; SC.lastAt=now;
   var s=find(idx);
-  if(!s){ beep(false); show('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list. Not marked.'); return; }
+  if(!s){ beep(false); if(S.present[key(idx)]){ beep(false); show('warn','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Extra candidate, already added'); return; } show('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list<br><button type="button" onclick="examExtra(\''+escapeHtml(idx)+'\')" style="margin-top:8px;background:#fff;color:#8a1f15;border:0;border-radius:999px;padding:8px 16px;font-weight:700">Add as extra candidate</button>'); return; }
   if(S.present[key(s.indexNumber)]){ beep(false); show('warn','<div style="font-size:1.1rem">'+escapeHtml(s.name||idx)+'</div>Already marked present'); return; }
   beep(true); mark(s.indexNumber,true); SC.n++;
   var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length;

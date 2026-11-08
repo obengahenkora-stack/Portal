@@ -488,6 +488,7 @@
       <input type="text" id="lmTitle" placeholder="Title, e.g. Week 3 - Structural Loads">
       <div id="lmFileWrap"><input type="file" id="lmFile"></div>
       <textarea id="lmText" class="hidden" placeholder="Write the announcement..."></textarea>
+      <select id="lmGroup" class="hidden" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:10px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Send to: everyone on the course</option><option value="A">Class A only</option><option value="B">Class B only</option><option value="C">Class C only</option><option value="Weekend">Weekend students only</option><option value="Regular">Regular students only</option></select>
       <input type="text" id="lmUrl" class="hidden" placeholder="https://www.youtube.com/watch?v=...">
       <button id="lmBtn" onclick="lmSubmit()">Post to Lecture Hall</button>
       <div id="lmMsg"></div>
@@ -3136,7 +3137,7 @@ async function sendWeeklyDigest(){
 const LM_CLOUD = "https://api.cloudinary.com/v1_1/v9y3judf/auto/upload", LM_PRESET = "portal_uploads";
 function lmBase(n){ var s=String(n||'').trim(); var m=s.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():s; }
 function lmAllowed(c){ if(isAdmin() || !Array.isArray(currentUserCourses)) return true; var b=lmBase(c).toLowerCase(); return currentUserCourses.some(function(x){ return lmBase(x).toLowerCase()===b; }); }
-function lmTypeChange(){ var t=document.getElementById('lmType').value; document.getElementById('lmFileWrap').classList.toggle('hidden',t!=='note'); document.getElementById('lmText').classList.toggle('hidden',t!=='announcement'); document.getElementById('lmUrl').classList.toggle('hidden',t!=='video'); document.getElementById('lmTitle').classList.toggle('hidden',t==='announcement'); }
+function lmTypeChange(){ var t=document.getElementById('lmType').value; document.getElementById('lmFileWrap').classList.toggle('hidden',t!=='note'); document.getElementById('lmText').classList.toggle('hidden',t!=='announcement'); document.getElementById('lmUrl').classList.toggle('hidden',t!=='video'); document.getElementById('lmTitle').classList.toggle('hidden',t==='announcement'); document.getElementById('lmGroup').classList.toggle('hidden',t!=='announcement'); }
 async function lmInit(){
   document.getElementById('lectureMaterialsCard').classList.remove('hidden'); lmTypeChange();
   try{
@@ -3178,7 +3179,7 @@ async function lmSubmit(){
     }
     var data=await fetchSupabaseData(), now=new Date().toISOString(), by=currentUserEmail;
     if(type==='note'){ data.resources=(data.resources||[]).concat([{id:'res_'+Date.now(),course:course,title:title,fileName:file.name,url:fileUrl,uploadedAt:now,uploadedBy:by}]); }
-    if(type==='announcement'){ data.announcements=(data.announcements||[]).concat([{id:'ann_'+Date.now(),course:course,text:text,date:now,uploadedBy:by}]); }
+    if(type==='announcement'){ data.announcements=(data.announcements||[]).concat([{id:'ann_'+Date.now(),course:course,text:text,date:now,uploadedBy:by,group:document.getElementById('lmGroup').value||''}]); }
     if(type==='video'){ data.videos=(data.videos||[]).concat([{id:'vid_'+Date.now(),course:course,title:title,url:vUrl,type:vType,addedAt:now,uploadedBy:by}]); }
     var cl=data.courseList||[]; if(cl.indexOf(course)<0){ cl.push(course); data.courseList=cl; }
     await saveSupabaseData(data);
@@ -3193,7 +3194,7 @@ async function lmList(){
   try{
     var d=await fetchSupabaseData(), items=[];
     (d.resources||[]).forEach(function(x){ items.push({k:'resources',id:x.id,c:x.course,t:x.title,when:x.uploadedAt,tag:'Note',o:x}); });
-    (d.announcements||[]).forEach(function(x){ items.push({k:'announcements',id:x.id,c:x.course,t:(x.text||'').slice(0,70),when:x.date,tag:'Announcement',o:x}); });
+    (d.announcements||[]).forEach(function(x){ items.push({k:'announcements',id:x.id,c:x.course,t:(x.text||'').slice(0,70),when:x.date,tag:'Announcement'+(x.group?' ('+x.group+')':''),o:x}); });
     (d.videos||[]).forEach(function(x){ items.push({k:'videos',id:x.id,c:x.course,t:x.title,when:x.addedAt,tag:'Video',o:x}); });
     items=items.filter(function(i){ return lmMine(i.o) && lmAllowed(i.c); }).sort(function(a,b){ return new Date(b.when)-new Date(a.when); }).slice(0,15);
     box.innerHTML = items.length ? items.map(function(i){ return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><span><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+' &middot; '+escapeHtml(i.t)+'</span><button class="secondary" style="padding:4px 10px;font-size:0.72rem;" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
@@ -5088,7 +5089,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=24"></script>
+<script src="updates.js?v=25"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};

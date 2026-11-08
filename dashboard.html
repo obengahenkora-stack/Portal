@@ -791,14 +791,16 @@ function renderDashHall(){
   const sel=document.getElementById('dlhCourse').value;
   const match=c=>sel?(_same(c,sel)&&_dlhAllowed(c)):_dlhAllowed(c);
   const fd=t=>{try{return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}};
-  const ann=(_dlhData.announcements||[]).filter(a=>match(a.course)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const _mg=String((studentCurrentAccount&&studentCurrentAccount.classGroup)||'').toUpperCase(), _mt=String((studentCurrentAccount&&studentCurrentAccount.studentType)||'Regular');
+  const _forMe=a=>!a.group||a.group.toUpperCase()===_mg||a.group===_mt;
+  const ann=(_dlhData.announcements||[]).filter(a=>match(a.course)&&_forMe(a)).sort((a,b)=>new Date(b.date)-new Date(a.date));
   const res=(_dlhData.resources||[]).filter(r=>match(r.course)).sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
   const vid=(_dlhData.videos||[]).filter(v=>match(v.course)).sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
   const syl=_dlhData.syllabi||{}; const syKeys=Object.keys(syl).filter(k=>match(k));
   const H=t=>'<div style="font-weight:700;font-size:0.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px;">'+t+'</div>';
   const row=(a,b,c)=>'<div style="padding:10px 0;border-bottom:1px dashed var(--line);">'+a+b+(c||'')+'</div>';
   let h='';
-  h+=H('Announcements')+(ann.length?ann.slice(0,8).map(a=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(a.course)+' &middot; '+fd(a.date)+'</div>','<div style="font-size:0.92rem;white-space:pre-wrap;">'+escapeHtml(a.text)+'</div>')).join(''):'<div class="empty">No announcements.</div>');
+  h+=H('Announcements')+(ann.length?ann.slice(0,8).map(a=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(a.course)+(a.group?' &middot; '+(a.group.length===1?'Class '+escapeHtml(a.group):escapeHtml(a.group)+' students'):'')+' &middot; '+fd(a.date)+'</div>','<div style="font-size:0.92rem;white-space:pre-wrap;">'+escapeHtml(a.text)+'</div>')).join(''):'<div class="empty">No announcements.</div>');
   h+=H('Lecture notes')+(res.length?res.map(r=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(r.course)+' &middot; '+fd(r.uploadedAt)+'</div>','<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;"><span style="font-weight:600;font-size:0.92rem;">'+escapeHtml(r.title)+'</span><a href="'+escapeHtml(r.url)+'" target="_blank" rel="noopener" style="white-space:nowrap;font-weight:700;font-size:0.82rem;">Download</a></div>')).join(''):'<div class="empty">No notes yet.</div>');
   h+=H('Videos')+(vid.length?vid.map(v=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(v.course)+' &middot; '+fd(v.addedAt)+'</div>','<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;"><span style="font-weight:600;font-size:0.92rem;">'+escapeHtml(v.title)+'</span><a href="'+escapeHtml(v.url)+'" target="_blank" rel="noopener" style="white-space:nowrap;font-weight:700;font-size:0.82rem;">Watch</a></div>')).join(''):'<div class="empty">No videos yet.</div>');
   if(syKeys.length) h+=H('Syllabus')+syKeys.map(k=>row('<div style="font-size:0.72rem;font-weight:700;color:var(--muted);">'+escapeHtml(k)+'</div>','<div style="white-space:pre-wrap;font-size:0.9rem;max-height:220px;overflow:auto;">'+escapeHtml(syl[k])+'</div>')).join('');
@@ -2131,7 +2133,7 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=24"></script>
+<script src="updates.js?v=25"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
 .ov-links .ov-link i{grid-row:1/3;width:46px;height:46px;border-radius:13px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 !important}

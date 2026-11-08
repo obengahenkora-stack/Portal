@@ -23,6 +23,7 @@ window.absStuInit=async function(){
   var today=new Date().toISOString().slice(0,10);
   box.innerHTML='<div class="abs-f"><select id="absCourse"><option value="">Course you missed...</option>'+courses.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('')+'</select>'
     +'<input type="date" id="absDate" max="'+today+'"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
+    +'<div><div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Proof (optional): photo of a medical note or letter</div><input type="file" id="absFile" accept="image/*"></div>'
     +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
   absStuList();
 };
@@ -30,15 +31,27 @@ async function absStuList(){
   var l=$('absList'); if(!l) return;
   try{
     var j=await _stu({action:'stu_exc_mine'}), a=j.list||[];
-    l.innerHTML=a.length?'<div style="font-weight:700;margin:6px 0 0">My requests</div>'+a.map(function(x){ return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.course)+'</b>'+chip(x.status)+'</div><small>'+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+(x.note?'<small><b>Lecturer:</b> '+esc(x.note)+'</small>':'')+'</div>'; }).join(''):'<div class="empty">No requests yet.</div>';
+    l.innerHTML=a.length?'<div style="font-weight:700;margin:6px 0 0">My requests</div>'+a.map(function(x){ return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.course)+'</b>'+chip(x.status)+'</div><small>'+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+(x.note?'<small><b>Lecturer:</b> '+esc(x.note)+'</small>':'')+viewBtn(x)+'</div>'; }).join(''):'<div class="empty">No requests yet.</div>';
   }catch(e){ l.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+'). The back end may not be updated yet.</div>'; }
 }
+function shrink(file){ return new Promise(function(res,rej){
+  var img=new Image(), u=URL.createObjectURL(file);
+  img.onload=function(){ var M=1100, k=Math.min(1,M/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u); var q=.72, d=c.toDataURL('image/jpeg',q); while(d.length>480000 && q>.3){ q-=.1; d=c.toDataURL('image/jpeg',q); } res(d); };
+  img.onerror=function(){ rej(new Error('That file is not a photo')); }; img.src=u; }); }
+window.absView=async function(id,btn){
+  var slot=document.getElementById('absImg_'+id); if(!slot) return; if(slot.innerHTML){ slot.innerHTML=''; return; }
+  slot.innerHTML='<small>Loading photo...</small>';
+  try{ var j; try{ j=await _stu({action:'stu_exc_file',id:id}); }catch(e1){ j=await teamApi({action:'stu_exc_file',id:id}); if(!j||!j.ok) throw e1; } slot.innerHTML='<img src="'+j.photo+'" style="max-width:100%;border-radius:10px;margin-top:8px;border:1px solid var(--line)">'; }
+  catch(e){ slot.innerHTML='<small>Could not load the photo.</small>'; }
+};
+function viewBtn(x){ return x.hasFile?'<button type="button" class="abs-b" style="margin-top:8px" onclick="absView(\''+x.id+'\')">View photo</button><div id="absImg_'+x.id+'"></div>':''; }
 window.absSend=async function(){
   var m=$('absMsg'), c=$('absCourse').value, d=$('absDate').value, r=$('absReason').value.trim();
   if(!c||!d){ m.innerHTML='<div class="msg err">Choose the course and the date.</div>'; return; }
   if(r.length<5){ m.innerHTML='<div class="msg err">Please give a reason.</div>'; return; }
   m.innerHTML='<div class="msg ok">Sending...</div>';
-  try{ await _stu({action:'stu_exc_submit',course:c,date:d,reason:r}); m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absStuList(); }
+  try{ var ph=''; var f=$('absFile')&&$('absFile').files[0]; if(f) ph=await shrink(f);
+    await _stu({action:'stu_exc_submit',course:c,date:d,reason:r,photo:ph}); if($('absFile')) $('absFile').value=''; m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absStuList(); }
   catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'Could not send')+'</div>'; }
 };
 document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('[data-go="dashExcuseCard"]'); if(t) setTimeout(function(){ if($('absBody')) absStuInit(); },30); },true);
@@ -58,7 +71,7 @@ function absRender(){
   if(!rows.length){ box.innerHTML='<div class="empty">No absence requests yet.</div>'; return; }
   box.innerHTML='<div style="margin:10px 0;font-weight:700">'+pend.length+' waiting for a reply</div>'+rows.slice(0,100).map(function(x){
     var i=_L.indexOf(x);
-    return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.name||x.index)+'</b>'+chip(x.status)+'</div><small>'+esc(x.index)+' &middot; '+esc(x.course)+' &middot; missed '+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'
+    return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.name||x.index)+'</b>'+chip(x.status)+'</div><small>'+esc(x.index)+' &middot; '+esc(x.course)+' &middot; missed '+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+viewBtn(x)
       +(x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>')+'</div>'; }).join('');
 }
 window.absDecide=async function(i,st){

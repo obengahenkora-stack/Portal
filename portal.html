@@ -507,6 +507,13 @@
       <div id="gbMsgTop"></div>
     </div>
 
+    <div class="card hidden" id="scoreHistCard">
+      <label>Score History</label>
+      <div class="hint">Every upload, edit and removal of scores is recorded here, with who did it and when. Made a mistake? Undo it.</div>
+      <div id="shMsg"></div>
+      <div id="shBody"><div class="empty">Loading...</div></div>
+    </div>
+
     <div class="card hidden" id="editAssessCard">
       <label>Fix an uploaded assessment (course, name, marks)</label>
       <div class="hint">Pick something you already uploaded, change the course or the name, and apply. It updates every student's record in one go, with no re-uploading. Classes with groups A and B appear as one course.</div>
@@ -1759,6 +1766,7 @@ var _TCH_TILES=[
  {g:'Scores',id:'uploadCard',t:'Upload Scores',d:'Add an assessment from a sheet or by pasting.',i:'upload',c:'t-go'},
  {g:'Scores',id:'gradebookCard',t:'Gradebook',d:'Whole class, one column per assessment.',i:'list'},
  {g:'Scores',id:'editAssessCard',t:'Fix an Upload',d:'Change the course, name or marks of what you uploaded.',i:'edit'},
+ {g:'Scores',id:'scoreHistCard',t:'Score History',d:'See every score change. Undo a mistake.',i:'reset'},
  {g:'Scores',id:'dataCard',t:'Score Records',d:'Filter and review every uploaded record.',i:'file'},
  {g:'Scores',id:'exportScoresCard',t:'Download as Excel',d:'Export scores for a course or all courses.',i:'chart'},
  {g:'Scores',id:'fillSheetCard',t:'Fill Official Sheet',d:'Put scores into the university sheet.',i:'edit'},
@@ -1917,7 +1925,7 @@ async function onAuthReady(showToast){
     document.getElementById('uploadCard').classList.remove('hidden');
     document.getElementById('manageCoursesCard').classList.remove('hidden');
     document.getElementById('exportScoresCard').classList.remove('hidden');
-    document.getElementById('gradebookCard').classList.remove('hidden'); document.getElementById('editAssessCard').classList.remove('hidden'); loadGradebookCourses(); loadUploadCourses(); loadEditAssess();
+    document.getElementById('gradebookCard').classList.remove('hidden'); document.getElementById('editAssessCard').classList.remove('hidden'); var _sh=document.getElementById('scoreHistCard'); if(_sh){ _sh.classList.remove('hidden'); try{ shInit(); }catch(e){} } loadGradebookCourses(); loadUploadCourses(); loadEditAssess();
     document.getElementById('fillSheetCard').classList.remove('hidden');
     document.getElementById('transferScoresCard').classList.remove('hidden');
     loadCourseManageList();
@@ -5071,7 +5079,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=20"></script>
+<script src="updates.js?v=21"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};
@@ -5155,5 +5163,6 @@ function updateWhoBar(){
 </style>
 <style>.ah-hero .ah-actions:not(#z){display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;gap:10px !important;width:100% !important}.ah-hero .ah-actions:not(#z) button:not(#z){flex:1 1 0 !important;width:auto !important;min-width:0 !important;justify-content:center !important;text-align:center !important;white-space:nowrap !important;padding:10px 8px !important;font-size:.84rem !important}</style>
 <script src="gbcharts.js?v=1"></script>
+<script src="scorehist.js?v=1"></script>
 </body>
 </html>

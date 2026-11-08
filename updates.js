@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08h', date:'8 Nov 2026', title:'Score History with Undo',
+      all:[],
+      student:[],
+      staff:['New Score History tile in the Assessment Portal. Every upload, edit and removal of scores is recorded with who and when. Open Details to see each change, and tap Undo to put the scores back.'] },
     { id:'2026-11-08g', date:'8 Nov 2026', title:'Gradebook charts',
       all:[],
       student:[],

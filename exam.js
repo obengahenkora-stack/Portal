@@ -20,6 +20,7 @@ css.textContent='#examCard .ex-sum{display:flex;justify-content:space-between;al
 +'#examCard .ex-row .ex-t{font-size:.78rem;color:var(--ok);font-weight:700;white-space:nowrap}'
 +'#examCard .exb{width:auto !important;display:inline-flex !important;align-items:center;gap:6px;padding:8px 14px !important;font-size:.82rem !important;border-radius:999px !important;background:transparent !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important}'
 +'#examCard .exb.go{background:#0b2e1f !important;color:#fff !important;border:0 !important;padding:10px 20px !important;font-size:.9rem !important}'
++'#examCard .exb.dl{background:rgba(22,163,74,.10) !important;color:#15803d !important;border:1px solid rgba(22,163,74,.45) !important}'
 +'#examCard .exb.x{color:var(--danger) !important}'
 +'#examCard .ex-st{font-size:.78rem;color:var(--muted);margin-top:8px}';
 document.head.appendChild(css);
@@ -77,7 +78,7 @@ function render(){
   var tot=S.roster.length, rows=S.roster.filter(function(s){ return S.present[key(s.indexNumber)]; });
   rows.sort(function(a,b){ return String(S.present[key(b.indexNumber)]).localeCompare(String(S.present[key(a.indexNumber)])); });
   var abs=S.roster.filter(function(s){ return !S.present[key(s.indexNumber)]; });
-  var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="exb go" onclick="examScan()">&#128247;&nbsp; Scan exam passes</button><button type="button" class="exb" onclick="examCsv()">Download list</button></div>'
+  var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="exb go" onclick="examScan()">&#128247;&nbsp; Scan exam passes</button><button type="button" class="exb dl" onclick="examDownload()">&#11015;&nbsp; Download Excel</button></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:.82rem;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" '+(autoOn()?'checked':'')+' onchange="examAutoSet(this.checked)" style="width:auto"> Download the list automatically when I tap Done</label>'
    +'<div class="ex-sum"><span>Present</span><span><b>'+rows.length+'</b> of '+tot+'</span></div><div class="ex-bar"><i style="width:'+(tot?Math.round(rows.length*100/tot):0)+'%"></i></div>';
   h+= rows.length ? rows.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[key(s.indexNumber)])+'</div><button type="button" class="exb x" style="margin-top:4px" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; }).join('')
     : '<div class="empty">No one yet. Scan an exam pass and the name appears here.</div>';
@@ -90,6 +91,7 @@ function status(){
   var e=$('exSt'); if(!e) return; var n=qGet().length; if(S.err){ e.textContent='Could not load saved scans ('+S.err+'). If this says Unknown action, the backend step 30 has not been deployed yet.'; return; }
   e.textContent=n?(navigator.onLine===false?('Offline. '+n+' change'+(n===1?'':'s')+' will save when the internet returns.'):('Saving '+n+' change'+(n===1?'':'s')+'...')):'All changes saved.';
 }
+window.examDownload=examDownload;
 window.examToggleAbs=function(){ showAbsent=!showAbsent; render(); };
 
 /* ---------- marking and saving ---------- */
@@ -121,14 +123,22 @@ window.addEventListener('online',function(){ if(qGet().length) flush(); });
 window.addEventListener('beforeunload',function(e){ if(SC || qGet().some(function(o){ return o.course===S.course; })){ if(SC || qGet().length){ e.preventDefault(); e.returnValue=''; } } });
 
 /* ---------- download ---------- */
-window.examCsv=function(){
+window.examCsv=function(){ examDownload(); };
+function examDownload(){
   if(!S.ready) return;
-  var q=function(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
-  var rows=[['Index number','Name','Status','Time']];
-  S.roster.forEach(function(s){ var t=S.present[key(s.indexNumber)]; rows.push([s.indexNumber,s.name||'',t?'Present':'Absent',t?hhmm(t):'']); });
-  var blob=new Blob([rows.map(function(r){ return r.map(q).join(','); }).join('\n')],{type:'text/csv'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(S.course+' exam '+S.date).replace(/[^\w\- ]+/g,'')+'.csv'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
-};
+  var rows=[['No.','Index number','Name','Status','Time']], n=0;
+  S.roster.forEach(function(s){ var t=S.present[key(s.indexNumber)]; rows.push([++n,s.indexNumber,s.name||'',t?'Present':'Absent',t?hhmm(t):'']); });
+  var base=('Exam - '+S.course+' - '+S.date).replace(/[\\\/:*?"<>|]/g,'-');
+  if(window.XLSX){
+    var ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:6},{wch:16},{wch:40},{wch:10},{wch:10}];
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Exam attendance'); XLSX.writeFile(wb,base+'.xlsx'); return;
+  }
+  var q=function(v){ v=String(v==null?'':v); return '"'+v.replace(/"/g,'""')+'"'; };
+  var blob=new Blob(['\ufeff'+rows.map(function(r){ return r.map(q).join(','); }).join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=base+'.csv'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },800);
+}
+function autoOn(){ try{ return localStorage.getItem('ceExamAuto')!=='0'; }catch(e){ return true; } }
+window.examAutoSet=function(on){ try{ localStorage.setItem('ceExamAuto',on?'1':'0'); }catch(e){} };
 
 /* ---------- scanner ---------- */
 function loadLib(){ return new Promise(function(res,rej){ if(window.ZXing) return res(); var s=document.createElement('script'); s.src='zxing.js?v=1'; s.onload=function(){ window.ZXing?res():rej(new Error('Could not load the scanner.')); }; s.onerror=function(){ rej(new Error('Could not load the scanner. Check your internet.')); }; document.head.appendChild(s); }); }
@@ -155,7 +165,7 @@ window.examScan=async function(){
   o.innerHTML='<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0b2e1f"><div><div style="font-weight:700">'+escapeHtml(S.course)+'</div><div style="font-size:.8rem;opacity:.85">'+escapeHtml(S.date)+' · present <b id="exN">'+Object.keys(S.present).length+' of '+S.roster.length+'</b></div></div><button type="button" id="exDone" style="background:#fff;color:#0b2e1f;border:0;border-radius:10px;padding:10px 16px;font-weight:700">Done</button></div>'
    +'<div style="position:relative;flex:1;min-height:0"><video id="exVid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:50%;top:50%;width:92%;height:34%;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div><div style="position:absolute;left:0;right:0;top:8%;text-align:center;font-size:.85rem;opacity:.9;padding:0 16px">Hold the exam pass flat so the barcode sits inside the box</div></div>'
    +'<div id="exRes" style="padding:16px;text-align:center;font-weight:700;min-height:84px;background:#0b2e1f">Ready. Scan an exam pass.</div><canvas id="exCv" style="display:none"></canvas>';
-  document.body.appendChild(o); $('exDone').onclick=function(){ close(false); };
+  document.body.appendChild(o); $('exDone').onclick=function(){ var got=SC&&SC.n>0; close(false); if(got && autoOn()) examDownload(); };
   try{
     await loadLib();
     SC.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});

@@ -37,7 +37,7 @@ window.oeResults=async function(id){
 };
 async function gbSync(add){
   var ex=D.exam, key=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
-  var recs=D.rows.filter(function(r){return r.submittedAt&&r.index;}).map(function(r){return {indexNumber:r.index,score:(r.mcq||0)+r.written,assessmentName:ex.title,course:ex.course,level:''};});
+  var recs=D.rows.filter(function(r){return r.submittedAt&&r.index;}).map(function(r){return {indexNumber:r.index,score:String((r.mcq||0)+r.written),assessmentName:ex.title,course:ex.course,level:''};});
   var drop=new Set(recs.map(key)), tot=D.rows.length?D.rows[0].total:0;
   var existing=await fetchAllRecords();
   var keep=existing.filter(function(r){return !drop.has(key(r));});

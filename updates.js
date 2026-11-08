@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08n', date:'8 Nov 2026', title:'Absence excuses',
+      all:[],
+      student:['New Absence Excuse tile: if you missed a class for a good reason, send your lecturer a request and see the reply there. If approved you are marked Excused.'],
+      staff:['New Absence Excuses tile: approve or decline student requests. Approving marks the student Excused in that day\'s attendance session.'] },
     { id:'2026-11-08m', date:'8 Nov 2026', title:'Announcements on your dashboard',
       all:[],
       student:['Your lecturers\' latest announcements now show right on the dashboard with a counter for the ones you have not read, and the Lecture Hall tile shows how many new items are waiting.'],

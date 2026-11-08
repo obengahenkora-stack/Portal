@@ -636,6 +636,7 @@
         <button class="ov-link" data-go="dashChatCard"><i>&#128172;</i><b>Chat <span id="dashChatBadge2" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px"></span></b><span>Message classmates and staff</span></button>
         <button class="ov-link" data-go="dashScoresCard"><i>&#127942;</i><b>My Scores</b><span id="ovsScores">View your results</span></button>
         <button class="ov-link" data-go="dashAttCard"><i>&#9989;</i><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
+        <button class="ov-link" data-go="dashExcuseCard"><i>&#128221;</i><b>Absence Excuse</b><span>Tell your lecturer why you missed class</span></button>
         <button class="ov-link" data-go="dashReportsCard"><i>&#128172;</i><b>My Reports</b><span id="ovsRep">View replies</span></button>
         <button class="ov-link" data-go="dashQaCard"><i>&#10067;</i><b>Q&amp;A Board</b><span>Ask and answer questions</span></button>
         <button class="ov-link" data-go="dashIssueCard"><i>&#9888;&#65039;</i><b>Report an Issue</b><span>Tell us about a problem</span></button>
@@ -657,6 +658,12 @@
     <div class="card dash-sec" id="dashAttCard">
       <h2>My Attendance</h2>
       <div id="dashAttendance"><div class="empty">No data.</div></div>
+    </div>
+
+    <div class="card dash-sec" id="dashExcuseCard">
+      <h2>Absence Excuse</h2>
+      <div style="font-size:.85rem;color:var(--muted)">Missed a class for a good reason? Send your lecturer a request. If it is approved you are marked Excused.</div>
+      <div id="absBody"></div>
     </div>
 
     <div class="card dash-sec" id="dashReportsCard">
@@ -1900,7 +1907,7 @@ setInterval(updateWhoBar,1500);
 </script>
 <script>
 (function(){
-  var SEC=['dashOverviewCard','dashLectureHall','dashQaCard','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard'];
+  var SEC=['dashOverviewCard','dashLectureHall','dashQaCard','dashChatCard','dashScoresCard','dashAttCard','dashReportsCard','dashIssueCard','dashExcuseCard'];
   var _saved=null, _ready=false; try{ _saved=sessionStorage.getItem('ceDashTab'); }catch(e){}
   window.dashTab=function(id){
     if(SEC.indexOf(id)<0) id='dashOverviewCard';
@@ -2133,7 +2140,8 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=26"></script>
+<script src="absence.js?v=1"></script>
+<script src="updates.js?v=27"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
 .ov-links .ov-link i{grid-row:1/3;width:46px;height:46px;border-radius:13px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 !important}

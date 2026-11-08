@@ -1,0 +1,85 @@
+/* ===== Absence excuses: students ask, lecturers approve, and the session is marked Excused ===== */
+(function(){
+function $(i){ return document.getElementById(i); }
+function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function key(x){ return String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function fd(d){ try{ return new Date(d+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return d; } }
+function chip(st){ var c=st==='approved'?'#16a34a':st==='declined'?'#dc2626':'#d97706', l=st==='approved'?'Approved':st==='declined'?'Declined':'Waiting'; return '<span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:700;color:'+c+';border:1px solid '+c+'">'+l+'</span>'; }
+var css=document.createElement('style');
+css.textContent='.abs-row{padding:12px 14px;border:1px solid var(--line);border-radius:14px;margin-top:8px;background:var(--card)}'
++'.abs-row small{display:block;color:var(--muted);margin-top:2px}'
++'.abs-f{display:grid;gap:10px;margin:12px 0}'
++'.abs-f select,.abs-f input,.abs-f textarea{width:100% !important;max-width:100% !important;box-sizing:border-box !important}'
++'.abs-f textarea{min-height:90px}'
++'.abs-b{width:auto !important;padding:8px 16px !important;font-size:.82rem !important;border-radius:999px !important;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;white-space:nowrap}'
++'.abs-b.ok{color:#16a34a !important;border-color:#16a34a !important}.abs-b.no{color:#dc2626 !important}'
++'.abs-go{width:100% !important;padding:12px !important;border-radius:14px !important;font-weight:700 !important;text-transform:none !important;letter-spacing:0 !important}';
+document.head.appendChild(css);
+
+/* ---------- student side (dashboard.html) ---------- */
+window.absStuInit=async function(){
+  var box=$('absBody'); if(!box) return;
+  var courses=[]; try{ courses=(_dlhMine||[]).slice().sort(); }catch(e){}
+  var today=new Date().toISOString().slice(0,10);
+  box.innerHTML='<div class="abs-f"><select id="absCourse"><option value="">Course you missed...</option>'+courses.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('')+'</select>'
+    +'<input type="date" id="absDate" max="'+today+'"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
+    +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
+  absStuList();
+};
+async function absStuList(){
+  var l=$('absList'); if(!l) return;
+  try{
+    var j=await _stu({action:'stu_exc_mine'}), a=j.list||[];
+    l.innerHTML=a.length?'<div style="font-weight:700;margin:6px 0 0">My requests</div>'+a.map(function(x){ return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.course)+'</b>'+chip(x.status)+'</div><small>'+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+(x.note?'<small><b>Lecturer:</b> '+esc(x.note)+'</small>':'')+'</div>'; }).join(''):'<div class="empty">No requests yet.</div>';
+  }catch(e){ l.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+'). The back end may not be updated yet.</div>'; }
+}
+window.absSend=async function(){
+  var m=$('absMsg'), c=$('absCourse').value, d=$('absDate').value, r=$('absReason').value.trim();
+  if(!c||!d){ m.innerHTML='<div class="msg err">Choose the course and the date.</div>'; return; }
+  if(r.length<5){ m.innerHTML='<div class="msg err">Please give a reason.</div>'; return; }
+  m.innerHTML='<div class="msg ok">Sending...</div>';
+  try{ await _stu({action:'stu_exc_submit',course:c,date:d,reason:r}); m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absStuList(); }
+  catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'Could not send')+'</div>'; }
+};
+document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('[data-go="dashExcuseCard"]'); if(t) setTimeout(function(){ if($('absBody')) absStuInit(); },30); },true);
+
+/* ---------- lecturer side (portal.html) ---------- */
+var _L=[];
+window.absInit=async function(){
+  var box=$('absStaffBody'); if(!box) return;
+  box.innerHTML='<div class="empty">Loading...</div>';
+  try{ var j=await teamApi({action:'stu_exc_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Back end not updated yet (deploy step 35)'); _L=j.list||[]; absRender(); }
+  catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+')</div>'; }
+};
+function absRender(){
+  var box=$('absStaffBody'), pend=_L.filter(function(x){ return x.status==='pending'; });
+  var vis=null; try{ var v=visibleCourses(_L.map(function(x){ return x.course; })); vis={}; v.forEach(function(c){ vis[c]=1; }); }catch(e){}
+  var rows=_L.filter(function(x){ return !vis||vis[x.course]; });
+  if(!rows.length){ box.innerHTML='<div class="empty">No absence requests yet.</div>'; return; }
+  box.innerHTML='<div style="margin:10px 0;font-weight:700">'+pend.length+' waiting for a reply</div>'+rows.slice(0,100).map(function(x){
+    var i=_L.indexOf(x);
+    return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.name||x.index)+'</b>'+chip(x.status)+'</div><small>'+esc(x.index)+' &middot; '+esc(x.course)+' &middot; missed '+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'
+      +(x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>')+'</div>'; }).join('');
+}
+window.absDecide=async function(i,st){
+  var x=_L[i]; if(!x) return; var note='';
+  if(st==='declined'){ note=prompt('Reason to show the student (optional):')||''; }
+  var msg=$('absStaffMsg'); msg.innerHTML='<div class="msg ok">Working...</div>';
+  try{
+    var extra='';
+    if(st==='approved'){
+      var data=await fetchSupabaseData(true), base=String(x.course).toLowerCase(), hit=0, k=key(x.index);
+      (data.attendance||[]).forEach(function(a){
+        if(String(a.date).slice(0,10)!==x.date || lmBase(a.course||'').toLowerCase()!==base) return;
+        var pres=(a.present||[]).some(function(p){ return key(p)===k; });
+        if(!pres){ a.excused=a.excused||[]; if(!a.excused.some(function(p){ return key(p)===k; })) a.excused.push(x.index); hit++; }
+      });
+      if(hit){ await saveSupabaseData(data); extra=' Marked Excused in '+hit+' session'+(hit>1?'s':'')+'.'; }
+      else extra=' No attendance session found for that date, so nothing was marked.';
+    }
+    var by=''; try{ by=currentUserName||currentUserEmail||''; }catch(e){}
+    var r=await teamApi({action:'stu_exc_decide',id:x.id,status:st,note:note,by:by}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed');
+    msg.innerHTML='<div class="msg ok">'+(st==='approved'?'Approved.':'Declined.')+extra+'</div>'; absInit();
+  }catch(e){ msg.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
+};
+})();

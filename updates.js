@@ -4,7 +4,7 @@
     { id:'2026-11-08a', date:'8 Nov 2026', title:'Cleaner scanning',
       all:[],
       student:[],
-      staff:['In Scan tags and QR code modes, the full class list is now hidden. Only students who are marked present show, and names appear as you scan or as students check in. Tick list works as before.'] },
+      staff:['In Scan tags and QR code modes, the full class list is now hidden. Only students who are marked present show, and names appear as you scan or as students check in. Tick list works as before.','The scan beep is now louder and plays instantly when a tag is read.'] },
     { id:'2026-11-07i', date:'7 Nov 2026', title:'Calmer home screens',
       all:[],
       student:['The big blue tiles on your dashboard (Lecture Hall, Chat, My Scores and the rest) are now neat list cards,.'],

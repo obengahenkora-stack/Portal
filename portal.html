@@ -1545,14 +1545,15 @@ function tagIdxFrom(txt){
   if(/^[A-Za-z0-9]{5,16}$/.test(txt)) return txt.toUpperCase();
   return '';
 }
-function tagBeep(ok){ try{ var C=window.AudioContext||window.webkitAudioContext; if(!C) return; _tagS.ac=_tagS.ac||new C(); var o=_tagS.ac.createOscillator(), g=_tagS.ac.createGain(); o.connect(g); g.connect(_tagS.ac.destination); o.frequency.value=ok?880:220; g.gain.value=.08; o.start(); o.stop(_tagS.ac.currentTime+(ok?.12:.3)); }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(ok?60:[80,60,80]); }catch(e){} }
+function tagAudio(){ try{ var C=window.AudioContext||window.webkitAudioContext; if(!C||!_tagS) return null; if(!_tagS.ac) _tagS.ac=new C(); if(_tagS.ac.state==='suspended') _tagS.ac.resume(); return _tagS.ac; }catch(e){ return null; } }
+function tagBeep(ok){ try{ var ac=tagAudio(); if(ac){ var t=ac.currentTime, g=ac.createGain(); g.connect(ac.destination); g.gain.setValueAtTime(1,t); g.gain.exponentialRampToValueAtTime(.001,t+(ok?.4:.55)); var tones=ok?[[988,0,.14],[1319,.14,.26]]:[[300,0,.2],[200,.22,.3]]; tones.forEach(function(x){ var o=ac.createOscillator(); o.type='square'; o.frequency.value=x[0]; o.connect(g); o.start(t+x[1]); o.stop(t+x[1]+x[2]); }); } }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(ok?60:[80,60,80]); }catch(e){} }
 function tagLoadLib(){ return new Promise(function(res,rej){ if(window.jsQR) return res(); var urls=['jsQR.js?v=1','https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'], i=0; (function next(){ if(window.jsQR) return res(); if(i>=urls.length) return rej(new Error('Could not load the scanner. Check your internet.')); var s=document.createElement('script'); s.src=urls[i++]; s.onload=function(){ window.jsQR?res():next(); }; s.onerror=next; document.head.appendChild(s); })(); }); }
 async function tagScanOpen(){
   const course=document.getElementById('attendanceCourseSelect').value, date=document.getElementById('attendanceDateInput').value;
   if(!course||!date){ alert('Select a course and date first.'); return; }
   if(!document.querySelectorAll('#attendanceChecklist .attendance-row').length){ alert('The class list has not loaded yet. Pick the course and date and wait for the names to appear.'); return; }
   if(_tagS) return;
-  _tagS={course:course,date:date,n:0,last:'',lastAt:0,stream:null,raf:0,busy:false};
+  _tagS={course:course,date:date,n:0,last:'',lastAt:0,stream:null,raf:0,busy:false}; tagAudio();
   const o=document.createElement('div'); o.id='tagOv'; o.style.cssText='position:fixed;inset:0;z-index:99990;background:#000;color:#fff;display:flex;flex-direction:column;font-family:inherit';
   o.innerHTML='<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0b2e1f"><div><div style="font-weight:700">'+escapeHtml(course)+'</div><div style="font-size:.8rem;opacity:.8">'+escapeHtml(date)+' · marked <b id="tagN">0</b></div></div><button type="button" id="tagDone" style="background:#fff;color:#0b2e1f;border:0;border-radius:10px;padding:10px 16px;font-weight:700">Done</button></div>'
    +'<div style="position:relative;flex:1;min-height:0"><video id="tagVid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:50%;top:50%;width:62%;max-width:300px;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div></div>'
@@ -1589,8 +1590,9 @@ function tagHandle(raw){
   if(!row){ tagBeep(false); tagShow('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list. Not marked.'); return; }
   const name=(row.querySelector('div > div')||{}).textContent||idx, st=row.querySelector('.attendance-status');
   if(st.textContent==='PRESENT'){ tagBeep(false); tagShow('warn','<div style="font-size:1.1rem">'+escapeHtml(name)+'</div>Already marked present'); return; }
+  tagBeep(true);
   toggleAttendanceRow(row); _tagS.n++; const n=document.getElementById('tagN'); if(n) n.textContent=_tagS.n;
-  tagBeep(true); tagShow('ok','<div style="font-size:1.2rem">&#10003; '+escapeHtml(name)+'</div>'+escapeHtml(idx)+' marked present');
+  tagShow('ok','<div style="font-size:1.2rem">&#10003; '+escapeHtml(name)+'</div>'+escapeHtml(idx)+' marked present');
 }
 function tagScanClose(){
   if(!_tagS) return; clearTimeout(_tagS.raf); try{ if(_tagS.stream) _tagS.stream.getTracks().forEach(function(t){t.stop();}); }catch(e){}

@@ -25,14 +25,16 @@ css.textContent='#examCard .ex-sum{display:flex;justify-content:space-between;al
 document.head.appendChild(css);
 
 /* ---------- loading ---------- */
+var GROUPS={};
 async function loadCourses(){
   var sel=$('exCourse'); if(!sel) return;
   var rosters=null;
   try{ var d=await fetchSupabaseData(); rosters=d.rosters||null; }catch(e){}
   if(!rosters || !Object.keys(rosters).length){ try{ rosters=_offlineRosters(); }catch(e){} }
   var names=visibleCourses(Object.keys(rosters||{}));
+  GROUPS={}; names.forEach(function(n){ var b=lmBase(n); (GROUPS[b]=GROUPS[b]||[]).push(n); });
   var keep=sel.value;
-  sel.innerHTML='<option value="">Select course...</option>'+names.map(function(c){ return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>'; }).join('');
+  sel.innerHTML='<option value="">Select course...</option>'+Object.keys(GROUPS).sort().map(function(c){ var g=GROUPS[c].length; return '<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+(g>1?' (all '+g+' groups)':'')+'</option>'; }).join('');
   if(keep) sel.value=keep;
 }
 window.examInit=function(){
@@ -46,16 +48,26 @@ window.examLoad=async function(){
   var box=$('exBody'); if(!course||!date){ box.innerHTML='<div class="empty">Pick the course and the exam date to begin.</div>'; return; }
   box.innerHTML='<div class="empty">Loading class list...</div>';
   var data=null;
-  try{ data=await fetchSupabaseData(true); }catch(e){ var rc=null; try{ rc=_offlineRosters(); }catch(_){} if(rc) data={rosters:rc,examSessions:[]}; }
+  try{ data=await fetchSupabaseData(true); }catch(e){ var rc=null; try{ rc=_offlineRosters(); }catch(_){} if(rc) data={rosters:rc}; }
   if(!data){ box.innerHTML='<div class="empty">Could not load the class list. Check your internet and try again.</div>'; return; }
-  S.roster=(data.rosters&&data.rosters[course])||[];
+  var seen={}, list=[]; (GROUPS[course]||[course]).forEach(function(n){ ((data.rosters&&data.rosters[n])||[]).forEach(function(s){ var k=key(s.indexNumber); if(k && !seen[k]){ seen[k]=1; list.push(s); } }); });
+  S.roster=list;
   if(!S.roster.length){ box.innerHTML='<div class="empty">No class list uploaded for this course yet.</div>'; return; }
-  var sk=course+'__'+date, rec=(data.examSessions||[]).find(function(r){ return r.sessionKey===sk; });
-  S.present={};
-  if(rec) (rec.present||[]).forEach(function(p){ S.present[key(p)]=(rec.times&&rec.times[p])||new Date().toISOString(); });
-  qGet().forEach(function(o){ if(o.course===course && o.date===date){ if(o.present) S.present[key(o.index)]=new Date(o.ts).toISOString(); else delete S.present[key(o.index)]; } });
-  S.ready=true; render();
+  S.present={}; S.ready=true; await poll(true);
 };
+var _pollT=0, _sig='';
+async function poll(force){
+  if(!S.ready) return;
+  var j=await teamApi({action:'exam_list',course:S.course,date:S.date});
+  if(!j || !j.ok){ S.err=(j&&j.error)||'Could not reach the server'; if(force){ render(); } else status(); return; } S.err='';
+  if(S.course!==$('exCourse').value) return;
+  var m={}; (j.items||[]).forEach(function(it){ m[key(it.idx)]=it.at||new Date().toISOString(); });
+  qGet().forEach(function(o){ if(o.course===S.course && o.date===S.date){ if(o.present) m[key(o.index)]=new Date(o.ts).toISOString(); else delete m[key(o.index)]; } });
+  var sig=Object.keys(m).sort().join(',');
+  S.present=m;
+  if(force || sig!==_sig){ _sig=sig; render(); var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length; }
+}
+setInterval(function(){ var c=$('examCard'); if(c && !c.classList.contains('hidden') && !c.classList.contains('pane-off') && S.ready && !document.hidden) poll(false); },4000);
 function find(idx){ var k=key(idx); for(var i=0;i<S.roster.length;i++){ if(key(S.roster[i].indexNumber)===k) return S.roster[i]; } return null; }
 
 /* ---------- render ---------- */
@@ -75,7 +87,7 @@ function render(){
   $('exBody').innerHTML=h; status();
 }
 function status(){
-  var e=$('exSt'); if(!e) return; var n=qGet().length;
+  var e=$('exSt'); if(!e) return; var n=qGet().length; if(S.err){ e.textContent='Could not load saved scans ('+S.err+'). If this says Unknown action, the backend step 30 has not been deployed yet.'; return; }
   e.textContent=n?(navigator.onLine===false?('Offline. '+n+' change'+(n===1?'':'s')+' will save when the internet returns.'):('Saving '+n+' change'+(n===1?'':'s')+'...')):'All changes saved.';
 }
 window.examToggleAbs=function(){ showAbsent=!showAbsent; render(); };
@@ -95,28 +107,15 @@ async function flush(){
     try{
       var q=qGet(); if(!q.length){ status(); return; }
       if(navigator.onLine===false) throw new Error('offline');
-      var data=await fetchSupabaseData(true); data.examSessions=data.examSessions||[];
-      var groups={}; q.forEach(function(o){ (groups[o.course+'__'+o.date]=groups[o.course+'__'+o.date]||[]).push(o); });
-      Object.keys(groups).forEach(function(sk){
-        var ops=groups[sk].sort(function(a,b){ return a.ts-b.ts; }), f=ops[0];
-        var pos=data.examSessions.findIndex(function(r){ return r.sessionKey===sk; });
-        var rec=pos>=0?Object.assign({},data.examSessions[pos]):{sessionKey:sk,course:f.course,date:f.date,present:[],times:{}};
-        rec.present=(rec.present||[]).slice(); rec.times=Object.assign({},rec.times||{});
-        ops.forEach(function(o){
-          var k=key(o.index); rec.present=rec.present.filter(function(p){ return key(p)!==k; });
-          Object.keys(rec.times).forEach(function(t){ if(key(t)===k) delete rec.times[t]; });
-          if(o.present){ rec.present.push(o.index); rec.times[o.index]=new Date(o.ts).toISOString(); }
-        });
-        try{ rec.takenBy=currentUserName||currentUserEmail||rec.takenBy; }catch(e){}
-        rec.updated=new Date().toISOString();
-        if(pos>=0) data.examSessions[pos]=rec; else data.examSessions.push(rec);
-      });
-      await saveSupabaseData(data);
-      var done={}; q.forEach(function(o){ done[o.id]=1; }); qSet(qGet().filter(function(o){ return !done[o.id]; }));
+      for(var i=0;i<q.length;i++){
+        var o=q[i], j=await teamApi({action:'exam_mark',course:o.course,date:o.date,idx:o.index,present:!!o.present});
+        if(!j || !j.ok) throw new Error((j&&j.error)||'failed');
+        qSet(qGet().filter(function(x){ return x.id!==o.id; })); status();
+      }
       status();
-    }catch(e){ status(); clearTimeout(_retryT); _retryT=setTimeout(flush,15000); }
+    }catch(e){ status(); clearTimeout(_retryT); _retryT=setTimeout(flush,10000); }
   })();
-  var r=await _flushing; _flushing=null; if(qGet().length && !_retryT){} return r;
+  var r=await _flushing; _flushing=null; return r;
 }
 window.addEventListener('online',function(){ if(qGet().length) flush(); });
 window.addEventListener('beforeunload',function(e){ if(SC || qGet().some(function(o){ return o.course===S.course; })){ if(SC || qGet().length){ e.preventDefault(); e.returnValue=''; } } });

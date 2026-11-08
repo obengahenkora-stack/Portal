@@ -11,18 +11,33 @@ function today(){ try{ return new Date().toLocaleDateString('en-CA'); }catch(e){
 function hhmm(iso){ try{ return new Date(iso).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
 
 var css=document.createElement('style');
-css.textContent='#examCard .ex-sum{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 6px}'
-+'#examCard .ex-sum b{font-size:1.5rem}'
-+'#examCard .ex-bar{height:8px;border-radius:99px;background:rgba(127,127,127,.18);overflow:hidden;margin-bottom:12px}'
-+'#examCard .ex-bar i{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#0d9488);width:0;transition:width .3s}'
-+'#examCard .ex-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--card)}'
-+'#examCard .ex-row small{color:var(--muted);display:block}'
-+'#examCard .ex-row .ex-t{font-size:.78rem;color:var(--ok);font-weight:700;white-space:nowrap}'
-+'#examCard .exb{width:auto !important;display:inline-flex !important;align-items:center;gap:6px;padding:8px 14px !important;font-size:.82rem !important;border-radius:999px !important;background:transparent !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important}'
-+'#examCard .exb.go{background:#0b2e1f !important;color:#fff !important;border:0 !important;padding:10px 20px !important;font-size:.9rem !important}'
-+'#examCard .exb.dl{background:rgba(22,163,74,.10) !important;color:#15803d !important;border:1px solid rgba(22,163,74,.45) !important}'
+css.textContent='#examCard .ex-fields{display:grid;gap:12px;margin:14px 0}'
++'#examCard .ex-l{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}'
++'#examCard .ex-fields select,#examCard .ex-fields input{width:100% !important;max-width:100% !important;box-sizing:border-box !important;min-width:0}'
++'#examCard .ex-scan{width:100% !important;display:flex !important;align-items:center;justify-content:center;gap:10px;background:#0b2e1f !important;color:#fff !important;border:0 !important;border-radius:16px !important;padding:15px !important;font-size:1rem !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;box-shadow:none !important}'
++'#examCard .ex-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}'
++'#examCard .exb{width:100% !important;display:flex !important;align-items:center;justify-content:center;gap:6px;padding:11px 12px !important;font-size:.88rem !important;border-radius:14px !important;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important}'
++'#examCard .ex-row .exb{width:auto !important;padding:7px 12px !important;font-size:.78rem !important;border-radius:999px !important}'
 +'#examCard .exb.x{color:var(--danger) !important}'
-+'#examCard .ex-st{font-size:.78rem;color:var(--muted);margin-top:8px}';
++'#examCard .ex-sw{font-family:inherit;display:flex;justify-content:space-between;align-items:center;gap:12px;margin:12px 2px 4px;font-size:.84rem;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;color:var(--muted);position:relative}'
++'#examCard .ex-sw input{position:absolute;opacity:0;width:0;height:0}'
++'#examCard .ex-sw i{flex:0 0 42px;height:24px;border-radius:99px;background:rgba(127,127,127,.35);position:relative;transition:background .2s}'
++'#examCard .ex-sw i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}'
++'#examCard .ex-sw input:checked+i{background:#16a34a}'
++'#examCard .ex-sw input:checked+i::after{transform:translateX(18px)}'
++'#examCard .ex-stat{margin:16px 0 10px;padding:16px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(22,163,74,.08),rgba(13,148,136,.06))}'
++'#examCard .ex-stat .ex-big{font-size:2.2rem;font-weight:800;line-height:1}'
++'#examCard .ex-stat .ex-of{color:var(--muted);font-weight:600;font-size:.95rem}'
++'#examCard .ex-bar{height:8px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:12px}'
++'#examCard .ex-bar i{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#0d9488);width:0;transition:width .3s}'
++'#examCard .ex-tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:rgba(127,127,127,.14);margin-bottom:12px}'
++'#examCard .ex-tabs button{flex:1;background:transparent !important;color:var(--muted) !important;border:0 !important;border-radius:11px !important;padding:9px !important;font-size:.85rem !important;font-weight:700 !important;box-shadow:none !important;text-transform:none !important;letter-spacing:0 !important;width:auto !important}'
++'#examCard .ex-tabs button.on{background:var(--card) !important;color:var(--ink) !important;box-shadow:0 1px 4px rgba(0,0,0,.12) !important}'
++'#examCard .ex-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px;background:var(--card)}'
++'#examCard .ex-row small{color:var(--muted);display:block;margin-top:1px}'
++'#examCard .ex-row .ex-t{font-size:.76rem;color:#15803d;font-weight:700;white-space:nowrap;margin-bottom:4px}'
++'#examCard .ex-st{font-size:.76rem;color:var(--muted);margin-top:10px;text-align:center}'
++'#exPast{margin-top:14px}';
 document.head.appendChild(css);
 
 /* ---------- loading ---------- */
@@ -39,7 +54,7 @@ async function loadCourses(){
   if(keep) sel.value=keep;
 }
 window.examInit=function(){
-  if(!_inited){ _inited=true; var d=$('exDate'); if(d && !d.value) d.value=today(); }
+  if(!_inited){ _inited=true; var d=$('exDate'); if(d && !d.value) d.value=today(); var au=$('exAuto'); if(au) au.checked=autoOn(); }
   loadCourses();
   if(qGet().length) flush();
 };
@@ -72,27 +87,27 @@ setInterval(function(){ var c=$('examCard'); if(c && !c.classList.contains('hidd
 function find(idx){ var k=key(idx); for(var i=0;i<S.roster.length;i++){ if(key(S.roster[i].indexNumber)===k) return S.roster[i]; } return null; }
 
 /* ---------- render ---------- */
-var showAbsent=false;
+var tab='in';
 function render(){
   if(!S.ready) return;
   var tot=S.roster.length, rows=S.roster.filter(function(s){ return S.present[key(s.indexNumber)]; });
   rows.sort(function(a,b){ return String(S.present[key(b.indexNumber)]).localeCompare(String(S.present[key(a.indexNumber)])); });
   var abs=S.roster.filter(function(s){ return !S.present[key(s.indexNumber)]; });
-  var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="exb go" onclick="examScan()">&#128247;&nbsp; Scan exam passes</button><button type="button" class="exb dl" onclick="examDownload()">&#11015;&nbsp; Download Excel</button></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:.82rem;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" '+(autoOn()?'checked':'')+' onchange="examAutoSet(this.checked)" style="width:auto"> Download the list automatically when I tap Done</label>'
-   +'<div class="ex-sum"><span>Present</span><span><b>'+rows.length+'</b> of '+tot+'</span></div><div class="ex-bar"><i style="width:'+(tot?Math.round(rows.length*100/tot):0)+'%"></i></div>';
-  h+= rows.length ? rows.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[key(s.indexNumber)])+'</div><button type="button" class="exb x" style="margin-top:4px" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; }).join('')
+  var h='<div class="ex-stat"><div><span class="ex-big">'+rows.length+'</span> <span class="ex-of">of '+tot+' present</span></div><div class="ex-bar"><i style="width:'+(tot?Math.round(rows.length*100/tot):0)+'%"></i></div></div>'
+   +'<div class="ex-tabs"><button type="button" class="'+(tab==='in'?'on':'')+'" onclick="examTab(\'in\')">Present ('+rows.length+')</button><button type="button" class="'+(tab==='out'?'on':'')+'" onclick="examTab(\'out\')">Not yet ('+abs.length+')</button></div>';
+  if(tab==='in') h+= rows.length ? rows.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[key(s.indexNumber)])+'</div><button type="button" class="exb x" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; }).join('')
     : '<div class="empty">No one yet. Scan an exam pass and the name appears here.</div>';
-  h+='<div style="margin-top:12px"><button type="button" class="exb" onclick="examToggleAbs()">'+(showAbsent?'Hide':'Show')+' not yet present ('+abs.length+')</button></div>';
-  if(showAbsent) h+='<div style="margin-top:10px">'+abs.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><button type="button" class="exb" onclick="examAdd(\''+ix.replace(/'/g,'')+'\')">Mark present</button></div>'; }).join('')+'</div>';
+  else h+= abs.length ? abs.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><button type="button" class="exb" onclick="examAdd(\''+ix.replace(/'/g,'')+'\')">Mark present</button></div>'; }).join('') : '<div class="empty">Everyone is present.</div>';
   h+='<div class="ex-st" id="exSt"></div>';
-  $('exBody').innerHTML=h; status();
+  $('exBody').innerHTML=h; var au=$('exAuto'); if(au) au.checked=autoOn(); status();
 }
+window.examTab=function(t){ tab=t; render(); };
 function status(){
   var e=$('exSt'); if(!e) return; var n=qGet().length; if(S.err){ e.textContent='Could not load saved scans ('+S.err+'). If this says Unknown action, the backend step 30 has not been deployed yet.'; return; }
   e.textContent=n?(navigator.onLine===false?('Offline. '+n+' change'+(n===1?'':'s')+' will save when the internet returns.'):('Saving '+n+' change'+(n===1?'':'s')+'...')):'All changes saved.';
 }
 window.examDownload=examDownload;
-window.examToggleAbs=function(){ showAbsent=!showAbsent; render(); };
+
 
 /* ---------- marking and saving ---------- */
 function mark(idx,present){
@@ -127,8 +142,8 @@ window.addEventListener('beforeunload',function(e){ if(SC || qGet().some(functio
 var _past=null, _pastOpen=false;
 window.examPast=async function(){
   _pastOpen=!_pastOpen; var box=$('exPast'); if(!box) return;
-  if(!_pastOpen){ box.innerHTML=''; $('exPastBtn').textContent='Past exam sessions'; return; }
-  $('exPastBtn').textContent='Hide past sessions';
+  if(!_pastOpen){ box.innerHTML=''; $('exPastBtn').textContent='Past sessions'; return; }
+  $('exPastBtn').textContent='Hide past';
   box.innerHTML='<div class="empty">Loading...</div>';
   var j=await teamApi({action:'exam_sessions'});
   if(!j||!j.ok){ box.innerHTML='<div class="empty">Could not load ('+escapeHtml((j&&j.error)||'no answer')+'). If this says Unknown action, deploy backend step 31.</div>'; return; }

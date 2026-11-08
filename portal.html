@@ -769,13 +769,19 @@
 
     <div class="card hidden" id="examCard">
       <label>Exam Sessions</label>
-      <div class="hint">Scan the barcode on each student's Exam Pass to mark them present for the exam. Exam records are kept separate from lecture attendance.</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
-        <div style="flex:1;min-width:160px"><label>Course</label><select id="exCourse" onchange="examLoad()"><option value="">Select course...</option></select></div>
-        <div style="flex:1;min-width:150px"><label>Exam date</label><input type="date" id="exDate" onchange="examLoad()" style="width:100%;box-sizing:border-box"></div>
+      <div class="hint">Scan the barcode on each Exam Pass to mark students present. Kept separate from lecture attendance.</div>
+      <div class="ex-fields">
+        <div><div class="ex-l">Course</div><select id="exCourse" onchange="examLoad()"><option value="">Select course...</option></select></div>
+        <div><div class="ex-l">Exam date</div><input type="date" id="exDate" onchange="examLoad()"></div>
       </div>
+      <button type="button" class="ex-scan" onclick="examScan()"><span>&#128247;</span> Scan exam passes</button>
+      <div class="ex-two">
+        <button type="button" class="exb" onclick="examDownload()">&#11015;&nbsp; Excel</button>
+        <button type="button" class="exb" id="exPastBtn" onclick="examPast()">Past sessions</button>
+      </div>
+      <label class="ex-sw"><span>Download the list when I tap Done</span><input type="checkbox" id="exAuto" onchange="examAutoSet(this.checked)"><i></i></label>
       <div id="exBody"><div class="empty">Pick the course and the exam date to begin.</div></div>
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)"><button type="button" class="exb" id="exPastBtn" onclick="examPast()">Past exam sessions</button><div id="exPast" style="margin-top:12px"></div></div>
+      <div id="exPast"></div>
     </div>
 
     <div class="card hidden" id="selfieCard">
@@ -5102,6 +5108,6 @@ function updateWhoBar(){
 .card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
 .card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
 </style>
-<script src="exam.js?v=4"></script>
+<script src="exam.js?v=5"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08e', date:'8 Nov 2026', title:'Tidier score screens',
+      all:[],
+      student:[],
+      staff:['Upload Scores and the Gradebook have a cleaner layout: calmer labels, full-width buttons, and a Gradebook table that keeps the index number and headings in view while you scroll.'] },
     { id:'2026-11-08d', date:'8 Nov 2026', title:'New score alerts',
       all:[],
       student:['Level 100 to 300 students are told about the scores already recorded for them. When new scores are posted, or one changes, a green "New scores posted" card now appears on your dashboard with a NEW tag on My Scores. Tap Got it and it goes away.'],

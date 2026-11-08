@@ -5070,7 +5070,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=16"></script>
+<script src="updates.js?v=17"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};
@@ -5128,5 +5128,29 @@ function updateWhoBar(){
 </style>
 <script src="exam.js?v=7"></script>
 <script src="atrisk.js?v=1"></script>
+<style id="assessTidy">
+/* Assessment portal: calmer forms */
+#uploadCard>label,#gradebookCard>label,#lectureMaterialsCard>label,#editAssessCard>label{display:block;font-size:.95rem !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;font-family:inherit !important;color:var(--ink) !important;margin:16px 0 6px !important}
+#uploadCard>label:first-child,#gradebookCard>label:first-child,#lectureMaterialsCard>label:first-child,#editAssessCard>label:first-child{font-size:1.05rem !important;margin-top:0 !important}
+#uploadCard .hint,#gradebookCard .hint,#lectureMaterialsCard .hint,#editAssessCard .hint{font-size:.8rem !important;line-height:1.45;color:var(--muted)}
+.card select[style*="padding:11px"]{background:var(--card) !important;border-radius:12px !important;padding:12px 14px !important;border:1px solid var(--line) !important}
+#uploadCard input[type=file],#lectureMaterialsCard input[type=file]{width:100%;box-sizing:border-box;padding:10px;border:1px dashed var(--line);border-radius:12px;background:var(--card);font-size:.85rem}
+#uploadCard input[type=file]::file-selector-button,#lectureMaterialsCard input[type=file]::file-selector-button{border:0;border-radius:999px;padding:8px 14px;margin-right:10px;font-weight:700;background:rgba(127,127,127,.18);color:var(--ink);cursor:pointer}
+#uploadCard #uploadFileBtn,#uploadCard #uploadBtn{width:100% !important;display:block !important;margin:6px 0 0 !important;padding:13px !important;border-radius:14px !important}
+#uploadCard button.secondary{width:100% !important;display:block !important;margin:8px 0 0 !important;padding:12px !important;border-radius:14px !important}
+#uploadCard button[onclick*="downloadAssessmentSheet"]{background:transparent !important;color:var(--ink) !important;border:1px solid var(--line) !important}
+#uploadCard textarea{border-radius:12px !important}
+#gradebookCard>button{width:100% !important;padding:12px !important;border-radius:14px !important;background:transparent !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;margin-top:12px !important}
+#gradebookTable{border:1px solid var(--line);border-radius:14px;max-height:70vh;overflow:auto !important}
+#gradebookTable table{border-collapse:separate;border-spacing:0;width:100%;font-size:.85rem}
+#gradebookTable th{position:sticky;top:0;z-index:2;background:var(--card);font-family:inherit !important;font-size:.72rem !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;color:var(--muted);vertical-align:bottom;padding:10px 8px !important;min-width:78px;max-width:130px;white-space:normal;border-bottom:1px solid var(--line)}
+#gradebookTable th:first-child,#gradebookTable td:first-child{position:sticky;left:0;z-index:3;background:var(--card);min-width:104px;white-space:nowrap}
+#gradebookTable th:first-child{z-index:4}
+#gradebookTable td{padding:7px 8px !important;border-bottom:1px solid var(--line);vertical-align:middle}
+#gradebookTable td:nth-child(2){min-width:130px}
+#gradebookTable input.gbScore{width:62px !important;padding:7px 6px !important;margin:0 !important;border-radius:10px !important;text-align:center}
+#gradebookTable input.gbMax{width:62px !important;border-radius:10px !important;text-align:center}
+#gradebookTable tr:nth-child(2) td{background:rgba(14,165,233,.07)}
+</style>
 </body>
 </html>

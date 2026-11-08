@@ -796,6 +796,13 @@
       <div id="exPast"></div>
     </div>
 
+    <div class="card hidden" id="onlineExamCard">
+      <label>Online Exams</label>
+      <div class="hint">Create timed exams that students write from home, with a required camera and random photo checks.</div>
+      <div id="oeMsg"></div>
+      <div id="oeBody"></div>
+    </div>
+
     <div class="card hidden" id="absenceCard">
       <label>Absence Excuses</label>
       <div class="hint">Requests from students who missed a class. Approve to mark them Excused for that session.</div>
@@ -1762,6 +1769,7 @@ var _ATT_TILES=[
  {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
  {g:'Every class',id:'examCard',t:'Exam Sessions',d:'Scan exam passes to take exam attendance.',i:'check',c:'t-go'},
  {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
+ {g:'Exams',id:'onlineExamCard',t:'Online Exams',d:'Create and run exams students write from home.',i:'check',c:'t-go'},
  {g:'Records',id:'absenceCard',t:'Absence Excuses',d:'Approve or decline student requests.',i:'check'},
  {g:'Records',id:'usageCard',t:'Usage Dashboard',d:'See how the portal is being used.',i:'chart'},
  {g:'Records',id:'atRiskCard',t:'At-Risk Students',d:'See who has low attendance or low scores.',i:'users'},
@@ -1929,6 +1937,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
+  var _oe=document.getElementById('onlineExamCard'); if(_oe && (isAdmin()||currentUserRole==='lecturer')){ _oe.classList.remove('hidden'); try{ oeInit(); }catch(e){} }
   var _ab=document.getElementById('absenceCard'); if(_ab){ _ab.classList.remove('hidden'); try{ absInit(); }catch(e){} }
   var _us=document.getElementById('usageCard'); if(_us){ _us.classList.remove('hidden'); try{ usageInit(); }catch(e){} }
   var _at=document.getElementById('atRiskCard'); if(_at){ _at.classList.remove('hidden'); try{ atrInit(); }catch(e){} }
@@ -5099,7 +5108,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=33"></script>
+<script src="updates.js?v=34"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};
@@ -5159,6 +5168,7 @@ function updateWhoBar(){
 <script src="atrisk.js?v=1"></script>
 <script src="usage.js?v=1"></script>
 <script src="absence.js?v=4"></script>
+<script src="oexam.js?v=1"></script>
 <script src="teamui.js?v=1"></script>
 <style id="assessTidy">
 /* Assessment portal: calmer forms */

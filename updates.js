@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08c', date:'8 Nov 2026', title:'At-Risk Students',
+      all:[],
+      student:[],
+      staff:['New At-Risk Students tile in the Attendance Portal. Pick a course and set your limits for attendance and scores. It lists the students who are falling behind, with the reason, and you can download the list as Excel.'] },
     { id:'2026-11-08b', date:'8 Nov 2026', title:'Exam Sessions',
       all:[],
       student:[],

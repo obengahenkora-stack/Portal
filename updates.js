@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08k', date:'8 Nov 2026', title:'Usage dashboard',
+      all:[],
+      student:[],
+      staff:['New Usage Dashboard tile: sessions per month, most active courses, attendance by course and who takes attendance, with an Excel download.'] },
     { id:'2026-11-08j', date:'8 Nov 2026', title:'Backup reminder and Excel workbook',
       all:[],
       student:[],

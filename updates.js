@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08p', date:'8 Nov 2026', title:'Cleaner My Attendance',
+      all:[],
+      student:['My Attendance now shows one clear card per course with your percentage, a progress bar and how many classes you attended. Tap Show dates to see each day.'],
+      staff:[] },
     { id:'2026-11-08o', date:'8 Nov 2026', title:'Team Access redesigned',
       all:[],
       student:[],

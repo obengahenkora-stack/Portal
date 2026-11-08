@@ -1551,7 +1551,7 @@ async function loadDashboard(skipLock){
       attContainer.innerHTML = '<div class="empty" style="text-align:left;line-height:1.55;">We could not find attendance for index number <b>'+escapeHtml(String(idx))+'</b> yet.<br><span style="color:var(--muted);">You are not on a class list under this index. If you registered late, ask your lecturer to add you. If your index is wrong, correct it under My Profile.</span>'+(_sug.length?'<div style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint);"><b>Is this you?</b> A class list has your name under a different index number:<br>'+_sug.slice(0,3).join('<br>')+'</div>':'')+'</div>';
     } else {
       let html = '<table><tr><th>Course</th><th>Attended</th><th>Total Sessions</th><th>%</th></tr>'; let _attN = 0;
-      let _shown = 0;
+      let _shown = 0; const _low = [];
       myCourses.forEach(course => {
         const courseSessions = attendanceRecords.filter(a => a.course === course);
         const totalSessions = courseSessions.length;
@@ -1561,6 +1561,7 @@ async function loadDashboard(skipLock){
         const excusedN = courseSessions.filter(a => !(a.present||[]).some(_isMe) && (a.excused||[]).some(_isMe)).length;
         const _cnt = totalSessions - excusedN;
         const pct = _cnt > 0 ? Math.round((attended/_cnt)*100) : 0;
+        if(_cnt >= 3 && pct < 75) _low.push({course:course,pct:pct,att:attended,n:_cnt});
         const pctColor = pct >= 75 ? 'var(--ok)' : (pct >= 50 ? 'var(--gold-dark)' : 'var(--danger)');
         const _aid = 'attd' + (++_attN);
         const _fmt = d => { const s=String(d||'').slice(0,10); const t=new Date(s+'T00:00:00'); return isNaN(t) ? s : t.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); };
@@ -1574,6 +1575,7 @@ async function loadDashboard(skipLock){
       });
       html += '</table>';
       attContainer.innerHTML = _shown ? html : '<div class="empty">No attendance sessions have been recorded for your courses yet.</div>';
+      try{ showAttWarn(_low); }catch(_e){}
     }
 
     if(skipLock){ // admin lookup: show what the page could see, to explain missing attendance
@@ -2129,7 +2131,7 @@ function renderWelcome(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mv); else mv(); })();
 </script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=21"></script>
+<script src="updates.js?v=22"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
 .ov-links .ov-link i{grid-row:1/3;width:46px;height:46px;border-radius:13px;background:rgba(14,165,233,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 !important}
@@ -2179,5 +2181,22 @@ function renderWelcome(){
 #adminRegisteredList>div>div:last-child{flex-basis:100%;justify-content:flex-start !important}
 #adminRegisteredList button:not(#z){padding:6px 14px !important;font-size:.75rem !important;border-radius:999px !important;width:auto !important}
 .card button[style*="padding:6px 14px"]:not(#z){padding:6px 14px !important;font-size:.75rem !important;border-radius:999px !important}</style>
+<script>
+/* Attendance warning: gentle notice when a student is below 75% in a course (needs at least 3 sessions) */
+function showAttWarn(low){
+  var old=document.getElementById('attWarn'); if(old) old.remove();
+  if(!low || !low.length) return;
+  var ov=document.getElementById('dashOverviewCard'); if(!ov) return;
+  var w=''; try{ w=String((document.getElementById('studentWhoAmI')||{}).textContent||'').trim().toLowerCase(); }catch(e){}
+  var sig=low.map(function(x){ return x.course+':'+x.att+'/'+x.n; }).join('|'), K='ceAttWarnSeen_'+w;
+  try{ if(localStorage.getItem(K)===sig) return; }catch(e){}
+  var box=document.createElement('div'); box.id='attWarn';
+  box.style.cssText='margin:0 0 14px;padding:14px 16px;border-radius:16px;border:1px solid var(--line);border-left:4px solid #f59e0b;background:var(--card);display:flex;gap:12px;align-items:flex-start;justify-content:space-between';
+  var list=low.slice(0,4).map(function(x){ return '<li>'+String(x.course).replace(/</g,'&lt;')+': <b>'+x.pct+'%</b> ('+x.att+' of '+x.n+' classes)</li>'; }).join('')+(low.length>4?'<li>and '+(low.length-4)+' more</li>':'');
+  box.innerHTML='<div><div style="font-weight:700">Attendance warning</div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">Your attendance is below 75% in:</div><ul style="margin:6px 0 0;padding-left:18px;font-size:.85rem;color:var(--muted)">'+list+'</ul><div style="font-size:.78rem;color:var(--muted);margin-top:8px">Please attend regularly, or speak to your lecturer if you have a good reason for missing classes.</div></div><div><button type="button" id="attWarnOk" style="padding:8px 14px !important;border-radius:999px !important;font-size:.8rem !important;font-weight:700 !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--ink) !important;box-shadow:none !important;text-transform:none !important;letter-spacing:0 !important;cursor:pointer">Got it</button></div>';
+  ov.insertBefore(box,ov.firstChild);
+  document.getElementById('attWarnOk').onclick=function(){ try{ localStorage.setItem(K,sig); }catch(e){} box.remove(); };
+}
+</script>
 </body>
 </html>

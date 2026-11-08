@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08i', date:'8 Nov 2026', title:'Attendance warning',
+      all:[],
+      student:['If your attendance in a course drops below 75%, a gentle Attendance warning card now appears on your dashboard. Tap Got it to hide it. It returns if your attendance changes.'],
+      staff:[] },
     { id:'2026-11-08h', date:'8 Nov 2026', title:'Score History with Undo',
       all:[],
       student:[],

@@ -1,6 +1,9 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08x', date:'8 Nov 2026', title:'Exam scores go to the Gradebook',
+      all:[], student:['Released online exam scores now appear in your scores like any other assessment.'],
+      staff:['Releasing online exam results now adds each submitted student\'s score to the Gradebook automatically (and updates it when you change marks). Hiding results removes them.'] },
     { id:'2026-11-08w', date:'8 Nov 2026', title:'Online exams: review and marking',
       all:[], student:['When your lecturer releases exam results you will see your score on the Exams tile.'],
       staff:['New Results button on published exams: scores, flagged students, photo strips, marking of written answers, release switch, results download, and a Delete photos button with a 14-day reminder.'] },

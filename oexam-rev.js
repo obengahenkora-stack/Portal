@@ -35,7 +35,16 @@ window.oeResults=async function(id){
   if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
 };
-window.oeRelease=async function(v){ try{ await api({action:'oe_release',id:D.exam.id,released:v}); oeResults(D.exam.id); msg('<div class="msg ok">'+(v?'Results released.':'Results hidden.')+'</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
+async function gbSync(add){
+  var ex=D.exam, key=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
+  var recs=D.rows.filter(function(r){return r.submittedAt&&r.index;}).map(function(r){return {indexNumber:r.index,score:(r.mcq||0)+r.written,assessmentName:ex.title,course:ex.course,level:''};});
+  var drop=new Set(recs.map(key)), tot=D.rows.length?D.rows[0].total:0;
+  var existing=await fetchAllRecords();
+  var keep=existing.filter(function(r){return !drop.has(key(r));});
+  await saveAllRecords(add?keep.concat(recs):keep, add&&tot>0?{name:ex.title,max:tot,courses:[lmBase(ex.course)]}:null);
+  return recs.length;
+}
+window.oeRelease=async function(v){ try{ await api({action:'oe_release',id:D.exam.id,released:v}); await oeResults(D.exam.id); var n=await gbSync(v); msg('<div class="msg ok">'+(v?'Results released and '+n+' scores added to the Gradebook as "'+esc(D.exam.title)+'".':'Results hidden and removed from the Gradebook.')+'</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
 window.oePurge=async function(){ if(!confirm('Delete ALL photos for this exam?\n\nThis cannot be undone.')) return; try{ var r=await api({action:'oe_purge',id:D.exam.id}); await oeResults(D.exam.id); msg('<div class="msg ok">Deleted '+r.removed+' photos.</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
 window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}; var L=[['Name','Index','Status','MCQ','Written','Total','Out of','Left page','Flags','Photos'].map(q).join(',')];
   D.rows.forEach(function(r){L.push([r.name,r.index,r.submittedAt?'Submitted':'Not finished',r.mcq||0,r.written,(r.mcq||0)+r.written,r.total,r.leaves,r.flags,r.snaps].map(q).join(','));});
@@ -67,6 +76,6 @@ window.oeMore=async function(){
 };
 window.oeGrade=async function(){
   var A=window._rvA, g={}; document.querySelectorAll('#oeBody input[data-q]').forEach(function(i){g[i.getAttribute('data-q')]=i.value===''?null:Number(i.value);});
-  try{ await api({action:'oe_grade',id:D.exam.id,email:A.email,grades:g,comment:($('rvCm')||{}).value||''}); await oeResults(D.exam.id); msg('<div class="msg ok">Marks saved.</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); }
+  try{ await api({action:'oe_grade',id:D.exam.id,email:A.email,grades:g,comment:($('rvCm')||{}).value||''}); await oeResults(D.exam.id); if(D.exam.released) await gbSync(true); msg('<div class="msg ok">Marks saved'+(D.exam.released?' and Gradebook updated':'')+'.</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); }
 };
 })();

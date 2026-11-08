@@ -647,6 +647,7 @@
       <label>Data Backup</label>
       <div class="hint">Downloads everything — scores, courses, reports, settings, blog posts, profile (including your photo), attendance, rosters, team members, and every registered student's index number/name/level — as one JSON file you can keep safe. Student passwords are never included; those stay securely managed by the sign-in system and can't be exported.</div>
       <button onclick="downloadBackup()">Download Full Backup</button>
+      <button type="button" class="secondary" onclick="bkExcel()" style="margin-top:8px">Download Excel workbook (scores, attendance, class lists, exams)</button>
       <div id="backupMsg"></div>
     </div>
 
@@ -5079,7 +5080,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=22"></script>
+<script src="updates.js?v=23"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};
@@ -5164,5 +5165,6 @@ function updateWhoBar(){
 <style>.ah-hero .ah-actions:not(#z){display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;gap:10px !important;width:100% !important}.ah-hero .ah-actions:not(#z) button:not(#z){flex:1 1 0 !important;width:auto !important;min-width:0 !important;justify-content:center !important;text-align:center !important;white-space:nowrap !important;padding:10px 8px !important;font-size:.84rem !important}</style>
 <script src="gbcharts.js?v=1"></script>
 <script src="scorehist.js?v=1"></script>
+<script src="backup.js?v=1"></script>
 </body>
 </html>

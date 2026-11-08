@@ -100,7 +100,7 @@ function absRender(){
   box.innerHTML='<div style="margin:10px 0;font-weight:700">'+pend.length+' waiting for a reply</div>'+rows.slice(0,100).map(function(x){
     var i=_L.indexOf(x);
     return '<div class="abs-row"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>'+esc(x.name||x.index)+'</b>'+chip(x.status)+'</div><small>'+esc(x.index)+' &middot; '+esc(x.course)+' &middot; missed '+esc(fd(x.date))+'</small><small>'+esc(x.reason)+'</small>'+viewBtn(x)
-      +(x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>'+(x.status==='approved'?'<button type="button" class="abs-b" style="margin-top:8px" onclick="absApply('+i+')">Apply to attendance</button>':''))+'</div>'; }).join('');
+      +(x.status==='pending'?'<div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="abs-b ok" onclick="absDecide('+i+',\'approved\')">Approve</button><button type="button" class="abs-b no" onclick="absDecide('+i+',\'declined\')">Decline</button></div>':'<small>'+(x.note?esc(x.note)+' &middot; ':'')+esc(x.by||'')+'</small>'+(x.status==='approved'?'<button type="button" class="abs-b" style="margin-top:8px" onclick="absApply('+i+')">Apply to attendance</button> <button type="button" class="abs-b no" style="margin-top:8px" onclick="absRevoke('+i+')">Revoke approval</button>':''))+'</div>'; }).join('');
 }
 window.absApply=async function(i){
   var x=_L[i]; if(!x) return; var msg=$('absStaffMsg'); msg.innerHTML='<div class="msg ok">Checking attendance...</div>';
@@ -116,6 +116,23 @@ window.absApply=async function(i){
     else if(already) msg.innerHTML='<div class="msg ok">Already marked Excused for '+esc(fd(x.date))+' in the saved attendance. If the student still sees Absent, they should close and reopen the page.</div>';
     else if(pres) msg.innerHTML='<div class="msg ok">That student was ticked Present that day, so Present is kept.</div>';
     else msg.innerHTML='<div class="msg err">No saved attendance for '+esc(x.course)+' on '+esc(x.date)+'. Saved dates for this course: '+(dates.length?esc(dates.sort().join(', ')):'none')+'. If you have not taken attendance that day yet, the excuse will apply automatically when you do.</div>';
+  }catch(e){ msg.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
+};
+window.absRevoke=async function(i){
+  var x=_L[i]; if(!x) return;
+  if(!confirm('Revoke this approval?\n\n'+(x.name||x.index)+' will no longer be excused for '+x.course+' on '+fd(x.date)+'. If they were marked Excused in attendance, that mark is removed.')) return;
+  var msg=$('absStaffMsg'); msg.innerHTML='<div class="msg ok">Working...</div>';
+  try{
+    var by=''; try{ by=currentUserName||currentUserEmail||''; }catch(e){}
+    var r=await teamApi({action:'stu_exc_decide',id:x.id,status:'declined',note:'Approval withdrawn',by:by}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed');
+    _cache=null;
+    var data=await fetchSupabaseData(true), base=String(lmBase(x.course)).toLowerCase(), k=key(x.index), n=0;
+    (data.attendance||[]).forEach(function(rec){
+      if(String(rec.date).slice(0,10)!==x.date || String(lmBase(rec.course||'')).toLowerCase()!==base || !rec.excused) return;
+      var l=rec.excused.length; rec.excused=rec.excused.filter(function(p){ return key(p)!==k; }); if(rec.excused.length!==l) n++;
+    });
+    if(n) await saveSupabaseData(data);
+    msg.innerHTML='<div class="msg ok">Approval revoked.'+(n?' The Excused mark was removed from attendance.':'')+'</div>'; absInit();
   }catch(e){ msg.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
 };
 window.absDecide=async function(i,st){

@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08q', date:'8 Nov 2026', title:'Revoke an absence approval',
+      all:[],
+      student:[],
+      staff:['In Absence Excuses, an approved request now has a Revoke approval button. It cancels the approval and removes the Excused mark from that day\'s attendance.'] },
     { id:'2026-11-08p', date:'8 Nov 2026', title:'Cleaner My Attendance',
       all:[],
       student:['My Attendance now shows one clear card per course with your percentage, a progress bar and how many classes you attended. Tap Show dates to see each day.'],

@@ -38,7 +38,7 @@ window.usageInit=async function(){
     var courses=Object.keys(rosters), studs={}; courses.forEach(function(c){ (rosters[c]||[]).forEach(function(s){ studs[key(s.indexNumber)]=1; }); });
     var totalPres=0, totalSlots=0, byMonth={}, byCourse={}, byTaker={};
     att.forEach(function(a){
-      var base=lmBase(a.course||''), n=(a.present||[]).length, ro=(rosters[a.course]||[]).length;
+      var base=lmBase(a.course||''), n=(a.present||[]).length, ro=Math.max(n,(rosters[a.course]||[]).length-(a.excused||[]).length);
       var m=monthOf(a.date); if(m) byMonth[m]=(byMonth[m]||0)+1;
       var c=byCourse[base]=byCourse[base]||{s:0,p:0,t:0,sc:0}; c.s++; c.p+=n; c.t+=ro||n;
       totalPres+=n; totalSlots+=ro||n;
@@ -48,7 +48,7 @@ window.usageInit=async function(){
     var avg=totalSlots?Math.round(totalPres*100/totalSlots):0;
     var months=Object.keys(byMonth).sort().slice(-6).map(function(m){ var d=new Date(m+'-01'); return [d.toLocaleString([], {month:'short'}),byMonth[m]]; });
     var h='<div class="us-g">'
-      +[['Courses',courses.length],['Students on lists',Object.keys(studs).length],['Attendance sessions',att.length],['Average attendance',avg+'%'],['Scores recorded',recs.length],['Assessments',(function(){ var s={}; recs.forEach(function(r){ s[(r.course||'')+'|'+(r.assessmentName||'')]=1; }); return Object.keys(s).length; })()]]
+      +[['Courses',(function(){ var b={}; courses.forEach(function(c){ b[lmBase(c).toLowerCase()]=1; }); return Object.keys(b).length; })()],['On class lists',Object.keys(studs).length],['Attendance sessions',att.length],['Average attendance',avg+'%'],['Scores recorded',recs.length],['Assessments',(function(){ var s={}; recs.forEach(function(r){ s[(r.course||'')+'|'+(r.assessmentName||'')]=1; }); return Object.keys(s).length; })()]]
         .map(function(x){ return '<div class="us-s"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>'; }).join('')+'</div>';
     if(months.length) h+='<div class="us-box"><div class="us-h">Sessions per month</div><div class="us-sub">Attendance sessions taken, last 6 months with activity.</div>'+bars(months)+'</div>';
     var cl=Object.keys(byCourse).map(function(c){ return [c,byCourse[c]]; });

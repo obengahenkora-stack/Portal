@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08s', date:'8 Nov 2026', title:'Absence Excuses redesigned',
+      all:[],
+      student:[],
+      staff:['Absence Excuses has a fresh look: Waiting, Approved, Declined and All tabs, a proper on/off switch for TA approval, and clear request cards with the student, course, date and reason.'] },
     { id:'2026-11-08r', date:'8 Nov 2026', title:'Who can approve absence requests',
       all:[],
       student:[],

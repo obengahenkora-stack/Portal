@@ -4619,6 +4619,7 @@ async function saveAttendance(){
       }
     });
     const _pz=new Set(present.map(x=>String(x).trim().toLowerCase())); const excused=((idx>=0&&attendanceRecords[idx].excused)||[]).filter(x=>!_pz.has(String(x).trim().toLowerCase()));
+    try{ const _ap = window.absExcusedFor ? await absExcusedFor(course,date) : []; _ap.forEach(i=>{ const k=String(i).trim().toLowerCase(); if(!_pz.has(k) && !excused.some(x=>String(x).trim().toLowerCase()===k)) excused.push(i); }); }catch(_e){}
     const record = _stamp({ sessionKey, course, date, present, excused, checkInTimes }, idx>=0?attendanceRecords[idx]:null, 'taken');
     if(idx >= 0){
       attendanceRecords[idx] = record;
@@ -4627,7 +4628,7 @@ async function saveAttendance(){
     }
     data.attendance = attendanceRecords;
     await saveSupabaseData(data);
-    msg.innerHTML = `<div class="msg ok">Saved. ${present.length} of ${rows.length} present.</div>`;
+    msg.innerHTML = `<div class="msg ok">Saved. ${present.length} of ${rows.length} present${excused.length?', '+excused.length+' excused (approved absence)':''}.</div>`;
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
   }finally{

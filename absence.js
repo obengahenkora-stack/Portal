@@ -22,7 +22,7 @@ window.absStuInit=async function(){
   var courses=[]; try{ courses=(_dlhMine||[]).slice().sort(); }catch(e){}
   var today=new Date().toISOString().slice(0,10);
   box.innerHTML='<div class="abs-f"><select id="absCourse"><option value="">Course you missed...</option>'+courses.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('')+'</select>'
-    +'<input type="date" id="absDate" max="'+today+'"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
+    +'<input type="date" id="absDate"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
     +'<div><div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Proof (optional): photo of a medical note or letter</div><input type="file" id="absFile" accept="image/*"></div>'
     +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
   absStuList();
@@ -58,7 +58,15 @@ document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.
 
 /* ---------- lecturer side (portal.html) ---------- */
 var _L=[];
-window.absInit=async function(){
+var _cache=null;
+window.absExcusedFor=async function(course,date){
+  try{
+    if(!_cache || Date.now()-_cache.t>30000){ var j=await teamApi({action:'stu_exc_list'}); _cache={t:Date.now(),list:(j&&j.ok&&j.list)||[]}; }
+    var base=String(lmBase(course||'')).toLowerCase(), d=String(date).slice(0,10);
+    return _cache.list.filter(function(x){ return x.status==='approved' && x.date===d && String(lmBase(x.course||'')).toLowerCase()===base; }).map(function(x){ return x.index; });
+  }catch(e){ return []; }
+};
+window.absInit=async function(){ _cache=null;
   var box=$('absStaffBody'); if(!box) return;
   box.innerHTML='<div class="empty">Loading...</div>';
   try{ var j=await teamApi({action:'stu_exc_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Back end not updated yet (deploy step 35)'); _L=j.list||[]; absRender(); }
@@ -88,7 +96,7 @@ window.absDecide=async function(i,st){
         if(!pres){ a.excused=a.excused||[]; if(!a.excused.some(function(p){ return key(p)===k; })) a.excused.push(x.index); hit++; }
       });
       if(hit){ await saveSupabaseData(data); extra=' Marked Excused in '+hit+' session'+(hit>1?'s':'')+'.'; }
-      else extra=' No attendance session found for that date, so nothing was marked.';
+      else extra=' No attendance session for that date yet. It will be applied automatically when you take attendance that day.';
     }
     var by=''; try{ by=currentUserName||currentUserEmail||''; }catch(e){}
     var r=await teamApi({action:'stu_exc_decide',id:x.id,status:st,note:note,by:by}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed');

@@ -17,15 +17,20 @@ css.textContent='.abs-row{padding:12px 14px;border:1px solid var(--line);border-
 document.head.appendChild(css);
 
 /* ---------- student side (dashboard.html) ---------- */
-window.absStuInit=async function(){
+function fillCourses(){
+  var sel=$('absCourse'); if(!sel) return; var courses=[]; try{ courses=(_dlhMine||[]).slice().sort(); }catch(e){}
+  var keep=sel.value; sel.innerHTML='<option value="">'+(courses.length?'Course you missed...':'Loading your courses...')+'</option>'+courses.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('');
+  if(keep) sel.value=keep;
+}
+window.absStuInit=function(){
   var box=$('absBody'); if(!box) return;
-  var courses=[]; try{ courses=(_dlhMine||[]).slice().sort(); }catch(e){}
-  var today=new Date().toISOString().slice(0,10);
-  box.innerHTML='<div class="abs-f"><select id="absCourse"><option value="">Course you missed...</option>'+courses.map(function(c){ return '<option>'+esc(c)+'</option>'; }).join('')+'</select>'
-    +'<input type="date" id="absDate"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
-    +'<div><div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Proof (optional): photo of a medical note or letter</div><input type="file" id="absFile" accept="image/*"></div>'
-    +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
-  absStuList();
+  if(!$('absCourse')){
+    box.innerHTML='<div class="abs-f"><select id="absCourse"></select>'
+      +'<input type="date" id="absDate"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
+      +'<div><div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Proof (optional): photo of a medical note or letter</div><input type="file" id="absFile" accept="image/*"></div>'
+      +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
+  }
+  fillCourses(); absStuList();
 };
 async function absStuList(){
   var l=$('absList'); if(!l) return;
@@ -54,7 +59,10 @@ window.absSend=async function(){
     await _stu({action:'stu_exc_submit',course:c,date:d,reason:r,photo:ph}); if($('absFile')) $('absFile').value=''; m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absStuList(); }
   catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'Could not send')+'</div>'; }
 };
-document.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('[data-go="dashExcuseCard"]'); if(t) setTimeout(function(){ if($('absBody')) absStuInit(); },30); },true);
+/* build the form the moment the screen opens (also after a reload), and fill courses when they arrive */
+try{ var _dt=window.dashTab; if(typeof _dt==='function' && $('absBody')){ window.dashTab=function(id){ var r=_dt.apply(this,arguments); if(id==='dashExcuseCard') absStuInit(); return r; }; } }catch(e){}
+try{ var _ih=window.initDashHall; if(typeof _ih==='function' && $('absBody')){ window.initDashHall=function(){ var r=_ih.apply(this,arguments); fillCourses(); return r; }; } }catch(e){}
+if($('absBody')) document.addEventListener('DOMContentLoaded',function(){ absStuInit(); });
 
 /* ---------- lecturer side (portal.html) ---------- */
 var _L=[], _ta=false;

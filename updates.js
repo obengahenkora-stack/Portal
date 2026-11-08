@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08v', date:'8 Nov 2026', title:'Online exams for students',
+      all:[],
+      student:['New Exams tile on your dashboard. Exams set for your courses appear there. To write one you turn on your camera, start the exam and answer against a timer. Small photos are taken while you write, and leaving the page is recorded.'],
+      staff:['Students can now sit the online exams you publish: camera check, server-timed exam, random photos at your chosen interval, page-leave tracking and automatic submission.'] },
     { id:'2026-11-08u', date:'8 Nov 2026', title:'Online Exams (staff setup)',
       all:[],
       student:[],

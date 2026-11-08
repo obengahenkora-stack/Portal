@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08b', date:'8 Nov 2026', title:'Exam Sessions',
+      all:[],
+      student:[],
+      staff:['New Exam Sessions tile in the Attendance Portal: pick the course and exam date, then scan the barcode on each student\'s Exam Pass. Names appear as they are marked present, and you can download the list. Exam records are kept separate from lecture attendance.'] },
     { id:'2026-11-08a', date:'8 Nov 2026', title:'Cleaner scanning',
       all:[],
       student:[],

@@ -767,6 +767,16 @@
       <div id="dbmMsg" style="margin-top:12px;"></div>
     </div>
 
+    <div class="card hidden" id="examCard">
+      <label>Exam Sessions</label>
+      <div class="hint">Scan the barcode on each student's Exam Pass to mark them present for the exam. Exam records are kept separate from lecture attendance.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <div style="flex:1;min-width:160px"><label>Course</label><select id="exCourse" onchange="examLoad()"><option value="">Select course...</option></select></div>
+        <div style="flex:1;min-width:150px"><label>Exam date</label><input type="date" id="exDate" onchange="examLoad()" style="width:100%;box-sizing:border-box"></div>
+      </div>
+      <div id="exBody"><div class="empty">Pick the course and the exam date to begin.</div></div>
+    </div>
+
     <div class="card hidden" id="selfieCard">
       <label>Selfie Review</label>
       <div class="hint">Photos taken when students checked in by QR. Each photo is kept for 90 days, then removed unless you tick <b>Keep</b>. Use this to settle a student's attendance complaint.</div>
@@ -1704,6 +1714,7 @@ var _ATT_IC={
 var _ATT_TILES=[
  {g:'Every class',id:'takeAttendanceCard',t:'Take Attendance',d:'Tick students as they arrive. Saves automatically.',i:'check',c:'t-go'},
  {g:'Every class',id:'qrCheckinCard',t:'QR Check-in',d:'Students scan a code to mark themselves present.',i:'qr',c:'t-go'},
+ {g:'Every class',id:'examCard',t:'Exam Sessions',d:'Scan exam passes to take exam attendance.',i:'check',c:'t-go'},
  {g:'Every class',id:'attendanceSummaryCard',t:'Summary & Export',d:'Totals per student. Export as PDF or Excel.',i:'chart'},
  {g:'Records',id:'selfieCard',t:'Selfie Review',d:'See check-in photos. Keep or print them.',i:'users'},
  {g:'Records',id:'attendanceEditCard',t:'Review & Edit',d:'Fix a saved session before it becomes final.',i:'edit'},
@@ -1868,6 +1879,7 @@ async function onAuthReady(showToast){
   document.getElementById('takeAttendanceLoginCard').classList.add('hidden');
   document.getElementById('takeAttendanceCard').classList.remove('hidden');
   document.getElementById('qrCheckinCard').classList.remove('hidden');
+  var _ex=document.getElementById('examCard'); if(_ex){ _ex.classList.remove('hidden'); try{ examInit(); }catch(e){} }
   var _sc=document.getElementById('selfieCard'); if(_sc){ _sc.classList.remove('hidden'); try{ sfInit(); }catch(e){} }
   if(canManageRosters()){ document.getElementById('attendanceDeleteCard').classList.remove('hidden'); document.getElementById('attPdfCard').classList.remove('hidden'); if(isOwner()){ document.getElementById('dbMigrateCard').classList.remove('hidden'); try{dbmStatus();}catch(e){} document.getElementById('allSessionsCard').classList.remove('hidden'); try{asLoad();}catch(e){} } document.getElementById('attendanceEditCard').classList.remove('hidden'); try{aeInit();}catch(e){} if(isOwner()){ document.getElementById('rosterEditCard').classList.remove('hidden'); try{reInit();}catch(e){} } } try{delAttInit();}catch(e){}
   lmInit();
@@ -5033,7 +5045,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=12"></script>
+<script src="updates.js?v=13"></script>
 <script>
 (function(){
   var S={me:'',mod:false,list:[]};
@@ -5089,5 +5101,6 @@ function updateWhoBar(){
 .card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
 .card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
 </style>
+<script src="exam.js?v=1"></script>
 </body>
 </html>

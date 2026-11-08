@@ -46,7 +46,7 @@ window.oesInit=async function(){
     if(!l.length){ box.innerHTML='<div class="empty">No exams for your courses yet.</div>'; return; }
     box.innerHTML=l.map(function(x,i){
       var now=Date.now()+_off, st=Date.parse(x.start), en=Date.parse(x.end), cls='', act='';
-      if(x.state==='submitted'){ cls=' done'; act='<div class="oes-sub" style="margin-top:12px"><b>Submitted</b> '+esc(fmt(x.submittedAt))+'. Your result will appear when your lecturer releases it.</div>'; }
+      if(x.state==='submitted'){ cls=' done'; act='<div class="oes-sub" style="margin-top:12px"><b>Submitted</b> '+esc(fmt(x.submittedAt))+'.'+(x.result?'</div><div class="oes-sub" style="margin-top:10px;font-size:1.1rem"><b>Your score: '+x.result.score+' / '+x.result.total+'</b>'+(x.result.pending?' <span style="font-size:.8rem">(some written answers are not marked yet)</span>':'')+(x.result.comment?'<div style="margin-top:6px;font-size:.85rem">Lecturer: '+esc(x.result.comment)+'</div>':'')+'</div>':' Your result will appear when your lecturer releases it.</div>'); }
       else if(x.state==='in_progress'){ cls=' go'; act='<button type="button" class="oes-btn" onclick="oesOpen('+i+')">Continue exam</button>'; }
       else if(now<st){ cls=' off'; act='<div class="oes-sub" style="margin-top:12px">Opens '+esc(fmt(x.start))+'.</div>'; }
       else if(now>en){ cls=' off'; act='<div class="oes-sub" style="margin-top:12px">This exam is closed.</div>'; }

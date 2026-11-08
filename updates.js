@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-08m', date:'8 Nov 2026', title:'Announcements on your dashboard',
+      all:[],
+      student:['Your lecturers\' latest announcements now show right on the dashboard with a counter for the ones you have not read, and the Lecture Hall tile shows how many new items are waiting.'],
+      staff:[] },
     { id:'2026-11-08l', date:'8 Nov 2026', title:'Announcements by class',
       all:[],
       student:['Announcements can now be sent to one class (A, B or C) or to Weekend or Regular students only, so you only see the ones meant for you.'],

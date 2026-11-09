@@ -401,7 +401,7 @@
     <div class="att-grid" style="margin-top:12px;">
       <button type="button" class="att-tile" onclick="switchTab('teacher')" style="--g1:#0ea5e9;--g2:#6366f1;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="att-tt">Assessment Portal</span><span class="att-td">Upload scores, manage students, view reports.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('attendance')" style="--g1:#10b981;--g2:#0ea5e9;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="att-tt">Attendance Portal</span><span class="att-td">QR check-in, tag scanning, rosters, summaries.</span></button>
-      <button type="button" id="hubExamTile" class="att-tile hidden" onclick="switchTab('oexam')" style="--g1:#14b8a6;--g2:#6366f1;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M9 15l2 2 4-4"/></svg></span><span class="att-tt">Online Exams</span><span class="att-td">Create exams students write from home, with camera checks.</span></button>
+      <button type="button" id="hubExamTile" class="att-tile hidden" onclick="switchTab('oexam')" style="--g1:#14b8a6;--g2:#6366f1;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><path d="M9 15l2 2 4-4"/></svg></span><span class="att-tt">Exams &amp; Assignments</span><span class="att-td">Online exams with camera checks, and coursework with deadlines.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('chat')" style="--g1:#8b5cf6;--g2:#ec4899;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="att-tt">Chat <span id="hubChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 9px;margin-left:6px;text-transform:none;letter-spacing:0"></span></span><span class="att-td">Message students and colleagues. See who is online.</span></button>
       <button type="button" class="att-tile" onclick="switchTab('qa')" style="--g1:#f59e0b;--g2:#ef4444;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="att-tt">Q&amp;A Board</span><span class="att-td">See student questions and post answers.</span></button>
       <a id="hubStudentTile" class="att-tile hidden" href="dashboard.html" style="--g1:#06b6d4;--g2:#3b82f6;text-decoration:none;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></span><span class="att-tt">Students Dashboard</span><span class="att-td">Registered students, search by index number, view any student's page.</span></a>
@@ -441,6 +441,12 @@
       <div class="hint">Create timed exams that students write from home, with a required camera and random photo checks.</div>
       <div id="oeMsg"></div>
       <div id="oeBody"></div>
+    </div>
+    <div class="card" id="assignCard">
+      <label>Assignments</label>
+      <div class="hint">Set coursework with a deadline. Students hand in a typed answer, a link or a small photo. You mark it and release the marks into the Gradebook.</div>
+      <div id="asMsg"></div>
+      <div id="asBody"></div>
     </div>
 
   </div>
@@ -5115,7 +5121,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=42"></script>
+<script src="updates.js?v=43"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){
@@ -5178,6 +5184,7 @@ function updateWhoBar(){
 <script src="absence.js?v=4"></script>
 <script src="oexam.js?v=2"></script>
 <script src="oexam-rev.js?v=3"></script>
+<script src="as-staff.js?v=1"></script>
 <script src="teamui.js?v=2"></script>
 <style id="assessTidy">
 /* Assessment portal: calmer forms */

@@ -1,6 +1,10 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09e', date:'9 Nov 2026', title:'Assignments',
+      all:[],
+      student:['New Assignments tile on your dashboard. See coursework and deadlines, hand in a typed answer, a link or a small photo, and see your mark when your lecturer releases it.'],
+      staff:['New Assignments card under Exams & Assignments on the Faculty Console. Set an assignment with a deadline, see who handed in, mark it, and release marks into the Gradebook.'] },
     { id:'2026-11-09d', date:'9 Nov 2026', title:'Upload Scores course list for TAs',
       all:[], student:[], staff:['Teaching assistants now see the courses assigned to them in the Upload Scores course list, even when the class list is not loaded yet.'] },
     { id:'2026-11-09c', date:'9 Nov 2026', title:'Fingerprint sign-in',

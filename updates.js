@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09j', date:'9 Nov 2026', title:'Faster assignment marking',
+      all:[], student:[], staff:['Type each mark straight into the hand-ins list. In a student\'s page use Save & next to jump to the next unmarked student. When everyone is marked, a Release button appears.'] },
     { id:'2026-11-09i', date:'9 Nov 2026', title:'File attachments on assignments',
       all:[], student:['You can now download the file your lecturer attached to an assignment, and hand in a PDF, Word, Excel, PowerPoint, text, zip or photo (4 MB at most).'],
       staff:['Assignments can carry an attached file (for example the question paper), and students can hand in files, not just photos. Files are stored in Backblaze.'] },

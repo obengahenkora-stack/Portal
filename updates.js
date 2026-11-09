@@ -1,6 +1,9 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09a', date:'9 Nov 2026', title:'Issue reports reach your lecturer',
+      all:[], student:['When you report a score or attendance issue, the lecturers assigned to that course are now emailed as well.'],
+      staff:['Student issue reports are now emailed to the lecturers assigned to that course, not only the owner.'] },
     { id:'2026-11-08x', date:'8 Nov 2026', title:'Exam scores go to the Gradebook',
       all:[], student:['Released online exam scores now appear in your scores like any other assessment.'],
       staff:['Releasing online exam results now adds each submitted student\'s score to the Gradebook automatically (and updates it when you change marks). Hiding results removes them.'] },

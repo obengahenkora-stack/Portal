@@ -23,8 +23,8 @@ async function offer(){
     var r=await supabaseClient.auth.getSession(), s=r&&r.data&&r.data.session; if(!s) return;
     var b=load(); if(b && b.email===s.user.email) return;
     if(localStorage.getItem(NO+'_'+s.user.email)) return;
-    if(!confirm('Use your fingerprint or face to sign in next time on this device?\n\nYour password is not stored. You can still sign in with your password anytime.')){ try{ localStorage.setItem(NO+'_'+s.user.email,'1'); }catch(e){} return; }
-    await enroll(s); alert('Done. Next time use "Sign in with fingerprint".'); drawBtn();
+    if(!confirm('Use your fingerprint or face (Face ID) to sign in next time on this device?\n\nYour password is not stored. You can still sign in with your password anytime.')){ try{ localStorage.setItem(NO+'_'+s.user.email,'1'); }catch(e){} return; }
+    await enroll(s); alert('Done. Next time use "Sign in with fingerprint or face".'); drawBtn();
   }catch(e){ console.warn('bio enroll',e); }
 }
 async function unlock(){
@@ -32,7 +32,7 @@ async function unlock(){
   msg('<div class="msg ok">Waiting for your fingerprint or face...</div>');
   try{
     await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(b.cid),transports:['internal']}],userVerification:'required',timeout:60000}});
-  }catch(e){ msg('<div class="msg err">Fingerprint not confirmed. Use your password instead.</div>'); return; }
+  }catch(e){ msg('<div class="msg err">Not confirmed ('+esc((e&&e.name)||'error')+(e&&e.message?': '+esc(String(e.message).slice(0,120)):'')+'). Use your password instead.</div>'); return; }
   var res=await supabaseClient.auth.setSession({access_token:b.at,refresh_token:b.rt});
   if(res.error||!res.data||!res.data.session){ localStorage.removeItem(KEY); msg('<div class="msg err">This device’s fingerprint sign-in expired. Please sign in with your password once more.</div>'); drawBtn(); return; }
   save({email:b.email,cid:b.cid,at:res.data.session.access_token,rt:res.data.session.refresh_token});
@@ -43,7 +43,7 @@ function drawBtn(){
   var b=load(); if(!ok||!b) return;
   var anchor=document.querySelector(STUDENT?'button[onclick="studentSignIn()"]':'button[onclick="signInUser()"]'); if(!anchor) return;
   var row=document.createElement('div'); row.id='bioRow'; row.style.cssText='margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
-  row.innerHTML='<button type="button" class="secondary" id="bioGo" style="text-transform:none !important">&#128274; Sign in with fingerprint</button><span id="bioOff" style="font-size:.78rem;color:var(--muted);text-decoration:underline;cursor:pointer">Turn off on this device</span>';
+  row.innerHTML='<button type="button" class="secondary" id="bioGo" style="text-transform:none !important">&#128274; Sign in with fingerprint or face</button><span id="bioOff" style="font-size:.78rem;color:var(--muted);text-decoration:underline;cursor:pointer">Turn off on this device</span>';
   var host=anchor.parentNode; host.parentNode.insertBefore(row,host.nextSibling);
   document.getElementById('bioGo').onclick=unlock;
   document.getElementById('bioOff').onclick=function(){ if(confirm('Turn off fingerprint sign-in on this device?')){ localStorage.removeItem(KEY); drawBtn(); } };

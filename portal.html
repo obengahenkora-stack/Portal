@@ -995,6 +995,10 @@
       <select id="srLevel"><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
       <label>Class group</label>
       <select id="srGroup"><option value="SPLIT">Split into A, B and C (separate lists)</option><option value="A">Class A</option><option value="B">Class B</option><option value="C">Class C</option><option value="">Everyone at this level</option></select>
+      <label>Department</label>
+      <select id="srDept" onfocus="srDeptInit()"><option value="">Everyone (all departments)</option><option value="Civil Engineering">Civil Engineering</option><option value="Environmental Engineering">Environmental Engineering</option><option value="__none__">Department not set</option></select>
+      <label>Student type</label>
+      <select id="srType"><option value="">Everyone (Regular and Weekend)</option><option value="Regular">Regular only</option><option value="Weekend">Weekend only</option></select>
       <button id="srBtn" onclick="buildRosterFromSignups()">Build Class List</button>
       <div id="srMsg"></div>
 
@@ -4203,6 +4207,10 @@ async function saveConnectLists(){
   }catch(e){ box.insertAdjacentHTML('beforeend','<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'); }
 }
 
+async function srDeptInit(){
+  try{ if(window._srDeptDone) return; const r=await teamApi({action:'dept_list'}); if(!r||!r.ok||!r.list||!r.list.length) return; window._srDeptDone=1;
+    const sel=document.getElementById('srDept'), cur=sel.value; sel.innerHTML='<option value="">Everyone (all departments)</option>'+r.list.map(d=>'<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>').join('')+'<option value="__none__">Department not set</option>'; sel.value=cur; }catch(e){}
+}
 async function buildRosterFromSignups(){
   const msg=document.getElementById('srMsg'), btn=document.getElementById('srBtn');
   if(!canManageRosters()){ msg.innerHTML='<div class="msg err">You do not have permission to manage rosters.</div>'; return; }
@@ -4213,10 +4221,10 @@ async function buildRosterFromSignups(){
   btn.disabled=true; msg.innerHTML='<div class="msg ok">Finding students...</div>';
   try{
     const split=group==='SPLIT';
-    const j=await teamApi({action:'stu_class',level:level,group:split?'':group});
+    const j=await teamApi({action:'stu_class',level:level,group:split?'':group,dept:document.getElementById('srDept').value,type:document.getElementById('srType').value});
     if(!j||!j.ok) throw new Error((j&&j.error)||'Could not reach the back end');
     const rows=j.rows||[];
-    if(!rows.length){ msg.innerHTML='<div class="msg err">No registered students found for Level '+escapeHtml(level)+' yet.</div>'; return; }
+    if(!rows.length){ msg.innerHTML='<div class="msg err">No registered students found for Level '+escapeHtml(level)+' with those filters yet.</div>'; return; }
     const data=await fetchSupabaseData();
     data.rosters=data.rosters||{};
     const mk=list=>normRoster(list.map(r=>({indexNumber:r.index_number,name:r.name||''})));
@@ -5121,7 +5129,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=44"></script>
+<script src="updates.js?v=45"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

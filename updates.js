@@ -181,6 +181,7 @@
       ] }
   ];
   var isStaffPage=/portal\.html/i.test(location.pathname)||/\/portal\/?$/i.test(location.pathname);
+  var STUDENTS_SEE=false; /* set to true to show these notices to students again */
   var role=isStaffPage?'staff':'student';
   function seenId(){ try{ return localStorage.getItem('ceSeenUpdate_'+role)||''; }catch(e){ return ''; } }
   function markSeen(id){ try{ localStorage.setItem('ceSeenUpdate_'+role,id); }catch(e){} }
@@ -204,9 +205,10 @@
     document.body.appendChild(o);
     document.getElementById('ceUpdateOk').onclick=function(){ markSeen(NOTES[0].id); o.remove(); };
   }
-  window.ceShowUpdates=function(){ show(NOTES.filter(function(n){ return items(n).length; }).slice(0,1),true); };
+  window.ceShowUpdates=function(){ if(role==='student' && !STUDENTS_SEE) return; show(NOTES.filter(function(n){ return items(n).length; }).slice(0,1),true); };
   var tries=0;
   function tick(){
+    if(role==='student' && !STUDENTS_SEE) return;
     if(signedIn()){ var u=unseen(); if(u.length) setTimeout(function(){ show(u); },900); return; }
     if(++tries<120) setTimeout(tick,1000);
   }

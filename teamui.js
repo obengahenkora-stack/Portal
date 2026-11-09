@@ -90,7 +90,23 @@ window.loadTeamMemberList=async function(){
         +'<div class="tm-chips">'+chips+'</div>'+'<div class="tm-chips tm-list" style="display:none">'+(crs?crs.map(function(c){ return '<span class="tm-chip" title="'+esc(c)+'">'+esc(c)+'</span>'; }).join(''):'')+'</div>'
         +'<div class="tm-act">'+(m.role==='admin'?'':'<button type="button" class="tm-b" data-email="'+e+'" onclick="openPerms(this.dataset.email)">Access</button><button type="button" class="tm-b" data-email="'+e+'" onclick="assignCourses(this.dataset.email)">Courses</button>')+'<button type="button" class="tm-b x" onclick="removeTeamMember(\''+q+'\')">Remove</button></div></div>';
     }).join('');
+    decorate(box);
   }catch(err){ box.innerHTML='<div class="empty">Could not load team members.</div>'; }
 };
+var RN_CSS=document.createElement('style');
+RN_CSS.textContent='.tm-rn{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;margin-top:8px;border-top:1px dashed var(--line);font-size:.84rem}.tm-rn small{display:block;color:var(--muted);font-size:.72rem}.tm-rn .rn-tg:not(#z){flex:0 0 46px;width:46px !important;height:26px;padding:0 !important;border-radius:999px !important;background:rgba(127,127,127,.35) !important;border:0 !important;box-shadow:none !important;position:relative}.tm-rn .rn-tg i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}.tm-rn .rn-tg.on:not(#z){background:#16a34a !important}.tm-rn .rn-tg.on i{left:23px}';
+document.head.appendChild(RN_CSS);
+async function decorate(box){
+  try{
+    var r=await teamApi({action:'rn_get'}); if(!r||!r.ok) return; var on=r.on||[];
+    [].slice.call(box.querySelectorAll('.tm-card')).forEach(function(card){
+      var em=(card.querySelector('.tm-em')||{}).textContent; if(!em) return; em=em.trim().toLowerCase();
+      var d=document.createElement('div'); d.className='tm-rn';
+      d.innerHTML='<div>Email student reports<small>For this person\'s courses</small></div><button type="button" class="rn-tg'+(on.indexOf(em)>=0?' on':'')+'" data-e="'+em+'"><i></i></button>';
+      var act=card.querySelector('.tm-act'); card.insertBefore(d,act);
+      d.querySelector('button').onclick=async function(){ var b=this, v=!b.classList.contains('on'); b.classList.toggle('on',v); try{ var j=await teamApi({action:'rn_set',email:b.getAttribute('data-e'),on:v}); if(!j||!j.ok) throw new Error((j&&j.error)||'Failed'); }catch(e){ b.classList.toggle('on',!v); alert('Could not save: '+(e.message||'error')); } };
+    });
+  }catch(e){}
+}
 document.addEventListener('DOMContentLoaded',shape);
 })();

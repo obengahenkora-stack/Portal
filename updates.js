@@ -1,6 +1,9 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09b', date:'9 Nov 2026', title:'Choose who gets student report emails',
+      all:[], student:[],
+      staff:['In Team Access each member now has an Email student reports switch. Turn it on for lecturers or TAs who should be emailed when a student reports an issue on their courses.'] },
     { id:'2026-11-09a', date:'9 Nov 2026', title:'Issue reports reach your lecturer',
       all:[], student:['When you report a score or attendance issue, the lecturers assigned to that course are now emailed as well.'],
       staff:['Student issue reports are now emailed to the lecturers assigned to that course, not only the owner.'] },

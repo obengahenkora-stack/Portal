@@ -1,6 +1,9 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09c', date:'9 Nov 2026', title:'Fingerprint sign-in',
+      all:['After you sign in with your password, you can choose to use your fingerprint or face next time on that phone. A Sign in with fingerprint button then appears on the sign-in card. You can turn it off any time.'],
+      student:[], staff:[] },
     { id:'2026-11-09b', date:'9 Nov 2026', title:'Choose who gets student report emails',
       all:[], student:[],
       staff:['In Team Access each member now has an Email student reports switch. Turn it on for lecturers or TAs who should be emailed when a student reports an issue on their courses.'] },

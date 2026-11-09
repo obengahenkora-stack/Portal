@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09h', date:'9 Nov 2026', title:'Department on connected class lists',
+      all:[], student:[], staff:['Connect lists you already uploaded now has a Department column. A list tagged with a department only auto-adds students of that department when they pick a class.'] },
     { id:'2026-11-09g', date:'9 Nov 2026', title:'Class list filters',
       all:[], student:[], staff:['Build Class List from Sign-ups now has Department and Student type filters, so a course list only includes the students who belong to it.'] },
     { id:'2026-11-09f', date:'9 Nov 2026', title:'Manage departments',

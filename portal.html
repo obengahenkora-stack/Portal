@@ -4182,12 +4182,14 @@ async function loadConnectLists(){
     const names=visibleCourses(Object.keys(data.rosters||{})).sort();
     if(!names.length){ box.innerHTML='<div class="msg err">No class lists found.</div>'; return; }
     const meta=(await fetchBin().catch(()=>({}))).rosterMeta||{};
-    let h='<table style="width:100%;margin-top:10px;"><tr><th>List</th><th>Level</th><th>Class</th></tr>';
+    let DL=['Civil Engineering','Environmental Engineering']; try{ const dj=await teamApi({action:'dept_list'}); if(dj&&dj.ok&&dj.list&&dj.list.length) DL=dj.list; }catch(e){}
+    Object.keys(meta).forEach(k=>{ const dd=meta[k]&&meta[k].dept; if(dd&&DL.indexOf(dd)<0) DL.push(dd); });
+    let h='<table style="width:100%;margin-top:10px;"><tr><th>List</th><th>Level</th><th>Class</th><th>Department</th></tr>';
     names.forEach((n,i)=>{
       const m=meta[n]; const base=lmBase(n); const tail=n.slice(base.length).replace(/[^A-Za-z]/g,'').toUpperCase();
       const num=(n.match(/(\d)\d\d/)||[])[1];
       const lv=m?m.level:(num?num+'00':''); const gp=m?m.group:(/^[ABC]$/.test(tail)?tail:'');
-      h+='<tr><td>'+escapeHtml(n)+'<input type="hidden" class="clName" value="'+escapeHtml(n)+'"></td><td><select class="clLv"><option value="">Skip</option>'+['100','200','300','400'].map(x=>'<option value="'+x+'"'+(x===lv?' selected':'')+'>'+x+'</option>').join('')+'</select></td><td><select class="clGp">'+[['','Everyone'],['A','A'],['B','B'],['C','C']].map(x=>'<option value="'+x[0]+'"'+(x[0]===gp?' selected':'')+'>'+x[1]+'</option>').join('')+'</select></td></tr>';
+      h+='<tr><td>'+escapeHtml(n)+'<input type="hidden" class="clName" value="'+escapeHtml(n)+'"></td><td><select class="clLv"><option value="">Skip</option>'+['100','200','300','400'].map(x=>'<option value="'+x+'"'+(x===lv?' selected':'')+'>'+x+'</option>').join('')+'</select></td><td><select class="clGp">'+[['','Everyone'],['A','A'],['B','B'],['C','C']].map(x=>'<option value="'+x[0]+'"'+(x[0]===gp?' selected':'')+'>'+x[1]+'</option>').join('')+'</select></td><td><select class="clDp"><option value="">Everyone</option>'+DL.map(d=>'<option value="'+escapeHtml(d)+'"'+(m&&m.dept===d?' selected':'')+'>'+escapeHtml(d)+'</option>').join('')+'</select></td></tr>';
     });
     h+='</table><div class="hint" style="margin-top:8px;">Set Level to Skip for any list you do not want connected. "Everyone" means every student at that level is added, whatever class they pick, so use it only for courses everyone at that level takes.</div><button onclick="saveConnectLists()">Save</button>';
     box.innerHTML=h;
@@ -4196,9 +4198,9 @@ async function loadConnectLists(){
 async function saveConnectLists(){
   const box=document.getElementById('clBox');
   if(!canManageRosters()){ box.innerHTML='<div class="msg err">You do not have permission.</div>'; return; }
-  const names=[...box.querySelectorAll('.clName')], lvs=[...box.querySelectorAll('.clLv')], gps=[...box.querySelectorAll('.clGp')];
+  const names=[...box.querySelectorAll('.clName')], lvs=[...box.querySelectorAll('.clLv')], gps=[...box.querySelectorAll('.clGp')], dps=[...box.querySelectorAll('.clDp')];
   const meta={}; let n=0;
-  names.forEach((el,i)=>{ if(!lvs[i].value) return; const nm=el.value, g=gps[i].value; meta[nm]={level:lvs[i].value,group:g,base:g?lmBase(nm):nm}; n++; });
+  names.forEach((el,i)=>{ if(!lvs[i].value) return; const nm=el.value, g=gps[i].value; meta[nm]={level:lvs[i].value,group:g,base:g?lmBase(nm):nm,dept:dps[i].value}; n++; });
   if(!n){ alert('Nothing to save. Every list is set to Skip.'); return; }
   try{
     const keys=Object.keys(meta);
@@ -4240,7 +4242,7 @@ async function buildRosterFromSignups(){
     for(const n of names) await grantMeCourse(n);
     try{
       const meta={};
-      names.forEach(n=>{ const g=split?n.slice(-1):group; meta[n]={level:level,group:g,base:split?course:n}; });
+      names.forEach(n=>{ const g=split?n.slice(-1):group; meta[n]={level:level,group:g,base:split?course:n,dept:(document.getElementById('srDept').value==='__none__'?'':document.getElementById('srDept').value)}; });
       await teamApi({action:'stu_roster_meta',meta:meta});
     }catch(_e){}
     msg.innerHTML='<div class="msg ok">Saved. '+escapeHtml(out.join(' · '))+'. Open Take Attendance and choose the list you want.</div>';
@@ -5129,7 +5131,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=45"></script>
+<script src="updates.js?v=46"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

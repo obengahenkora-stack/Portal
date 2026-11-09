@@ -174,7 +174,7 @@
   .ah-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .ah-tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 16px 14px;box-shadow:0 6px 18px rgba(0,0,0,.05);transition:transform .15s}
   .ah-tile:hover{transform:translateY(-2px)}
-  .ah-tile[data-go]{cursor:pointer}
+  .ah-tile[data-ahgo]{cursor:pointer}
   .ah-tile.big{grid-column:span 2;background:linear-gradient(135deg,var(--tint,#eef6ee),var(--card))}
   .ah-n{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;line-height:1;color:var(--ink)}
   .ah-tile.big .ah-n{font-size:2.6rem}
@@ -448,13 +448,13 @@
         </div>
       </div>
       <div class="ah-grid">
-        <div class="ah-tile big" data-go="all|"><div class="ah-n" id="ahTotal">0</div><div class="ah-l">Registered students</div></div>
+        <div class="ah-tile big" data-ahgo="all|"><div class="ah-n" id="ahTotal">0</div><div class="ah-l">Registered students</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahOnline">0</div><div class="ah-l"><span class="ah-dot"></span>Online now</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahNew">0</div><div class="ah-l">Joined this week</div></div>
-        <div class="ah-tile" data-go="level|100"><div class="ah-n" id="ahL100">0</div><div class="ah-l">Level 100</div></div>
-        <div class="ah-tile" data-go="level|200"><div class="ah-n" id="ahL200">0</div><div class="ah-l">Level 200</div></div>
-        <div class="ah-tile" data-go="level|300"><div class="ah-n" id="ahL300">0</div><div class="ah-l">Level 300</div></div>
-        <div class="ah-tile" data-go="level|400"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
+        <div class="ah-tile" data-ahgo="level|100"><div class="ah-n" id="ahL100">0</div><div class="ah-l">Level 100</div></div>
+        <div class="ah-tile" data-ahgo="level|200"><div class="ah-n" id="ahL200">0</div><div class="ah-l">Level 200</div></div>
+        <div class="ah-tile" data-ahgo="level|300"><div class="ah-n" id="ahL300">0</div><div class="ah-l">Level 300</div></div>
+        <div class="ah-tile" data-ahgo="level|400"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
         <div id="ahDepts" style="display:contents"></div>
       </div>
     </div>
@@ -2130,8 +2130,8 @@ function renderWelcome(){
     ids.forEach(function(k){ set(k,st[k]); });
     try{ var DL=(window.ceDepts?window.ceDepts():[]).slice(), cnt={}, known={}; DL.forEach(function(d){known[d.toLowerCase()]=d; cnt[d]=0;}); var other=0;
       c.forEach(function(s){ var d=known[String(s.department||'').trim().toLowerCase()]; if(d) cnt[d]++; else other++; });
-      var hh=DL.map(function(d){return '<div class="ah-tile" data-go="dept|'+d.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><div class="ah-n">'+cnt[d]+'</div><div class="ah-l">'+d.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div></div>';}).join('');
-      if(other) hh+='<div class="ah-tile" data-go="dept|missing"><div class="ah-n">'+other+'</div><div class="ah-l">Other / not set</div></div>';
+      var hh=DL.map(function(d){return '<div class="ah-tile" data-ahgo="dept|'+d.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><div class="ah-n">'+cnt[d]+'</div><div class="ah-l">'+d.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div></div>';}).join('');
+      if(other) hh+='<div class="ah-tile" data-ahgo="dept|missing"><div class="ah-n">'+other+'</div><div class="ah-l">Other / not set</div></div>';
       var dv=$('ahDepts'); if(dv && dv.getAttribute('data-h')!==hh){ dv.innerHTML=hh; dv.setAttribute('data-h',hh); } }catch(e){}
     try{ localStorage.setItem('ceAhStats',JSON.stringify(st)); }catch(e){}
     var on=0; try{ on=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){} set('ahOnline',on);
@@ -2166,7 +2166,7 @@ function renderWelcome(){
 <script src="oexam-stu.js?v=2"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=51"></script>
+<script src="updates.js?v=52"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2288,8 +2288,8 @@ if(typeof _i==='function') window.initDashHall=function(){ var r=_i.apply(this,a
 })();
 
 document.addEventListener('click',function(e){
-  var t=e.target.closest&&e.target.closest('.ah-tile[data-go]'); if(!t) return;
-  var p=t.getAttribute('data-go').split('|'), kind=p[0], val=p.slice(1).join('|');
+  var t=e.target.closest&&e.target.closest('.ah-tile[data-ahgo]'); if(!t) return;
+  var p=t.getAttribute('data-ahgo').split('|'), kind=p[0], val=p.slice(1).join('|');
   var nav=document.querySelector('#adminNav [data-atab="adminStudents"]'); if(nav) nav.click();
   ['adminRegisteredFilter','adminRegisteredLevelFilter','adminRegisteredDeptFilter','adminRegisteredTypeFilter','adminRegisteredClassFilter','adminRegisteredYearFilter'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
   var set=function(id,v){var el=document.getElementById(id); if(el) el.value=v;};

@@ -1215,23 +1215,35 @@ async function loadRegisteredStudents(){
   }
 }
 
-async function adminEditStudent(email){
+function adminEditStudent(email){
   if(!isAdminUser()){ alert('Only the admin can edit student details.'); return; }
   const s = registeredStudentsCache.find(x => x.email === email); if(!s) return;
-  const name = prompt('Student name:', s.name || ''); if(name === null) return;
-  const idx = prompt('Index number:', s.indexNumber || ''); if(idx === null || !idx.trim()){ alert('Index number cannot be empty.'); return; }
-  const level = prompt('Level (100, 200, 300 or 400):', s.level || ''); if(level === null) return;
-  if(level.trim() && !['100','200','300','400'].includes(level.trim())){ alert('Level must be 100, 200, 300 or 400.'); return; }
   const _dl = (window.ceDepts ? window.ceDepts() : ['Civil Engineering','Environmental Engineering']);
-  const deptIn = prompt('Department (' + _dl.join(', ') + '):', s.department || _dl[0]); if(deptIn === null) return;
-  const dept = (_dl.find(d => d.toLowerCase() === deptIn.trim().toLowerCase()) || _dl.find(d => d.toLowerCase().indexOf(deptIn.trim().toLowerCase()) === 0 && deptIn.trim().length >= 3) || '');
-  if(deptIn.trim() && !dept){ alert('Department must be one of: ' + _dl.join(', ') + '.'); return; }
-  const typIn = prompt('Student type (Regular or Weekend):', s.studentType || 'Regular'); if(typIn === null) return;
-  const typ = /^w/i.test(typIn.trim()) ? 'Weekend' : 'Regular';
-  try{
-    await _stu({action:'stu_update', email:email, patch:{ name: name.trim(), index_number: idx.trim(), level: level.trim(), department: dept || null, student_type: typ }});
-    loadRegisteredStudents();
-  }catch(e){ alert('Could not update: ' + e.message); }
+  const esc2 = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const opt = (list, cur) => list.map(x => '<option value="'+esc2(x[0])+'"'+(String(cur||'')===String(x[0])?' selected':'')+'>'+esc2(x[1])+'</option>').join('');
+  const dl = _dl.map(d=>[d,d]); if(s.department && _dl.indexOf(s.department)<0) dl.push([s.department,s.department]);
+  const o = document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto';
+  o.innerHTML='<div class="card" style="max-width:420px;width:100%;margin:auto"><h3 style="margin-top:0">Edit student</h3>'
+   +'<label>Name</label><input id="esName" value="'+esc2(s.name)+'">'
+   +'<label>Index number</label><input id="esIdx" value="'+esc2(s.indexNumber)+'">'
+   +'<label>Level</label><select id="esLvl">'+opt([['','Not set'],['100','Level 100'],['200','Level 200'],['300','Level 300'],['400','Level 400']],s.level)+'</select>'
+   +'<label>Department</label><select id="esDept">'+opt([['','Not set']].concat(dl),s.department)+'</select>'
+   +'<label>Student type</label><select id="esTyp">'+opt([['Regular','Regular'],['Weekend','Weekend']],s.studentType||'Regular')+'</select>'
+   +'<label>Class group</label><select id="esGrp">'+opt([['','Not chosen yet'],['A','A'],['B','B'],['C','C'],['NONE','No group']],s.classGroup)+'</select>'
+   +'<div id="esMsg" style="margin-top:10px"></div><div style="display:flex;gap:10px;margin-top:12px"><button type="button" id="esSave" style="flex:1">Save</button><button type="button" id="esCancel" style="flex:1">Cancel</button></div></div>';
+  document.body.appendChild(o);
+  const g = id => document.getElementById(id);
+  g('esCancel').onclick = () => o.remove();
+  g('esSave').onclick = async () => {
+    const name=g('esName').value.trim(), idx=g('esIdx').value.trim(), lvl=g('esLvl').value;
+    if(!idx){ g('esMsg').innerHTML='<div class="msg err">Index number cannot be empty.</div>'; return; }
+    g('esSave').disabled=true;
+    try{
+      await _stu({action:'stu_update', email:email, patch:{ name:name, index_number:idx, level:lvl, department:g('esDept').value||null, student_type:g('esTyp').value, class_group:g('esGrp').value||null }});
+      o.remove(); loadRegisteredStudents();
+    }catch(e){ g('esMsg').innerHTML='<div class="msg err">Could not update: '+esc2(e.message)+'</div>'; g('esSave').disabled=false; }
+  };
 }
 
 async function adminDeleteStudent(email){
@@ -2166,7 +2178,7 @@ function renderWelcome(){
 <script src="oexam-stu.js?v=2"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=54"></script>
+<script src="updates.js?v=55"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

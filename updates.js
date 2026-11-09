@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09m', date:'9 Nov 2026', title:'Easier student editing',
+      all:[], student:[], staff:['Editing a student now opens one form with dropdowns for level, department, type and class group, instead of typing each answer.'] },
     { id:'2026-11-09l', date:'9 Nov 2026', title:'Clickable overview tiles',
       all:[], student:[], staff:['Tap a tile on the overview (total, a level, or a department) to open the Students list already filtered to it.'] },
     { id:'2026-11-09k', date:'9 Nov 2026', title:'All departments on the dashboard',

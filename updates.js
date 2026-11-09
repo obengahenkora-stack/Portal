@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09l', date:'9 Nov 2026', title:'Clickable overview tiles',
+      all:[], student:[], staff:['Tap a tile on the overview (total, a level, or a department) to open the Students list already filtered to it.'] },
     { id:'2026-11-09k', date:'9 Nov 2026', title:'All departments on the dashboard',
       all:[], student:[], staff:['The overview now shows a count for every department you have added, plus one for students with no department set.'] },
     { id:'2026-11-09j', date:'9 Nov 2026', title:'Faster assignment marking',

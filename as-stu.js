@@ -8,9 +8,16 @@ css.textContent='.asu-c{border:1px solid var(--line);border-left:4px solid #0ea5
 +'.asu-nm{font-weight:700;overflow-wrap:anywhere}.asu-s{font-size:.8rem;color:var(--muted);margin-top:3px}.asu-in{margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem}'
 +'.asu-f textarea,.asu-f input:not([type=file]){width:100% !important;box-sizing:border-box !important;margin:6px 0 0 !important}.asu-f textarea{min-height:90px}.asu-f .l{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:12px}'
 +'.asu-b:not(#z){width:100% !important;padding:12px !important;border-radius:14px !important;font-weight:700 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;margin-top:14px}'
-+'.asu-res{margin-top:10px;font-size:1.05rem;font-weight:700}.asu-late{color:#dc2626;font-weight:700}';
++'.asu-res{margin-top:10px;font-size:1.05rem;font-weight:700}.asu-late{color:#dc2626;font-weight:700}.asu-dl:not(#z){width:auto !important;padding:4px 12px !important;font-size:.76rem !important;border-radius:999px !important;margin-left:6px;text-transform:none !important;letter-spacing:0 !important}';
 document.head.appendChild(css);
 var ITEMS=[], PH={}, OFF=0;
+var OKX={pdf:1,doc:1,docx:1,xls:1,xlsx:1,ppt:1,pptx:1,txt:1,csv:1,zip:1,jpg:1,jpeg:1,png:1,heic:1,webp:1};
+function readAny(file,cb){ var ext=(file.name.split('.').pop()||'').toLowerCase(); if(/^image\//.test(file.type)||/^(jpg|jpeg|png|heic|webp)$/.test(ext)){ shrink(file,function(d){ cb(d?{name:file.name.replace(/\.[^.]+$/,'')+'.jpg',data:d}:null,'That photo is too large or unreadable. Try another.'); }); return; }
+  if(!OKX[ext]){ cb(null,'That file type is not allowed. Use PDF, Word, Excel, PowerPoint, text, zip or a photo.'); return; }
+  if(file.size>4194304){ cb(null,'That file is too large (4 MB at most). Put it on Google Drive and paste the link instead.'); return; }
+  var r=new FileReader(); r.onload=function(){ cb({name:file.name,data:r.result}); }; r.onerror=function(){ cb(null,'Could not read the file.'); }; r.readAsDataURL(file); }
+function dlf(j){ var a=document.createElement('a'); a.href=j.data; a.download=j.name; document.body.appendChild(a); a.click(); a.remove(); }
+window.asuGet=async function(i,which){ var x=ITEMS[i], m=$('asm'+i)||$('asx'+i); try{ var j=await _stu({action:'stu_as_file',id:x.id,which:which}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not download'); dlf(j); }catch(e){ if(m) m.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; } };
 function shrink(file,cb){var r=new FileReader(); r.onload=function(){var im=new Image(); im.onload=function(){var m=1280, w=im.width, h=im.height, k=Math.min(1,m/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k); var c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(im,0,0,w,h); var q=.72, d=c.toDataURL('image/jpeg',q); while(d.length>480000 && q>.3){ q-=.1; d=c.toDataURL('image/jpeg',q);} cb(d.length>590000?null:d); }; im.onerror=function(){cb(null);}; im.src=r.result; }; r.onerror=function(){cb(null);}; r.readAsDataURL(file);}
 window.asuInit=async function(){
   var box=$('asuBody'); if(!box) return; box.innerHTML='<div class="empty">Loading...</div>';
@@ -24,11 +31,12 @@ function draw(){
     var cls='asu-c'+(s?' done':(over?' late':''));
     var h='<div class="'+cls+'"><div class="asu-nm">'+esc(x.title)+'</div><div class="asu-s">'+esc(x.course)+' &middot; Due '+esc(fmt(x.due))+' &middot; out of '+x.max+(over?' &middot; <span class="asu-late">'+(open?'Deadline passed (late work accepted)':'Closed')+'</span>':'')+'</div>';
     if(x.instructions) h+='<div class="asu-in">'+esc(x.instructions)+'</div>';
+    if(x.att) h+='<div class="asu-s" style="margin-top:10px"><b>Attached file:</b> '+esc(x.att.name)+' <button type="button" class="asu-dl" onclick="asuGet('+i+',\'att\')">Download</button></div><div id="asx'+i+'"></div>';
     if(x.result) h+='<div class="asu-res">Your mark: '+x.result.grade+' / '+x.result.max+'</div>'+(x.result.comment?'<div class="asu-s">Lecturer: '+esc(x.result.comment)+'</div>':'');
     else if(s && x.marked) h+='<div class="asu-s" style="margin-top:8px">Marked. Your mark will show when your lecturer releases it.</div>';
     if(s) h+='<div class="asu-s" style="margin-top:8px"><b>Handed in</b> '+esc(fmt(s.at))+(s.late?' <span class="asu-late">(late)</span>':'')+'</div>';
     if(!locked && open){
-      h+='<div class="asu-f" id="asf'+i+'" style="display:none"><div class="l">Your answer (optional)</div><textarea id="ast'+i+'">'+esc(s?s.text:'')+'</textarea><div class="l">Link to your work (optional)</div><input id="asl'+i+'" placeholder="https://..." value="'+esc(s?s.link:'')+'"><div class="l">Photo of your work (optional)</div><input type="file" accept="image/*" id="asp'+i+'" style="margin-top:6px">'+(s&&s.hasPhoto?'<div class="asu-s">A photo is already attached. Choose another to replace it.</div>':'')+'<div id="asm'+i+'"></div><button type="button" class="asu-b" onclick="asuSend('+i+')">'+(s?'Update hand-in':'Hand in')+'</button></div>'
+      h+='<div class="asu-f" id="asf'+i+'" style="display:none"><div class="l">Your answer (optional)</div><textarea id="ast'+i+'">'+esc(s?s.text:'')+'</textarea><div class="l">Link to your work (optional)</div><input id="asl'+i+'" placeholder="https://..." value="'+esc(s?s.link:'')+'"><div class="l">Attach a file (optional, 4 MB at most)</div><input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" id="asp'+i+'" style="margin-top:6px"><div class="asu-s">PDF, Word, Excel, PowerPoint, text, zip or a photo.</div>'+(s&&s.hasPhoto?'<div class="asu-s">Attached: '+esc(s.fname||'file')+'. Choose another file to replace it.</div>':'')+'<div id="asm'+i+'"></div><button type="button" class="asu-b" onclick="asuSend('+i+')">'+(s?'Update hand-in':'Hand in')+'</button></div>'
         +'<button type="button" class="asu-b" id="asb'+i+'" onclick="document.getElementById(\'asf'+i+'\').style.display=\'block\';this.style.display=\'none\'">'+(s?'Change my hand-in':'Hand in work')+'</button>';
     } else if(!s && over && !x.allowLate) h+='<div class="asu-s" style="margin-top:8px">You did not hand this in before the deadline.</div>';
     return h+'</div>';
@@ -36,12 +44,12 @@ function draw(){
 }
 window.asuSend=async function(i){
   var x=ITEMS[i], m=$('asm'+i), f=$('asp'+i).files[0];
-  async function go(photo){
+  async function go(file){
     m.innerHTML='<div class="msg ok">Sending...</div>';
-    try{ var j=await _stu({action:'stu_as_submit',id:x.id,text:$('ast'+i).value,link:$('asl'+i).value,photo:photo||'',keepPhoto:!photo&&!!(x.sub&&x.sub.hasPhoto)}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not send'); await asuInit(); }
+    try{ var j=await _stu({action:'stu_as_submit',id:x.id,text:$('ast'+i).value,link:$('asl'+i).value,file:file||null,keepPhoto:!file&&!!(x.sub&&x.sub.hasPhoto)}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not send'); await asuInit(); }
     catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
   }
-  if(f){ m.innerHTML='<div class="msg ok">Preparing photo...</div>'; shrink(f,function(d){ if(!d){ m.innerHTML='<div class="msg err">That photo is too large or unreadable. Try another.</div>'; return; } go(d); }); } else go('');
+  if(f){ m.innerHTML='<div class="msg ok">Preparing file...</div>'; readAny(f,function(d,e){ if(!d){ m.innerHTML='<div class="msg err">'+esc(e||'Could not read the file.')+'</div>'; return; } go(d); }); } else go(null);
 };
 try{ var _dt=window.dashTab; if(typeof _dt==='function' && $('asuBody')){ window.dashTab=function(id){ var r=_dt.apply(this,arguments); if(id==='dashAssignCard') asuInit(); return r; }; } }catch(e){}
 })();

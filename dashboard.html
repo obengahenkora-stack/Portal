@@ -454,8 +454,7 @@
         <div class="ah-tile"><div class="ah-n" id="ahL200">0</div><div class="ah-l">Level 200</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahL300">0</div><div class="ah-l">Level 300</div></div>
         <div class="ah-tile"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
-        <div class="ah-tile"><div class="ah-n" id="ahCivil">0</div><div class="ah-l">Civil Engineering</div></div>
-        <div class="ah-tile"><div class="ah-n" id="ahEnv">0</div><div class="ah-l">Environmental Eng.</div></div>
+        <div id="ahDepts" style="display:contents"></div>
       </div>
     </div>
     <div class="card pane-off" id="adminChatCard">
@@ -2113,7 +2112,7 @@ function renderWelcome(){
   function set(id,v){ var e=$(id); if(e) e.textContent=v; }
   function stats(){
     var c=[]; try{ c=registeredStudentsCache||[]; }catch(e){}
-    var ids=['ahTotal','ahL100','ahL200','ahL300','ahL400','ahCivil','ahEnv','ahNew'];
+    var ids=['ahTotal','ahL100','ahL200','ahL300','ahL400','ahNew'];
     if(!c.length){
       // data not loaded yet: show the last known numbers (or a dash), never a misleading 0
       var old=null; try{ old=JSON.parse(localStorage.getItem('ceAhStats')||'null'); }catch(e){}
@@ -2126,10 +2125,13 @@ function renderWelcome(){
     var st={};
     st.ahTotal=c.length;
     ['100','200','300','400'].forEach(function(l){ st['ahL'+l]=n(function(s){ return String(s.level||'').replace(/\D/g,'')===l; }); });
-    st.ahCivil=n(function(s){ return /civil/i.test(s.department||''); });
-    st.ahEnv=n(function(s){ return /env/i.test(s.department||''); });
     st.ahNew=n(function(s){ return s.linkedAt && new Date(s.linkedAt).getTime()>wk; });
     ids.forEach(function(k){ set(k,st[k]); });
+    try{ var DL=(window.ceDepts?window.ceDepts():[]).slice(), cnt={}, known={}; DL.forEach(function(d){known[d.toLowerCase()]=d; cnt[d]=0;}); var other=0;
+      c.forEach(function(s){ var d=known[String(s.department||'').trim().toLowerCase()]; if(d) cnt[d]++; else other++; });
+      var hh=DL.map(function(d){return '<div class="ah-tile"><div class="ah-n">'+cnt[d]+'</div><div class="ah-l">'+d.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div></div>';}).join('');
+      if(other) hh+='<div class="ah-tile"><div class="ah-n">'+other+'</div><div class="ah-l">Other / not set</div></div>';
+      var dv=$('ahDepts'); if(dv && dv.getAttribute('data-h')!==hh){ dv.innerHTML=hh; dv.setAttribute('data-h',hh); } }catch(e){}
     try{ localStorage.setItem('ceAhStats',JSON.stringify(st)); }catch(e){}
     var on=0; try{ on=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){} set('ahOnline',on);
   }
@@ -2163,7 +2165,7 @@ function renderWelcome(){
 <script src="oexam-stu.js?v=2"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=49"></script>
+<script src="updates.js?v=50"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

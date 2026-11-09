@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09k', date:'9 Nov 2026', title:'All departments on the dashboard',
+      all:[], student:[], staff:['The overview now shows a count for every department you have added, plus one for students with no department set.'] },
     { id:'2026-11-09j', date:'9 Nov 2026', title:'Faster assignment marking',
       all:[], student:[], staff:['Type each mark straight into the hand-ins list. In a student\'s page use Save & next to jump to the next unmarked student. When everyone is marked, a Release button appears.'] },
     { id:'2026-11-09i', date:'9 Nov 2026', title:'File attachments on assignments',

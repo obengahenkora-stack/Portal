@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09d', date:'9 Nov 2026', title:'Upload Scores course list for TAs',
+      all:[], student:[], staff:['Teaching assistants now see the courses assigned to them in the Upload Scores course list, even when the class list is not loaded yet.'] },
     { id:'2026-11-09c', date:'9 Nov 2026', title:'Fingerprint sign-in',
       all:['After you sign in with your password, you can choose to use your fingerprint or face next time on that phone. A Sign in with fingerprint button then appears on the sign-in card. You can turn it off any time.'],
       student:[], staff:[] },

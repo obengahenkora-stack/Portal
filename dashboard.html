@@ -1019,7 +1019,7 @@ function showDeptGate(){
 async function saveDeptGate(){
   const v = document.getElementById('deptGateSelect').value;
   const msg = document.getElementById('deptGateMsg');
-  if(!v){ msg.innerHTML = '<div class="msg err">Please choose Civil Engineering or Environmental Engineering.</div>'; return; }
+  if(!v){ msg.innerHTML = '<div class="msg err">Please choose your department.</div>'; return; }
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
     await _stu({action:'stu_patch_me', patch:{ department: v }});
@@ -1222,9 +1222,10 @@ async function adminEditStudent(email){
   const idx = prompt('Index number:', s.indexNumber || ''); if(idx === null || !idx.trim()){ alert('Index number cannot be empty.'); return; }
   const level = prompt('Level (100, 200, 300 or 400):', s.level || ''); if(level === null) return;
   if(level.trim() && !['100','200','300','400'].includes(level.trim())){ alert('Level must be 100, 200, 300 or 400.'); return; }
-  const deptIn = prompt('Department (Civil Engineering or Environmental Engineering):', s.department || 'Civil Engineering'); if(deptIn === null) return;
-  const dept = /env/i.test(deptIn) ? 'Environmental Engineering' : (/civ/i.test(deptIn) ? 'Civil Engineering' : '');
-  if(deptIn.trim() && !dept){ alert('Department must be Civil Engineering or Environmental Engineering.'); return; }
+  const _dl = (window.ceDepts ? window.ceDepts() : ['Civil Engineering','Environmental Engineering']);
+  const deptIn = prompt('Department (' + _dl.join(', ') + '):', s.department || _dl[0]); if(deptIn === null) return;
+  const dept = (_dl.find(d => d.toLowerCase() === deptIn.trim().toLowerCase()) || _dl.find(d => d.toLowerCase().indexOf(deptIn.trim().toLowerCase()) === 0 && deptIn.trim().length >= 3) || '');
+  if(deptIn.trim() && !dept){ alert('Department must be one of: ' + _dl.join(', ') + '.'); return; }
   const typIn = prompt('Student type (Regular or Weekend):', s.studentType || 'Regular'); if(typIn === null) return;
   const typ = /^w/i.test(typIn.trim()) ? 'Weekend' : 'Regular';
   try{
@@ -2161,7 +2162,8 @@ function renderWelcome(){
 <script src="absence.js?v=4"></script>
 <script src="oexam-stu.js?v=2"></script>
 <script src="as-stu.js?v=1"></script>
-<script src="updates.js?v=43"></script>
+<script src="depts.js?v=1"></script>
+<script src="updates.js?v=44"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

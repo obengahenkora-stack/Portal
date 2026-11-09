@@ -1,6 +1,9 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-09f', date:'9 Nov 2026', title:'Manage departments',
+      all:[], student:['Department lists now include any new departments the owner adds.'],
+      staff:['New Departments button in Registered students (owner and admins): add or remove departments. Every department dropdown updates, no code change needed.'] },
     { id:'2026-11-09e', date:'9 Nov 2026', title:'Assignments',
       all:[],
       student:['New Assignments tile on your dashboard. See coursework and deadlines, hand in a typed answer, a link or a small photo, and see your mark when your lecturer releases it.'],

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10m', date:'10 Nov 2026', title:'Exam page-leave count fixed',
+      all:[], student:[], staff:['Leaving the exam page is now counted every time, even when the student answers at the same moment.'] },
     { id:'2026-11-10l', date:'10 Nov 2026', title:'Assignments page fixed',
       all:[], student:[], staff:['Assignments no longer shows the attendance session list by mistake, and Exams & Assignments loads cleanly.'] },
     { id:'2026-11-10k', date:'10 Nov 2026', title:'Exams & Assignments: pick one',

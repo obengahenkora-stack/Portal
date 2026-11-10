@@ -126,7 +126,9 @@ function nextSnap(){
   if(!S||!S.running) return; var I=S.x.snapEverySec*1000, d=I*.15+Math.random()*I*.8;
   S.snapT=setTimeout(function(){ sendSnap('random'); S.snapT=setTimeout(nextSnap,Math.max(500,I-d)); },d);
 }
-async function call(p){ p.device=device(); var j=await _stu(p); if(j&&j.now) _off=j.now-Date.now(); if(j&&j.submitted&&S&&S.running) finished('The exam was submitted.'); return j; }
+var _chain=Promise.resolve();
+function call(p){ var run=function(){ return call1(p); }; var r=_chain.then(run,run); _chain=r.catch(function(){}); return r; }
+async function call1(p){ p.device=device(); var j=await _stu(p); if(j&&j.now) _off=j.now-Date.now(); if(j&&j.submitted&&S&&S.running) finished('The exam was submitted.'); return j; }
 
 function bioKey(){ try{ return JSON.parse(localStorage.getItem('ceBio_student')||'null'); }catch(e){ return null; } }
 function rnd(n){ var a=new Uint8Array(n); crypto.getRandomValues(a); return a; }

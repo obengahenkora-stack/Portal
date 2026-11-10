@@ -3234,7 +3234,15 @@ async function lmList(){
     (d.announcements||[]).forEach(function(x){ items.push({k:'announcements',id:x.id,c:x.course,t:(x.text||'').slice(0,70),when:x.date,tag:'Announcement'+(x.group?' ('+x.group+')':''),o:x}); });
     (d.videos||[]).forEach(function(x){ items.push({k:'videos',id:x.id,c:x.course,t:x.title,when:x.addedAt,tag:'Video',o:x}); });
     items=items.filter(function(i){ return lmMine(i.o) && lmAllowed(i.c); }).sort(function(a,b){ return new Date(b.when)-new Date(a.when); }).slice(0,15);
-    box.innerHTML = items.length ? items.map(function(i){ return '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><span><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+' &middot; '+escapeHtml(i.t)+'</span><button class="secondary" style="padding:4px 10px;font-size:0.72rem;" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
+    if(!document.getElementById('lmBtnCss')){ var st=document.createElement('style'); st.id='lmBtnCss'; st.textContent='a.lm-b:not(#z),button.lm-b:not(#z){display:inline-block;padding:6px 14px !important;font-size:.78rem !important;font-weight:600 !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;border-radius:999px !important;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}a.lm-d:not(#z){background:#0b2a3c !important;color:#fff !important;border-color:#0b2a3c !important}button.lm-x:not(#z){background:transparent !important;color:#b91c1c !important;border:1px solid #fca5a5 !important}'; document.head.appendChild(st); }
+    var dl=function(u,n){ u=String(u||''); return /\/upload\//.test(u) ? u.replace('/upload/','/upload/fl_attachment:'+encodeURIComponent(String(n||'file').replace(/\.[^.]+$/,'').replace(/[^\w\-]+/g,'_'))+'/') : u; };
+    box.innerHTML = items.length ? items.map(function(i){
+      var o=i.o||{}, acts='';
+      if(i.k==='resources' && o.url) acts+='<a class="lm-b lm-d" href="'+escapeHtml(dl(o.url,o.fileName||o.title))+'" target="_blank" rel="noopener">Download</a><a class="lm-b" href="'+escapeHtml(o.url)+'" target="_blank" rel="noopener">Open</a>';
+      if(i.k==='videos' && o.url) acts+='<a class="lm-b" href="'+escapeHtml(o.url)+'" target="_blank" rel="noopener">Open video</a>';
+      acts+='<button class="lm-b lm-x" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button>';
+      var fn=(i.k==='resources'&&o.fileName)?'<div style="font-size:.76rem;color:var(--muted)">'+escapeHtml(o.fileName)+'</div>':'';
+      return '<div style="padding:10px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><div><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+'</div><div style="margin:3px 0;overflow-wrap:anywhere">'+escapeHtml(i.t)+'</div>'+fn+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+acts+'</div></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
   }catch(e){ box.innerHTML='<div class="hint">Could not load.</div>'; }
 }
 async function lmDelete(k,id){
@@ -5168,7 +5176,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=62"></script>
+<script src="updates.js?v=63"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

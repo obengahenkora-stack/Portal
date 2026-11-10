@@ -523,6 +523,13 @@
     </div>
   </div>
 
+  <div class="card hidden adm-card" id="adminTestCard">
+    <div class="adm-h"><h2>View as a test student</h2></div>
+    <div class="adm-sub">Pick a practice student (TEST001 to TEST008 in the [TEST] Practice Class) to see and try the student side. Nothing here touches real students.</div>
+    <div class="adm-row"><select id="testStuSel" style="flex:1"><option value="">Choose a test student</option><option>TEST001</option><option>TEST002</option><option>TEST003</option><option>TEST004</option><option>TEST005</option><option>TEST006</option><option>TEST007</option><option>TEST008</option></select><button type="button" onclick="ownerAsTest(document.getElementById('testStuSel').value)">View</button></div>
+    <div id="testStuBar" class="hidden" style="margin-top:10px"><b id="testStuNow"></b> <button type="button" onclick="location.reload()">Back to owner</button></div>
+  </div>
+
   <div class="card hidden adm-card" id="adminSearchCard">
     <div class="adm-h"><h2>Find a student</h2></div>
     <div class="adm-sub">Look up scores, attendance and reports by index number.</div>
@@ -891,6 +898,7 @@ async function _binCall(payload){
     if(staff&&staff.access_token) h['x-staff-token']=staff.access_token;
     else { var st=(await supabaseClient.auth.getSession()).data.session; if(st&&st.access_token) h['x-student-token']=st.access_token; }
   }catch(e){}
+  if(window._asTest&&h['x-staff-token']) payload=Object.assign({},payload,{asTest:window._asTest});
   var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
   return await r.json();
 }
@@ -967,6 +975,23 @@ async function studentSignOut(){
   location.reload();
 }
 
+
+async function ownerAsTest(idx){
+  if(!/^TEST00[1-8]$/.test(idx||'')){ alert('Choose a test student first.'); return; }
+  window._asTest=idx; studentCurrentEmail=idx.toLowerCase()+'@test.invalid';
+  try{
+    ['adminSearchCard','adminRegisteredCard'].forEach(function(i){ var e=document.getElementById(i); if(e) e.classList.add('hidden'); });
+    document.getElementById('studentWhoAmI').textContent='TEST MODE: '+idx;
+    var me=await dbFindStudentByEmail(studentCurrentEmail);
+    if(!me){ alert('That test student is not set up.'); return; }
+    studentCurrentAccount=me;
+    ['dashIndexInput','linkIndexInput'].forEach(function(i){ var e=document.getElementById(i); if(e) e.value=me.indexNumber; });
+    var nm=document.getElementById('linkNameInput'); if(nm) nm.value=me.name||'';
+    renderWelcome(); document.getElementById('linkIndexCard').classList.add('hidden');
+    var bar=document.getElementById('testStuBar'); bar.classList.remove('hidden'); document.getElementById('testStuNow').textContent='Viewing as '+idx+' ('+(me.name||'')+')';
+    loadDashboard();
+  }catch(e){ alert('Could not switch: '+(e.message||e)); }
+}
 async function onStudentSignedIn(){
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(!session) return;
@@ -977,7 +1002,7 @@ async function onStudentSignedIn(){
   document.getElementById('studentWhoAmI').textContent = studentCurrentEmail;
 
   if(studentCurrentEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
-    document.getElementById('adminSearchCard').classList.remove('hidden');
+    document.getElementById('adminSearchCard').classList.remove('hidden'); try{ document.getElementById('adminTestCard').classList.remove('hidden'); }catch(e){}
     document.getElementById('adminRegisteredCard').classList.remove('hidden');
     loadRegisteredStudents();
     return;
@@ -1789,7 +1814,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('studentAuthCard').classList.add('hidden');
         document.getElementById('signedInCard').classList.remove('hidden');
         document.getElementById('studentWhoAmI').textContent = studentCurrentEmail;
-        document.getElementById('adminSearchCard').classList.remove('hidden');
+        document.getElementById('adminSearchCard').classList.remove('hidden'); try{ document.getElementById('adminTestCard').classList.remove('hidden'); }catch(e){}
         document.getElementById('adminRegisteredCard').classList.remove('hidden');
         loadRegisteredStudents();
       }
@@ -2178,7 +2203,7 @@ function renderWelcome(){
 <script src="oexam-stu.js?v=6"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=73"></script>
+<script src="updates.js?v=74"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10o', date:'10 Nov 2026', title:'Owner: view as a test student',
+      all:[], student:[], staff:['On the student dashboard, the owner can now pick TEST001 to TEST008 and use the student side (assignments, exams, results) without a separate login.'] },
     { id:'2026-11-10n', date:'10 Nov 2026', title:'Exam camera watch + phone detection',
       all:[], student:[], staff:['During an online exam the phone now also flags: camera flashes, the head turned away, no face in view, more than one face, and a phone held up in view. Each flag takes a photo and shows in the exam review under Flags.'] },
     { id:'2026-11-10m', date:'10 Nov 2026', title:'Exam page-leave count fixed',

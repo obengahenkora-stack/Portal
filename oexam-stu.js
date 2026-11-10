@@ -67,7 +67,7 @@ var S=null; // state of the running exam
 function run(h){ var r=$('oeRun'); if(!r){ r=document.createElement('div'); r.id='oeRun'; document.body.appendChild(r); document.body.style.overflow='hidden'; } r.innerHTML=h; return r; }
 function closeRun(){ var r=$('oeRun'); if(r) r.remove(); document.body.style.overflow=''; }
 function stopAll(){
-  if(!S) return; clearInterval(S.tick); clearInterval(S.cam); clearTimeout(S.snapT); clearTimeout(S.saveT);
+  if(!S) return; clearInterval(S.tick); clearInterval(S.cam); clearInterval(S.monT); clearTimeout(S.snapT); clearTimeout(S.saveT);
   try{ S.stream&&S.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
   document.removeEventListener('visibilitychange',S.onVis); window.removeEventListener('beforeunload',S.onUnload);
   ['copy','cut','paste','contextmenu','dragstart'].forEach(function(ev){ document.removeEventListener(ev,S.block,true); });
@@ -163,7 +163,7 @@ function begin(){
   render();
   S.vid=$('oerRecV'); S.vid.srcObject=stream; S.vid.play().catch(function(){});
   S.tick=setInterval(tick,500); tick();
-  S.cam=setInterval(camCheck,2000);
+  S.cam=setInterval(camCheck,2000); try{ monStart(); }catch(e){}
   S.onVis=function(){ if(!S||!S.running) return; if(document.hidden){ S.hiddenAt=Date.now(); } else if(S.hiddenAt){ S.hiddenAt=0; leave('leave'); } };
   document.addEventListener('visibilitychange',S.onVis);
   S.onUnload=function(e){ if(S&&S.running){ e.preventDefault(); e.returnValue=''; } }; window.addEventListener('beforeunload',S.onUnload);
@@ -209,6 +209,48 @@ async function leave(kind){
   }catch(e){}
 }
 function warn(t){ var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Warning</div><div style="line-height:1.5">'+esc(t)+'</div><button type="button" class="oes-btn" onclick="this.closest(\'.oer-ov\').remove();try{document.documentElement.requestFullscreen()}catch(e){}">Continue the exam</button></div>'; r.appendChild(o); }
+
+/* ---- camera watch: flashes, head turns, no face, extra faces (runs on the phone; free) ---- */
+var _fd=null, _fdTry=false;
+async function fdLoad(){
+  if(_fd||_fdTry) return _fd; _fdTry=true;
+  try{
+    var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+    var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+    _fd=await m.FaceDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},runningMode:'VIDEO',minDetectionConfidence:.5});
+  }catch(e){ _fd=null; }
+  return _fd;
+}
+function monStart(){
+  var M=S.mon={last:{},lum:[],bad:{face:0,turn:0,multi:0},t0:Date.now(),n:0};
+  var cv=document.createElement('canvas'); cv.width=48; cv.height=36; var cx=cv.getContext('2d',{willReadFrequently:true});
+  function flag(kind){ var now=Date.now(); if(M.last[kind]&&now-M.last[kind]<20000) return; M.last[kind]=now; try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} try{ sendSnap(kind); }catch(e){} }
+  fdLoad();
+  S.monT=setInterval(function(){
+    if(!S||!S.running) return; var v=S.vid; if(!v||v.readyState<2||!v.videoWidth) return; M.n++;
+    // 1) flash: sudden bright spike compared with the last few seconds
+    try{
+      cx.drawImage(v,0,0,48,36); var d=cx.getImageData(0,0,48,36).data, sum=0; for(var i=0;i<d.length;i+=4) sum+=d[i]*.299+d[i+1]*.587+d[i+2]*.114;
+      var lum=sum/(d.length/4); M.lum.push(lum); if(M.lum.length>12) M.lum.shift();
+      if(M.lum.length>=6){ var base=0,c=0; for(var k=0;k<M.lum.length-1;k++){ base+=M.lum[k]; c++; } base/=c; if(lum-base>38 && lum>110 && M.n>8) flag('flash'); }
+    }catch(e){}
+    // 2) faces and head turns (only if the helper loaded)
+    if(_fd && M.n%1===0){
+      try{
+        var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
+        if(f.length===0){ M.bad.face++; M.bad.turn=0; M.bad.multi=0; if(M.bad.face>=5) flag('no_face'); }
+        else{
+          M.bad.face=0;
+          if(f.length>1){ M.bad.multi++; if(M.bad.multi>=3) flag('multi_face'); } else M.bad.multi=0;
+          var kp=f[0].keypoints||[], bb=f[0].boundingBox||{};
+          if(kp.length>=3){ var er=kp[0], el=kp[1], no=kp[2], mid=(er.x+el.x)/2, w=Math.abs(er.x-el.x)||1, yaw=Math.abs(no.x-mid)/w;
+            var cxp=bb.originX+bb.width/2, off=Math.abs(cxp/v.videoWidth-.5);
+            if(yaw>.42||off>.32){ M.bad.turn++; if(M.bad.turn>=4) flag('head_turn'); } else M.bad.turn=0; }
+        }
+      }catch(e){}
+    }
+  },700);
+}
 function camCheck(){
   if(!S||!S.running) return; var t=S.stream&&S.stream.getVideoTracks()[0], ok=t&&t.readyState==='live'&&!t.muted&&S.stream.active;
   if(!ok && !$('oerCamOv')){ leave('camera_off'); var r=$('oeRun'); var o=document.createElement('div'); o.id='oerCamOv'; o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Camera is off</div><div style="line-height:1.5">Your camera must stay on during the exam. Turn it back on to continue. The timer is still running.</div><button type="button" class="oes-btn" onclick="oesCamBack()">Turn camera on</button><div id="oerCamErr" class="oes-sub"></div></div>'; r.appendChild(o); }

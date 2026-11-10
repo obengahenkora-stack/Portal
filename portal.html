@@ -3416,8 +3416,17 @@ async function loadIssueReports(){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
       return;
     }
-    let html = '';
-    reports.slice().reverse().forEach(r=>{
+    // group by course: lecturer / TA picks a course, then sees only its reports (reportVisible already limits to assigned courses)
+    const groups = {}; reports.forEach(r=>{ const k=lmBase(r.course||'Other'); (groups[k]=groups[k]||[]).push(r); });
+    const keys = Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+    const waitN = k => groups[k].filter(r=>!r.reply).length;
+    if(window._rptCourse===undefined || (window._rptCourse && !groups[window._rptCourse])) window._rptCourse = keys.length===1 ? keys[0] : '';
+    let html = '<div style="margin-bottom:12px"><div style="font-size:.78rem;margin-bottom:4px">Course</div><select id="rptCourseSel" style="width:100%" onchange="window._rptCourse=this.value;loadIssueReports()"><option value="">Choose a course...</option>'
+      + keys.map(k=>'<option value="'+escapeHtml(k)+'"'+(window._rptCourse===k?' selected':'')+'>'+escapeHtml(k)+' ('+groups[k].length+(waitN(k)?', '+waitN(k)+' waiting':'')+')</option>').join('')
+      + '<option value="__all"'+(window._rptCourse==='__all'?' selected':'')+'>All my courses ('+reports.length+')</option></select></div>';
+    const shown = window._rptCourse==='__all' ? reports : (window._rptCourse ? (groups[window._rptCourse]||[]) : []);
+    if(!window._rptCourse){ container.innerHTML = html + '<div class="empty">Choose a course above to see its reports.</div>'; return; }
+    shown.slice().reverse().forEach(r=>{
       const safeTimestamp = escapeHtml(r.submittedAt || '').replace(/'/g, "\\'");
       const replyVal = escapeHtml(r.reply || '');
       let when=''; try{ when = r.submittedAt ? new Date(r.submittedAt).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''; }catch(e){}
@@ -5133,7 +5142,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=58"></script>
+<script src="updates.js?v=59"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

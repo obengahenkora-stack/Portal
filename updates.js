@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10d', date:'10 Nov 2026', title:'Reports grouped by course',
+      all:[], student:[], staff:['Student reports now have a course picker with counts and how many are waiting. You only see the courses you are assigned to.'] },
     { id:'2026-11-10c', date:'10 Nov 2026', title:'Student reports are easier to read',
       all:[], student:[], staff:['Student reports now show as cards with the full message, a Waiting or Replied label, and a wide reply box, instead of a cramped table.'] },
     { id:'2026-11-10b', date:'10 Nov 2026', title:'Tougher exam security',

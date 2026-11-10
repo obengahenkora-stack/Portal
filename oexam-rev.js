@@ -24,14 +24,14 @@ window.oeResults=async function(id){
   try{ D=await api({action:'oe_results',id:id}); }catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message)+')</div><button type="button" class="oe-btn s" onclick="oeInit()">Back</button>'; return; }
   var ex=D.exam, rows=D.rows;
   var sub=rows.filter(function(r){return r.submittedAt;}), tot=sub.map(function(r){return (r.mcq||0)+r.written;}), avg=tot.length?tot.reduce(function(a,b){return a+b;},0)/tot.length:0;
-  var fl=rows.filter(function(r){return r.flags>0||r.leaves>0;}).length, pend=rows.filter(function(r){return r.submittedAt&&r.pending>0;}).length;
+  var fl=rows.filter(function(r){return (r.why&&r.why.length)||r.flags>0||r.leaves>0;}).length, pend=rows.filter(function(r){return r.submittedAt&&r.pending>0;}).length;
   var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+'</div>'
   +'<div class="rv-t"><div><b>'+sub.length+' / '+(rows.length+D.missing.length)+'</b><span>Submitted</span></div><div><b>'+avg.toFixed(1)+'</b><span>Average score</span></div><div><b>'+fl+'</b><span>Flagged</span></div><div><b>'+pend+'</b><span>Need marking</span></div></div>'
   +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
   +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div>';
   rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
   h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
-    return '<div class="rv-r" onclick="oeOpenAtt('+i+')"><div class="n">'+esc(r.name||r.email)+' <span style="font-weight:400;color:var(--muted)">'+esc(r.index||'')+'</span></div><div class="s">'+st+' &middot; Score '+((r.mcq||0)+r.written)+' / '+r.total+(r.pending?' (marking pending)':'')+' &middot; Left page '+r.leaves+'x &middot; Flags '+r.flags+' &middot; Photos '+r.snaps+'</div></div>';}).join('');
+    return '<div class="rv-r" onclick="oeOpenAtt('+i+')"><div class="n">'+esc(r.name||r.email)+' <span style="font-weight:400;color:var(--muted)">'+esc(r.index||'')+'</span></div><div class="s">'+st+' &middot; Score '+((r.mcq||0)+r.written)+' / '+r.total+(r.pending?' (marking pending)':'')+' &middot; Photos '+r.snaps+'</div>'+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div>';}).join('');
   if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
 };

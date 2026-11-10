@@ -76,7 +76,7 @@ function renderList(){
 
 window.oeNew=function(){
   var s=new Date(); s.setDate(s.getDate()+1); s.setHours(9,0,0,0); var e=new Date(s.getTime()+2*3600*1000);
-  E={id:'',course:COURSES[0]||'',title:'',instructions:'',start:s.toISOString(),end:e.toISOString(),durationMin:30,pickN:0,shuffleQ:true,shuffleOpt:true,oneWay:false,snapEverySec:30,maxLeaves:3,code:'',status:'draft',questions:[]};
+  E={id:'',course:COURSES[0]||'',title:'',instructions:'',start:s.toISOString(),end:e.toISOString(),durationMin:30,pickN:0,shuffleQ:true,shuffleOpt:true,oneWay:false,bioStart:true,snapEverySec:30,maxLeaves:3,code:'',status:'draft',questions:[]};
   addQ('mcq'); renderEdit();
 };
 window.oeEdit=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); renderEdit(); };
@@ -121,7 +121,7 @@ function renderEdit(scrollEnd){
    +'<div class="oe-box"><div class="oe-h">Security</div><div class="oe-sub">The camera is always required. Photos are shrunk to about 15 KB each.</div>'
    +'<div class="oe-two"><div><div class="oe-l">Photo every (seconds)</div><input type="number" id="oeSnap" min="10" max="300" value="'+E.snapEverySec+'"></div><div><div class="oe-l">Page leaves allowed</div><input type="number" id="oeLeaves" min="0" max="50" value="'+E.maxLeaves+'"></div></div>'
    +'<div style="margin-top:12px"><div class="oe-l">Exam code (optional)</div><input type="text" id="oeCode" value="'+esc(E.code)+'" placeholder="Students must type this to start"></div>'
-   +sw('shuffleQ','Shuffle questions','Each student sees a different order.')+sw('shuffleOpt','Shuffle answer options','Options are mixed for every student.')+sw('oneWay','One question at a time, no going back','Harder to look things up.')+'</div>'
+   +sw('shuffleQ','Shuffle questions','Each student sees a different order.')+sw('shuffleOpt','Shuffle answer options','Options are mixed for every student.')+sw('oneWay','One question at a time, no going back','Harder to look things up.')+sw('bioStart','Fingerprint or face to start','Each student confirms with their phone before the exam begins.')+'</div>'
    +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:18px"><div class="oe-h" style="font-size:1.05rem">Questions</div><div style="font-size:.8rem;color:var(--muted)">'+E.questions.length+' &middot; '+marks+' marks</div></div>';
   h+=E.questions.map(function(q,i){
     var body='<textarea id="oeQt'+i+'" placeholder="Type the question">'+esc(q.text)+'</textarea>';

@@ -14,6 +14,7 @@ css.textContent='.oes-card{border:1px solid var(--line);border-left:4px solid #0
 +'.oes-btn[disabled]{opacity:.5}'
 +'#oeRun{position:fixed;inset:0;z-index:100000;background:var(--page,#f3f6f1);color:var(--ink);overflow-y:auto;-webkit-overflow-scrolling:touch}'
 +'#oeRun .oer{max-width:720px;margin:0 auto;padding:16px 16px 120px}'
++'#oeRun{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}#oeRun textarea,#oeRun input{-webkit-user-select:text;user-select:text}'
 +'#oeRun .oer-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--page,#f3f6f1);border-bottom:1px solid var(--line)}'
 +'#oeRun .oer-tm{font-weight:800;font-size:1.25rem;font-variant-numeric:tabular-nums}#oeRun .oer-tm.low{color:#dc2626}'
 +'#oeRun .oer-q{border:1px solid var(--line);border-radius:18px;padding:18px;background:var(--card);margin-top:14px;-webkit-user-select:none;user-select:none}'
@@ -71,6 +72,7 @@ function stopAll(){
   document.removeEventListener('visibilitychange',S.onVis); window.removeEventListener('beforeunload',S.onUnload);
   ['copy','cut','paste','contextmenu','dragstart'].forEach(function(ev){ document.removeEventListener(ev,S.block,true); });
   document.removeEventListener('fullscreenchange',S.onFs);
+  try{ document.removeEventListener('selectstart',S.noSel,true); document.removeEventListener('keydown',S.keys,true); if(S.wl) S.wl.release(); }catch(e){}
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   S.running=false;
 }
@@ -126,12 +128,28 @@ function nextSnap(){
 }
 async function call(p){ p.device=device(); var j=await _stu(p); if(j&&j.now) _off=j.now-Date.now(); if(j&&j.submitted&&S&&S.running) finished('The exam was submitted.'); return j; }
 
+function bioKey(){ try{ return JSON.parse(localStorage.getItem('ceBio_student')||'null'); }catch(e){ return null; } }
+function rnd(n){ var a=new Uint8Array(n); crypto.getRandomValues(a); return a; }
+function unb(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='='; var s=atob(t),u=new Uint8Array(s.length); for(var i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+async function bioCheck(){
+  // returns 'ok' | 'unsupported' ; throws if the student cancels or fails
+  if(!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.get&&window.isSecureContext)) return 'unsupported';
+  try{
+    var b=bioKey();
+    if(b&&b.cid){ await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb(b.cid),transports:['internal']}],userVerification:'required',timeout:60000}}); return 'ok'; }
+    var em=(typeof studentCurrentEmail!=='undefined'&&studentCurrentEmail)||'student';
+    await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:'UENR Civil & Environmental Engineering',id:location.hostname},user:{id:rnd(16),name:em,displayName:em},pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000}});
+    return 'ok';
+  }catch(e){ if(e&&(e.name==='NotSupportedError'||e.name==='SecurityError'||e.name==='InvalidStateError')) return 'unsupported'; throw new Error('Fingerprint or face not confirmed. Try again, or ask your lecturer.'); }
+}
 window.oesStart=async function(){
   var m=$('oerMsg'), go=$('oerGo'); go.disabled=true; m.innerHTML='<div class="msg ok">Starting...</div>';
   S.vid=$('oerVid'); var ph=shot('start');
   if(!ph){ m.innerHTML='<div class="msg err">The camera is not ready yet. Wait a second and try again.</div>'; go.disabled=false; return; }
   try{
-    var j=await _stu({action:'stu_oe_start',id:S.x.id,device:device(),code:($('oerCode')||{}).value||'',photo:ph}); _off=j.now-Date.now();
+    var bio='off'; if(S.x.bioStart!==false){ m.innerHTML='<div class="msg ok">Confirm with your fingerprint or face...</div>'; bio=await bioCheck(); m.innerHTML='<div class="msg ok">Starting...</div>'; }
+    var cam=''; try{ cam=(S.stream.getVideoTracks()[0]||{}).label||''; }catch(e){}
+    var j=await _stu({action:'stu_oe_start',id:S.x.id,device:device(),code:($('oerCode')||{}).value||'',photo:ph,bio:bio,cam:cam}); _off=j.now-Date.now(); S.me=j.me||null;
     S.q=j.questions; S.ans=j.answers||{}; S.cur=Math.min(j.cur||0,S.q.length-1); S.deadline=Date.parse(j.deadline); S.leaves=j.leaves||0; S.max=j.exam.maxLeaves; S.oneWay=j.exam.oneWay; S.running=true; S.hiddenAt=0; S.pasteN=0;
     begin();
   }catch(e){ var t=e.message||'error'; m.innerHTML='<div class="msg err">'+esc(t)+'</div>'; go.disabled=false; }
@@ -150,6 +168,10 @@ function begin(){
   S.block=function(e){ if(!S||!S.running) return; var t=e.target; if(e.type==='contextmenu'||e.type==='dragstart'||t&&t.closest&&t.closest('#oeRun')){ e.preventDefault(); if(e.type==='paste'||e.type==='copy'||e.type==='cut'){ if(S.pasteN++<5) leave('paste_attempt'); } } };
   ['copy','cut','paste','contextmenu','dragstart'].forEach(function(ev){ document.addEventListener(ev,S.block,true); });
   S.onFs=function(){ if(S&&S.running&&!document.fullscreenElement) leave('fullscreen_exit'); }; document.addEventListener('fullscreenchange',S.onFs);
+  try{ var wm=document.createElement('div'); wm.id='oeWm'; var tx=((S.me&&S.me.index)||'')+' '+((S.me&&S.me.name)||''); var row=''; for(var i=0;i<8;i++) row+='<span>'+esc(tx)+'</span>'; var rows=''; for(var k=0;k<14;k++) rows+='<div>'+row+'</div>'; wm.innerHTML=rows; wm.style.cssText='position:fixed;inset:-20%;z-index:100001;pointer-events:none;overflow:hidden;transform:rotate(-24deg);opacity:.09;font:700 .95rem monospace;color:#000;line-height:3.2rem;white-space:nowrap;user-select:none'; $('oeRun').appendChild(wm); }catch(e){}
+  S.noSel=function(e){ if(!S||!S.running) return; var t=e.target; if(!(t&&t.tagName==='TEXTAREA')) e.preventDefault(); }; document.addEventListener('selectstart',S.noSel,true);
+  S.keys=function(e){ if(!S||!S.running) return; var k=(e.key||'').toLowerCase(); if(((e.ctrlKey||e.metaKey)&&['c','v','x','p','s','u','a'].indexOf(k)>=0&&!(k==='a'&&e.target&&e.target.tagName==='TEXTAREA'))||k==='printscreen'||k==='f12'){ e.preventDefault(); if(S.pasteN++<5) leave('paste_attempt'); } }; document.addEventListener('keydown',S.keys,true);
+  try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ S.wl=l; }).catch(function(){}); }catch(e){}
   nextSnap();
 }
 

@@ -211,7 +211,16 @@ async function leave(kind){
 function warn(t){ var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Warning</div><div style="line-height:1.5">'+esc(t)+'</div><button type="button" class="oes-btn" onclick="this.closest(\'.oer-ov\').remove();try{document.documentElement.requestFullscreen()}catch(e){}">Continue the exam</button></div>'; r.appendChild(o); }
 
 /* ---- camera watch: flashes, head turns, no face, extra faces (runs on the phone; free) ---- */
-var _fd=null, _fdTry=false;
+var _fd=null, _fdTry=false, _od=null, _odTry=false;
+async function odLoad(){
+  if(_od||_odTry) return _od; _odTry=true;
+  try{
+    var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+    var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite'},runningMode:'VIDEO',scoreThreshold:.4,maxResults:6,categoryAllowlist:['cell phone']});
+  }catch(e){ _od=null; }
+  return _od;
+}
 async function fdLoad(){
   if(_fd||_fdTry) return _fd; _fdTry=true;
   try{
@@ -225,7 +234,7 @@ function monStart(){
   var M=S.mon={last:{},lum:[],bad:{face:0,turn:0,multi:0},t0:Date.now(),n:0};
   var cv=document.createElement('canvas'); cv.width=48; cv.height=36; var cx=cv.getContext('2d',{willReadFrequently:true});
   function flag(kind){ var now=Date.now(); if(M.last[kind]&&now-M.last[kind]<20000) return; M.last[kind]=now; try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} try{ sendSnap(kind); }catch(e){} }
-  fdLoad();
+  fdLoad(); odLoad(); M.ph=0;
   S.monT=setInterval(function(){
     if(!S||!S.running) return; var v=S.vid; if(!v||v.readyState<2||!v.videoWidth) return; M.n++;
     // 1) flash: sudden bright spike compared with the last few seconds
@@ -234,6 +243,8 @@ function monStart(){
       var lum=sum/(d.length/4); M.lum.push(lum); if(M.lum.length>12) M.lum.shift();
       if(M.lum.length>=6){ var base=0,c=0; for(var k=0;k<M.lum.length-1;k++){ base+=M.lum[k]; c++; } base/=c; if(lum-base>38 && lum>110 && M.n>8) flag('flash'); }
     }catch(e){}
+    // 1b) a phone held up in view (checked about every 2 seconds)
+    if(_od && M.n%3===0){ try{ var o=_od.detectForVideo(v,performance.now()); if(o&&o.detections&&o.detections.length){ M.ph++; if(M.ph>=2) flag('phone_seen'); } else M.ph=0; }catch(e){} }
     // 2) faces and head turns (only if the helper loaded)
     if(_fd && M.n%1===0){
       try{

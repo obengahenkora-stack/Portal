@@ -141,7 +141,7 @@ window.absFilter=function(f){ _flt=f; absRender(); };
 function absRender(){
   var box=$('absStaffBody');
   var vis=null; try{ var v=visibleCourses(_L.map(function(x){ return x.course; })); vis={}; v.forEach(function(c){ vis[c]=1; }); }catch(e){}
-  var all=_L.filter(function(x){ return !vis||vis[x.course]; });
+  var all=_L.slice(); /* the server already limits this list to the courses assigned to you (group letters ignored) */
   var n={pending:0,approved:0,declined:0}; all.forEach(function(x){ if(n[x.status]!==undefined) n[x.status]++; });
   if(!_flt) _flt=n.pending?'pending':'all';
   var rows=_flt==='all'?all:all.filter(function(x){ return x.status===_flt; });

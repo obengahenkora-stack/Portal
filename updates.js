@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10s', date:'10 Nov 2026', title:'TAs now see all their absence excuses',
+      all:[], student:[], staff:['A TA or lecturer now sees every absence excuse for their assigned courses, including the A and B groups, instead of only some.'] },
     { id:'2026-11-10r', date:'10 Nov 2026', title:'Choose who can approve absence excuses',
       all:[], student:[], staff:['In Team Access, Permissions now has Approve absence excuses. Turn it on for a specific TA to let them approve or decline excuses for their own courses. Lecturers can already do it for the courses assigned to them.'] },
     { id:'2026-11-10q', date:'10 Nov 2026', title:'Home page book no longer overlaps the menu',

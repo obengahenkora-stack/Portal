@@ -49,13 +49,13 @@ document.head.appendChild(css);
 var LIST=[], E=null, COURSES=[];
 function msg(h){ var m=$('oeMsg'); if(m) m.innerHTML=h||''; }
 
+var _cp=null;
+function loadCourses(){ if(_cp) return _cp; _cp=(async function(){ try{ var d=await fetchSupabaseData(); var names=visibleCourses(Object.keys((d&&d.rosters)||{})); var seen={},out=[]; names.forEach(function(n){ var b=lmBase(n); if(!seen[b.toLowerCase()]){ seen[b.toLowerCase()]=1; out.push(b); } }); out.sort(); COURSES=out; }catch(e){ _cp=null; } })(); return _cp; }
 window.oeInit=async function(){
   var box=$('oeBody'); if(!box) return;
-  box.innerHTML='<div class="empty">Loading...</div>';
+  if(!box.innerHTML||/Loading|Could not/.test(box.innerHTML)) box.innerHTML='<div class="empty">Loading...</div>';
+  loadCourses();
   try{
-    var d=null; try{ d=await fetchSupabaseData(); }catch(e){}
-    var names=[]; try{ names=visibleCourses(Object.keys((d&&d.rosters)||{})); }catch(e){}
-    var seen={}; COURSES=[]; names.forEach(function(n){ var b=lmBase(n); if(!seen[b.toLowerCase()]){ seen[b.toLowerCase()]=1; COURSES.push(b); } }); COURSES.sort();
     var j=await teamApi({action:'oe_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Back end not updated yet (deploy step 39)');
     LIST=j.exams||[]; E=null; renderList();
   }catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message||'error')+')</div>'; }

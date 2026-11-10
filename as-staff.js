@@ -23,12 +23,12 @@ document.head.appendChild(css);
 var FILE=null, RMF=false, LIST=[], E=null, COURSES=[], D=null, CUR=null;
 function msg(h){var m=$('asMsg'); if(m) m.innerHTML=h||'';}
 async function api(o){var r=await teamApi(o); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed'); return r;}
+var _acp=null;
+function loadCourses(){ if(_acp) return _acp; _acp=(async function(){ try{ var d=await fetchSupabaseData(); var names=visibleCourses(Object.keys((d&&d.rosters)||{})); var seen={},out=[]; names.forEach(function(n){var b=lmBase(n); if(!seen[b.toLowerCase()]){seen[b.toLowerCase()]=1; out.push(b);}}); out.sort(); COURSES=out; }catch(e){ _acp=null; } })(); return _acp; }
 window.asInit=async function(){
-  var box=$('asBody'); if(!box) return; box.innerHTML='<div class="empty">Loading...</div>';
+  var box=$('asBody'); if(!box) return; if(!box.innerHTML||/Loading|Could not/.test(box.innerHTML)) box.innerHTML='<div class="empty">Loading...</div>';
+  loadCourses();
   try{
-    var d=null; try{ d=await fetchSupabaseData(); }catch(e){}
-    var names=[]; try{ names=visibleCourses(Object.keys((d&&d.rosters)||{})); }catch(e){}
-    var seen={}; COURSES=[]; names.forEach(function(n){var b=lmBase(n); if(!seen[b.toLowerCase()]){seen[b.toLowerCase()]=1; COURSES.push(b);}}); COURSES.sort();
     var j=await api({action:'as_list'}); LIST=(j.items||[]).sort(function(a,b){return Date.parse(b.due)-Date.parse(a.due);}); E=null; list();
   }catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message)+')</div>'; }
 };

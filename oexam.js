@@ -86,6 +86,7 @@ window.oeDel=async function(i){
   try{ var r=await teamApi({action:'oe_delete',id:x.id}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed'); oeInit(); }catch(e){ msg('<div class="msg err">'+esc(e.message||'error')+'</div>'); }
 };
 function addQ(type){ E.questions.push(type==='text'?{id:uid(),type:'text',text:'',marks:5,guide:''}:{id:uid(),type:'mcq',text:'',options:['','','',''],answer:0,marks:1}); }
+window.oeImportInto=function(qs){ sync(); E.questions=E.questions.filter(function(q){ return !(q.type==='mcq'&&!q.text.trim()&&!q.options.some(function(x){return x.trim();})); }); qs.forEach(function(q){ delete q._check; E.questions.push(q); }); renderEdit(); msg('<div class="msg ok">Added '+qs.length+' question'+(qs.length===1?'':'s')+'. Check them, then save or publish.</div>'); };
 window.oeAddQ=function(t){ sync(); addQ(t); renderEdit(true); };
 window.oeRemQ=function(i){ sync(); if(!confirm('Remove question '+(i+1)+'?')) return; E.questions.splice(i,1); renderEdit(); };
 window.oeMove=function(i,d){ sync(); var j=i+d; if(j<0||j>=E.questions.length) return; var t=E.questions[i]; E.questions[i]=E.questions[j]; E.questions[j]=t; renderEdit(); };
@@ -132,7 +133,7 @@ function renderEdit(scrollEnd){
       +'<div style="display:flex;gap:6px"><button type="button" class="oe-mini" onclick="oeMove('+i+',-1)">&uarr;</button><button type="button" class="oe-mini" onclick="oeMove('+i+',1)">&darr;</button><button type="button" class="oe-mini x" onclick="oeRemQ('+i+')">Remove</button></div></div>'
       +body+'<div style="margin-top:10px;max-width:140px"><div class="oe-l">Marks</div><input type="number" id="oeQm'+i+'" min="0" step="0.5" value="'+(q.marks==null?1:q.marks)+'"></div></div>';
   }).join('');
-  h+='<div class="oe-row"><button type="button" class="oe-btn s" onclick="oeAddQ(\'mcq\')">+ Multiple choice</button><button type="button" class="oe-btn s" onclick="oeAddQ(\'text\')">+ Written answer</button></div>'
+  h+='<div class="oe-row"><button type="button" class="oe-btn" onclick="oeImpOpen()">Import from a document</button></div><div class="oe-row"><button type="button" class="oe-btn s" onclick="oeAddQ(\'mcq\')">+ Multiple choice</button><button type="button" class="oe-btn s" onclick="oeAddQ(\'text\')">+ Written answer</button></div>'
     +'<div class="oe-row" style="margin-top:18px"><button type="button" class="oe-btn s" onclick="oeSave(false)">Save draft</button><button type="button" class="oe-btn" onclick="oeSave(true)">Publish</button></div>'
     +'<button type="button" class="oe-btn s" style="margin-top:10px" onclick="oeInit()">Close without saving</button>';
   box.innerHTML=h;

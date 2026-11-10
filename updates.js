@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10a', date:'10 Nov 2026', title:'Import exam questions from a document',
+      all:[], student:[], staff:['When building an online exam, tap Import from a document and upload a Word, PDF or text file. Multiple choice and written questions are found and added to the same exam. You can upload several files and edit everything afterwards.'] },
     { id:'2026-11-09m', date:'9 Nov 2026', title:'Easier student editing',
       all:[], student:[], staff:['Editing a student now opens one form with dropdowns for level, department, type and class group, instead of typing each answer.'] },
     { id:'2026-11-09l', date:'9 Nov 2026', title:'Clickable overview tiles',

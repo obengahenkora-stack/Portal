@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10e', date:'10 Nov 2026', title:'Reports: instant Replied status',
+      all:[], student:[], staff:['Saving a reply now shows Replied straight away with a small confirmation, no pop-up and no refresh. Buttons and the reply box are smaller and tidier.'] },
     { id:'2026-11-10d', date:'10 Nov 2026', title:'Reports grouped by course',
       all:[], student:[], staff:['Student reports now have a course picker with counts and how many are waiting. You only see the courses you are assigned to.'] },
     { id:'2026-11-10c', date:'10 Nov 2026', title:'Student reports are easier to read',

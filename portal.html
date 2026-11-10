@@ -3218,7 +3218,9 @@ async function lmSubmit(){
     if(type==='video'){ data.videos=(data.videos||[]).concat([{id:'vid_'+Date.now(),course:course,title:title,url:vUrl,type:vType,addedAt:now,uploadedBy:by}]); }
     var cl=data.courseList||[]; if(cl.indexOf(course)<0){ cl.push(course); data.courseList=cl; }
     await saveSupabaseData(data);
-    msg.innerHTML='<div class="msg ok">Posted. Students can see it now.</div>';
+    var _grp=(type==='announcement')?(document.getElementById('lmGroup').value||''):'';
+    msg.innerHTML='<div class="msg ok">Posted. Students can see it now. Sending emails...</div>';
+    try{ var _nj=await ceNotify(type==='announcement'?'announcement':'material',course,type==='announcement'?'':title,_grp); msg.innerHTML='<div class="msg ok">Posted. Students can see it now.'+escapeHtml(ceNotifyText(_nj))+'</div>'; }catch(_e){ msg.innerHTML='<div class="msg ok">Posted. Students can see it now.</div>'; }
     ['lmTitle','lmText','lmUrl','lmFile'].forEach(function(i){ document.getElementById(i).value=''; });
     lmList();
   }catch(e){ msg.innerHTML='<div class="msg err">Could not post: '+escapeHtml(e.message)+'</div>'; }
@@ -5166,7 +5168,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=61"></script>
+<script src="updates.js?v=62"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){
@@ -5229,8 +5231,9 @@ function updateWhoBar(){
 <script src="absence.js?v=4"></script>
 <script src="oexam.js?v=4"></script>
 <script src="oexam-imp.js?v=1"></script>
-<script src="oexam-rev.js?v=4"></script>
-<script src="as-staff.js?v=4"></script>
+<script src="notify.js?v=1"></script>
+<script src="oexam-rev.js?v=5"></script>
+<script src="as-staff.js?v=5"></script>
 <script src="teamui.js?v=2"></script>
 <style id="assessTidy">
 /* Assessment portal: calmer forms */

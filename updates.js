@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10g', date:'10 Nov 2026', title:'Course emails to students',
+      all:[], student:[], staff:['When you post lecture material or an announcement, or release exam or assignment results, the students on that class are emailed with the course name in the subject. Every email has a Stop these emails link. Emails switch on once the Brevo key is added.'] },
     { id:'2026-11-10f', date:'10 Nov 2026', title:'Several people can take attendance together',
       all:[], student:[], staff:['When two lecturers or TAs take attendance for the same class, Save no longer wipes the other person\'s ticks or QR check-ins, and their ticks appear on your screen within about 20 seconds.'] },
     { id:'2026-11-10e', date:'10 Nov 2026', title:'Reports: instant Replied status',

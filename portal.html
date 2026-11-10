@@ -2122,6 +2122,10 @@ function courseBases(names){
   (names||[]).forEach(c=>{ if(!c) return; if(!isOwner() && /^\[TEST\]/i.test(String(c))) return; if(!lmAllowed(c)) return; const b=lmBase(c); const k=b.toLowerCase(); if(!seen[k]){ seen[k]=1; out.push(b); } });
   return out.sort();
 }
+/* If the course box is still empty (slow phone / slow load), fill it again after a moment and whenever it is tapped. */
+(function(){ function need(){ var e=document.getElementById('uploadCourse'); return e && e.options.length<=1 && !document.getElementById('uploadCard').classList.contains('hidden'); }
+  [2500,6000,12000].forEach(function(t){ setTimeout(function(){ try{ if(need()) loadUploadCourses(); }catch(e){} },t); });
+  document.addEventListener('pointerdown',function(ev){ try{ if(ev.target&&ev.target.id==='uploadCourse'&&need()) loadUploadCourses(); }catch(e){} },true); })();
 async function loadUploadCourses(){
   try{
     const sel=document.getElementById('uploadCourse'); if(!sel) return;
@@ -5186,7 +5190,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=65"></script>
+<script src="updates.js?v=66"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

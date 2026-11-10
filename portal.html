@@ -4603,6 +4603,23 @@ function _autoMark(index, isPresent){
   _qBanner();
   flushAttQueue();
 }
+/* Show ticks made by other lecturers/TAs (and QR check-ins) without reloading. Rows you changed yourself and not yet synced are left alone. */
+async function refreshAttendanceLive(){
+  try{
+    if(document.hidden || _flushing || _qGet().length) return;
+    const course=(document.getElementById('attendanceCourseSelect')||{}).value, date=(document.getElementById('attendanceDateInput')||{}).value;
+    const rows=document.querySelectorAll('#attendanceChecklist .attendance-row'); if(!course||!date||!rows.length) return;
+    const data=await fetchSupabaseData(true), rec=(data.attendance||[]).find(a=>a.sessionKey===`${course}__${date}`);
+    if(_qGet().length) return;
+    const ps=new Set(((rec&&rec.present)||[]).map(p=>String(p).trim().toLowerCase()));
+    rows.forEach(row=>{
+      const st=row.querySelector('.attendance-status'); if(!st) return;
+      const on=ps.has(String(row.getAttribute('data-index')).trim().toLowerCase());
+      if((st.textContent==='PRESENT')!==on){ st.textContent=on?'PRESENT':'ABSENT'; st.style.color=on?'var(--ok)':'var(--danger)'; row.style.background=on?'rgba(31,138,76,0.08)':'#fff'; }
+    });
+  }catch(e){}
+}
+setInterval(refreshAttendanceLive,20000);
 window.addEventListener('online',function(){ _qBanner(); flushAttQueue(); });
 window.addEventListener('offline',function(){ _qBanner(); });
 window.addEventListener('beforeunload',function(e){ if(_qGet().length){ e.preventDefault(); e.returnValue=''; } });
@@ -4654,6 +4671,9 @@ async function saveAttendance(){
     const attendanceRecords = data.attendance || [];
     const sessionKey = `${course}__${date}`;
     const idx = attendanceRecords.findIndex(a => a.sessionKey === sessionKey);
+    // Every tick is already saved one student at a time, so keep what is saved on the server (including ticks by other
+    // lecturers/TAs and QR check-ins) instead of replacing it with this screen's list.
+    if(idx >= 0 && Array.isArray(attendanceRecords[idx].present)){ present.length = 0; attendanceRecords[idx].present.forEach(p => present.push(p)); }
     // Preserve any real QR check-in timestamps already recorded — manual saves shouldn't erase them.
     const existingCheckInTimes = (idx >= 0 && attendanceRecords[idx].checkInTimes) ? attendanceRecords[idx].checkInTimes : {};
     const nowIso = new Date().toISOString();
@@ -4675,6 +4695,7 @@ async function saveAttendance(){
     data.attendance = attendanceRecords;
     await saveSupabaseData(data);
     msg.innerHTML = `<div class="msg ok">Saved. ${present.length} of ${rows.length} present${excused.length?', '+excused.length+' excused (approved absence)':''}.</div>`;
+    try{ loadAttendanceForDate().then(()=>{ msg.innerHTML = `<div class="msg ok">Saved. ${present.length} of ${rows.length} present.</div>`; }); }catch(_e){}
   }catch(e){
     msg.innerHTML = `<div class="msg err">Could not save: ${escapeHtml(e.message)}</div>`;
   }finally{
@@ -5145,7 +5166,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=60"></script>
+<script src="updates.js?v=61"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

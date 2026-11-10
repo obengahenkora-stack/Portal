@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10f', date:'10 Nov 2026', title:'Several people can take attendance together',
+      all:[], student:[], staff:['When two lecturers or TAs take attendance for the same class, Save no longer wipes the other person\'s ticks or QR check-ins, and their ticks appear on your screen within about 20 seconds.'] },
     { id:'2026-11-10e', date:'10 Nov 2026', title:'Reports: instant Replied status',
       all:[], student:[], staff:['Saving a reply now shows Replied straight away with a small confirmation, no pop-up and no refresh. Buttons and the reply box are smaller and tidier.'] },
     { id:'2026-11-10d', date:'10 Nov 2026', title:'Reports grouped by course',

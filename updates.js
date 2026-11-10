@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10p', date:'10 Nov 2026', title:'Course list fills when you open Upload Scores',
+      all:[], student:[], staff:['The course list in Upload Scores and Gradebook now fills the moment you open the tool, using your assigned courses first.'] },
     { id:'2026-11-10o', date:'10 Nov 2026', title:'Owner: view as a test student',
       all:[], student:[], staff:['On the student dashboard, the owner can now pick TEST001 to TEST008 and use the student side (assignments, exams, results) without a separate login.'] },
     { id:'2026-11-10n', date:'10 Nov 2026', title:'Exam camera watch + phone detection',

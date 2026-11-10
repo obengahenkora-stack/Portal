@@ -1868,6 +1868,7 @@ function lchGo(k,id){
   var L=_LCH[k]; L.cur=id||null;
   if(L.cur){ var el=_attCard(L.cur); if(el && el.classList.contains('hidden')) L.cur=null; }
   lchRender(k);
+  try{ if(L.cur==='uploadCard') loadUploadCourses(); if(L.cur==='gradebookCard') loadGradebookCourses(); }catch(e){}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function attRenderTiles(){ lchRender('att'); lchRender('tch'); }
@@ -2133,6 +2134,7 @@ function courseBases(names){
 async function loadUploadCourses(){
   try{
     const sel=document.getElementById('uploadCourse'); if(!sel) return;
+    try{ if(sel.options.length<=1 && Array.isArray(currentUserCourses)){ const l0=courseBases(currentUserCourses); sel.innerHTML='<option value="">Use the course written in the file</option>'+l0.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join(''); } }catch(e){}
     const recs=await fetchVisibleRecords().catch(function(){return [];}); const data=await fetchSupabaseData().catch(function(){return {};});
     const names=Object.keys(data.rosters||{}).concat(data.courseList||[], recs.map(r=>r.course), Array.isArray(currentUserCourses)?currentUserCourses:[]);
     const list=courseBases(names); const cur=sel.value;
@@ -5194,7 +5196,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=75"></script>
+<script src="updates.js?v=76"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

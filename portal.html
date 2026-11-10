@@ -2125,7 +2125,7 @@ function courseBases(names){
 async function loadUploadCourses(){
   try{
     const sel=document.getElementById('uploadCourse'); if(!sel) return;
-    const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
+    const recs=await fetchVisibleRecords().catch(function(){return [];}); const data=await fetchSupabaseData().catch(function(){return {};});
     const names=Object.keys(data.rosters||{}).concat(data.courseList||[], recs.map(r=>r.course), Array.isArray(currentUserCourses)?currentUserCourses:[]);
     const list=courseBases(names); const cur=sel.value;
     sel.innerHTML='<option value="">Use the course written in the file</option>'+list.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join('');
@@ -2134,8 +2134,8 @@ async function loadUploadCourses(){
 }
 async function loadGradebookCourses(){
   try{
-    const [recs,data]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData()]);
-    const set=courseBases(recs.map(r=>r.course||'General').concat(Object.keys(data.rosters||{})));
+    const recs=await fetchVisibleRecords().catch(function(){return [];}); const data=await fetchSupabaseData().catch(function(){return {};});
+    const set=courseBases(recs.map(r=>r.course||'General').concat(Object.keys(data.rosters||{}), Array.isArray(currentUserCourses)?currentUserCourses:[]));
     const sel=document.getElementById('gradebookCourse'), cur=sel.value;
     sel.innerHTML='<option value="">Select a course...</option>'+set.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
     sel.value=cur;
@@ -5186,7 +5186,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=64"></script>
+<script src="updates.js?v=65"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

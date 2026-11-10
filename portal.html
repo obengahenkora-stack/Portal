@@ -3416,23 +3416,25 @@ async function loadIssueReports(){
       container.innerHTML = '<div class="empty">No issue reports yet.</div>';
       return;
     }
-    let html = '<table><tr><th>Course</th><th>Index #</th><th>Email</th><th>Issue</th><th>Reply</th>' + (isAdmin() ? '<th></th>' : '') + '</tr>';
+    let html = '';
     reports.slice().reverse().forEach(r=>{
       const safeTimestamp = escapeHtml(r.submittedAt || '').replace(/'/g, "\\'");
       const replyVal = escapeHtml(r.reply || '');
-      html += `<tr>
-        <td>${escapeHtml(r.course)}</td>
-        <td>${escapeHtml(r.indexNumber)}</td>
-        <td>${escapeHtml(r.email)}</td>
-        <td>${escapeHtml(r.issue)}</td>
-        <td>
-          <input type="text" value="${replyVal}" id="reply_${safeTimestamp}" placeholder="Type a reply for the student..." style="width:160px;padding:6px 8px;font-size:0.78rem;">
-          <button style="padding:5px 8px;font-size:0.7rem;margin-top:4px;" onclick="saveReportReply('${safeTimestamp}')">Save</button>
-        </td>
-        ${isAdmin() ? `<td><button class="secondary" style="padding:5px 10px;font-size:0.7rem;" onclick="deleteReport('${safeTimestamp}')">Delete</button></td>` : ''}
-      </tr>`;
+      let when=''; try{ when = r.submittedAt ? new Date(r.submittedAt).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''; }catch(e){}
+      html += `<div style="border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--card)">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div style="min-width:0"><div style="font-weight:700;overflow-wrap:anywhere">${escapeHtml(r.course)}</div>
+          <div style="font-size:.8rem;color:var(--muted);overflow-wrap:anywhere">${escapeHtml(r.indexNumber)} &middot; ${escapeHtml(r.email)}${when?' &middot; '+escapeHtml(when):''}</div></div>
+          <span style="flex:0 0 auto;font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff;background:${r.reply?'#16a34a':'#f59e0b'}">${r.reply?'Replied':'Waiting'}</span>
+        </div>
+        <div style="margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45">${escapeHtml(r.issue)}</div>
+        <textarea id="reply_${safeTimestamp}" rows="2" placeholder="Type a reply for the student..." style="width:100%;box-sizing:border-box">${replyVal}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button style="flex:1;padding:9px 12px;font-size:.8rem" onclick="saveReportReply('${safeTimestamp}')">Save reply</button>
+          ${isAdmin() ? `<button class="secondary" style="flex:0 0 auto;padding:9px 14px;font-size:.8rem" onclick="deleteReport('${safeTimestamp}')">Delete</button>` : ''}
+        </div>
+      </div>`;
     });
-    html += '</table>';
     container.innerHTML = html;
   }catch(e){
     container.innerHTML = '<div class="empty">Could not load reports.</div>';
@@ -5131,7 +5133,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=57"></script>
+<script src="updates.js?v=58"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

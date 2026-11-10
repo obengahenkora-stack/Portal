@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10c', date:'10 Nov 2026', title:'Student reports are easier to read',
+      all:[], student:[], staff:['Student reports now show as cards with the full message, a Waiting or Replied label, and a wide reply box, instead of a cramped table.'] },
     { id:'2026-11-10b', date:'10 Nov 2026', title:'Tougher exam security',
       all:[], student:[], staff:['Exams can now require a fingerprint or face check to start, show each student\'s index number faintly over the questions, and block copy, paste, print and screen capture keys. The Results screen lists the reasons each student was flagged: same phone as another student, another-device attempts, virtual camera, very fast finish, few photos and more.'] },
     { id:'2026-11-10a', date:'10 Nov 2026', title:'Import exam questions from a document',

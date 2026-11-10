@@ -1464,7 +1464,7 @@ async function testBackend(){
 }
 // ===== Per-person feature access (the owner ticks what each team member may use) =====
 var _PERM_SKIP={pendingCard:1,activityCard:1,teamAccessCard:1,settingsCard:1,restoreCard:1,deleteCourseCard:1,dbMigrateCard:1,attendanceCleanupCard:1,practiceCard:1,changePasscodeCard:1};
-function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); return out; }
+function _permTiles(){ var seen={}, out=[]; _ATT_TILES.concat(_TCH_TILES).forEach(function(t){ if(_PERM_SKIP[t.id]||seen[t.id]) return; seen[t.id]=1; out.push(t); }); out.push({g:'Records',id:'absenceApprove',t:'Approve absence excuses',d:'Can approve or decline excuse requests for their courses.',i:'check'}); return out; }
 var _PERM_ROLE_DEF={ ta:['takeAttendanceCard','qrCheckinCard','attendanceSummaryCard','reportsCard','lectureMaterialsCard'] };
 function _permDefaults(role){ if(_PERM_ROLE_DEF[role]) return _PERM_ROLE_DEF[role]; var no={backupCard:1,digestCard:1,rosterEditCard:1,allSessionsCard:1}; return _permTiles().map(function(t){return t.id;}).filter(function(i){return !no[i];}); }
 function applyPerms(){
@@ -5196,7 +5196,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=77"></script>
+<script src="updates.js?v=78"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

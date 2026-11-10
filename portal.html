@@ -1533,6 +1533,10 @@ async function loadTeamMemberList(){
 }
 
 async function assignCourses(email){
+  if(window._asgBusy) return; window._asgBusy = true;
+  try{ document.querySelectorAll('.asgOv').forEach(n=>n.remove()); await _assignCourses(email); } finally { window._asgBusy = false; }
+}
+async function _assignCourses(email){
   const data = await fetchSupabaseData();
   const _tl = await teamApi({action:'team_list'});
   const m = ((_tl&&_tl.members)||[]).find(x => (x.email||'').toLowerCase() === email.toLowerCase());
@@ -1540,19 +1544,25 @@ async function assignCourses(email){
   const _s = {}; Object.keys(data.rosters||{}).forEach(c=>_s[c]=1); (data.courseList||[]).forEach(c=>{ if(c) _s[c]=1; }); ['resources','announcements','videos'].forEach(k=>(data[k]||[]).forEach(x=>{ if(x.course) _s[x.course]=1; })); (m.courses||[]).forEach(c=>_s[c]=1);
   const all = Object.keys(_s).sort();
   const have = Array.isArray(m.courses) ? m.courses.map(c=>c.toLowerCase()) : [];
-  const ov = document.createElement('div');
+  document.querySelectorAll('.asgOv').forEach(n=>n.remove());
+  const ov = document.createElement('div'); ov.className = 'asgOv';
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,20,30,.6);display:flex;align-items:center;justify-content:center;padding:20px';
   ov.innerHTML = '<div style="background:#fff;color:#111;max-width:420px;width:100%;padding:24px;border-radius:8px;max-height:80vh;overflow:auto;font-family:system-ui,sans-serif"><h3 style="margin:0 0 6px">Courses for ' + escapeHtml(m.name) + '</h3><p style="margin:0 0 12px;font-size:.85rem;color:#555">They will only see the ticked courses in Attendance. Courses come from the rosters you have uploaded.</p><div id="asgList">' +
     (all.length ? (function(){ var g={}, order=[]; all.forEach(function(c){ var b=lmBase(c), k=b.toLowerCase(); if(!g[k]){ g[k]={label:b,vars:[]}; order.push(k); } g[k].vars.push(c); }); return order.map(function(k){ var x=g[k], on=x.vars.some(function(v){ return have.indexOf(v.toLowerCase())>=0; }); return '<label style="display:flex;gap:8px;align-items:center;padding:6px 0"><input type="checkbox" value="' + escapeHtml(x.vars.join('||')) + '" ' + (on?'checked':'') + ' style="width:auto;margin:0"> ' + escapeHtml(x.label) + (x.vars.length>1?' <span style="color:#777;font-size:.75rem">(all groups)</span>':'') + '</label>'; }).join(''); })() : '<div style="color:#777">No rosters uploaded yet.</div>') +
     '</div><label style="display:flex;gap:8px;align-items:center;padding:10px 0 0;font-size:.85rem"><input type="checkbox" id="asgAll" ' + (Array.isArray(m.courses) ? '' : 'checked') + ' style="width:auto;margin:0"> Not restricted (sees all courses)</label><div style="margin-top:14px;display:flex;gap:8px"><button id="asgSave">Save</button><button class="secondary" id="asgCancel">Cancel</button></div></div>';
   document.body.appendChild(ov);
-  document.getElementById('asgCancel').onclick = () => ov.remove();
+  const closeAsg = () => { document.querySelectorAll('.asgOv').forEach(n=>n.remove()); document.removeEventListener('keydown', escAsg); };
+  const escAsg = (e) => { if(e.key === 'Escape') closeAsg(); };
+  document.addEventListener('keydown', escAsg);
+  ov.addEventListener('mousedown', (e) => { if(e.target === ov) closeAsg(); });
+  document.getElementById('asgCancel').onclick = closeAsg;
   document.getElementById('asgSave').onclick = async () => {
+    const sb = document.getElementById('asgSave'); sb.disabled = true; sb.textContent = 'Saving...';
     const chosen = document.getElementById('asgAll').checked ? null : [...new Set([...ov.querySelectorAll('#asgList input:checked')].flatMap(i => i.value.split('||')))];
     const r = await teamApi({action:'team_upsert',member:{email:email,courses:chosen}});
-    if(!r.ok){ alert('Could not save: '+(r.error||'error')); return; }
-    ov.remove();
-    loadTeamMemberList();
+    if(!r.ok){ sb.disabled = false; sb.textContent = 'Save'; alert('Could not save: '+(r.error||'error')); return; }
+    closeAsg();
+    try{ loadTeamMemberList(); }catch(e){}
   };
 }
 
@@ -5176,7 +5186,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=63"></script>
+<script src="updates.js?v=64"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

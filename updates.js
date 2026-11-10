@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10i', date:'10 Nov 2026', title:'Course picker window fixed',
+      all:[], student:[], staff:['The Courses window in Team Access now opens only once, shows Saving while it works, and closes with Save, Cancel, the Escape key or a tap outside it.'] },
     { id:'2026-11-10h', date:'10 Nov 2026', title:'Download your own posted slides',
       all:[], student:[], staff:['In Lecture Hall, your recent posts now have Download and Open buttons, so you can get back the slides you posted. Delete is a smaller outlined button.'] },
     { id:'2026-11-10g', date:'10 Nov 2026', title:'Course emails to students',

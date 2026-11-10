@@ -125,6 +125,7 @@
     box-shadow:3px 3px 0 rgba(43,36,32,0.06);
   }
   .pane-off{display:none !important;}
+  body:not(.lch-ok) #teacherView .card:not(#tchTilesWrap):not(#attTilesWrap),body:not(.lch-ok) #attendanceView .card:not(#tchTilesWrap):not(#attTilesWrap){display:none !important}
   .att-group{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
   .att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
   #attChecklistBlock.only-pres .attendance-row:not(.pres){display:none !important}
@@ -1854,7 +1855,7 @@ function lchRender(k){
   lchApply(k);
 }
 function lchApply(k){
-  var L=_LCH[k];
+  var L=_LCH[k]; try{ document.body.classList.add('lch-ok'); }catch(e){}
   L.tiles.forEach(function(t){ if(t.id==='qrCheckinCard') return; var el=_attCard(t.id); if(el) el.classList.toggle('pane-off', L.cur!==t.id); });
   var w=_attCard(L.wrap), b=_attCard(L.back);
   if(w) w.classList.toggle('pane-off', !!L.cur);
@@ -5190,7 +5191,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=67"></script>
+<script src="updates.js?v=68"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

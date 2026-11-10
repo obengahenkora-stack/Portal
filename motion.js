@@ -146,6 +146,8 @@ if(anchor){
   titles.forEach(function(tt,k){ph+='<div class="pg" data-k="'+k+'"><div class="f"><b>'+tt+'</b><div class="ln"></div><div class="ln s"></div><div class="ln"></div><div class="ln s"></div></div><div class="b"><div class="ln"></div><div class="ln s"></div><div class="ln"></div><div class="ln"></div><div class="ln s"></div></div></div>';});
   ph+='<div class="spine"></div>';
   bk.innerHTML=ph;document.body.appendChild(bk);
+  function moFit(){try{var r=bk.getBoundingClientRect(),hit=false;var els=document.querySelectorAll('.hero h1,.hero h2,.hero p,.hero a,.hero .tab,.tab,.land-nav *');els.forEach(function(x){if(hit||bk.contains(x))return;var b=x.getBoundingClientRect();if(!b.width||!b.height)return;if(b.bottom>r.top-6&&b.top<r.bottom&&b.right>r.left&&b.left<r.right)hit=true;});bk.style.visibility=hit?'hidden':'visible';}catch(e){}}
+  window.addEventListener('resize',moFit);setInterval(moFit,800);setTimeout(moFit,100);
   var pages=[].slice.call(bk.querySelectorAll('.pg')),N=pages.length;
   var sp=[],cols=['253,230,138','125,211,252','196,181,253','249,168,212','255,255,255'],t0=performance.now(),lastFlip=-1;
   var stars=[];for(var q=0;q<40;q++)stars.push({x:Math.random(),y:Math.random()*.7,p:Math.random()*6,r:.8+Math.random()*1.6});

@@ -1,8 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
-    { id:'2026-11-10k', date:'10 Nov 2026', title:'Exams open faster, no flash',
-      all:[], student:[], staff:['Exams and Assignments now show your list straight away, and the Assessment tools no longer flash all their cards before hiding them.'] },
+    { id:'2026-11-10k', date:'10 Nov 2026', title:'Exams & Assignments: pick one',
+      all:[], student:[], staff:['Exams and Assignments now show your list straight away. The page now shows two tiles (Online Exams, Assignments) and only the one you choose opens.'] },
     { id:'2026-11-10j', date:'10 Nov 2026', title:'Course list for score uploaders',
       all:[], student:[], staff:['A TA or lecturer with Upload Scores access now always sees their assigned courses in the upload and Gradebook course lists, even if some data is slow to load.'] },
     { id:'2026-11-10i', date:'10 Nov 2026', title:'Course picker window fixed',

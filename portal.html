@@ -437,13 +437,15 @@
   <!-- ONLINE EXAMS VIEW -->
   <div id="oexamView" class="hidden">
     <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg> Faculty Console</button>
-    <div class="card" id="onlineExamCard">
+    <div id="exaTiles"><div class="att-title">Exams &amp; Assignments</div><div class="hint" style="margin-bottom:4px;">Pick one.</div><div class="att-grid"><button type="button" class="att-tile" onclick="exaGo('onlineExamCard')"><span class="att-tt">Online Exams</span><span class="att-td">Timed exams with camera checks</span></button><button type="button" class="att-tile" onclick="exaGo('assignCard')"><span class="att-tt">Assignments</span><span class="att-td">Set work, mark, release</span></button></div></div>
+    <button type="button" class="navback hidden" id="exaBack" onclick="exaGo(null)">&lsaquo; Exams &amp; Assignments</button>
+    <div class="card pane-off" id="onlineExamCard">
       <label>Online Exams</label>
       <div class="hint">Create timed exams that students write from home, with a required camera and random photo checks.</div>
       <div id="oeMsg"></div>
       <div id="oeBody"></div>
     </div>
-    <div class="card" id="assignCard">
+    <div class="card pane-off" id="assignCard">
       <label>Assignments</label>
       <div class="hint">Set coursework with a deadline. Students hand in a typed answer, a link or a small photo. You mark it and release the marks into the Gradebook.</div>
       <div id="asMsg"></div>
@@ -1598,6 +1600,7 @@ function hubGreet(){
   var sb=document.getElementById('hubSub'); if(sb) sb.textContent='Faculty Console'+(role?' · '+role:'');
 }
 setInterval(hubGreet,2000); document.addEventListener('DOMContentLoaded',function(){ setTimeout(hubGreet,500); });
+function exaGo(id){ ['onlineExamCard','assignCard'].forEach(function(c){ var e=document.getElementById(c); if(e) e.classList.toggle('pane-off', c!==id); }); var t=document.getElementById('exaTiles'),b=document.getElementById('exaBack'); if(t) t.classList.toggle('pane-off',!!id); if(b) b.classList.toggle('hidden',!id); window.scrollTo(0,0); }
 function switchTab(tab){
   if((tab==='attendance'||tab==='teacher') && !window._authGate && typeof supabaseClient!=='undefined'){
     try{ supabaseClient.auth.getSession().then(function(r){ if(!r||!r.data||!r.data.session){ window._authGate=1; try{ switchTab('hub'); }finally{ window._authGate=0; } } }).catch(function(){}); }catch(e){}
@@ -1606,7 +1609,7 @@ function switchTab(tab){
   document.getElementById('teacherView').classList.toggle('hidden', tab!=='teacher');
   document.getElementById('attendanceView').classList.toggle('hidden', tab!=='attendance');
   var _cv=document.getElementById('chatView'); if(_cv) _cv.classList.toggle('hidden', tab!=='chat');
-  var _ov=document.getElementById('oexamView'); if(_ov) _ov.classList.toggle('hidden', tab!=='oexam'); if(tab==='oexam' && window.oeInit) window.oeInit();
+  var _ov=document.getElementById('oexamView'); if(_ov) _ov.classList.toggle('hidden', tab!=='oexam'); if(tab==='oexam'){ exaGo(null); if(window.oeInit) window.oeInit(); }
   var _qv=document.getElementById('qaView'); if(_qv) _qv.classList.toggle('hidden', tab!=='qa'); if(tab==='qa' && window.pqaOpen) window.pqaOpen();
   try{ if(window.ChatUI){ if(tab==='chat') ChatUI.embed(document.getElementById('portalChatCard')); else ChatUI.unembed(); } }catch(e){}
   document.getElementById('navPortal').classList.toggle('active', tab==='hub' || tab==='teacher' || tab==='attendance' || tab==='chat' || tab==='qa' || tab==='oexam');
@@ -5191,7 +5194,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=68"></script>
+<script src="updates.js?v=69"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

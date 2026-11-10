@@ -861,8 +861,8 @@
       <label>All Saved Attendance Sessions</label>
       <div class="hint">Every attendance session stored in the system, including courses with no class list. Students see these counts on their dashboards. Delete any session that should not exist.</div>
       <button class="secondary" onclick="asLoad()" style="padding:8px 14px;">Refresh list</button>
-      <div id="asBody" style="margin-top:12px;"></div>
-      <div id="asMsg" style="margin-top:10px;"></div>
+      <div id="attSessBody" style="margin-top:12px;"></div>
+      <div id="attSessMsg" style="margin-top:10px;"></div>
     </div>
 
     <div class="card hidden" id="renameCourseCard">
@@ -3649,7 +3649,7 @@ async function dbmRevert(){
 
 async function asLoad(){
   if(!isOwner()) return;
-  const box=document.getElementById('asBody'); box.innerHTML='<div class="empty">Loading...</div>';
+  const box=document.getElementById('attSessBody'); box.innerHTML='<div class="empty">Loading...</div>';
   try{
     const data=await fetchSupabaseData();
     const recs=(data.attendance||[]).filter(a=>visibleCourses([a.course]).length).sort((a,b)=>String(a.course).localeCompare(String(b.course))||String(a.date).localeCompare(String(b.date)));
@@ -3669,7 +3669,7 @@ async function asLoad(){
 async function asDelete(c,d){
   if(!isOwner()){ alert('Only the owner can delete saved sessions here.'); return; }
   if(!confirm(`Delete the attendance session for "${c}" on ${d}? This cannot be undone.`)) return;
-  const msg=document.getElementById('asMsg');
+  const msg=document.getElementById('attSessMsg');
   try{
     const data=await fetchSupabaseData();
     data.attendance=(data.attendance||[]).filter(a=>!(a.course===c && a.date===d));
@@ -5194,7 +5194,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=69"></script>
+<script src="updates.js?v=70"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

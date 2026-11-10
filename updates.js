@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-10l', date:'10 Nov 2026', title:'Assignments page fixed',
+      all:[], student:[], staff:['Assignments no longer shows the attendance session list by mistake, and Exams & Assignments loads cleanly.'] },
     { id:'2026-11-10k', date:'10 Nov 2026', title:'Exams & Assignments: pick one',
       all:[], student:[], staff:['Exams and Assignments now show your list straight away. The page now shows two tiles (Online Exams, Assignments) and only the one you choose opens.'] },
     { id:'2026-11-10j', date:'10 Nov 2026', title:'Course list for score uploaders',

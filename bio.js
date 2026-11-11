@@ -18,7 +18,7 @@ async function enroll(session){
   try{ localStorage.removeItem(NO+'_'+em); }catch(e){}
 }
 async function offer(){
-  if(!ok) return;
+  if(!ok||STUDENT) return;
   try{
     var r=await supabaseClient.auth.getSession(), s=r&&r.data&&r.data.session; if(!s) return;
     var b=load(); if(b && b.email===s.user.email) return;
@@ -40,7 +40,7 @@ async function unlock(){
 }
 function drawBtn(){
   var old=document.getElementById('bioRow'); if(old) old.remove();
-  var b=load(); if(!ok||!b) return;
+  if(STUDENT) return; var b=load(); if(!ok||!b) return;
   var anchor=document.querySelector(STUDENT?'button[onclick="studentSignIn()"]':'button[onclick="signInUser()"]'); if(!anchor) return;
   var row=document.createElement('div'); row.id='bioRow'; row.style.cssText='margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
   row.innerHTML='<button type="button" class="secondary" id="bioGo" style="text-transform:none !important">&#128274; Fingerprint or face sign in</button><span id="bioOff" style="display:block;margin-top:10px;text-align:center;font-size:.78rem;color:var(--muted);text-decoration:underline;cursor:pointer">Turn off on this device</span>';

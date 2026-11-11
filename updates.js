@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11g', date:'11 Nov 2026', title:'Simpler student sign-in',
+      all:['The fingerprint / face (passkey) option is removed from the student sign-in. Use your email, password and Remember this device.'], student:[], staff:[] },
     { id:'2026-11-11f', date:'11 Nov 2026', title:'Sign-in polish',
       all:['Shorter welcome note on the student sign-in page, a centered title, and a fingerprint button that no longer wraps onto two lines.'], student:[], staff:[] },
     { id:'2026-11-11e', date:'11 Nov 2026', title:'Fresh sign-in screens',

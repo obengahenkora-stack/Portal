@@ -25,7 +25,7 @@ function go(id){ try{ if(typeof window.dashTab==='function') window.dashTab(id);
 var css=document.createElement('style');
 css.textContent=[
 '#dashOverviewCard.sh-on>h2,#dashOverviewCard.sh-on #ovClassLine,#dashOverviewCard.sh-on #dashOverview,#dashOverviewCard.sh-on #ovLinks,#dashOverviewCard.sh-on #scoreNotice,#dashOverviewCard.sh-on #attWarn{display:none !important}',
-'body.sh-on #signedInCard,body.sh-on #editDetailsLink{display:none !important}',
+'body.sh-dash #signedInCard,body.sh-dash #editDetailsLink{display:none !important}',
 'body.sh-dash .hero:not(#z),body.sh-dash .page-head:not(#z),body.sh-dash #introCard:not(#z){display:none !important}',
 '#shPage h2:before,#shPage h2:after,#shHome h1:before,#shHome h1:after{display:none !important;content:none !important}',
 '#dashOverviewCard.sh-on{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important}',

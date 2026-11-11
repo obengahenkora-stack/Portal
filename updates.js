@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11d', date:'11 Nov 2026', title:'Stay signed in, even with weak signal',
+      all:[], student:['New Remember this device tick box when you sign in. You stay signed in until you press Sign out. If your signal is weak when you open the dashboard, it keeps retrying by itself and still shows your QR Tag.'], staff:[] },
     { id:'2026-11-11c', date:'11 Nov 2026', title:'Live QR code: screenshots do not work',
       all:[], student:['Your QR Tag now changes every few seconds and works with weak signal. A screenshot or photo of it will not work.'], staff:['Scan daily codes now needs to see the code change live before it marks a student present, so screenshots and photos are rejected.'] },
     { id:'2026-11-11b', date:'11 Nov 2026', title:'Attendance: pick a method, daily code scanner',

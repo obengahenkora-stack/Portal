@@ -22,7 +22,7 @@
   async function fetchBatch(){
     if(fetching) return; fetching=true;
     try{ var t0=Date.now(); var j=await _stu({action:'stu_exc_tagcode'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not get your code');
-      var t1=Date.now(); B={idx:j.idx,slot:j.slot,step:j.step||4,sigs:j.sigs||[],off:(j.now||t1)-Math.round((t0+t1)/2),fetchedAt:t1,date:new Date((j.now||t1)).toISOString().slice(0,10)}; }
+      var t1=Date.now(); B={idx:j.idx,slot:j.slot,step:j.step||4,sigs:j.sigs||[],off:(j.now||t1)-Math.round((t0+t1)/2),fetchedAt:t1,date:new Date((j.now||t1)).toISOString().slice(0,10)}; try{ localStorage.setItem('ceQrBatch',JSON.stringify({B:B,name:myName(),email:key().split('|')[0]})); }catch(e){} }
     finally{ fetching=false; }
   }
   function curSlot(){ return Math.floor((Date.now()+B.off)/(B.step*1000)); }
@@ -41,7 +41,8 @@
     var box=$('sqBody'); if(!box) return;
     box.innerHTML='<div class="empty">Loading your code...</div>';
     try{
-      await fetchBatch(); await loadLib(); shown=-1;
+      try{ await fetchBatch(); }catch(e){ var cc=null; try{ cc=JSON.parse(localStorage.getItem('ceQrBatch')||'null'); }catch(x){} if(cc&&cc.B&&cc.email===key().split('|')[0]){ B=cc.B; } else throw e; }
+      await loadLib(); shown=-1;
       var name=myName();
       var first=name?name.trim().split(/\s+/)[0]:''; first=first?first.charAt(0).toUpperCase()+first.slice(1).toLowerCase():''; var hdr=(first?esc(first):'Student')+' QR Tag';
       box.innerHTML='<div class="sq-badge" oncontextmenu="return false"><div class="sq-hd"><b>'+hdr+'</b><span>UENR Civil &amp; Environmental Engineering</span></div><div class="sq-bd"><div class="sq-img" id="sqImg"><div class="sq-svg"></div><div class="sq-cover">Tap to show your code</div></div>'

@@ -2,7 +2,7 @@
 (function(){
   var NOTES=[
     { id:'2026-11-11i', date:'11 Nov 2026', title:'Cleaner tabs',
-      all:[], student:['The old Welcome card no longer shows on the other tabs. Use the Dashboard button to go back home, where you can sign out.'], staff:[] },
+      all:[], student:['The new welcome (your name, character, index number and Sign out) now shows at the top of every tab.'], staff:[] },
     { id:'2026-11-11h', date:'11 Nov 2026', title:'New student dashboard',
       all:[], student:['A fresh home screen: notifications (new scores, excuse decisions, exams, assignments and report replies), attendance and score rings, a tap-to-check low attendance alert, and one clean list of services. Assignments and Exams now share one tab, and so do My Reports and Report an Issue. Chat is still on the Chat button at the bottom right.'], staff:[] },
     { id:'2026-11-11g', date:'11 Nov 2026', title:'Simpler student sign-in',

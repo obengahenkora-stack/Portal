@@ -29,7 +29,7 @@ css.textContent=[
 'body.sh-dash .hero:not(#z),body.sh-dash .page-head:not(#z),body.sh-dash #introCard:not(#z){display:none !important}',
 '#shPage h2:before,#shPage h2:after,#shHome h1:before,#shHome h1:after{display:none !important;content:none !important}',
 '#dashOverviewCard.sh-on{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important}',
-'#shHome{display:block;padding-top:14px}',
+'#shHome{display:block}#shHead{display:block;padding-top:14px}',
 '#shHome *{box-sizing:border-box}',
 '.sh-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 6px}',
 '.sh-date{font-size:.82rem;color:var(--muted);margin:0}',
@@ -110,18 +110,19 @@ var low=[], exams=[], asg=[], ready=false;
 function build(){
   var ov=$('dashOverviewCard'); if(!ov||$('shHome')) return;
   var h=document.createElement('div'); h.id='shHome';
-  h.innerHTML='<div class="sh-top"><div><p class="sh-date" id="shDate"></p><h1 class="sh-hi" id="shHi"></h1></div><div class="sh-av" id="shAv"></div></div>'
-   +'<div class="sh-chips" id="shChips"></div>'
-   +'<div id="shNx" class="sh-nx"></div>'
+  h.innerHTML='<div id="shNx" class="sh-nx"></div>'
    +'<div class="sh-rings"><div class="sh-ring"><div class="r" id="shRa"><u id="shRaV">–</u></div><b>Overall attendance</b><small id="shRaS"></small></div><div class="sh-ring"><div class="r" id="shRs" style="--c:#1d6a8a"><u id="shRsV">–</u></div><b>Average score</b><small id="shRsS"></small></div></div>'
    +'<div id="shAl"></div>'
    +'<div class="sh-h2">All services</div><div id="shSv"></div>'
    +'<div class="sh-foot" id="shFoot"></div>';
   ov.insertBefore(h,ov.firstChild);
+  var rs0=$('dashResults'), hd=document.createElement('div'); hd.id='shHead';
+  hd.innerHTML='<div class="sh-top"><div><p class="sh-date" id="shDate"></p><h1 class="sh-hi" id="shHi"></h1></div><div class="sh-av" id="shAv"></div></div><div class="sh-chips" id="shChips"></div>';
+  if(rs0) rs0.insertBefore(hd,rs0.firstChild);
+  hd.addEventListener('click',function(e){ if(e.target.closest('[data-prof]')){ try{ toggleProfileSection(); var p=$('profileSection'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }catch(x){} } if(e.target.closest('[data-out]')){ try{ studentSignOut(); }catch(x){} } });
   $('shNx').addEventListener('click',function(e){ if(e.target.closest('button')) openPage(); });
   $('shSv').addEventListener('click',function(e){ var b=e.target.closest('[data-g]'); if(b) go(b.getAttribute('data-g')); });
   $('shAl').addEventListener('click',function(e){ if(e.target.closest('[data-g]')) go('dashAttCard'); });
-  $('shChips').addEventListener('click',function(e){ if(e.target.closest('[data-prof]')){ try{ toggleProfileSection(); var p=$('profileSection'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }catch(x){} } });
   $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ studentSignOut(); }catch(x){} } });
   /* keep announcements right under the home block */
   new MutationObserver(function(){ var a=$('annHome'),hh=$('shHome'); if(a&&hh&&a.previousElementSibling!==hh) hh.after(a); }).observe(ov,{childList:true});
@@ -152,7 +153,7 @@ function paint(){
   $('shHi').textContent=gr+(nm?', '+nm:'');
   var av=$('shAv'); var g=a&&a.gender; var want=g==='Female'?'F':(g==='Male'?'M':'');
   if(av.getAttribute('data-g')!==want){ av.setAttribute('data-g',want); try{ av.innerHTML=want==='F'?_AV_F:(want==='M'?_AV_M:''); }catch(e){ av.innerHTML=''; } av.style.display=want?'':'none'; }
-  var ch=[]; if(a&&a.indexNumber) ch.push('<span>'+esc(a.indexNumber)+'</span>'); if(a&&a.level) ch.push('<span>Level '+esc(a.level)+'</span>'); ch.push('<button type="button" data-prof="1">My Profile &rsaquo;</button>');
+  var ch=[]; if(a&&a.indexNumber) ch.push('<span>'+esc(a.indexNumber)+'</span>'); if(a&&a.level) ch.push('<span>Level '+esc(a.level)+'</span>'); ch.push('<button type="button" data-prof="1">My Profile &rsaquo;</button>'); ch.push('<button type="button" data-out="1">Sign out</button>');
   $('shChips').innerHTML=ch.join('');
   /* rings */
   var at=num('ovAttendance'), sc=num('ovAvgScore');
@@ -253,6 +254,7 @@ function sync(){
   var shown=!!(r&&!r.classList.contains('hidden')&&ov&&!adminViewing());
   if(shown&&!$('shHome')) build();
   if(ov) ov.classList.toggle('sh-on',shown);
+  var hh=$('shHead'); if(hh) hh.style.display=shown?'':'none';
   document.body.classList.toggle('sh-dash',!!shown);
   document.body.classList.toggle('sh-on',!!(shown&&ov&&!ov.classList.contains('pane-off')));
   if(shown&&!sync._f){ sync._f=1; setTimeout(fetchAll,800); }

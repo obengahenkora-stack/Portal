@@ -749,16 +749,18 @@
           <input type="date" id="attendanceDateInput" onchange="loadAttendanceForDate()">
         </div>
       </div>
-    <div class="att-modes" id="attModes">
-      <button type="button" data-m="list" class="on" onclick="attMode('list')">Tick list</button>
-      <button type="button" data-m="scan" onclick="attMode('scan')">Scan tags</button>
-      <button type="button" data-m="qr" onclick="attMode('qr')">QR code</button>
-    </div>
+    <div id="attPick"><div class="att-psub" style="margin:2px 0 12px">How do you want to take attendance?</div><div class="att-grid"><button type="button" class="att-tile" data-pick="list" onclick="attMode('list')" style="--g1:#10b981;--g2:#0ea5e9;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="att-tt">Tick list</span><span class="att-td">Tick each student by hand.</span></button><button type="button" class="att-tile" data-pick="scan" onclick="attMode('scan')" style="--g1:#6366f1;--g2:#8b5cf6;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></span><span class="att-tt">Scan tags</span><span class="att-td">Scan the fixed tags on student cards.</span></button><button type="button" class="att-tile" data-pick="dscan" onclick="attMode('dscan')" style="--g1:#f59e0b;--g2:#ef4444;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M20 20v.01"/></svg></span><span class="att-tt">Scan daily codes</span><span class="att-td">Scan the QR on the student's own dashboard. It changes daily.</span></button><button type="button" class="att-tile" data-pick="qr" onclick="attMode('qr')" style="--g1:#0ea5e9;--g2:#14b8a6;"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 13v3"/></svg></span><span class="att-tt">QR code</span><span class="att-td">Show a class code. Students scan it themselves.</span></button></div></div>
+    <button type="button" class="navback hidden" id="attPickBack" onclick="attPickShow()">&lsaquo; Choose another method</button>
+    <div class="att-modes" id="attModes" style="display:none"><button type="button" data-m="list" class="on"></button><button type="button" data-m="scan"></button><button type="button" data-m="dscan"></button><button type="button" data-m="qr"></button></div>
     <div id="attScanPanel" class="att-panel pane-off">
-      <div class="att-ptitle">Scan student tags</div>
-      <div class="att-psub">Hold each student's tag to the camera. They are ticked present with a beep.</div>
-      <label style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;font-size:.88rem;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer"><input type="checkbox" style="width:auto" onchange="try{localStorage.setItem('tagDailyOnly',this.checked?'1':'0')}catch(e){}" id="tagDailyChk"> Accept only the daily codes from students (ignore fixed tags)</label>
-      <button type="button" class="att-big" onclick="tagScanOpen()">&#128247;&nbsp; Start scanning</button>
+      <div class="att-ptitle">Scan tags</div>
+      <div class="att-psub">Hold each student's fixed tag to the camera. They are ticked present with a beep.</div>
+      <button type="button" class="att-big" onclick="tagScanOpen('tag')">&#128247;&nbsp; Start scanning</button>
+    </div>
+    <div id="attDailyPanel" class="att-panel pane-off">
+      <div class="att-ptitle">Scan daily codes</div>
+      <div class="att-psub">Scan the QR code the student shows on their own dashboard (My QR Tag). It changes every day, so only today's code works.</div>
+      <button type="button" class="att-big" onclick="tagScanOpen('daily')">&#128247;&nbsp; Start scanning</button>
     </div>
     <div class="hidden att-panel pane-off" id="qrCheckinCard">
       <div class="att-ptitle">QR check-in</div>
@@ -1623,12 +1625,21 @@ function switchTab(tab){
 
 function attMode(m){
   document.querySelectorAll('#attModes button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-m')===m); });
-  var sp=document.getElementById('attScanPanel'), qr=document.getElementById('qrCheckinCard');
+  var sp=document.getElementById('attScanPanel'), dp=document.getElementById('attDailyPanel'), qr=document.getElementById('qrCheckinCard');
   if(sp) sp.classList.toggle('pane-off', m!=='scan');
+  if(dp) dp.classList.toggle('pane-off', m!=='dscan');
   if(qr) qr.classList.toggle('pane-off', m!=='qr');
-  var blk=document.getElementById('attChecklistBlock'); if(blk) blk.classList.toggle('only-pres', m!=='list');
+  var blk=document.getElementById('attChecklistBlock'); if(blk){ blk.classList.remove('pane-off'); blk.classList.toggle('only-pres', m!=='list'); }
+  var pk=document.getElementById('attPick'), bk=document.getElementById('attPickBack'); if(pk) pk.classList.add('pane-off'); if(bk) bk.classList.remove('hidden');
   attPresSync();
 }
+function attPickShow(){
+  ['attScanPanel','attDailyPanel','qrCheckinCard'].forEach(function(i){ var e=document.getElementById(i); if(e) e.classList.add('pane-off'); });
+  var blk=document.getElementById('attChecklistBlock'); if(blk) blk.classList.add('pane-off');
+  var pk=document.getElementById('attPick'), bk=document.getElementById('attPickBack'); if(pk) pk.classList.remove('pane-off'); if(bk) bk.classList.add('hidden');
+  try{ if(typeof _tagS!=='undefined' && _tagS) tagScanClose(); }catch(e){}
+}
+document.addEventListener('DOMContentLoaded',function(){ try{ attPickShow(); }catch(e){} });
 
 /* Scan/QR modes: show only students already marked present */
 function attPresSync(){
@@ -1653,12 +1664,12 @@ window.addEventListener('beforeunload',function(e){ if(_tagS){ e.preventDefault(
 function tagAudio(){ try{ var C=window.AudioContext||window.webkitAudioContext; if(!C||!_tagS) return null; if(!_tagS.ac) _tagS.ac=new C(); if(_tagS.ac.state==='suspended') _tagS.ac.resume(); return _tagS.ac; }catch(e){ return null; } }
 function tagBeep(ok){ try{ var ac=tagAudio(); if(ac){ var t=ac.currentTime, g=ac.createGain(); g.connect(ac.destination); g.gain.setValueAtTime(1,t); g.gain.exponentialRampToValueAtTime(.001,t+(ok?.4:.55)); var tones=ok?[[988,0,.14],[1319,.14,.26]]:[[300,0,.2],[200,.22,.3]]; tones.forEach(function(x){ var o=ac.createOscillator(); o.type='square'; o.frequency.value=x[0]; o.connect(g); o.start(t+x[1]); o.stop(t+x[1]+x[2]); }); } }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(ok?60:[80,60,80]); }catch(e){} }
 function tagLoadLib(){ return new Promise(function(res,rej){ if(window.jsQR) return res(); var urls=['jsQR.js?v=1','https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'], i=0; (function next(){ if(window.jsQR) return res(); if(i>=urls.length) return rej(new Error('Could not load the scanner. Check your internet.')); var s=document.createElement('script'); s.src=urls[i++]; s.onload=function(){ window.jsQR?res():next(); }; s.onerror=next; document.head.appendChild(s); })(); }); }
-async function tagScanOpen(){
+async function tagScanOpen(mode){
   const course=document.getElementById('attendanceCourseSelect').value, date=document.getElementById('attendanceDateInput').value;
   if(!course||!date){ alert('Select a course and date first.'); return; }
   if(!document.querySelectorAll('#attendanceChecklist .attendance-row').length){ alert('The class list has not loaded yet. Pick the course and date and wait for the names to appear.'); return; }
   if(_tagS) return;
-  _tagS={course:course,date:date,n:0,last:'',lastAt:0,stream:null,raf:0,busy:false}; tagAudio(); try{ history.pushState({tag:1},''); _tagS.hs=1; window.addEventListener('popstate',tagBack); }catch(e){}
+  _tagS={mode:(mode==='daily'?'daily':'tag'),course:course,date:date,n:0,last:'',lastAt:0,stream:null,raf:0,busy:false}; tagAudio(); try{ history.pushState({tag:1},''); _tagS.hs=1; window.addEventListener('popstate',tagBack); }catch(e){}
   const o=document.createElement('div'); o.id='tagOv'; o.style.cssText='position:fixed;inset:0;z-index:99990;background:#000;color:#fff;display:flex;flex-direction:column;font-family:inherit';
   o.innerHTML='<div style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#0b2e1f"><div><div style="font-weight:700">'+escapeHtml(course)+'</div><div style="font-size:.8rem;opacity:.8">'+escapeHtml(date)+' · present <b id="tagN">'+tagPresCount()+'</b></div></div><button type="button" id="tagDone" style="background:#fff;color:#0b2e1f;border:0;border-radius:10px;padding:10px 16px;font-weight:700">Done</button></div>'
    +'<div style="position:relative;flex:1;min-height:0"><video id="tagVid" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:50%;top:50%;width:62%;max-width:300px;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div></div>'
@@ -1685,20 +1696,20 @@ async function tagScanOpen(){
   loop();
 }
 function tagShow(ok,html){ const r=document.getElementById('tagRes'); if(!r) return; r.style.background=ok==='ok'?'#1f8a4c':(ok==='warn'?'#b7791f':'#8a1f15'); r.innerHTML=html; }
-document.addEventListener('DOMContentLoaded',function(){ try{ var c=document.getElementById('tagDailyChk'); if(c) c.checked=(localStorage.getItem('tagDailyOnly')==='1'); }catch(e){} });
-function tagDailyOnly(){ try{ return localStorage.getItem('tagDailyOnly')==='1'; }catch(e){ return false; } }
 function tagHandle(raw){
   raw=String(raw||'').trim();
-  if(/^UT1\.[A-Za-z0-9]+\.\d{8}\.[a-f0-9]{12}$/.test(raw)){
-    const now=Date.now(); if(_tagS.verifying||(raw===_tagS.lastRaw&&now-_tagS.lastAt<2500)) return; _tagS.lastRaw=raw; _tagS.lastAt=now; _tagS.verifying=true;
+  const isDaily=/^UT1\.[A-Za-z0-9]+\.\d{8}\.[a-f0-9]{12}$/.test(raw), now=Date.now();
+  if(isDaily){
+    if(_tagS.mode!=='daily'){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">This is a daily code</div>Go back and choose Scan daily codes.'); } return; }
+    if(_tagS.verifying||(raw===_tagS.lastRaw&&now-_tagS.lastAt<2500)) return; _tagS.lastRaw=raw; _tagS.lastAt=now; _tagS.verifying=true;
     teamApi({action:'stu_exc_tagverify',code:raw}).then(function(j){
       _tagS.verifying=false; if(!_tagS) return;
       if(j&&j.ok&&j.valid){ _tagS.lastAt=0; tagHandle0(j.index); }
-      else{ tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">'+((j&&j.reason==='old')?'Old code (not today)':'Not a valid code')+'</div>Ask the student to open My QR Tag on their dashboard.'); }
+      else{ tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">'+((j&&j.reason==='old')?'Old code (not today)':'Not a valid code')+'</div>Ask the student to open the dashboard and show My QR Tag.'); }
     }).catch(function(){ if(_tagS) _tagS.verifying=false; tagBeep(false); tagShow('bad','Could not check the code. Check your internet.'); });
     return;
   }
-  if(tagDailyOnly()){ const now2=Date.now(); if(now2-_tagS.lastAt>2500){ _tagS.lastAt=now2; tagBeep(false); tagShow('bad','Fixed tags are switched off. Use the daily code from My QR Tag.'); } return; }
+  if(_tagS.mode==='daily'){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">This is a fixed tag</div>Go back and choose Scan tags.'); } return; }
   tagHandle0(raw);
 }
 function tagHandle0(raw){
@@ -5213,7 +5224,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=82"></script>
+<script src="updates.js?v=83"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

@@ -605,6 +605,10 @@
     </div>
 
     <div class="card hidden" id="settingsCard">
+      <label>Course emails</label>
+      <div class="hint">Emails to students when material, announcements or results are posted. Sent from the portal's Gmail account.</div>
+      <div id="mailStatus" class="hint">Checking...</div>
+      <button class="secondary" type="button" onclick="mailTest()" style="margin-bottom:16px">Send a test email to me</button>
       <label>Device Lock (Student Lookup)</label>
       <div class="hint">When ON, once a student looks up their index number on a device, that device can only ever check that same index number again. When OFF, students can search any index number freely.</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -1449,6 +1453,25 @@ async function auditApi(payload){
     return await r.json();
   }catch(e){ return {ok:false,error:e.message}; }
 }
+async function mailCall(payload){
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/notify',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    return await r.json();
+  }catch(e){ return {ok:false,error:e.message}; }
+}
+async function mailStatus(){
+  const el=document.getElementById('mailStatus'); if(!el) return;
+  const j=await mailCall({action:'status'});
+  if(!j||!j.ok){ el.textContent='Could not check. '+((j&&j.error)||''); return; }
+  el.textContent=j.configured?('Email is ON (via '+j.via+'). Sent today: '+j.today+' of '+j.cap+'. Waiting: '+j.waiting+'.'):'Email is not switched on yet.';
+}
+async function mailTest(){
+  const el=document.getElementById('mailStatus'); el.textContent='Sending a test...';
+  const j=await mailCall({action:'send_test'});
+  el.textContent=(j&&j.ok)?('Test sent to '+j.sentTo+'. Check your inbox (and spam).'):('Test failed: '+((j&&j.error)||'unknown'));
+}
+setTimeout(function(){ try{ mailStatus(); }catch(e){} },4000);
 async function copyScores(){
   const m=document.getElementById('backendTestMsg'); m.textContent='Copying...';
   const j=await teamApi({action:'bin_migrate'});
@@ -5256,7 +5279,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=102"></script>
+<script src="updates.js?v=103"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -24,6 +24,9 @@
       clearTimeout(timer); var now=new Date(), nx=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1,0,0,5)); timer=setTimeout(function(){ if($('dashQrCard')&&!$('dashQrCard').classList.contains('hidden')) sqInit(); },Math.max(1000,nx-now));
     }catch(e){ box.innerHTML='<div class="empty">'+esc(e.message||'Could not load')+'</div>'; }
   };
-  try{ var _dt=window.dashTab; if(typeof _dt==='function' && $('sqBody')){ window.dashTab=function(id){ var r=_dt.apply(this,arguments); if(id==='dashQrCard') sqInit(); return r; }; } }catch(e){}
-  document.addEventListener('visibilitychange',function(){ try{ if(!document.hidden && $('dashQrCard') && !$('dashQrCard').classList.contains('hidden')) sqInit(); }catch(e){} });
+  var lastKey='';
+  function key(){ var em=''; try{ em=(typeof studentCurrentEmail!=='undefined'&&studentCurrentEmail)||''; }catch(e){} return em+'|'+(window._asTest||'')+'|'+new Date().toISOString().slice(0,10); }
+  function visible(){ var c=$('dashQrCard'); return c && c.offsetParent!==null; }
+  setInterval(function(){ try{ var k=key(); if(k.charAt(0)!=='|' && visible() && k!==lastKey){ lastKey=k; sqInit(); } }catch(e){} },2000);
+  document.addEventListener('visibilitychange',function(){ try{ if(!document.hidden && visible()) lastKey=''; }catch(e){} });
 })();

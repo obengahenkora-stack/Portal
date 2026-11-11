@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11m', date:'11 Nov 2026', title:'Activity log text fix',
+      all:[], student:[], staff:['The Activity Log message is no longer cut off at the top.'] },
     { id:'2026-11-11l', date:'11 Nov 2026', title:'Activity log now works',
       all:[], student:[], staff:['The Activity Log (owner only) now shows what TAs and lecturers upload, change, grade, release or remove, with their name and the time. It starts filling from today.'] },
     { id:'2026-11-11k', date:'11 Nov 2026', title:'Faster on weak networks',

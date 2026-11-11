@@ -1421,6 +1421,31 @@ async function teamApi(payload){
   try{
     const { data:{ session } } = await supabaseClient.auth.getSession();
     const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    const out=await r.json();
+    try{ if(out&&out.ok) auditNote(payload); }catch(e){}
+    return out;
+  }catch(e){ return {ok:false,error:e.message}; }
+}
+/* Activity log: record what staff change. The server works out who it was. */
+function auditNote(p){
+  const a=p&&p.action; if(!a) return;
+  const M={score_log_add:'Changed scores',as_save:'Saved an assignment',as_delete:'Deleted an assignment',as_grade:'Graded an assignment',as_release:'Released assignment results',oe_save:'Saved an exam',oe_grade:'Graded an exam',oe_release:'Released exam results',oe_delete:'Deleted an exam',team_upsert:'Added or changed a team member',team_remove:'Removed a team member',course_rename:'Renamed a course'};
+  if(!M[a]) return;
+  let detail='', course='';
+  if(a==='score_log_add' && p.batch){ const e=p.batch.e||[]; detail=e.length+' score'+(e.length===1?'':'s')+(p.batch.label?' ('+p.batch.label+')':''); course=(e[0]&&e[0].c)||''; }
+  else if(a==='team_upsert'&&p.member) detail=p.member.email||'';
+  else if(a==='team_remove') detail=p.email||'';
+  else if(a==='course_rename') detail=(p.from||p.old||'')+(p.to||p.new?' to '+(p.to||p.new):'');
+  else detail=(p.title||(p.as&&p.as.title)||(p.exam&&p.exam.title)||'');
+  supabaseClient.auth.getSession().then(({data:{session}})=>{
+    if(!session) return;
+    fetch(SUPABASE_URL+'/functions/v1/audit',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session.access_token},body:JSON.stringify({action:'audit_add',what:M[a],detail:String(detail||'').slice(0,200),course:String(course||'').slice(0,80)})}).catch(()=>{});
+  }).catch(()=>{});
+}
+async function auditApi(payload){
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/audit',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     return await r.json();
   }catch(e){ return {ok:false,error:e.message}; }
 }
@@ -2100,9 +2125,9 @@ async function decidePending(id,decision){
 async function loadActivity(){
   const box=document.getElementById('activityList'); if(!box) return;
   try{
-    const j=await teamApi({action:'audit_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
+    const j=await auditApi({action:'audit_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
     const rows=j.items||[];
-    if(!rows.length){ box.innerHTML='<div class="hint">Nothing recorded yet.</div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="hint">Nothing recorded yet. Changes made from now on will appear here.</div>'; return; }
     box.innerHTML='<table style="font-size:.82rem"><tr><th>When</th><th>Who</th><th>What</th></tr>'+rows.map(r=>'<tr><td style="white-space:nowrap">'+escapeHtml(new Date(r.at).toLocaleString())+'</td><td>'+escapeHtml(r.byName||r.by)+'<div class="hint" style="margin:0">'+escapeHtml(r.role||'')+'</div></td><td>'+escapeHtml(r.detail||'')+(r.course?'<div class="hint" style="margin:0">'+escapeHtml(r.course)+'</div>':'')+'</td></tr>').join('')+'</table>';
   }catch(e){ box.innerHTML='<div class="hint">Could not load. '+escapeHtml(e.message||'')+'</div>'; }
 }
@@ -5230,7 +5255,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=99"></script>
+<script src="updates.js?v=100"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

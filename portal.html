@@ -1888,7 +1888,7 @@ var _TCH_TILES=[
  {g:'Teaching',id:'lectureMaterialsCard',t:'Lecture Hall',d:'Post materials and announcements to students.',i:'file',c:'t-go'},
  {g:'Teaching',id:'manageCoursesCard',t:'Manage Courses',d:'Courses students can report issues on.',i:'list'},
  {g:'Teaching',id:'reportsCard',t:'Issue Reports',d:'Read and reply to student reports.',i:'users'},
- {g:'Administration',id:'pendingCard',t:'Pending Approvals',d:'Review TA uploads before students see them.',i:'check'},
+ {g:'Administration',id:'pendingCard',t:'Pending Approvals',d:'Review TA uploads before students see them.',i:'check',s:1},
  {g:'Administration',id:'activityCard',t:'Activity Log',d:'What TAs uploaded, added and changed.',i:'list'},
  {g:'Administration',id:'teamAccessCard',t:'Team Access',d:'Who can sign in and their role.',i:'users'},
  {g:'Administration',id:'settingsCard',t:'Device Lock',d:'Student lookup device settings.',i:'db'},
@@ -1910,6 +1910,7 @@ function lchRender(k){
     if(t.id==='qrCheckinCard') return; // QR now lives inside Take Attendance
     var el=_attCard(t.id); if(!el || el.classList.contains('hidden')) return;
     if(t.g!==lastG){ if(open) html+='</div>'; html+='<div class="att-group">'+t.g+'</div><div class="att-grid">'; lastG=t.g; open=true; }
+    if(t.s){ html+='<button type="button" class="att-tile" disabled aria-disabled="true" style="opacity:.6;cursor:default"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+_ATT_IC[t.i]+'</svg></span><span class="att-tt">'+t.t+' <span style="font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;background:#fde7c8;color:#8a4b00;border-radius:999px;padding:2px 8px;margin-left:4px;white-space:nowrap">Coming soon</span></span><span class="att-td">'+t.d+'</span></button>'; return; }
     html+='<button class="att-tile '+(t.c||'')+'" onclick="lchGo(\''+k+'\',\''+t.id+'\')"><span class="att-ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+_ATT_IC[t.i]+'</svg></span><span class="att-tt">'+t.t+'</span><span class="att-td">'+t.d+'</span></button>';
   });
   if(open) html+='</div>';
@@ -2098,7 +2099,7 @@ async function loadPending(){
   try{
     const j=await teamApi({action:'pending_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
     const wait=(j.items||[]).filter(i=>i.status==='pending'), done=(j.items||[]).filter(i=>i.status!=='pending').slice(0,10);
-    try{ const t=_TCH_TILES.filter(x=>x.id==='pendingCard')[0]; if(t){ t.d=wait.length?(wait.length+' waiting for you'):'Review TA uploads before students see them.'; t.c=wait.length?'t-lab':''; attRenderTiles(); } }catch(e){}
+    try{ const t=_TCH_TILES.filter(x=>x.id==='pendingCard')[0]; if(t&&!t.s){ t.d=wait.length?(wait.length+' waiting for you'):'Review TA uploads before students see them.'; t.c=wait.length?'t-lab':''; attRenderTiles(); } }catch(e){}
     let h='';
     if(!wait.length) h+='<div class="hint">Nothing is waiting for approval.</div>';
     wait.forEach(i=>{
@@ -5255,7 +5256,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=101"></script>
+<script src="updates.js?v=102"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

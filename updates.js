@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11n', date:'11 Nov 2026', title:'Coming soon labels',
+      all:[], student:[], staff:['Pending Approvals now shows a Coming soon badge until it is ready, instead of an error.'] },
     { id:'2026-11-11m', date:'11 Nov 2026', title:'Activity log text fix',
       all:[], student:[], staff:['The Activity Log message is no longer cut off at the top.'] },
     { id:'2026-11-11l', date:'11 Nov 2026', title:'Activity log now works',

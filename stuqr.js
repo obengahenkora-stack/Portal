@@ -9,7 +9,7 @@
   function loadLib(){ if(window.qrcode) return Promise.resolve(); if(lib) return lib; lib=new Promise(function(res,rej){ var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.onload=res; s.onerror=function(){ lib=null; rej(new Error('Could not load the QR maker. Check your internet and try again.')); }; document.head.appendChild(s); }); return lib; }
   var timer=null;
   var liveT=null;
-  function liveStart(){ clearInterval(liveT); function t(){ var e=$('sqLive'); if(!e){ clearInterval(liveT); return; } var d=new Date(); e.textContent='LIVE '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); } t(); liveT=setInterval(t,1000); }
+  function liveStart(){ clearInterval(liveT); function t(){ var e=$('sqLive'); if(!e){ clearInterval(liveT); return; } var d=new Date(Date.now()+(B?B.off:0)); e.textContent='LIVE '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); } t(); liveT=setInterval(t,1000); }
   function cover(on){ var i=$('sqImg'); if(i) i.classList.toggle('off',!!on); }
   document.addEventListener('visibilitychange',function(){ if(document.hidden) cover(true); });
   window.addEventListener('blur',function(){ cover(true); });
@@ -17,21 +17,36 @@
   document.addEventListener('contextmenu',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('#dashQrCard')) ev.preventDefault(); });
 
   function fdate(d){ try{ return new Date(d+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){ return d; } }
+  var B=null, tick=null, shown=-1, fetching=false;
+  async function fetchBatch(){
+    if(fetching) return; fetching=true;
+    try{ var t0=Date.now(); var j=await _stu({action:'stu_exc_tagcode'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not get your code');
+      var t1=Date.now(); B={idx:j.idx,slot:j.slot,step:j.step||4,sigs:j.sigs||[],off:(j.now||t1)-Math.round((t0+t1)/2),fetchedAt:t1,date:new Date((j.now||t1)).toISOString().slice(0,10)}; }
+    finally{ fetching=false; }
+  }
+  function curSlot(){ return Math.floor((Date.now()+B.off)/(B.step*1000)); }
+  function paint(){
+    var box=$('sqBody'); if(!box||!B) return;
+    var sl=curSlot(), i=sl-B.slot, left=B.sigs.length-i;
+    if(left<75 && !fetching && (Date.now()-B.fetchedAt>20000)){ fetchBatch().catch(function(){}); }
+    var img=$('sqImg'); if(!img) return;
+    if(i<0||i>=B.sigs.length){ img.classList.add('off'); var cv=img.querySelector('.sq-cover'); if(cv) cv.textContent='No signal. Reconnect to refresh your code.'; shown=-1; return; }
+    if(sl===shown) return; shown=sl;
+    var q=window.qrcode(0,'M'); q.addData('UT2.'+B.idx+'.'+sl+'.'+B.sigs[i]); q.make();
+    var holder=img.querySelector('.sq-svg'); if(holder) holder.innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true});
+    var cv2=img.querySelector('.sq-cover'); if(cv2 && cv2.textContent.indexOf('No signal')===0){ cv2.textContent='Tap to show your code'; img.classList.remove('off'); }
+  }
   window.sqInit=async function(){
     var box=$('sqBody'); if(!box) return;
     box.innerHTML='<div class="empty">Loading your code...</div>';
     try{
-      var j=await _stu({action:'stu_exc_tagcode'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not get your code');
-      await loadLib();
-      var q=window.qrcode(0,'M'); q.addData(j.code); q.make();
+      await fetchBatch(); await loadLib(); shown=-1;
       var name=''; try{ name=(window.studentCurrentAccount&&studentCurrentAccount.name)||''; }catch(e){}
-      var ix=j.code.split('.')[1]||'';
       var hdr=(name?esc(name):'Student')+' QR Tag';
-      box.innerHTML='<div class="sq-badge" oncontextmenu="return false"><div class="sq-hd"><b>'+hdr+'</b><span>UENR Civil &amp; Environmental Engineering</span></div><div class="sq-bd"><div class="sq-img" id="sqImg">'+q.createSvgTag({cellSize:6,margin:0,scalable:true})+'<div class="sq-cover">Tap to show your code</div></div>'
-        +'<div class="sq-live" id="sqLive"></div><div class="sq-ix">'+esc(ix)+'</div><span class="sq-d">Valid today &middot; '+esc(fdate(j.date))+'</span>'
-        +'<div class="sq-n">Show this only to your lecturer or TA. It changes every day. Do not share or photograph it.</div></div></div>';
-      liveStart();
-      clearTimeout(timer); var now=new Date(), nx=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1,0,0,5)); timer=setTimeout(function(){ if($('dashQrCard')&&!$('dashQrCard').classList.contains('hidden')) sqInit(); },Math.max(1000,nx-now));
+      box.innerHTML='<div class="sq-badge" oncontextmenu="return false"><div class="sq-hd"><b>'+hdr+'</b><span>UENR Civil &amp; Environmental Engineering</span></div><div class="sq-bd"><div class="sq-img" id="sqImg"><div class="sq-svg"></div><div class="sq-cover">Tap to show your code</div></div>'
+        +'<div class="sq-live" id="sqLive"></div><div class="sq-ix">'+esc(B.idx)+'</div><span class="sq-d">Live code &middot; '+esc(fdate(B.date))+'</span>'
+        +'<div class="sq-n">Show this only to your lecturer or TA. The code changes every few seconds, so a screenshot or photo will not work. Do not share it.</div></div></div>';
+      liveStart(); paint(); clearInterval(tick); tick=setInterval(paint,500);
     }catch(e){ box.innerHTML='<div class="empty">'+esc(e.message||'Could not load')+'</div>'; }
   };
   var lastKey='';

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11c', date:'11 Nov 2026', title:'Live QR code: screenshots do not work',
+      all:[], student:['Your QR Tag now changes every few seconds and works with weak signal. A screenshot or photo of it will not work.'], staff:['Scan daily codes now needs to see the code change live before it marks a student present, so screenshots and photos are rejected.'] },
     { id:'2026-11-11b', date:'11 Nov 2026', title:'Attendance: pick a method, daily code scanner',
       all:[], student:['My QR Tag at the bottom of your dashboard now looks like a proper ID card.'], staff:['Take Attendance now starts with tiles: Tick list, Scan tags (fixed tags), Scan daily codes (the students own QR), and QR code (class code).'] },
     { id:'2026-11-11a', date:'11 Nov 2026', title:'My QR Tag: a daily attendance code',

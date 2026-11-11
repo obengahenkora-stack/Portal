@@ -759,7 +759,7 @@
     </div>
     <div id="attDailyPanel" class="att-panel pane-off">
       <div class="att-ptitle">Scan daily codes</div>
-      <div class="att-psub">Scan the QR code the student shows on their own dashboard (My QR Tag). It changes every day, so only today's code works.</div>
+      <div class="att-psub">Scan the QR the student shows on their own dashboard. It changes every few seconds, so keep the camera on it until it says marked present. Screenshots and photos are rejected.</div>
       <button type="button" class="att-big" onclick="tagScanOpen('daily')">&#128247;&nbsp; Start scanning</button>
     </div>
     <div class="hidden att-panel pane-off" id="qrCheckinCard">
@@ -1698,17 +1698,21 @@ async function tagScanOpen(mode){
 function tagShow(ok,html){ const r=document.getElementById('tagRes'); if(!r) return; r.style.background=ok==='ok'?'#1f8a4c':(ok==='warn'?'#b7791f':'#8a1f15'); r.innerHTML=html; }
 function tagHandle(raw){
   raw=String(raw||'').trim();
-  const isDaily=/^UT1\.[A-Za-z0-9]+\.\d{8}\.[a-f0-9]{12}$/.test(raw), now=Date.now();
+  const isDaily=/^UT2\.[A-Za-z0-9]+\.\d{6,12}\.[a-f0-9]{10}$/.test(raw), now=Date.now();
   if(isDaily){
     if(_tagS.mode!=='daily'){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">This is a daily code</div>Go back and choose Scan daily codes.'); } return; }
-    if(_tagS.verifying||(raw===_tagS.lastRaw&&now-_tagS.lastAt<2500)) return; _tagS.lastRaw=raw; _tagS.lastAt=now; _tagS.verifying=true;
+    if(_tagS.verifying||raw===_tagS.lastRaw) return; _tagS.lastRaw=raw; _tagS.verifying=true;
     teamApi({action:'stu_exc_tagverify',code:raw}).then(function(j){
       _tagS.verifying=false; if(!_tagS) return;
-      if(j&&j.ok&&j.valid){ _tagS.lastAt=0; tagHandle0(j.index); }
-      else{ tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">'+((j&&j.reason==='old')?'Old code (not today)':'Not a valid code')+'</div>Ask the student to open the dashboard and show My QR Tag.'); }
+      if(!(j&&j.ok&&j.valid)){ _tagS.pend=null; tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">'+((j&&j.reason==='old')?'Old code (a screenshot or photo?)':'Not a valid code')+'</div>The student must show the live code on their own phone.'); return; }
+      _tagS.pend=_tagS.pend||{}; var pd=_tagS.pend[j.index], t=Date.now();
+      if(!pd||t-pd.at>30000){ _tagS.pend[j.index]={slot:j.slot,at:t}; tagShow('warn','<div style="font-size:1.05rem">'+escapeHtml(j.index)+'</div>Checking it is live. Keep the code in view...'); return; }
+      if(j.slot===pd.slot) return;           // same version again, keep waiting for the next one
+      delete _tagS.pend[j.index]; tagHandle0(j.index);
     }).catch(function(){ if(_tagS) _tagS.verifying=false; tagBeep(false); tagShow('bad','Could not check the code. Check your internet.'); });
     return;
   }
+  if(/^UT[0-9]\./.test(raw)){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; tagBeep(false); tagShow('bad','Old type of code. Ask the student to refresh their dashboard.'); } return; }
   if(_tagS.mode==='daily'){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">This is a fixed tag</div>Go back and choose Scan tags.'); } return; }
   tagHandle0(raw);
 }
@@ -5224,7 +5228,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=84"></script>
+<script src="updates.js?v=85"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

@@ -645,6 +645,7 @@
         <button class="ov-link" data-go="dashAttCard"><i>&#9989;</i><b>My Attendance</b><span id="ovsAtt">View your attendance</span></button>
         <button class="ov-link" data-go="dashAssignCard"><i>&#128204;</i><b>Assignments</b><span>Coursework and deadlines</span></button>
         <button class="ov-link" data-go="dashExamCard"><i>&#128221;</i><b>Exams</b><span>Online exams for your courses</span></button>
+        <button class="ov-link" data-go="dashQrCard"><i>&#128273;</i><b>My QR Tag</b><span>Your daily attendance code</span></button>
         <button class="ov-link" data-go="dashExcuseCard"><i>&#128221;</i><b>Absence Excuse</b><span>Tell your lecturer why you missed class</span></button>
         <button class="ov-link" data-go="dashReportsCard"><i>&#128172;</i><b>My Reports</b><span id="ovsRep">View replies</span></button>
         <button class="ov-link" data-go="dashQaCard"><i>&#10067;</i><b>Q&amp;A Board</b><span>Ask and answer questions</span></button>
@@ -679,6 +680,12 @@
       <h2>Exams</h2>
       <div style="font-size:.85rem;color:var(--muted)">Exams your lecturers have set for your courses. Your camera must be on while you write.</div>
       <div id="oesBody"></div>
+    </div>
+
+    <div class="card dash-sec" id="dashQrCard">
+      <h2>My QR Tag</h2>
+      <div style="font-size:.85rem;color:var(--muted)">Your personal attendance code. Your lecturer or TA scans it to mark you present. It changes every day.</div>
+      <div id="sqBody"></div>
     </div>
 
     <div class="card dash-sec" id="dashExcuseCard">
@@ -2201,9 +2208,10 @@ function renderWelcome(){
 <script src="darkfix.js"></script>
 <script src="absence.js?v=4"></script>
 <script src="oexam-stu.js?v=6"></script>
+<script src="stuqr.js?v=1"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=79"></script>
+<script src="updates.js?v=80"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

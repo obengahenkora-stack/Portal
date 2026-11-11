@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11a', date:'11 Nov 2026', title:'My QR Tag: a daily attendance code',
+      all:[], student:['New My QR Tag on your dashboard: a personal QR code that changes every day. Show it to your lecturer or TA to be marked present.'], staff:['Scan tags now also reads the students daily codes and checks they are for today. You can switch off fixed tags with the new option above Start scanning.'] },
     { id:'2026-11-10s', date:'10 Nov 2026', title:'TAs now see all their absence excuses',
       all:[], student:[], staff:['A TA or lecturer now sees every absence excuse for their assigned courses, including the A and B groups, instead of only some.'] },
     { id:'2026-11-10r', date:'10 Nov 2026', title:'Choose who can approve absence excuses',

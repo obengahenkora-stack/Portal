@@ -757,6 +757,7 @@
     <div id="attScanPanel" class="att-panel pane-off">
       <div class="att-ptitle">Scan student tags</div>
       <div class="att-psub">Hold each student's tag to the camera. They are ticked present with a beep.</div>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;font-size:.88rem;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer"><input type="checkbox" style="width:auto" onchange="try{localStorage.setItem('tagDailyOnly',this.checked?'1':'0')}catch(e){}" id="tagDailyChk"> Accept only the daily codes from students (ignore fixed tags)</label>
       <button type="button" class="att-big" onclick="tagScanOpen()">&#128247;&nbsp; Start scanning</button>
     </div>
     <div class="hidden att-panel pane-off" id="qrCheckinCard">
@@ -1684,7 +1685,23 @@ async function tagScanOpen(){
   loop();
 }
 function tagShow(ok,html){ const r=document.getElementById('tagRes'); if(!r) return; r.style.background=ok==='ok'?'#1f8a4c':(ok==='warn'?'#b7791f':'#8a1f15'); r.innerHTML=html; }
+document.addEventListener('DOMContentLoaded',function(){ try{ var c=document.getElementById('tagDailyChk'); if(c) c.checked=(localStorage.getItem('tagDailyOnly')==='1'); }catch(e){} });
+function tagDailyOnly(){ try{ return localStorage.getItem('tagDailyOnly')==='1'; }catch(e){ return false; } }
 function tagHandle(raw){
+  raw=String(raw||'').trim();
+  if(/^UT1\.[A-Za-z0-9]+\.\d{8}\.[a-f0-9]{12}$/.test(raw)){
+    const now=Date.now(); if(_tagS.verifying||(raw===_tagS.lastRaw&&now-_tagS.lastAt<2500)) return; _tagS.lastRaw=raw; _tagS.lastAt=now; _tagS.verifying=true;
+    teamApi({action:'stu_tag_verify',code:raw}).then(function(j){
+      _tagS.verifying=false; if(!_tagS) return;
+      if(j&&j.ok&&j.valid){ _tagS.lastAt=0; tagHandle0(j.index); }
+      else{ tagBeep(false); tagShow('bad','<div style="font-size:1.05rem">'+((j&&j.reason==='old')?'Old code (not today)':'Not a valid code')+'</div>Ask the student to open My QR Tag on their dashboard.'); }
+    }).catch(function(){ if(_tagS) _tagS.verifying=false; tagBeep(false); tagShow('bad','Could not check the code. Check your internet.'); });
+    return;
+  }
+  if(tagDailyOnly()){ const now2=Date.now(); if(now2-_tagS.lastAt>2500){ _tagS.lastAt=now2; tagBeep(false); tagShow('bad','Fixed tags are switched off. Use the daily code from My QR Tag.'); } return; }
+  tagHandle0(raw);
+}
+function tagHandle0(raw){
   const idx=tagIdxFrom(raw), now=Date.now();
   if(!idx){ if(now-_tagS.lastAt>2500){ _tagS.lastAt=now; _tagS.last=''; tagBeep(false); tagShow('bad','Not a student tag'); } return; }
   if(idx===_tagS.last && now-_tagS.lastAt<2500) return;      // same tag still in view
@@ -5196,7 +5213,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=4"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=79"></script>
+<script src="updates.js?v=80"></script>
 <script src="bio.js?v=2"></script>
 <script>
 (function(){

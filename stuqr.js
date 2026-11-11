@@ -13,7 +13,7 @@
     var box=$('sqBody'); if(!box) return;
     box.innerHTML='<div class="empty">Loading your code...</div>';
     try{
-      var j=await _stu({action:'stu_tag_code'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not get your code');
+      var j=await _stu({action:'stu_exc_tagcode'}); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not get your code');
       await loadLib();
       var q=window.qrcode(0,'M'); q.addData(j.code); q.make();
       var name=''; try{ name=(window.studentCurrentAccount&&studentCurrentAccount.name)||''; }catch(e){}

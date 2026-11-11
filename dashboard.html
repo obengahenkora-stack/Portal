@@ -2040,7 +2040,13 @@ async function saveTypeGate(){
   if(!_tgPick){ msg.innerHTML='<div class="msg err">Please choose Regular or Weekend.</div>'; return; }
   msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
-    await _stu({action:'stu_patch_me', patch:{student_type:_tgPick}});
+    try{ await _stu({action:'stu_patch_me', patch:{student_type:_tgPick}}); }
+    catch(e1){
+      if(!/nothing to save/i.test(String(e1&&e1.message))) throw e1;
+      /* No saved row yet (or the type is already set): save the whole record instead. */
+      var _r=studentCurrentAccount||{};
+      await _stu({action:'stu_save_me', record:{ index_number:_r.indexNumber, name:_r.name, level:_r.level, department:_r.department||null, gender:_r.gender||null, phone:_r.phone||null, class_group:_r.classGroup||null, student_type:_tgPick, linked_at:_r.linkedAt }});
+    }
     studentCurrentAccount.studentType=_tgPick;
     var g=document.getElementById('typeGate'); if(g) g.style.display='none'; document.body.style.overflow='';
     renderWelcome();
@@ -2224,7 +2230,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=103"></script>
+<script src="updates.js?v=104"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

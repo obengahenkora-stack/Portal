@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11p', date:'11 Nov 2026', title:'Regular or Weekend fix',
+      all:[], student:['Fixed the "Could not save: Nothing to save" error on the Regular or Weekend question.'], staff:[] },
     { id:'2026-11-11o', date:'11 Nov 2026', title:'Course emails via Gmail',
       all:[], student:[], staff:['Course emails can now be sent from the portal Gmail account. Settings shows the email status and has a Send a test email button.'] },
     { id:'2026-11-11n', date:'11 Nov 2026', title:'Coming soon labels',

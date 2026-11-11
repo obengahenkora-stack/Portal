@@ -298,6 +298,17 @@
 </style>
 <script src="db-sync.js?v=3"></script>
 <script src="filestore.js"></script>
+<script>
+/* hold the old screen back while a remembered student's new home loads (no flash on reload) */
+try{ var _k=null; for(var i=0;i<localStorage.length;i++){ var n=localStorage.key(i); if(/^sb-qqnsbuirelhwfrshafay-auth-token/.test(n)){ _k=n; break; } }
+ var _drop=(localStorage.getItem('ceNoRemember')==='1' && !sessionStorage.getItem('ceAlive'));
+ if(_k && !_drop && localStorage.getItem('ceStuHome')==='1'){ document.documentElement.classList.add('sh-pre'); setTimeout(function(){ document.documentElement.classList.remove('sh-pre'); if(!document.body.classList.contains('sh-dash')){ try{ localStorage.removeItem('ceStuHome'); }catch(e){} } },7000); } }catch(e){}
+</script>
+<style>
+html.sh-pre .hero:not(#z),html.sh-pre .page-head:not(#z),html.sh-pre #introCard:not(#z),html.sh-pre #signedInCard:not(#z),html.sh-pre #editDetailsLink:not(#z),html.sh-pre #studentAuthCard:not(#z){display:none !important}
+#shLoad{display:none;text-align:center;color:var(--muted);padding:60px 16px;font-size:.95rem}
+html.sh-pre #shLoad{display:block}
+</style>
 </head>
 <body>
 
@@ -313,6 +324,7 @@
 </div>
 
 <div class="wrap">
+  <div id="shLoad">Loading your dashboard...</div>
   <div class="card intro-card" id="introCard">
     <p style="color:var(--muted);font-size:0.92rem;line-height:1.5;margin:0;text-align:center;">Your scores, attendance and report replies, all in one place.</p>
   </div>
@@ -2212,7 +2224,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=96"></script>
+<script src="updates.js?v=98"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2363,6 +2375,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=9"></script>
+<script src="stuhome.js?v=11"></script>
 </body>
 </html>

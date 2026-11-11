@@ -119,11 +119,11 @@ function build(){
   var rs0=$('dashResults'), hd=document.createElement('div'); hd.id='shHead';
   hd.innerHTML='<div class="sh-top"><div><p class="sh-date" id="shDate"></p><h1 class="sh-hi" id="shHi"></h1></div><div class="sh-av" id="shAv"></div></div><div class="sh-chips" id="shChips"></div>';
   if(rs0) rs0.insertBefore(hd,rs0.firstChild);
-  hd.addEventListener('click',function(e){ if(e.target.closest('[data-prof]')){ try{ toggleProfileSection(); var p=$('profileSection'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }catch(x){} } if(e.target.closest('[data-out]')){ try{ studentSignOut(); }catch(x){} } });
+  hd.addEventListener('click',function(e){ if(e.target.closest('[data-prof]')){ try{ toggleProfileSection(); var p=$('profileSection'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }catch(x){} } if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
   $('shNx').addEventListener('click',function(e){ if(e.target.closest('button')) openPage(); });
   $('shSv').addEventListener('click',function(e){ var b=e.target.closest('[data-g]'); if(b) go(b.getAttribute('data-g')); });
   $('shAl').addEventListener('click',function(e){ if(e.target.closest('[data-g]')) go('dashAttCard'); });
-  $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ studentSignOut(); }catch(x){} } });
+  $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
   /* keep announcements right under the home block */
   new MutationObserver(function(){ var a=$('annHome'),hh=$('shHome'); if(a&&hh&&a.previousElementSibling!==hh) hh.after(a); }).observe(ov,{childList:true});
   /* mirror numbers that the existing code already fills in */
@@ -255,6 +255,8 @@ function sync(){
   if(shown&&!$('shHome')) build();
   if(ov) ov.classList.toggle('sh-on',shown);
   var hh=$('shHead'); if(hh) hh.style.display=shown?'':'none';
+  var ahub=$('adminHub'); if(ahub&&!ahub.classList.contains('hidden')){ document.documentElement.classList.remove('sh-pre'); try{ localStorage.removeItem('ceStuHome'); }catch(e){} }
+  var au=$('studentAuthCard'); if(shown){ try{ localStorage.setItem('ceStuHome','1'); }catch(e){} document.documentElement.classList.remove('sh-pre'); } else if(au&&!au.classList.contains('hidden')&&getComputedStyle(au).display!=='none'&&document.documentElement.classList.contains('sh-pre')&&!ready){ /* keep holding: sign-in card is hidden by sh-pre until the timer ends */ }
   document.body.classList.toggle('sh-dash',!!shown);
   document.body.classList.toggle('sh-on',!!(shown&&ov&&!ov.classList.contains('pane-off')));
   if(shown&&!sync._f){ sync._f=1; setTimeout(fetchAll,800); }

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11k', date:'11 Nov 2026', title:'Faster on weak networks',
+      all:['Sign-in and dashboard pages now load their main tools from our own site instead of a slow outside server, and the fonts no longer hold up the page.'], student:[], staff:[] },
     { id:'2026-11-11j', date:'11 Nov 2026', title:'Smoother loading',
       all:[], student:['When you reload, the dashboard now waits for the new home screen instead of flashing the old page first.'], staff:[] },
     { id:'2026-11-11i', date:'11 Nov 2026', title:'Cleaner tabs',

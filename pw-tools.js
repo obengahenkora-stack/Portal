@@ -5,9 +5,9 @@
     if(!inp || inp._pwWrapped) return inp;
     var w=document.createElement('div'); w.style.cssText='position:relative;display:flow-root;';
     var cs=getComputedStyle(inp), mt=parseFloat(cs.marginTop)||0, mb=parseFloat(cs.marginBottom)||0;
-    inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+    w.style.margin=mt+'px 0 '+mb+'px'; inp.style.margin='0'; inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
     inp.style.paddingRight='70px';
-    var b=document.createElement('button'); b.type='button'; b.textContent='Show'; b.setAttribute('aria-label','Show or hide password'); b.style.cssText=BTN; b.style.top='calc(50% + '+((mt-mb)/2)+'px)';
+    var b=document.createElement('button'); b.type='button'; b.textContent='Show'; b.setAttribute('aria-label','Show or hide password'); b.style.cssText=BTN; b.style.top='50%';
     b.onclick=function(e){ e.preventDefault(); var hid=inp.type==='password'; inp.type=hid?'text':'password'; b.textContent=hid?'Hide':'Show'; };
     w.appendChild(b); inp._pwWrapped=true; inp._pwBox=w; return inp;
   }

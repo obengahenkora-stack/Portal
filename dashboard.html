@@ -160,6 +160,7 @@
 <style>html.ce-hold{background:#f4faf8}html.ce-hold[data-theme="dark"]{background:#0b141a}html.ce-hold body{visibility:hidden}</style>
 <script>document.documentElement.classList.add('ce-hold');setTimeout(function(){document.documentElement.classList.remove('ce-hold');},3500);</script>
 <link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="signin.css?v=2">
 <meta name="apple-mobile-web-app-title" content="Obeng-Ahenkora Ph.D.">
 <style id="adminHubCss">
   .ah-wrap{padding:0 !important;overflow:hidden;border:none !important;background:transparent !important;box-shadow:none !important}
@@ -318,8 +319,7 @@
   </div>
 
   <div class="card" id="studentAuthCard">
-    <h2>Sign In</h2>
-    <p style="color:var(--muted);font-size:0.85rem;margin-top:-8px;">Create an account once and link it to your index number — after that, your dashboard loads automatically every time you sign in, no need to type your index number again.</p>
+    <div class="si-head"><div class="si-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h2>Student sign in</h2><p>Sign in with the email you registered with. Create an account once and link your index number.</p></div>
     <label>Email</label>
     <input type="text" id="studentAuthEmail" placeholder="you@school.edu">
     <label>Password</label>
@@ -418,7 +418,7 @@
     <div id="linkIndexMsg"></div>
   </div>
 
-  <div class="card hidden" id="signedInCard" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+  <div class="card hidden" id="signedInCard" style="justify-content:space-between;align-items:center;gap:12px;">
     <div style="display:flex;align-items:center;gap:14px;min-width:0;">
       <div id="welcomeAvatar" class="hidden" style="flex:0 0 auto;width:96px;height:118px;"></div>
       <div style="min-width:0;">
@@ -1840,7 +1840,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="theme.js"></script>
-<script src="pw-tools.js"></script>
+<script src="pw-tools.js?v=3"></script>
 <script>try{PW.pair("profileNewPasswordInput");}catch(e){}</script>
 <div id="whoBar" style="position:fixed;left:12px;bottom:12px;z-index:9000;max-width:min(320px,calc(100vw - 24px));background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:12px;padding:9px 13px;box-shadow:0 6px 22px rgba(0,0,0,.18);font-size:.8rem;line-height:1.35;display:none;gap:10px;align-items:center;">
   <span id="whoDot" style="width:10px;height:10px;border-radius:50%;background:#9aa3ad;flex:none;"></span>
@@ -2210,10 +2210,10 @@ function renderWelcome(){
 <script src="absence.js?v=4"></script>
 <script src="oexam-stu.js?v=6"></script>
 <script src="stuqr.js?v=8"></script>
-<script src="stay.js?v=1"></script>
+<script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=88"></script>
+<script src="updates.js?v=90"></script>
 <script src="bio.js?v=2"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

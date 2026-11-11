@@ -1,0 +1,26 @@
+/* Modern sign-in cards (student dashboard, staff portal, lecturer studio) */
+#studentAuthCard,#loginCard,#authCard{max-width:440px;margin:22px auto;padding:30px 26px 26px;border-radius:24px;background:var(--card);border:1px solid var(--line);box-shadow:0 24px 60px rgba(11,42,60,.12);position:relative;overflow:hidden}
+#studentAuthCard:before,#loginCard:before,#authCard:before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,#1d6a8a,#6d4cc2)}
+.si-head{text-align:center;margin:4px 0 18px}
+.si-ic{width:58px;height:58px;border-radius:19px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0b2a3c,#1d6a8a);color:#fff;box-shadow:0 12px 26px rgba(29,106,138,.35)}
+.si-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.si-head h2{margin:0 !important;font-size:1.4rem !important;text-transform:none !important;letter-spacing:0 !important}
+.si-head p{margin:6px 0 0 !important;color:var(--muted);font-size:.88rem !important;line-height:1.45}
+#studentAuthCard label:not(#z),#loginCard label:not(#z),#authCard label:not(#z){display:block;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;font-size:.84rem !important;font-weight:600 !important;margin:14px 0 6px !important;color:var(--ink,inherit) !important}
+#studentAuthCard input:not(#z):not([type=checkbox]),#loginCard input:not(#z):not([type=checkbox]),#authCard input:not(#z):not([type=checkbox]){width:100%;box-sizing:border-box;height:50px;padding:0 16px;border-radius:14px !important;border:1.5px solid var(--line) !important;font-size:16px !important;margin:0 !important;background:var(--card);transition:border-color .15s,box-shadow .15s}
+#studentAuthCard input:not(#z):focus,#loginCard input:not(#z):focus,#authCard input:not(#z):focus{outline:0;border-color:#1d6a8a !important;box-shadow:0 0 0 4px rgba(29,106,138,.16)}
+#studentAuthCard div[style*="position:relative"],#loginCard div[style*="position:relative"],#authCard div[style*="position:relative"]{margin:0}
+#studentAuthCard .si-check:not(#z){display:flex !important;align-items:center;gap:10px;margin:14px 0 4px !important;font-size:.85rem !important;font-weight:500 !important;cursor:pointer}
+#studentAuthCard .si-check input{width:18px !important;height:18px !important;margin:0 !important;accent-color:#1d6a8a}
+#studentAuthCard>div[style*="flex"],#loginCard>div[style*="flex"],#authCard>div[style*="flex"]{flex-direction:column !important;gap:10px !important;margin-top:16px}
+#studentAuthCard button[onclick^="studentSignIn"]:not(#z),#loginCard button[onclick^="signInUser"]:not(#z),#authCard button[onclick^="signIn("]:not(#z){width:100% !important;height:50px;border-radius:14px !important;font-size:1rem !important;font-weight:700 !important;text-transform:none !important;letter-spacing:0 !important;background:linear-gradient(135deg,#0b2a3c,#1d6a8a) !important;color:#fff !important;border:0 !important;box-shadow:0 10px 24px rgba(11,42,60,.28) !important}
+#studentAuthCard button[onclick^="studentSignUp"]:not(#z),#loginCard button[onclick^="signUpUser"]:not(#z),#authCard button[onclick^="signUp("]:not(#z){width:100% !important;height:46px;border-radius:14px !important;font-size:.95rem !important;font-weight:600 !important;text-transform:none !important;letter-spacing:0 !important;background:transparent !important;color:var(--ink,inherit) !important;border:1.5px solid var(--line) !important;box-shadow:none !important}
+#studentAuthCard span[onclick^="reset"],#loginCard span[onclick^="reset"]{display:block;text-align:center;margin-top:14px;font-size:.86rem !important;color:#1d6a8a !important;text-decoration:none !important;font-weight:600}
+#studentAuthCard .hint,#loginCard .hint{text-align:center;font-size:.78rem;line-height:1.5;margin-top:16px !important}
+#bioRow{flex-direction:column !important;align-items:stretch !important;gap:10px !important;margin-top:14px !important}
+#bioRow #bioGo:not(#z){width:100% !important;height:48px;border-radius:14px !important;text-transform:none !important;letter-spacing:0 !important;font-weight:600 !important;background:rgba(29,106,138,.1) !important;color:#0b2a3c !important;border:1.5px solid rgba(29,106,138,.35) !important;box-shadow:none !important}
+#bioRow #bioOff{text-align:center;text-decoration:none !important;font-size:.8rem !important}
+#signedInCard:not(.hidden){display:flex}
+.si-head h2:before,.si-head h2:after{display:none !important;content:none !important}
+#studentAuthCard button[aria-label="Show or hide password"]:not(#z),#loginCard button[aria-label="Show or hide password"]:not(#z),#authCard button[aria-label="Show or hide password"]:not(#z){position:absolute !important;right:8px !important;top:50% !important;transform:translateY(-50%) !important;width:auto !important;min-width:0 !important;height:34px !important;padding:0 14px !important;margin:0 !important;border-radius:10px !important;font-size:.8rem !important;font-weight:600 !important;line-height:1 !important;box-shadow:none !important;background:rgba(29,106,138,.1) !important;color:#0b2a3c !important;border:0 !important}
+#studentAuthCard .si-head h2{text-align:center !important}

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11e', date:'11 Nov 2026', title:'Fresh sign-in screens',
+      all:['The sign-in screens for students, staff and the Lecturer Studio have a new, cleaner look. The Show button no longer overlaps the password box.'], student:[], staff:[] },
     { id:'2026-11-11d', date:'11 Nov 2026', title:'Stay signed in, even with weak signal',
       all:[], student:['New Remember this device tick box when you sign in. You stay signed in until you press Sign out. If your signal is weak when you open the dashboard, it keeps retrying by itself and still shows your QR Tag.'], staff:[] },
     { id:'2026-11-11c', date:'11 Nov 2026', title:'Live QR code: screenshots do not work',

@@ -6,9 +6,9 @@
   /* 1. remember-this-device tick box under the password */
   function addBox(){
     var pw=$('studentAuthPassword'); if(!pw||$('stayChk')) return;
-    var d=document.createElement('label'); d.style.cssText='display:flex;gap:8px;align-items:center;margin:2px 0 12px;font-size:.85rem;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer';
-    d.innerHTML='<input type="checkbox" id="stayChk" checked style="width:auto;margin:0"> <span>Remember this device (stay signed in until I sign out)</span>';
-    pw.parentNode.insertBefore(d,pw.nextSibling);
+    var d=document.createElement('label'); d.className='si-check';
+    d.innerHTML='<input type="checkbox" id="stayChk" checked> <span>Remember this device</span>';
+    var h=pw.parentNode; if(h.id||h.tagName!=='DIV'||h.children.length>3) h=pw; var t=(h===pw)?pw:h; t.parentNode.insertBefore(d,t.nextSibling);
   }
   var _si=window.studentSignIn;
   if(typeof _si==='function') window.studentSignIn=function(){ try{ var c=$('stayChk'); if(c&&!c.checked) localStorage.setItem('ceNoRemember','1'); else localStorage.removeItem('ceNoRemember'); }catch(e){} return _si.apply(this,arguments); };

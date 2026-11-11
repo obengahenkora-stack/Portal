@@ -1615,7 +1615,9 @@ async function loadDashboard(skipLock){
       .concat(attendanceRecords.filter(a => (a.present||[]).some(_isMe)).map(a => a.course).filter(Boolean))
     )];
     const _isTestStu=/^TEST00/i.test(String((studentCurrentAccount&&studentCurrentAccount.indexNumber)||''));
-    const myCourses = _core.filter(c=>_isTestStu||!/^\[TEST\]/i.test(String(c)));
+    const _myGrp=String((_acct&&_acct.classGroup)||'').toUpperCase();
+    const _otherGrp=c=>{ if(!/^[ABC]$/.test(_myGrp)) return false; const m=String(c).match(/\d\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*([ABC])\s*\)?$/i); return !!(m && m[1].toUpperCase()!==_myGrp); };
+    const myCourses = _core.filter(c=>_isTestStu||!/^\[TEST\]/i.test(String(c))).filter(c=>!_otherGrp(c));
     try{ if(!isAdminUser()) window.__myCourses = myCourses; }catch(e){}
     try{ initDashHall(supaData, [...new Set(myCourses.concat(myRecords.map(r=>r.course).filter(Boolean)))]); }catch(e){ console.warn('lecture hall',e); }
     const attContainer = document.getElementById('dashAttendance');
@@ -2230,7 +2232,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=104"></script>
+<script src="updates.js?v=105"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

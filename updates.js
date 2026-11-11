@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-11q', date:'11 Nov 2026', title:'Only your own class group',
+      all:[], student:['Once you have chosen your class group (A or B), My Attendance and the Lecture Hall show only your group, even if you were marked in the other group once.'], staff:[] },
     { id:'2026-11-11p', date:'11 Nov 2026', title:'Regular or Weekend fix',
       all:[], student:['Fixed the "Could not save: Nothing to save" error on the Regular or Weekend question.'], staff:[] },
     { id:'2026-11-11o', date:'11 Nov 2026', title:'Course emails via Gmail',

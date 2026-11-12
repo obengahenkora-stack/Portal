@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12e', date:'12 Nov 2026', title:'Announcements at the top',
+      all:['Announcements now sit at the top of your home screen, under your notifications. Tap "Mark as read" and the announcement clears from your home screen (it stays in the Lecture Hall).'], student:[], staff:['When you post an announcement you can set a "Show until" date. After that date it leaves the students\' home screens. You can change the date later from "Your recent posts".'] },
     { id:'2026-11-12d', date:'12 Nov 2026', title:'Student search loads less',
       all:[], student:[], staff:['Searching a student on the student page now loads only that student\'s attendance and class data, so it is quicker and uses far less data.'] },
     { id:'2026-11-12c', date:'12 Nov 2026', title:'Live QR tag fixes itself',

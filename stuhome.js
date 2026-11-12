@@ -124,8 +124,8 @@ function build(){
   $('shSv').addEventListener('click',function(e){ var b=e.target.closest('[data-g]'); if(b) go(b.getAttribute('data-g')); });
   $('shAl').addEventListener('click',function(e){ if(e.target.closest('[data-g]')) go('dashAttCard'); });
   $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
-  /* keep announcements right under the home block */
-  new MutationObserver(function(){ var a=$('annHome'),hh=$('shHome'); if(a&&hh&&a.previousElementSibling!==hh) hh.after(a); }).observe(ov,{childList:true});
+  /* keep announcements at the top, right under the notifications */
+  new MutationObserver(function(){ var a=$('annHome'),nx=$('shNx'); if(a&&nx&&a.previousElementSibling!==nx) nx.after(a); }).observe(ov,{childList:true});
   /* mirror numbers that the existing code already fills in */
   ['ovAvgScore','ovAttendance','ovsScores','ovsAtt','ovsRep','ovReports'].forEach(function(id){ var e=$(id); if(e) new MutationObserver(paint).observe(e,{childList:true,characterData:true,subtree:true}); });
   ['dashScores','dashReports','dashAttendance'].forEach(function(id){ var e=$(id); if(e) new MutationObserver(function(){ clearTimeout(build._t); build._t=setTimeout(function(){ scanDom(); paint(); },120); }).observe(e,{childList:true,subtree:true}); });

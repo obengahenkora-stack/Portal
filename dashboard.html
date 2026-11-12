@@ -2234,7 +2234,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=109"></script>
+<script src="updates.js?v=110"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2315,7 +2315,7 @@ function mine(){
   var d=null; try{ d=_dlhData; }catch(e){} if(!d) return null;
   var g=String((studentCurrentAccount&&studentCurrentAccount.classGroup)||'').toUpperCase(), ty=String((studentCurrentAccount&&studentCurrentAccount.studentType)||'Regular');
   var ok=function(c){ try{ return _dlhAllowed(c); }catch(e){ return false; } };
-  var ann=(d.announcements||[]).filter(function(a){ return ok(a.course) && (!a.group || a.group.toUpperCase()===g || a.group===ty); }).map(function(a){ return {t:ts(a.date),course:a.course,text:a.text,group:a.group}; });
+  var ann=(d.announcements||[]).filter(function(a){ return ok(a.course) && (!a.group || a.group.toUpperCase()===g || a.group===ty); }).map(function(a){ return {t:ts(a.date),course:a.course,text:a.text,group:a.group,until:a.until||''}; });
   var res=(d.resources||[]).filter(function(r){ return ok(r.course); }).map(function(r){ return {t:ts(r.uploadedAt)}; });
   var vid=(d.videos||[]).filter(function(v){ return ok(v.course); }).map(function(v){ return {t:ts(v.addedAt)}; });
   ann.sort(function(a,b){ return b.t-a.t; });
@@ -2328,8 +2328,10 @@ function refresh(){
   var old=document.getElementById('annHome'); if(old) old.remove();
   var oldB=document.getElementById('hallNewBadge'); if(oldB) oldB.remove();
   var aSeen=since('ceAnnSeen_'), hSeen=since('ceHallSeen_');
-  var unread=m.ann.filter(function(a){ return a.t>aSeen; }).length;
-  var recent=m.ann.filter(function(a){ return a.t>Date.now()-14*DAY; }).slice(0,3);
+  /* an announcement shows until its 'show until' date (or 7 days if none) and disappears once the student marks it read */
+  var live=m.ann.filter(function(a){ if(a.until){ var u=new Date(a.until+'T23:59:59').getTime(); return isNaN(u)||u>=Date.now(); } return a.t>Date.now()-7*DAY; });
+  var unread=live.filter(function(a){ return a.t>aSeen; }).length;
+  var recent=live.filter(function(a){ return a.t>aSeen; }).slice(0,3);
   var newHall=m.all.filter(function(a){ return a.t>hSeen; }).length;
   var tile=document.querySelector('.ov-link[data-go="dashLectureHall"] b');
   if(tile && newHall){ var b=document.createElement('span'); b.id='hallNewBadge'; b.textContent=newHall+' new'; b.style.cssText='background:#f43f5e !important;color:#fff !important;border-radius:999px;font-size:.62rem;font-weight:700;padding:2px 7px;margin-left:6px;vertical-align:middle'; tile.appendChild(b); }
@@ -2385,6 +2387,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=12"></script>
+<script src="stuhome.js?v=13"></script>
 </body>
 </html>

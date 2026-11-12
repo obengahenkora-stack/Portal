@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12k', date:'12 Nov 2026', title:'Wider layout on computers',
+      all:['On a laptop or desktop, your home screen now uses the extra width with two columns. Phones look the same as before.'], student:[], staff:[] },
     { id:'2026-11-12j', date:'12 Nov 2026', title:'Owner hub on a computer',
       all:[], student:[], staff:['On a laptop or desktop the owner hub now uses a wide two-column layout. The phone layout is unchanged.'] },
     { id:'2026-11-12i', date:'12 Nov 2026', title:'Owner hub: final design',

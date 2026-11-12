@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ce-portal-v40';
+const CACHE_NAME = 'ce-portal-v41';
 const urlsToCache = [
   'index.html',
   'theme.css',

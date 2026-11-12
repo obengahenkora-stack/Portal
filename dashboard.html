@@ -440,6 +440,35 @@ html.sh-pre #shLoad{display:block}
     <button class="secondary" onclick="studentSignOut()">Sign Out</button>
   </div>
 
+<style id="adminDarkCss">
+  /* Owner hub, dark command design (turned on when the owner hub opens; off while viewing a student) */
+  html.ah-d:not(.ah-view){--bg:#0A1220;--page:#0A1220;--card:#111C31;--ink:#F2F5FA;--muted:#8C9AB5;--line:#1F2D49;--contrast:#16233C;--accent:#FCA311;--accent2:#FCA311;--tint:rgba(252,163,17,.10);--navy:#F2F5FA;--navy-dark:#E59400;--gold:#FCA311}
+  html.ah-d:not(.ah-view),html.ah-d:not(.ah-view) body{background:#0A1220 !important;color:#F2F5FA}
+  html.ah-d:not(.ah-view) button:not(.secondary):not(.adm-chip):not(#z){color:#0A1220 !important}
+  html.ah-d:not(.ah-view) .adm-chip:not(#z){background:#16233C !important;color:#F2F5FA !important;border:1px solid #2A3854 !important}
+  html.ah-d:not(.ah-view) .adm-chip.danger:not(#z){color:#FF8A80 !important;border-color:#7A2A2A !important}
+  html.ah-d:not(.ah-view) h2:not(#z),html.ah-d:not(.ah-view) h3:not(#z){color:#F2F5FA !important}
+  html.ah-d:not(.ah-view) .dash-nav a.on{color:#0A1220 !important;background:#FCA311 !important}
+  html.ah-d:not(.ah-view) #adminOverview .ah-hero{background:none !important;box-shadow:none !important;padding:6px 2px 16px !important;color:#F2F5FA;margin-bottom:6px}
+  html.ah-d:not(.ah-view) #adminOverview .ah-hero::after{display:none !important}
+  html.ah-d:not(.ah-view) #adminOverview .ah-hero>div:first-child{display:grid;grid-template-columns:44px 1fr;column-gap:12px;align-items:center}
+  html.ah-d:not(.ah-view) #adminOverview .ah-hero>div:first-child::before{content:"NK";grid-row:1/3;width:44px;height:44px;border-radius:14px;background:#FCA311;color:#0A1220;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem}
+  html.ah-d:not(.ah-view) .ah-hi{font-family:inherit !important;font-size:1.15rem !important;font-weight:800;color:#F2F5FA}
+  html.ah-d:not(.ah-view) .ah-sub{color:#8C9AB5;opacity:1}
+  html.ah-d:not(.ah-view) .ah-actions button:not(#z){background:transparent !important;color:#F2F5FA !important;border:1px solid #2A3854 !important;backdrop-filter:none}
+  html.ah-d:not(.ah-view) .ah-actions button:first-child:not(#z){background:#FCA311 !important;color:#0A1220 !important;border-color:#FCA311 !important;font-weight:800}
+  html.ah-d:not(.ah-view) .hero:not(#z),html.ah-d:not(.ah-view) .page-head:not(#z),html.ah-d:not(.ah-view) #introCard:not(#z),html.ah-d:not(.ah-view) #welcomeLine:not(#z){display:none !important}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile,html.ah-d:not(.ah-view) .ah-grid .ah-tile.big{background:#111C31 !important;border:1px solid #1F2D49 !important;border-left:4px solid var(--g1) !important;color:#F2F5FA !important}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile .ah-n{color:#F2F5FA !important;font-family:inherit !important;font-weight:800 !important}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile.big .ah-n{color:#FCA311 !important;font-size:2.6rem !important}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile .ah-l{color:#8C9AB5 !important;opacity:1}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo="level|100"]{--g1:#FCA311}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo="level|200"]{--g1:#A78BFA}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo="level|300"]{--g1:#22D3EE}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo="level|400"]{--g1:#A3E635}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]{padding-bottom:28px !important}
+  html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]::after{display:block !important;content:"";position:absolute;left:16px;right:16px;bottom:11px;top:auto;width:auto;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--g1) var(--p,0%),#1B2943 var(--p,0%)) !important;opacity:1}
+</style>
   <div id="adminHub" class="hidden">
     <nav class="dash-nav" id="adminNav">
       <a href="javascript:void(0)" data-atab="adminOverview" class="on">Overview</a>
@@ -2200,12 +2229,13 @@ function renderWelcome(){
       var hh=DL.map(function(d){return '<div class="ah-tile" data-ahgo="dept|'+d.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'"><div class="ah-n">'+cnt[d]+'</div><div class="ah-l">'+d.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div></div>';}).join('');
       if(other) hh+='<div class="ah-tile" data-ahgo="dept|missing"><div class="ah-n">'+other+'</div><div class="ah-l">Other / not set</div></div>';
       var dv=$('ahDepts'); if(dv && dv.getAttribute('data-h')!==hh){ dv.innerHTML=hh; dv.setAttribute('data-h',hh); } }catch(e){}
+    try{ var mx=Math.max(st.ahL100,st.ahL200,st.ahL300,st.ahL400,1); ['100','200','300','400'].forEach(function(l){ var t=$('ahL'+l); if(t&&t.parentNode) t.parentNode.style.setProperty('--p',Math.round(st['ahL'+l]/mx*100)+'%'); }); }catch(e){}
     try{ localStorage.setItem('ceAhStats',JSON.stringify(st)); }catch(e){}
     var on=0; try{ on=Object.keys(window.ChatUI._state.online||{}).length; }catch(e){} set('ahOnline',on);
   }
   function init(){
     var h=$('adminHub'); if(!h||!h.classList.contains('hidden')) return;
-    h.classList.remove('hidden'); set('ahHi',greet());
+    h.classList.remove('hidden'); set('ahHi',greet()); document.documentElement.classList.add('ah-d');
     var w=$('welcomeLine'); if(w) w.style.display='none';
     var s=null; try{ s=sessionStorage.getItem('ceAdminTab'); }catch(e){}
     adminTab(s||'adminOverview'); _aReady=true;
@@ -2235,7 +2265,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=114"></script>
+<script src="updates.js?v=115"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2392,6 +2422,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=16"></script>
+<script src="stuhome.js?v=17"></script>
 </body>
 </html>

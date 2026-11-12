@@ -262,6 +262,7 @@ async function fetchAll(){
 /* ---------- show / hide logic ---------- */
 function adminViewing(){ var w=$('adminHideResultsWrap'); return !!(w&&!w.classList.contains('hidden')); }
 function sync(){
+  try{ document.documentElement.classList.toggle('ah-view',adminViewing()); }catch(e){}
   var r=$('dashResults'), ov=$('dashOverviewCard');
   var shown=!!(r&&!r.classList.contains('hidden')&&ov);
   if(shown&&!$('shHome')) build();

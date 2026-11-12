@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12g', date:'12 Nov 2026', title:'New owner hub design',
+      all:[], student:[], staff:['The owner hub on the Students Dashboard has a new dark design with a greeting, level bars and bigger numbers. Everything works as before.'] },
     { id:'2026-11-12f', date:'12 Nov 2026', title:'Owner view matches the student design',
       all:[], student:[], staff:['When you search a student on the Students Dashboard, you now see their dashboard in the same new design students see, with a Back to list button.'] },
     { id:'2026-11-12e', date:'12 Nov 2026', title:'Announcements in your notifications',

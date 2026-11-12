@@ -2234,7 +2234,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=112"></script>
+<script src="updates.js?v=113"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2329,7 +2329,7 @@ function refresh(){
   var oldB=document.getElementById('hallNewBadge'); if(oldB) oldB.remove();
   var aSeen=since('ceAnnSeen_'), hSeen=since('ceHallSeen_');
   /* an announcement shows until its 'show until' date (or 7 days if none) and disappears once the student marks it read */
-  var live=m.ann.filter(function(a){ if(a.until){ var u=new Date(a.until+'T23:59:59').getTime(); return isNaN(u)||u>=Date.now(); } return a.t>Date.now()-7*DAY; });
+  var live=m.ann.filter(function(a){ if(a.until){ var us=String(a.until), u=new Date(us.length===10?us+'T23:59:59':us).getTime(); return isNaN(u)||u>=Date.now(); } return a.t>Date.now()-7*DAY; });
   var unread=live.filter(function(a){ return a.t>aSeen; }).length;
   var recent=live.filter(function(a){ return a.t>aSeen; }).slice(0,3);
   var newHall=m.all.filter(function(a){ return a.t>hSeen; }).length;

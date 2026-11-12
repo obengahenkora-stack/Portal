@@ -2,7 +2,7 @@
 (function(){
   var NOTES=[
     { id:'2026-11-12e', date:'12 Nov 2026', title:'Announcements in your notifications',
-      all:['New announcements now show inside your Notifications box at the top of your home screen. Tap the box to open and read them in the Lecture Hall. Once opened, they clear from the box.'], student:[], staff:['When you post an announcement you can set a "Show until" date. After that date it leaves the students\' home screens. You can change the date later from "Your recent posts".'] },
+      all:['New announcements now show inside your Notifications box at the top of your home screen. Tap the box to open and read them in the Lecture Hall. Once opened, they clear from the box.'], student:[], staff:['When you post an announcement you can set the date and time it hides on students\' home screens. You can change or clear it later from "Your recent posts".'] },
     { id:'2026-11-12d', date:'12 Nov 2026', title:'Student search loads less',
       all:[], student:[], staff:['Searching a student on the student page now loads only that student\'s attendance and class data, so it is quicker and uses far less data.'] },
     { id:'2026-11-12c', date:'12 Nov 2026', title:'Live QR tag fixes itself',

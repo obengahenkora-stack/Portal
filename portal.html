@@ -513,7 +513,7 @@
       <div id="lmFileWrap"><input type="file" id="lmFile"></div>
       <textarea id="lmText" class="hidden" placeholder="Write the announcement..."></textarea>
       <select id="lmGroup" class="hidden" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:10px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Send to: everyone on the course</option><option value="A">Class A only</option><option value="B">Class B only</option><option value="C">Class C only</option><option value="Weekend">Weekend students only</option><option value="Regular">Regular students only</option></select>
-      <div id="lmUntilWrap" class="hidden" style="margin-bottom:10px"><div class="hint" style="margin:0 0 6px">Show on students' home until (optional). After this date it leaves their home screen. You can change it later from your posts below.</div><input type="date" id="lmUntil"></div>
+      <div id="lmUntilWrap" class="hidden" style="margin-bottom:10px"><div class="hint" style="margin:0 0 6px">Hide this announcement on students' home screens at (date and time, optional). If you leave it empty it hides after 7 days. You can change it later from your posts below.</div><input type="datetime-local" id="lmUntil"></div>
       <input type="text" id="lmUrl" class="hidden" placeholder="https://www.youtube.com/watch?v=...">
       <button id="lmBtn" onclick="lmSubmit()">Post to Lecture Hall</button>
       <div id="lmMsg"></div>
@@ -3344,15 +3344,15 @@ async function lmList(){
       var o=i.o||{}, acts='';
       if(i.k==='resources' && o.url) acts+='<a class="lm-b lm-d" href="'+escapeHtml(dl(o.url,o.fileName||o.title))+'" target="_blank" rel="noopener">Download</a><a class="lm-b" href="'+escapeHtml(o.url)+'" target="_blank" rel="noopener">Open</a>';
       if(i.k==='videos' && o.url) acts+='<a class="lm-b" href="'+escapeHtml(o.url)+'" target="_blank" rel="noopener">Open video</a>';
-      if(i.k==='announcements') acts+='<span style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem">Show until <input type="date" id="lmu_'+escapeHtml(i.id)+'" value="'+escapeHtml(o.until||'')+'" style="width:auto;padding:4px 6px;font-size:.78rem"></span><button class="lm-b" onclick="lmUntilSave(\''+i.id+'\')">Save date</button>';
+      if(i.k==='announcements'){ var u0=String(o.until||''); if(u0.length===10) u0+='T23:59'; var ust=u0?('Hides on '+new Date(u0).toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'})):'No end date set (hides after 7 days)'; acts+='<div style="width:100%;font-size:.78rem;color:var(--muted)">'+escapeHtml(ust)+'</div><span style="display:inline-flex;align-items:center;gap:6px;font-size:.78rem">Hide at <input type="datetime-local" id="lmu_'+escapeHtml(i.id)+'" value="'+escapeHtml(u0)+'" style="width:auto;padding:4px 6px;font-size:.78rem"></span><button class="lm-b" onclick="lmUntilSave(\''+i.id+'\')">Save</button><button class="lm-b" onclick="lmUntilSave(\''+i.id+'\',1)">Clear</button>'; }
       acts+='<button class="lm-b lm-x" onclick="lmDelete(\''+i.k+'\',\''+i.id+'\')">Delete</button>';
       var fn=(i.k==='resources'&&o.fileName)?'<div style="font-size:.76rem;color:var(--muted)">'+escapeHtml(o.fileName)+'</div>':'';
       return '<div style="padding:10px 0;border-bottom:1px dashed var(--line);font-size:0.88rem;"><div><b>'+escapeHtml(i.tag)+'</b> &middot; '+escapeHtml(i.c)+'</div><div style="margin:3px 0;overflow-wrap:anywhere">'+escapeHtml(i.t)+'</div>'+fn+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+acts+'</div></div>'; }).join('') : '<div class="hint">Nothing posted yet.</div>';
   }catch(e){ box.innerHTML='<div class="hint">Could not load.</div>'; }
 }
-async function lmUntilSave(id){
+async function lmUntilSave(id,clear){
   var inp=document.getElementById('lmu_'+id); if(!inp) return;
-  try{ var d=await fetchSupabaseData(); (d.announcements||[]).forEach(function(x){ if(x.id===id && lmMine(x)) x.until=inp.value||''; }); await saveSupabaseData(d); lmList(); }
+  try{ var d=await fetchSupabaseData(); (d.announcements||[]).forEach(function(x){ if(x.id===id && lmMine(x)) x.until=clear?'':(inp.value||''); }); await saveSupabaseData(d); lmList(); }
   catch(e){ alert('Could not save the date.'); }
 }
 async function lmDelete(k,id){
@@ -5286,7 +5286,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=112"></script>
+<script src="updates.js?v=113"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

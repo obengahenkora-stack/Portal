@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12l', date:'12 Nov 2026', title:'Staff dashboard link on the owner hub',
+      all:[], student:[], staff:['The owner hub has a Staff dashboard button, so you no longer need to sign out to reach the staff page.'] },
     { id:'2026-11-12k', date:'12 Nov 2026', title:'Wider layout on computers',
       all:['On a laptop or desktop, your home screen now uses the extra width with two columns. Phones look the same as before.'], student:[], staff:[] },
     { id:'2026-11-12j', date:'12 Nov 2026', title:'Owner hub on a computer',

@@ -1182,7 +1182,7 @@ async function adminSearchStudent(){
 }
 
 function hideAdminViewedStudent(){
-  window._lookIdx = '';
+  window._lookIdx = ''; window._adminViewAcct = null;
   document.getElementById('dashResults').classList.add('hidden');
   document.getElementById('adminHideResultsWrap').classList.add('hidden');
   document.getElementById('adminSearchIndexInput').value = '';
@@ -1556,6 +1556,7 @@ async function loadDashboard(skipLock){
     const _ix = _nz(idx);
     let _acct = studentCurrentAccount;
     if(skipLock){ try{ const _all = await dbFetchAllStudents(); const _k = String(idx||'').toLowerCase().replace(/[^a-z0-9]/g,''); const _kd = _k.replace(/\D/g,''); _acct = _all.find(a => String(a.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'') === _k) || _all.find(a => _kd.length>=5 && String(a.indexNumber||'').replace(/\D/g,'') === _kd) || null; }catch(e){ _acct = null; } }
+    if(skipLock){ try{ window._adminViewAcct=_acct||null; if(window.shAdminSync) window.shAdminSync(); }catch(_e){} }
     try{
       const _cl=document.getElementById('ovClassLine');
       if(_cl){
@@ -2234,7 +2235,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=113"></script>
+<script src="updates.js?v=114"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2391,6 +2392,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=15"></script>
+<script src="stuhome.js?v=16"></script>
 </body>
 </html>

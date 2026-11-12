@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12f', date:'12 Nov 2026', title:'Owner view matches the student design',
+      all:[], student:[], staff:['When you search a student on the Students Dashboard, you now see their dashboard in the same new design students see, with a Back to list button.'] },
     { id:'2026-11-12e', date:'12 Nov 2026', title:'Announcements in your notifications',
       all:['New announcements now show inside your Notifications box at the top of your home screen. Tap the box to open and read them in the Lecture Hall. Once opened, they clear from the box.'], student:[], staff:['When you post an announcement you can set the date and time it hides on students\' home screens. You can change or clear it later from "Your recent posts".'] },
     { id:'2026-11-12d', date:'12 Nov 2026', title:'Student search loads less',

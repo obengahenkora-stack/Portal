@@ -17,7 +17,7 @@ var ICON={
 function svg(k,c,s){ s=s||22; return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICON[k]+'</svg>'; }
 function $(id){ return document.getElementById(id); }
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-function acct(){ try{ return studentCurrentAccount||null; }catch(e){ return null; } }
+function acct(){ try{ if(adminViewing()&&window._adminViewAcct) return window._adminViewAcct; return studentCurrentAccount||null; }catch(e){ return null; } }
 function email(){ try{ return String(studentCurrentEmail||'').toLowerCase(); }catch(e){ return ''; } }
 function go(id){ try{ if(typeof window.dashTab==='function') window.dashTab(id); }catch(e){ console.warn('stuhome go',e); } }
 
@@ -123,7 +123,7 @@ function build(){
   $('shNx').addEventListener('click',function(e){ if(e.target.closest('[data-an]')){ try{ window._ceAnnOpen&&window._ceAnnOpen(); }catch(x){} go('dashLectureHall'); return; } if(e.target.closest('button')) openPage(); });
   $('shSv').addEventListener('click',function(e){ var b=e.target.closest('[data-g]'); if(b) go(b.getAttribute('data-g')); });
   $('shAl').addEventListener('click',function(e){ if(e.target.closest('[data-g]')) go('dashAttCard'); });
-  $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
+  $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-back]')){ try{ hideAdminViewedStudent(); }catch(x){} try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(y){} return; } if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
   /* keep announcements at the top, right under the notifications */
   new MutationObserver(function(){ var a=$('annHome'),nx=$('shNx'); if(a&&nx&&a.previousElementSibling!==nx) nx.after(a); }).observe(ov,{childList:true});
   /* mirror numbers that the existing code already fills in */
@@ -153,7 +153,7 @@ function paint(){
   $('shHi').textContent=gr+(nm?', '+nm:'');
   var av=$('shAv'); var g=a&&a.gender; var want=g==='Female'?'F':(g==='Male'?'M':'');
   if(av.getAttribute('data-g')!==want){ av.setAttribute('data-g',want); try{ av.innerHTML=want==='F'?_AV_F:(want==='M'?_AV_M:''); }catch(e){ av.innerHTML=''; } av.style.display=want?'':'none'; }
-  var ch=[]; if(a&&a.indexNumber) ch.push('<span>'+esc(a.indexNumber)+'</span>'); if(a&&a.level) ch.push('<span>Level '+esc(a.level)+'</span>'); ch.push('<button type="button" data-prof="1">My Profile &rsaquo;</button>'); ch.push('<button type="button" data-out="1">Sign out</button>');
+  var ch=[]; if(a&&a.indexNumber) ch.push('<span>'+esc(a.indexNumber)+'</span>'); if(a&&a.level) ch.push('<span>Level '+esc(a.level)+'</span>'); if(!adminViewing()){ ch.push('<button type="button" data-prof="1">My Profile &rsaquo;</button>'); ch.push('<button type="button" data-out="1">Sign out</button>'); }
   $('shChips').innerHTML=ch.join('');
   /* rings */
   var at=num('ovAttendance'), sc=num('ovAvgScore');
@@ -181,12 +181,12 @@ function paint(){
   ];
   $('shSv').innerHTML=S.map(function(r){ return '<div role="button" tabindex="0" class="sh-r" data-g="'+r[0]+'"><span class="st" style="background:'+r[2]+'"></span><i style="background:'+r[2]+'24">'+svg(r[1],r[2],24)+'</i><span class="tx"><b>'+r[4]+'</b><small>'+esc(r[5])+'</small></span>'+(r[6]?'<span class="bd" style="background:'+r[2]+'24;color:'+r[2]+'">'+esc(r[6])+'</span>':'')+'</div>'; }).join('');
   var who=(a&&a.name)||txt('studentWhoAmI');
-  $('shFoot').innerHTML='<button type="button" data-out="1">Sign out</button>';
+  $('shFoot').innerHTML=adminViewing()?'<button type="button" data-back="1">Back to list</button>':'<button type="button" data-out="1">Sign out</button>';
   renderNotif();
 }
 function unread(){ return load().list.filter(function(n){ return !n.read; }); }
 function annInBox(){
-  var box=$('shNx'); var L=window._ceAnnList; if(!box||!L||!L.length) return;
+  var box=$('shNx'); var L=window._ceAnnList; if(!box||!L||!L.length||adminViewing()) return;
   var fd=function(t){ try{ return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }catch(e){ return ''; } };
   var n0=box.querySelector('.none'); if(n0) n0.remove();
   var a=L[0], ttl=L.length===1?'New announcement':(L.length+' new announcements');
@@ -195,7 +195,9 @@ function annInBox(){
 function renderNotif(){ renderNotif0(); try{ annInBox(); }catch(e){} }
 window.shRenderAnn=function(){ if($('shNx')) renderNotif(); };
 function renderNotif0(){
-  var box=$('shNx'); if(!box) return; var u=unread(), all=load().list;
+  var box=$('shNx'); if(!box) return;
+  if(adminViewing()){ box.innerHTML='<div class="k">Owner view</div><div class="none">You are looking at this student\'s dashboard, read-only.</div><div style="height:6px"></div>'; return; }
+  var u=unread(), all=load().list;
   if(!u.length){ box.innerHTML='<div class="k">Notifications</div><div class="none">You are all caught up.</div>'+(all.length?'<button type="button" style="margin-top:10px">See earlier notifications</button>':'<div style="height:6px"></div>'); return; }
   if(u.length===1){ var n=u[0], m=IC[n.ic]||IC.score;
     box.innerHTML='<div class="k">New notification</div><div class="one"><span class="ic">'+svg(m[0],'#ffd166',22)+'</span><div><div class="tt">'+esc(n.title)+'</div><div class="ss">'+esc(n.sub)+' &middot; '+ago(n.t)+'</div></div></div><button type="button">Open notification</button>'; return; }
@@ -241,6 +243,7 @@ function scanDom(){
       absorb('reports',it2); } }catch(e){ console.warn('scan reports',e); }
 }
 async function fetchAll(){
+  if(adminViewing()){ exams=[]; asg=[]; return; }
   if(!email()||typeof _stu!=='function') return;
   try{ var j=await _stu({action:'stu_oe_list'}); var l=(j&&j.exams)||[]; exams=l; var it=[];
     l.forEach(function(x){ var id=x.id||(x.title+'|'+x.start); if(x.state!=='submitted') it.push({k:'exam:'+id,title:'New exam: '+x.title,sub:(x.course||'')+' · opens '+fdt(x.start),go:'dashExamCard',ic:'exam'});
@@ -260,7 +263,7 @@ async function fetchAll(){
 function adminViewing(){ var w=$('adminHideResultsWrap'); return !!(w&&!w.classList.contains('hidden')); }
 function sync(){
   var r=$('dashResults'), ov=$('dashOverviewCard');
-  var shown=!!(r&&!r.classList.contains('hidden')&&ov&&!adminViewing());
+  var shown=!!(r&&!r.classList.contains('hidden')&&ov);
   if(shown&&!$('shHome')) build();
   if(ov) ov.classList.toggle('sh-on',shown);
   var hh=$('shHead'); if(hh) hh.style.display=shown?'':'none';
@@ -273,6 +276,7 @@ function sync(){
 var _lastFetch=0;
 function tick(){ if(document.hidden) return; var ov=$('dashOverviewCard'); if($('shHome')&&ov&&!ov.classList.contains('pane-off')&&Date.now()-_lastFetch>300000){ _lastFetch=Date.now(); fetchAll(); } }
 
+window.shAdminSync=function(){ try{ sync(); if($('shHome')){ exams=[]; asg=[]; paint(); } }catch(e){} };
 /* take over the old attendance warning: same numbers, new look, cannot be hidden by "Got it" */
 (function(){ window.showAttWarn=function(l){ low=Array.isArray(l)?l:[]; try{ paint(); }catch(e){} }; })();
 

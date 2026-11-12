@@ -1214,7 +1214,7 @@ async function saveProfileDetails(){
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
   if(!classGroup){ msg.innerHTML = '<div class="msg err">Please select your class.</div>'; return; }
-  if(level==='100' && classGroup==='NONE'){ msg.innerHTML = '<div class="msg err">Level 100 students must pick A, B or C.</div>'; return; }
+  if(level==='100' && classGroup==='NONE' && /^civil/i.test(department||'')){ msg.innerHTML = '<div class="msg err">Level 100 Civil Engineering students must pick A, B or C.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Saving...</div>';
   try{
@@ -1592,7 +1592,7 @@ async function linkIndexNumber(){
   if(!gender){ msg.innerHTML = '<div class="msg err">Please select your gender.</div>'; return; }
   if(!phone){ msg.innerHTML = '<div class="msg err">Please enter a valid phone number (9 to 15 digits).</div>'; return; }
   if(!classGroup){ msg.innerHTML = '<div class="msg err">Please select your class.</div>'; return; }
-  if(level==='100' && classGroup==='NONE'){ msg.innerHTML = '<div class="msg err">Level 100 students must pick A, B or C.</div>'; return; }
+  if(level==='100' && classGroup==='NONE' && /^civil/i.test(department||'')){ msg.innerHTML = '<div class="msg err">Level 100 Civil Engineering students must pick A, B or C.</div>'; return; }
   if(!studentCurrentEmail){ msg.innerHTML = '<div class="msg err">Please sign in first.</div>'; return; }
 
   msg.innerHTML = '<div class="msg ok">Linking...</div>';
@@ -2167,7 +2167,7 @@ var _cgPick='';
 function showClassGate(){
   var g=document.getElementById('classGate'); if(!g) return;
   var a=studentCurrentAccount||{};
-  var n=document.getElementById('cgNone'); if(n) n.style.display=(String(a.level)==='100')?'none':'';
+  var n=document.getElementById('cgNone'); if(n) n.style.display=(String(a.level)==='100' && /^civil/i.test(String(a.department||'')))?'none':'';
   _cgPick=''; cgPick('');
   g.classList.remove('hidden'); g.style.display='flex'; document.body.style.overflow='hidden';
 }
@@ -2176,7 +2176,15 @@ function cgPick(v){
   document.querySelectorAll('.cg-g').forEach(function(b){ b.classList.toggle('sel', b.getAttribute('data-g')===_cgPick); });
 }
 async function setMyGroup(v){
-  return await _stu({action:'stu_set_group', group:v});
+  try{ return await _stu({action:'stu_set_group', group:v}); }
+  catch(e){
+    /* Level 100 outside Civil Engineering has no A, B or C: the group service refuses 'No group' for Level 100, so save it on the student's own record instead. */
+    var r=studentCurrentAccount||{};
+    if(v==='NONE' && String(r.level)==='100' && !/^civil/i.test(String(r.department||'')) && /level 100/i.test(String(e&&e.message))){
+      return await _stu({action:'stu_save_me', record:{ index_number:r.indexNumber, name:r.name, level:r.level, department:r.department||null, gender:r.gender||null, phone:r.phone||null, class_group:'NONE', student_type:r.studentType||undefined, linked_at:r.linkedAt }});
+    }
+    throw e;
+  }
 }
 async function saveClassGate(){
   var msg=document.getElementById('classGateMsg');
@@ -2343,7 +2351,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=121"></script>
+<script src="updates.js?v=122"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

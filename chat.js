@@ -63,7 +63,9 @@ function apiCall(payload){
     var h={'Content-Type':'application/json',apikey:G('SUPABASE_KEY')};
     if(tok){ var iss=''; try{ iss=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).iss||''; }catch(e){} h[iss.indexOf('qqnsbuirelhwfrshafay')>=0?'x-student-token':'x-staff-token']=tok; }
     _hc=h;
-    return fetch(G('SUPABASE_URL')+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); });
+    var go=function(fn){ return fetch(G('SUPABASE_URL')+'/functions/v1/'+fn,{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); }); };
+    if(payload&&payload.action==='stu_dir') return go('lite').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
+    return go('api');
   });
 }
 var _hc=null;

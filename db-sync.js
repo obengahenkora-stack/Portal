@@ -15,6 +15,12 @@
       var tok=adm?await get(adm):''; if(!tok&&cl) tok=await get(cl);
       var h={'Content-Type':'application/json',apikey:this.key};
       if(tok){ var iss=''; try{ iss=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).iss||''; }catch(e){} h[iss.indexOf('qqnsbuirelhwfrshafay')>=0?'x-student-token':'x-staff-token']=tok; }
+      if(h['x-student-token'] && payload.action==='db_op' && payload.op==='getAll'){
+        try{
+          var rl=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
+          var jl=await rl.json(); if(jl&&jl.ok) return jl;
+        }catch(e){}
+      }
       var r=await fetch(this.url+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
       var j=null; try{ j=await r.json(); }catch(e){}
       if(!j||!j.ok) throw this.err((j&&j.error)||('The back end did not answer ('+r.status+')'));

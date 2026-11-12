@@ -472,7 +472,64 @@ html.sh-pre #shLoad{display:block}
   html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]{padding-bottom:28px !important}
   html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]::after{display:block !important;content:"";position:absolute;left:16px;right:16px;bottom:11px;top:auto;width:auto;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--g1) var(--p,0%),var(--ahbar) var(--p,0%)) !important;opacity:1}
 </style>
+<style id="adminD2">
+  /* Owner hub, final layout (matches the approved design). Follows dark / light. */
+  html.ah-d.ah-d:not(.ah-view) .topbar{background:transparent !important;border:0 !important;box-shadow:none !important;justify-content:flex-end !important;padding:8px 14px 0 !important;position:static !important;min-height:0 !important}
+  html.ah-d.ah-d:not(.ah-view) .topbar>*:not(.tb-right){display:none !important}
+  html.ah-d.ah-d:not(.ah-view) .topbar .tb-right{display:flex !important;justify-content:flex-end;width:100%}
+  html.ah-d.ah-d:not(.ah-view) .topbar .tb-right>*:not(.theme-toggle){display:none !important}
+  html.ah-d.ah-d:not(.ah-view) .hero-tabs,html.ah-d.ah-d:not(.ah-view) #signedInCard,html.ah-d.ah-d:not(.ah-view) #editDetailsLink,html.ah-d.ah-d:not(.ah-view) #whoBar{display:none !important}
+  html.ah-d.ah-d:not(.ah-view) #adminHub{max-width:520px;margin:0 auto}
+  html.ah-d.ah-d:not(.ah-view) #adminNav{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px;margin:0 0 16px}
+  html.ah-d.ah-d:not(.ah-view) #adminNav a{flex:1;text-align:center;padding:10px 0;border-radius:999px;font-weight:700;font-size:.9rem;color:var(--muted);text-decoration:none;border:0}
+  html.ah-d.ah-d:not(.ah-view) #adminNav a.on{background:#FCA311;color:#0A1220 !important}
+  html.ah-d.ah-d:not(.ah-view) #adminOverview{background:none !important;border:0 !important;box-shadow:none !important;padding:0 !important;display:flex;flex-direction:column;gap:14px}
+  html.ah-d.ah-d:not(.ah-view) #adminOverview.pane-off{display:none !important}
+  .ah-top{display:flex;align-items:center;gap:12px}
+  .ah-av{width:44px;height:44px;border-radius:14px;background:#FCA311;color:#0A1220;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .ah-who{flex:1;min-width:0}
+  .ah-own{font-size:.8rem;color:var(--muted)}
+  html.ah-d.ah-d:not(.ah-view) .ah-hi{font-size:1.15rem !important;font-weight:800;color:var(--ink) !important;font-family:inherit !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-out{background:transparent !important;color:var(--ink) !important;border:1px solid var(--ahline2) !important;border-radius:999px;padding:9px 16px;font-weight:700;font-size:.85rem;width:auto}
+  html.ah-d.ah-d:not(.ah-view) .ah-big{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px}
+  .ah-cap{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .ah-bigrow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:6px}
+  html.ah-d.ah-d:not(.ah-view) .ah-bn{font-size:3.6rem;font-weight:800;line-height:1;color:#FCA311 !important}
+  .ah-new{text-align:right;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column}
+  .ah-new b{color:#34D17A;font-size:1.3rem}
+  .ah-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  html.ah-d.ah-d:not(.ah-view) .ah-two .ah-tile,html.ah-d.ah-d:not(.ah-view) .ah-mini{background:var(--card) !important;border:1px solid var(--line) !important;border-left:1px solid var(--line) !important;border-radius:20px !important;padding:16px !important;display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:8px;position:relative;min-height:0 !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-two .ah-n,html.ah-d.ah-d:not(.ah-view) .ah-mini .ah-n{font-size:2.1rem;font-weight:800;color:var(--ink) !important;line-height:1}
+  html.ah-d.ah-d:not(.ah-view) .ah-two .ah-l,html.ah-d.ah-d:not(.ah-view) .ah-mini .ah-l{color:var(--muted) !important;font-size:.88rem}
+  .ah-two .ah-tile+.ah-tile,.ah-two #ahDepts~*{display:flex}
+  html.ah-d.ah-d:not(.ah-view) .ah-lvbox{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+  .ah-lvh{font-weight:800;font-size:1.1rem;color:var(--ink)}
+  .ah-lv{display:grid;grid-template-columns:78px 1fr 40px;align-items:center;gap:12px;cursor:pointer}
+  html.ah-d.ah-d:not(.ah-view) .ah-lv .ah-l{color:var(--muted);font-size:.95rem}
+  html.ah-d.ah-d:not(.ah-view) .ah-lv .ah-n{color:var(--ink) !important;text-align:right;font-weight:800}
+  .ah-bar{height:10px;border-radius:99px;background:var(--ahbar);overflow:hidden;display:block}
+  .ah-bar i{display:block;height:100%;width:var(--p,0%);background:var(--g1);border-radius:99px}
+  html.ah-d.ah-d:not(.ah-view) .ah-row{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:20px;padding:18px 20px;font-weight:800;font-size:1.05rem;text-align:left;box-shadow:none}
+  .ah-row span:last-child{color:#FCA311;font-size:1.4rem;margin-left:auto}
+  html.ah-d.ah-d:not(.ah-view) .ah-row.ah-go{background:#FCA311 !important;color:#0A1220 !important;border-color:#FCA311 !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-row.ah-go span:last-child{color:#0A1220}
+  html.ah-d.ah-d:not(.ah-view) #adminHub:not(#z){display:flex;flex-direction:column;gap:14px}
+  html.ah-d.ah-d:not(.ah-view) #adminHub:not(#z) #adminNav{margin:0}
+  html.ah-d.ah-d:not(.ah-view) .ah-n:not(#z){font-family:inherit !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-lv .ah-n:not(#z){font-size:1.05rem !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-two .ah-tile::after,html.ah-d.ah-d:not(.ah-view) .ah-mini::after,html.ah-d.ah-d:not(.ah-view) .ah-two .ah-tile::before{display:none !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-out:not(#z):not(.secondary):not(.adm-chip){color:var(--ink) !important;background:transparent !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-row:not(#z):not(.secondary):not(.adm-chip){color:var(--ink) !important;background:var(--card) !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-row.ah-go:not(#z):not(.secondary):not(.adm-chip){color:#0A1220 !important;background:#FCA311 !important}
+  html.ah-d.ah-d:not(.ah-view) .topbar .tb-right{font-size:0 !important}
+  html.ah-d.ah-d:not(.ah-view) .ah-mini:not(#z){flex-direction:column-reverse}
+</style>
   <div id="adminHub" class="hidden">
+    <div class="ah-top ah-top2">
+        <div class="ah-av">NK</div>
+        <div class="ah-who"><div class="ah-own">Owner</div><div class="ah-hi" id="ahHi">Dr Obeng-Ahenkora</div></div>
+        <button type="button" class="ah-out" onclick="studentSignOut()">Sign out</button>
+      </div>
     <nav class="dash-nav" id="adminNav">
       <a href="javascript:void(0)" data-atab="adminOverview" class="on">Overview</a>
       <a href="javascript:void(0)" data-atab="adminStudents">Students</a>
@@ -480,26 +537,25 @@ html.sh-pre #shLoad{display:block}
       <a href="javascript:void(0)" data-atab="adminChat">Chat <span id="adminChatBadge" style="display:none;background:#f43f5e;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:1px 7px;margin-left:4px;text-transform:none;letter-spacing:0"></span></a>
     </nav>
     <div class="card ah-wrap" id="adminOverview">
-      <div class="ah-hero">
-        <div>
-          <div class="ah-hi" id="ahHi">Welcome back</div>
-          <div class="ah-sub">Your students at a glance</div>
-        </div>
-        <div class="ah-actions">
-          <button type="button" data-ago="adminChat">&#128172; Open chat <span id="ahChatBd" class="ah-bd" style="display:none"></span></button>
-          <button type="button" data-ago="adminStudents">&#128269; Find a student</button>
-        </div>
+      <div class="ah-big">
+        <div class="ah-cap">Registered students</div>
+        <div class="ah-bigrow"><div class="ah-bn ah-n" id="ahTotal">0</div><div class="ah-new"><b>+<span id="ahNew">0</span></b><span>this week</span></div></div>
       </div>
-      <div class="ah-grid">
-        <div class="ah-tile big" data-ahgo="all|"><div class="ah-n" id="ahTotal">0</div><div class="ah-l">Registered students</div></div>
-        <div class="ah-tile"><div class="ah-n" id="ahOnline">0</div><div class="ah-l"><span class="ah-dot"></span>Online now</div></div>
-        <div class="ah-tile"><div class="ah-n" id="ahNew">0</div><div class="ah-l">Joined this week</div></div>
-        <div class="ah-tile" data-ahgo="level|100"><div class="ah-n" id="ahL100">0</div><div class="ah-l">Level 100</div></div>
-        <div class="ah-tile" data-ahgo="level|200"><div class="ah-n" id="ahL200">0</div><div class="ah-l">Level 200</div></div>
-        <div class="ah-tile" data-ahgo="level|300"><div class="ah-n" id="ahL300">0</div><div class="ah-l">Level 300</div></div>
-        <div class="ah-tile" data-ahgo="level|400"><div class="ah-n" id="ahL400">0</div><div class="ah-l">Level 400</div></div>
+      <div class="ah-two">
+        <div class="ah-mini"><div class="ah-n" id="ahOnline">0</div><div class="ah-l"><span class="ah-dot"></span>Online now</div></div>
         <div id="ahDepts" style="display:contents"></div>
       </div>
+      <div class="ah-lvbox">
+        <div class="ah-lvh">By level</div>
+        <div class="ah-lv" data-ahgo="level|100" style="--g1:#FCA311"><span class="ah-l">Level 100</span><span class="ah-bar"><i></i></span><b class="ah-n" id="ahL100">0</b></div>
+        <div class="ah-lv" data-ahgo="level|200" style="--g1:#A78BFA"><span class="ah-l">Level 200</span><span class="ah-bar"><i></i></span><b class="ah-n" id="ahL200">0</b></div>
+        <div class="ah-lv" data-ahgo="level|300" style="--g1:#22D3EE"><span class="ah-l">Level 300</span><span class="ah-bar"><i></i></span><b class="ah-n" id="ahL300">0</b></div>
+        <div class="ah-lv" data-ahgo="level|400" style="--g1:#A3E635"><span class="ah-l">Level 400</span><span class="ah-bar"><i></i></span><b class="ah-n" id="ahL400">0</b></div>
+      </div>
+      <button type="button" class="ah-row" data-ago="adminStudents">Find a student<span>&#8250;</span></button>
+      <button type="button" class="ah-row" id="ahTestRow">View as a test student<span>&#8250;</span></button>
+      <button type="button" class="ah-row" data-ahgo="all|">Registered students<span>&#8250;</span></button>
+      <button type="button" class="ah-row ah-go" data-ago="adminChat">Open chat <span id="ahChatBd" class="ah-bd" style="display:none"></span><span>&#8250;</span></button>
     </div>
     <div class="card pane-off" id="adminChatCard">
       <h3 style="margin-top:0">Chat</h3>
@@ -2194,8 +2250,8 @@ function renderWelcome(){
 <script>
 /* ===== Admin hub: Overview / Students / Chat tabs ===== */
 (function(){
-  var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard'],adminChat:['adminChatCard'],adminQa:['dashQaCard']};
-  var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminChatCard','dashQaCard'];
+  var MAP={adminOverview:['adminOverview'],adminStudents:['adminSearchCard','adminRegisteredCard','adminTestCard'],adminChat:['adminChatCard'],adminQa:['dashQaCard']};
+  var ALL=['adminOverview','adminSearchCard','adminRegisteredCard','adminTestCard','adminChatCard','dashQaCard'];
   function $(i){ return document.getElementById(i); }
   var _aReady=false;
   window.adminTab=function(t){
@@ -2208,7 +2264,7 @@ function renderWelcome(){
     try{ if(window.ChatUI){ if(t==='adminChat') ChatUI.embed($('adminChatCard')); else ChatUI.unembed(); } }catch(e){}
     stats();
   };
-  function greet(){ var h=new Date().getHours(); return (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', Dr Obeng-Ahenkora'; }
+  function greet(){ var h=new Date().getHours(); return 'Dr Obeng-Ahenkora'; }
   function set(id,v){ var e=$(id); if(e) e.textContent=v; }
   function stats(){
     var c=[]; try{ c=registeredStudentsCache||[]; }catch(e){}
@@ -2247,6 +2303,7 @@ function renderWelcome(){
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('#adminNav a').forEach(function(a){ a.addEventListener('click',function(){ adminTab(a.getAttribute('data-atab')); }); });
     document.querySelectorAll('[data-ago]').forEach(function(b){ b.addEventListener('click',function(){ adminTab(b.getAttribute('data-ago')); }); });
+    var tr=$('ahTestRow'); if(tr) tr.addEventListener('click',function(){ adminTab('adminStudents'); setTimeout(function(){ var c=$('adminTestCard'); if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); },350); });
     var r=$('adminRegisteredCard'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) init(); }).observe(r,{attributes:true,attributeFilter:['class']});
     setInterval(function(){ var h=$('adminHub'); if(h&&!h.classList.contains('hidden')) stats(); },2000);
   });
@@ -2268,7 +2325,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=116"></script>
+<script src="updates.js?v=117"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2396,7 +2453,7 @@ if(typeof _i==='function') window.initDashHall=function(){ var r=_i.apply(this,a
 })();
 
 document.addEventListener('click',function(e){
-  var t=e.target.closest&&e.target.closest('.ah-tile[data-ahgo]'); if(!t) return;
+  var t=e.target.closest&&e.target.closest('.ah-tile[data-ahgo],.ah-lv[data-ahgo],.ah-row[data-ahgo]'); if(!t) return;
   var p=t.getAttribute('data-ahgo').split('|'), kind=p[0], val=p.slice(1).join('|');
   var nav=document.querySelector('#adminNav [data-atab="adminStudents"]'); if(nav) nav.click();
   var apply=function(){

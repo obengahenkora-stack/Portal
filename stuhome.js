@@ -47,7 +47,7 @@ css.textContent=[
 '.sh-nx .many{display:flex;align-items:center;gap:14px;margin:12px 0 14px;position:relative;z-index:1}',
 '.sh-nx .n{font-size:2.6rem;font-weight:800;line-height:1;color:#fff}',
 '.sh-nx .stk{display:flex;margin-left:auto}.sh-nx .stk span{width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;margin-left:-10px;border:2px solid #14213d}',
-'.sh-nx .none{margin:10px 0 2px;color:#aab4c8;font-size:.9rem;position:relative;z-index:1}',
+'.sh-nx .an{border-top:1px solid rgba(255,255,255,.16);margin-top:14px;padding-top:14px;position:relative;z-index:1;cursor:pointer}.sh-nx .none{margin:10px 0 2px;color:#aab4c8;font-size:.9rem;position:relative;z-index:1}',
 '.sh-nx button:not(#z){background:#fca311 !important;color:#14213d !important;border:0 !important;border-radius:13px !important;padding:10px 16px !important;font-weight:800 !important;font-size:.84rem !important;width:auto !important;box-shadow:none !important;text-transform:none !important;letter-spacing:0 !important;position:relative;z-index:1;font-family:inherit !important}',
 /* rings */
 '.sh-rings{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}',
@@ -120,7 +120,7 @@ function build(){
   hd.innerHTML='<div class="sh-top"><div><p class="sh-date" id="shDate"></p><h1 class="sh-hi" id="shHi"></h1></div><div class="sh-av" id="shAv"></div></div><div class="sh-chips" id="shChips"></div>';
   if(rs0) rs0.insertBefore(hd,rs0.firstChild);
   hd.addEventListener('click',function(e){ if(e.target.closest('[data-prof]')){ try{ toggleProfileSection(); var p=$('profileSection'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }catch(x){} } if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
-  $('shNx').addEventListener('click',function(e){ if(e.target.closest('button')) openPage(); });
+  $('shNx').addEventListener('click',function(e){ if(e.target.closest('[data-an]')){ try{ window._ceAnnOpen&&window._ceAnnOpen(); }catch(x){} go('dashLectureHall'); return; } if(e.target.closest('button')) openPage(); });
   $('shSv').addEventListener('click',function(e){ var b=e.target.closest('[data-g]'); if(b) go(b.getAttribute('data-g')); });
   $('shAl').addEventListener('click',function(e){ if(e.target.closest('[data-g]')) go('dashAttCard'); });
   $('shFoot').addEventListener('click',function(e){ if(e.target.closest('[data-out]')){ try{ localStorage.removeItem('ceStuHome'); }catch(y){} try{ studentSignOut(); }catch(x){} } });
@@ -185,7 +185,16 @@ function paint(){
   renderNotif();
 }
 function unread(){ return load().list.filter(function(n){ return !n.read; }); }
-function renderNotif(){
+function annInBox(){
+  var box=$('shNx'); var L=window._ceAnnList; if(!box||!L||!L.length) return;
+  var fd=function(t){ try{ return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }catch(e){ return ''; } };
+  var n0=box.querySelector('.none'); if(n0) n0.remove();
+  var a=L[0], ttl=L.length===1?'New announcement':(L.length+' new announcements');
+  box.insertAdjacentHTML('beforeend','<div class="an" data-an="1"><div class="one" style="margin:0 0 12px"><span class="ic">'+svg('chat','#ffd166',22)+'</span><div><div class="tt">'+ttl+'</div><div class="ss">'+esc(a.course||'')+' &middot; '+fd(a.t)+'</div></div></div><button type="button" data-anopen="1">Open announcement'+(L.length>1?'s':'')+'</button></div>');
+}
+function renderNotif(){ renderNotif0(); try{ annInBox(); }catch(e){} }
+window.shRenderAnn=function(){ if($('shNx')) renderNotif(); };
+function renderNotif0(){
   var box=$('shNx'); if(!box) return; var u=unread(), all=load().list;
   if(!u.length){ box.innerHTML='<div class="k">Notifications</div><div class="none">You are all caught up.</div>'+(all.length?'<button type="button" style="margin-top:10px">See earlier notifications</button>':'<div style="height:6px"></div>'); return; }
   if(u.length===1){ var n=u[0], m=IC[n.ic]||IC.score;

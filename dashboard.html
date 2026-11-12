@@ -2234,7 +2234,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=110"></script>
+<script src="updates.js?v=112"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2335,6 +2335,10 @@ function refresh(){
   var newHall=m.all.filter(function(a){ return a.t>hSeen; }).length;
   var tile=document.querySelector('.ov-link[data-go="dashLectureHall"] b');
   if(tile && newHall){ var b=document.createElement('span'); b.id='hallNewBadge'; b.textContent=newHall+' new'; b.style.cssText='background:#f43f5e !important;color:#fff !important;border-radius:999px;font-size:.62rem;font-weight:700;padding:2px 7px;margin-left:6px;vertical-align:middle'; tile.appendChild(b); }
+  /* with the new home screen, announcements are shown inside the Notifications box (see stuhome.js) */
+  window._ceAnnList=recent; window._ceAnnMark=function(){ set('ceAnnSeen_'+email(),String(Date.now())); refresh(); };
+  window._ceAnnOpen=function(){ set('ceAnnSeen_'+email(),String(Date.now())); set('ceHallSeen_'+email(),String(Date.now())); var b=document.getElementById('hallNewBadge'); if(b) b.remove(); setTimeout(refresh,80); };
+  if(document.getElementById('shNx')){ try{ if(window.shRenderAnn) window.shRenderAnn(); }catch(e){} return; }
   if(!recent.length) return;
   var fd=function(t){ try{ return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'}); }catch(e){ return ''; } };
   var box=document.createElement('div'); box.id='annHome';
@@ -2387,6 +2391,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=13"></script>
+<script src="stuhome.js?v=15"></script>
 </body>
 </html>

@@ -17,9 +17,9 @@
       if(tok){ var iss=''; try{ iss=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).iss||''; }catch(e){} h[iss.indexOf('qqnsbuirelhwfrshafay')>=0?'x-student-token':'x-staff-token']=tok; }
       if(h['x-student-token'] && payload.action==='db_op' && payload.op==='getAll'){
         try{
-          var ck='ceGA:'+payload.table+':'+(payload.order||''), now=Date.now();
+          var li=String(window._lookIdx||''), ck='ceGA:'+payload.table+':'+(payload.order||'')+':'+li, now=Date.now();
           try{ var c0=JSON.parse(sessionStorage.getItem(ck)||'null'); if(c0&&now-c0.t<120000&&c0.j&&c0.j.ok) return c0.j; }catch(e){}
-          var rl=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
+          var rl=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order,idx:li})});
           var jl=await rl.json(); if(jl&&jl.ok){ try{ if(!jl.rows||!jl.rows.length) throw 0; var sj=JSON.stringify({t:now,j:jl}); if(sj.length<1500000) sessionStorage.setItem(ck,sj); }catch(e){} return jl; }
         }catch(e){}
       }

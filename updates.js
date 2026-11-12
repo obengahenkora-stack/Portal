@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12d', date:'12 Nov 2026', title:'Student search loads less',
+      all:[], student:[], staff:['Searching a student on the student page now loads only that student\'s attendance and class data, so it is quicker and uses far less data.'] },
     { id:'2026-11-12c', date:'12 Nov 2026', title:'Live QR tag fixes itself',
       all:['Your live QR tag now refreshes by itself when your phone wakes up or reconnects, so you no longer need to reload the page. If it ever says "No signal", just tap it once. This also saves data.'], student:[], staff:[] },
     { id:'2026-11-12b', date:'12 Nov 2026', title:'Even lighter on data',

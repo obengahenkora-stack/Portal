@@ -296,7 +296,7 @@
     .hero-tabs{ margin:-30px 12px 20px !important; }
   }
 </style>
-<script src="db-sync.js?v=6"></script>
+<script src="db-sync.js?v=7"></script>
 <script src="filestore.js"></script>
 <script>
 /* hold the old screen back while a remembered student's new home loads (no flash on reload) */
@@ -1176,11 +1176,13 @@ async function adminSearchStudent(){
   const idx = document.getElementById('adminSearchIndexInput').value.trim();
   if(!idx){ alert('Please enter an index number to search.'); return; }
   document.getElementById('dashIndexInput').value = idx;
+  window._lookIdx = idx; /* lets the server send only this student's rows */
   document.getElementById('adminHideResultsWrap').classList.remove('hidden');
   loadDashboard(true); // skipLock: admin lookups never lock this device
 }
 
 function hideAdminViewedStudent(){
+  window._lookIdx = '';
   document.getElementById('dashResults').classList.add('hidden');
   document.getElementById('adminHideResultsWrap').classList.add('hidden');
   document.getElementById('adminSearchIndexInput').value = '';
@@ -2232,7 +2234,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=108"></script>
+<script src="updates.js?v=109"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

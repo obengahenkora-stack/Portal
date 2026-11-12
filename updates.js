@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+  {id:'2026-11-12h',title:'Owner hub follows dark and light mode',date:'2026-11-12',text:'The new owner hub now follows the sun and moon toggle, and the Find a student button is readable in dark mode.'},
     { id:'2026-11-12g', date:'12 Nov 2026', title:'New owner hub design',
       all:[], student:[], staff:['The owner hub on the Students Dashboard has a new dark design with a greeting, level bars and bigger numbers. Everything works as before.'] },
     { id:'2026-11-12f', date:'12 Nov 2026', title:'Owner view matches the student design',

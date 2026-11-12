@@ -13,7 +13,7 @@
   function cover(on){ var i=$('sqImg'); if(i) i.classList.toggle('off',!!on); }
   document.addEventListener('visibilitychange',function(){ if(document.hidden) cover(true); });
   window.addEventListener('blur',function(){ cover(true); });
-  document.addEventListener('click',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('#sqImg')) cover(false); });
+  document.addEventListener('click',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('#sqImg')){ try{ var c0=$('sqImg').querySelector('.sq-cover'); if(c0&&c0.textContent.indexOf('No signal')===0) refreshTag(); }catch(e){} cover(false); } });
   document.addEventListener('contextmenu',function(ev){ if(ev.target&&ev.target.closest&&ev.target.closest('#dashQrCard')) ev.preventDefault(); });
 
   function fdate(d){ try{ return new Date(d+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){ return d; } }
@@ -25,13 +25,17 @@
       var t1=Date.now(); B={idx:j.idx,slot:j.slot,step:j.step||4,sigs:j.sigs||[],off:(j.now||t1)-Math.round((t0+t1)/2),fetchedAt:t1,date:new Date((j.now||t1)).toISOString().slice(0,10)}; try{ localStorage.setItem('ceQrBatch',JSON.stringify({B:B,name:myName(),email:key().split('|')[0]})); }catch(e){} }
     finally{ fetching=false; }
   }
+  /* Quietly get a fresh bundle of codes. Only this small request, never a whole page reload. */
+  function refreshTag(){ try{ if(!B||fetching||!$('sqImg')) return; fetchBatch().then(function(){ shown=-1; paint(); }).catch(function(){}); }catch(e){} }
+  function tagLow(){ try{ return !B || (B.sigs.length-(curSlot()-B.slot))<75; }catch(e){ return true; } }
+  window.addEventListener('online',function(){ if(tagLow()) refreshTag(); });
   function curSlot(){ return Math.floor((Date.now()+B.off)/(B.step*1000)); }
   function paint(){
     var box=$('sqBody'); if(!box||!B) return;
     var sl=curSlot(), i=sl-B.slot, left=B.sigs.length-i;
     if(left<75 && !fetching && (Date.now()-B.fetchedAt>20000)){ fetchBatch().catch(function(){}); }
     var img=$('sqImg'); if(!img) return;
-    if(i<0||i>=B.sigs.length){ img.classList.add('off'); var cv=img.querySelector('.sq-cover'); if(cv) cv.textContent='No signal. Reconnect to refresh your code.'; shown=-1; return; }
+    if(i<0||i>=B.sigs.length){ img.classList.add('off'); var cv=img.querySelector('.sq-cover'); if(cv) cv.textContent='No signal. Tap here to refresh your tag.'; shown=-1; return; }
     if(sl===shown) return; shown=sl;
     var q=window.qrcode(0,'M'); q.addData('UT2.'+B.idx+'.'+sl+'.'+B.sigs[i]); q.make();
     var holder=img.querySelector('.sq-svg'); if(holder) holder.innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true});
@@ -55,5 +59,5 @@
   function key(){ var em=''; try{ em=(typeof studentCurrentEmail!=='undefined'&&studentCurrentEmail)||''; }catch(e){} return em+'|'+(window._asTest||'')+'|'+myName()+'|'+new Date().toISOString().slice(0,10); }
   function visible(){ var c=$('dashQrCard'); return c && c.offsetParent!==null; }
   setInterval(function(){ try{ var k=key(); if(k.charAt(0)!=='|' && visible() && k!==lastKey){ lastKey=k; sqInit(); } }catch(e){} },2000);
-  document.addEventListener('visibilitychange',function(){ try{ if(!document.hidden && visible()) lastKey=''; }catch(e){} });
+  document.addEventListener('visibilitychange',function(){ try{ if(!document.hidden && visible() && tagLow()) refreshTag(); }catch(e){} });
 })();

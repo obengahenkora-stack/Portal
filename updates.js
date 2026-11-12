@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12j', date:'12 Nov 2026', title:'Owner hub on a computer',
+      all:[], student:[], staff:['On a laptop or desktop the owner hub now uses a wide two-column layout. The phone layout is unchanged.'] },
     { id:'2026-11-12i', date:'12 Nov 2026', title:'Owner hub: final design',
       all:[], student:[], staff:['The owner hub now matches the approved design: owner header, tabs, big student count, level bars and quick rows. It follows dark and light mode.'] },
     { id:'2026-11-12h', date:'12 Nov 2026', title:'Owner hub follows dark and light mode',

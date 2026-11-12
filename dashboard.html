@@ -472,6 +472,22 @@ html.sh-pre #shLoad{display:block}
   html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]{padding-bottom:28px !important}
   html.ah-d:not(.ah-view) .ah-grid .ah-tile[data-ahgo^="level"]::after{display:block !important;content:"";position:absolute;left:16px;right:16px;bottom:11px;top:auto;width:auto;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--g1) var(--p,0%),var(--ahbar) var(--p,0%)) !important;opacity:1}
 </style>
+<style id="adminD3">
+  @media (min-width:900px){
+    html.ah-d.ah-d:not(.ah-view) #adminHub:not(#z){max-width:1180px;padding:8px 32px 40px}
+    html.ah-d.ah-d:not(.ah-view) #adminNav:not(#z){max-width:520px}
+    html.ah-d.ah-d:not(.ah-view) #adminOverview:not(#z){display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+    html.ah-d.ah-d:not(.ah-view) #adminOverview.pane-off:not(#z){display:none !important}
+    #adminOverview .ah-big{grid-column:1;padding:28px 30px}
+    #adminOverview .ah-bn{font-size:5rem !important}
+    #adminOverview .ah-two{grid-column:1;grid-template-columns:repeat(3,minmax(0,1fr))}
+    #adminOverview .ah-lvbox{grid-column:2;grid-row:1 / span 2;padding:24px 26px}
+    #adminOverview .ah-lv{grid-template-columns:90px 1fr 48px}
+    #adminOverview .ah-row{grid-column:auto}
+    #adminOverview{--rowgap:14px}
+    .ah-top2{max-width:none}
+  }
+</style>
 <style id="adminD2">
   /* Owner hub, final layout (matches the approved design). Follows dark / light. */
   html.ah-d.ah-d:not(.ah-view) .topbar{background:transparent !important;border:0 !important;box-shadow:none !important;justify-content:flex-end !important;padding:8px 14px 0 !important;position:static !important;min-height:0 !important}
@@ -2325,7 +2341,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=117"></script>
+<script src="updates.js?v=118"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

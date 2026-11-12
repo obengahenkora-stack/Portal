@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-12b', date:'12 Nov 2026', title:'Even lighter on data',
+      all:['Notifications, the Q&A board and chat last-seen now refresh less often. Pull the page down or tap Refresh any time to see the latest straight away.'], student:[], staff:[] },
     { id:'2026-11-12a', date:'12 Nov 2026', title:'Lighter on data',
       all:['The student pages now read class lists and attendance through a lighter, cached service, to stay within our data allowance and load faster.'], student:[], staff:[] },
     { id:'2026-11-11q', date:'11 Nov 2026', title:'Only your own class group',

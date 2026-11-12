@@ -372,7 +372,7 @@ function lsText(id){ var t=Math.max(S.ls[id]||0,lsLocal()[id]||0); if(!t) return
   if(m<1) return 'last seen just now'; if(m<60) return 'last seen '+m+' min ago'; var h=Math.floor(m/60); if(h<24) return 'last seen '+h+' hr ago';
   var d=Math.floor(h/24); if(d<2) return 'last seen yesterday'; return 'last seen '+d+' days ago'; }
 function setupPresence(){
-  lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden'){ lsPush(); S.lsAsk={}; scheduleRender(); } },60000);
+  lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden'){ lsPush(); S.lsAsk={}; scheduleRender(); } },300000);
   if(!S.lsBound){ S.lsBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') lsPush(true); }); window.addEventListener('pagehide',function(){ lsPush(true); }); }
   var ch=S.rt.channel('ce-lounge',{config:{presence:{key:S.me.id}}});
   S.lounge=ch;

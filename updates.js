@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-13c', date:'13 Nov 2026', title:'TAs can fix a waiting upload',
+      all:[], student:[], staff:['TAs now see a Waiting for approval box on the upload page. They can re-upload a corrected file (it replaces the one waiting) or withdraw it, until the owner approves.'] },
     { id:'2026-11-13b', date:'13 Nov 2026', title:'Pending Approvals is live',
       all:[], student:[], staff:['Scores uploaded by TAs now wait in Pending Approvals. The owner reviews them and taps Approve or Reject; students only see approved scores.'] },
     { id:'2026-11-13a', date:'13 Nov 2026', title:'Saving retries on a weak connection',

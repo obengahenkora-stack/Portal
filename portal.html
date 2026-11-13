@@ -477,6 +477,7 @@
     </div>
 
     <div class="card hidden" id="uploadCard">
+      <div id="myPendingBox"></div>
       <label>Course (the ones already created for attendance)</label>
       <select id="uploadCourse" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Use the course written in the file</option></select>
       <div class="hint" style="margin-top:-6px">Pick a course here and every score in the file or paste goes to that exact course, so it matches the attendance and class list. No need to edit the file.</div>
@@ -1953,7 +1954,7 @@ function lchGo(k,id){
   var L=_LCH[k]; L.cur=id||null;
   if(L.cur){ var el=_attCard(L.cur); if(el && el.classList.contains('hidden')) L.cur=null; }
   lchRender(k);
-  try{ if(L.cur==='uploadCard') loadUploadCourses(); if(L.cur==='gradebookCard') loadGradebookCourses(); }catch(e){}
+  try{ if(L.cur==='uploadCard'){ loadUploadCourses(); try{ loadMyPending(); }catch(e){} } if(L.cur==='gradebookCard') loadGradebookCourses(); }catch(e){}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function attRenderTiles(){ lchRender('att'); lchRender('tch'); }
@@ -2118,6 +2119,34 @@ async function submitPending(newRecords, assessmentName){
     total+=j.count||by[c].length;
   }
   return total;
+}
+
+async function loadMyPending(){
+  const box=document.getElementById('myPendingBox'); if(!box) return;
+  if(currentUserRole==='owner'||currentUserRole==='admin'){ box.innerHTML=''; return; }
+  try{
+    const j=await teamApi({action:'pending_mine'}); if(!j||!j.ok){ box.innerHTML=''; return; }
+    const it=j.items||[];
+    if(!it.length){ box.innerHTML=''; return; }
+    box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:4px">Waiting for approval</div><div class="hint" style="margin:0 0 8px">The owner has not approved these yet. Spotted a mistake? Tap Re-upload, choose the corrected file, and it replaces the one waiting.</div>'
+      +it.map(function(i){ return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)"><div style="flex:1;min-width:180px"><b>'+escapeHtml(i.course)+'</b> | '+escapeHtml(i.assessmentName)+'<div class="hint" style="margin:0">'+i.count+' students &middot; '+escapeHtml(new Date(i.at).toLocaleString())+'</div></div><button type="button" onclick="reuploadPending(this)" data-c="'+escapeHtml(i.course)+'" data-n="'+escapeHtml(i.assessmentName)+'" data-m="'+escapeHtml(String(i.max||''))+'">Re-upload</button><button type="button" class="secondary" onclick="withdrawPending(\''+escapeHtml(i.id)+'\')">Withdraw</button></div>'; }).join('')+'</div>';
+  }catch(e){ box.innerHTML=''; }
+}
+function reuploadPending(btn){
+  const c=btn.getAttribute('data-c'), n=btn.getAttribute('data-n'), m=btn.getAttribute('data-m');
+  const sel=document.getElementById('uploadCourse');
+  if(sel){ const b=(typeof lmBase==='function')?lmBase(c):c; let hit=[...sel.options].find(o=>o.value===c)||[...sel.options].find(o=>o.value===b); if(!hit){ hit=document.createElement('option'); hit.value=b; hit.textContent=b; sel.appendChild(hit); } sel.value=hit.value; }
+  const an=document.getElementById('assessmentName'); if(an) an.value=n;
+  const mx=document.getElementById('assessmentMax'); if(mx) mx.value=m||'';
+  const fi=document.getElementById('csvFileInput');
+  const msg=document.getElementById('fileUploadMsg'); if(msg) msg.innerHTML='<div class="msg ok">Course and assessment are filled in. Choose the corrected file, then tap Upload From File. It will replace the one waiting for approval.</div>';
+  if(fi){ fi.scrollIntoView({behavior:'smooth',block:'center'}); }
+}
+async function withdrawPending(id){
+  if(!confirm('Withdraw this upload? The owner will no longer see it.')) return;
+  const j=await teamApi({action:'pending_withdraw',id:id});
+  if(!j||!j.ok) alert('Could not withdraw: '+((j&&j.error)||'try again'));
+  loadMyPending();
 }
 async function loadPending(){
   const box=document.getElementById('pendingList'); if(!box) return;
@@ -2430,7 +2459,8 @@ async function uploadScores(){
   try{
     if(currentUserRole === 'ta'){
       const _n = await submitPending(newRecords, assessmentName);
-      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it.</div>`;
+      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it. You can re-upload a corrected file below until then.</div>`;
+      try{ loadMyPending(); }catch(e){}
       return;
     }
     const existing = await fetchAllRecords();
@@ -2936,7 +2966,8 @@ async function _upFinish(aoa,hrow,idxCol,scoreCol,heads){
   try{
     if(currentUserRole === 'ta'){
       const _n = await submitPending(newRecords, assessmentName);
-      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it.</div>`;
+      msg.innerHTML = `<div class="msg ok">Sent for approval: ${_n} record(s) for "${escapeHtml(assessmentName)}". Students will see it once the owner approves it. You can re-upload a corrected file below until then.</div>`;
+      try{ loadMyPending(); }catch(e){}
       return;
     }
     const existing = await fetchAllRecords();
@@ -5301,7 +5332,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=124"></script>
+<script src="updates.js?v=125"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

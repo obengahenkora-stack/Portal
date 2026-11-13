@@ -2148,8 +2148,19 @@ async function withdrawPending(id){
   if(!j||!j.ok) alert('Could not withdraw: '+((j&&j.error)||'try again'));
   loadMyPending();
 }
+
+function _pcOpts(course){
+  const opts=[...((document.getElementById('uploadCourse')||{}).options||[])].map(o=>o.value).filter(Boolean);
+  const norm=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const c=norm(course); let pick=opts.indexOf(course)>=0?course:null;
+  if(!pick && c){ const m=opts.filter(o=>{ const n=norm(o); return n.indexOf(c)>=0 || c.indexOf(n)>=0; }); if(m.length===1) pick=m[0]; }
+  let h='<option value="">Keep as written: '+escapeHtml(course)+'</option>';
+  opts.forEach(o=>{ h+='<option value="'+escapeHtml(o)+'"'+(o===pick?' selected':'')+'>'+escapeHtml(o)+'</option>'; });
+  return h;
+}
 async function loadPending(){
   const box=document.getElementById('pendingList'); if(!box) return;
+  try{ await loadUploadCourses(); }catch(e){}
   try{
     const j=await teamApi({action:'pending_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
     const wait=(j.items||[]).filter(i=>i.status==='pending'), done=(j.items||[]).filter(i=>i.status!=='pending').slice(0,10);
@@ -2158,7 +2169,8 @@ async function loadPending(){
     if(!wait.length) h+='<div class="hint">Nothing is waiting for approval.</div>';
     wait.forEach(i=>{
       h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">'
-       +'<div style="font-weight:700">'+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+'</div>'
+       +'<div style="font-weight:700;margin-bottom:6px;line-height:1.3">'+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+'</div>'
+       +'<div class="hint" style="margin:0 0 6px;font-weight:700">Save under this course:</div><select id="pc_'+escapeHtml(i.id)+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px">'+_pcOpts(i.course)+'</select>'
        +'<div class="hint">From '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+' &middot; '+i.count+' students'+(i.max?' &middot; out of '+escapeHtml(String(i.max)):'')+(i.top!==null&&i.top!==undefined?' &middot; scores '+escapeHtml(String(i.low))+' to '+escapeHtml(String(i.top)):'')+'</div>'
        +'<table style="font-size:.8rem;margin:6px 0"><tr><th>Index #</th><th>Score</th></tr>'+(i.sample||[]).map(r=>'<tr><td>'+escapeHtml(r.indexNumber)+'</td><td>'+escapeHtml(r.score)+'</td></tr>').join('')+'</table>'
        +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
@@ -2177,7 +2189,7 @@ async function decidePending(id,decision){
       /* save the scores exactly like a normal upload, and only then mark the request approved */
       const g=await teamApi({action:'pending_get',id:id});
       if(!g||!g.ok) throw new Error((g&&g.error)||'Could not open the upload');
-      const it=g.item, newRecords=(it.records||[]).map(r=>({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName||it.assessmentName,course:r.course||it.course}));
+      const it=g.item, pcs=document.getElementById('pc_'+id), chosen=pcs&&pcs.value?pcs.value:'', newRecords=(it.records||[]).map(r=>({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName||it.assessmentName,course:chosen||r.course||it.course}));
       if(!newRecords.length) throw new Error('This upload is empty');
       const existing=await fetchAllRecords();
       const k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
@@ -5332,7 +5344,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=125"></script>
+<script src="updates.js?v=126"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

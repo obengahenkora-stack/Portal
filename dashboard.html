@@ -1042,8 +1042,10 @@ async function ahScoreCheck(){
       +'<div>'+recs.length+' scores saved &middot; '+accts.length+' students signed up</div>'
       +'<div><b>'+withScores+'</b> signed-up students have at least one score. <b>'+(accts.length-withScores)+'</b> have none yet.</div>'
       +'<div>'+orphan.size+' index numbers in the scores have no student account yet (normal until they sign up).</div>';
-    if(near.length){ h+='<div style="margin-top:10px;font-weight:800;color:#d9534f">'+near.length+' possible typing mismatches</div><div class="hint">A saved score looks like it belongs to a signed-up student, but the index numbers differ by one character. Fix the index number in the score file.</div><table style="width:100%;font-size:.85rem">'+near.slice(0,40).map(n=>'<tr><td>'+escapeHtml(n.rec)+'</td><td>'+escapeHtml(n.acct.indexNumber)+'</td><td>'+escapeHtml(n.acct.name||'')+'</td></tr>').join('')+'</table>'; }
-    else h+='<div style="margin-top:10px;color:#2e9e55;font-weight:800">No typing mismatches found. Every saved score either matches a student or belongs to someone who has not signed up.</div>';
+    const lv={}; accts.forEach(a=>{ const L=String(a.level||'?'); const o=lv[L]||(lv[L]={t:0,s:0,list:[]}); o.t++; if(matched.has(a.email)) o.s++; else o.list.push(a); });
+    h+='<table style="width:100%;font-size:.9rem;margin-top:10px"><tr><th align="left">Level</th><th>Signed up</th><th>With scores</th><th>No scores</th></tr>'+Object.keys(lv).sort().map(L=>'<tr><td>'+escapeHtml(L)+'</td><td align="center">'+lv[L].t+'</td><td align="center">'+lv[L].s+'</td><td align="center"><b>'+(lv[L].t-lv[L].s)+'</b></td></tr>').join('')+'</table>';
+    const miss=[]; Object.keys(lv).forEach(L=>{ if(L!=='100') lv[L].list.forEach(a=>miss.push(a)); });
+    h+='<div style="margin-top:10px;font-weight:800">Level 200 to 400 students with no score at all ('+miss.length+')</div><div class="hint">These are signed-up students above Level 100 whose index number matches no saved score. Check each one in the score file.</div><table style="width:100%;font-size:.85rem">'+miss.slice(0,80).map(a=>'<tr><td>'+escapeHtml(a.indexNumber||'')+'</td><td>'+escapeHtml(a.name||'')+'</td><td>L'+escapeHtml(String(a.level||''))+'</td></tr>').join('')+'</table>'+(miss.length>80?'<div class="hint">Showing the first 80.</div>':'');
     out.innerHTML=h+'</div>';
   }catch(e){ out.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message||String(e))+'</div>'; }
 }
@@ -2417,7 +2419,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=131"></script>
+<script src="updates.js?v=132"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

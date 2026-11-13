@@ -1426,7 +1426,7 @@ async function addTeamMember(){
 async function teamApi(payload){
   try{
     const { data:{ session } } = await supabaseClient.auth.getSession();
-    const r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    const r=await fetch(SUPABASE_URL+(String(payload&&payload.action||'').indexOf('pending_')===0?'/functions/v1/approvals':'/functions/v1/api'),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     const out=await r.json();
     try{ if(out&&out.ok) auditNote(payload); }catch(e){}
     return out;
@@ -1913,7 +1913,7 @@ var _TCH_TILES=[
  {g:'Teaching',id:'lectureMaterialsCard',t:'Lecture Hall',d:'Post materials and announcements to students.',i:'file',c:'t-go'},
  {g:'Teaching',id:'manageCoursesCard',t:'Manage Courses',d:'Courses students can report issues on.',i:'list'},
  {g:'Teaching',id:'reportsCard',t:'Issue Reports',d:'Read and reply to student reports.',i:'users'},
- {g:'Administration',id:'pendingCard',t:'Pending Approvals',d:'Review TA uploads before students see them.',i:'check',s:1},
+ {g:'Administration',id:'pendingCard',t:'Pending Approvals',d:'Review TA uploads before students see them.',i:'check'},
  {g:'Administration',id:'activityCard',t:'Activity Log',d:'What TAs uploaded, added and changed.',i:'list'},
  {g:'Administration',id:'teamAccessCard',t:'Team Access',d:'Who can sign in and their role.',i:'users'},
  {g:'Administration',id:'settingsCard',t:'Device Lock',d:'Student lookup device settings.',i:'db'},
@@ -2143,10 +2143,24 @@ async function decidePending(id,decision){
   if(decision==='reject' && !confirm('Reject this upload? It will be thrown away.')) return;
   if(decision==='approve' && !confirm('Approve this upload? Students will see it.')) return;
   const box=document.getElementById('pendingList'); if(box) box.insertAdjacentHTML('afterbegin','<div class="msg ok">Working...</div>');
-  const j=await teamApi({action:'pending_decide',id:id,decision:decision});
-  if(!j||!j.ok){ alert('Could not do that: '+((j&&j.error)||'try again')); }
-  await loadPending(); loadActivity();
-  if(j&&j.ok&&decision==='approve'){ try{ loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook(); }catch(e){} }
+  try{
+    if(decision==='approve'){
+      /* save the scores exactly like a normal upload, and only then mark the request approved */
+      const g=await teamApi({action:'pending_get',id:id});
+      if(!g||!g.ok) throw new Error((g&&g.error)||'Could not open the upload');
+      const it=g.item, newRecords=(it.records||[]).map(r=>({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName||it.assessmentName,course:r.course||it.course}));
+      if(!newRecords.length) throw new Error('This upload is empty');
+      const existing=await fetchAllRecords();
+      const k=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
+      const nk=new Set(newRecords.map(k));
+      const combined=existing.filter(function(r){return !nk.has(k(r));}).concat(newRecords);
+      await saveAllRecords(combined,{max:it.max>0?Number(it.max):0,name:it.assessmentName,courses:[...new Set(newRecords.map(r=>r.course||'General'))]});
+    }
+    const j=await teamApi({action:'pending_decide',id:id,decision:decision});
+    if(!j||!j.ok) throw new Error((j&&j.error)||'try again');
+  }catch(e){ alert('Could not do that: '+(e.message||'try again')); }
+  await loadPending(); try{ loadActivity(); }catch(e){}
+  try{ loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook(); }catch(e){}
 }
 async function loadActivity(){
   const box=document.getElementById('activityList'); if(!box) return;
@@ -5287,7 +5301,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=123"></script>
+<script src="updates.js?v=124"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

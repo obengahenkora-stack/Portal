@@ -571,6 +571,8 @@ html.sh-pre #shLoad{display:block}
       <button type="button" class="ah-row" data-ago="adminStudents">Find a student<span>&#8250;</span></button>
       <button type="button" class="ah-row" id="ahTestRow">View as a test student<span>&#8250;</span></button>
       <button type="button" class="ah-row" data-ahgo="all|">Registered students<span>&#8250;</span></button>
+      <button type="button" class="ah-row" id="ahScoreChk">Check all student scores<span>&#8250;</span></button>
+      <div id="ahScoreOut" style="display:none"></div>
       <a class="ah-row" href="portal.html" style="text-decoration:none;line-height:1.2;box-sizing:border-box">Staff dashboard<span>&#8250;</span></a>
       <button type="button" class="ah-row ah-go" data-ago="adminChat">Open chat <span id="ahChatBd" class="ah-bd" style="display:none"></span><span>&#8250;</span></button>
     </div>
@@ -1015,6 +1017,36 @@ async function saveSupabaseData(data){
 }
 
 function _ownNote(m){ window._ownerBinNote=m; try{ window.shAdminSync&&window.shAdminSync(); }catch(e){} }
+
+async function ahScoreCheck(){
+  const out=document.getElementById('ahScoreOut'); if(!out) return;
+  out.style.display='block'; out.innerHTML='<div class="msg ok">Checking every score against every student... this can take a few seconds.</div>';
+  try{
+    const tok=await _ownerStaffToken(); if(!tok) throw new Error('your staff sign-in was not found on this page. Open the Staff page, sign in, then come back.');
+    if(!registeredStudentsCache.length){ try{ await loadRegisteredStudents(); }catch(e){} }
+    const accts=registeredStudentsCache.slice(); if(!accts.length) throw new Error('the student list is not loaded yet. Open Registered students once, then run this again.');
+    const r0=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':tok},body:JSON.stringify({action:'bin_get'})});
+    const j=await r0.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'could not load the scores');
+    const recs=(j.bin||{}).records||[];
+    const nz=v=>String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,''), dg=v=>String(v==null?'':v).replace(/\D/g,'');
+    const byNz=new Map(), byDg=new Map();
+    accts.forEach(a=>{ const n=nz(a.indexNumber), d=dg(a.indexNumber); if(n) byNz.set(n,a); if(d.length>=5) byDg.set(d,a); });
+    const matched=new Map(); const orphan=new Map();
+    recs.forEach(x=>{ const n=nz(x.indexNumber), d=dg(x.indexNumber); const a=byNz.get(n)||(d.length>=5?byDg.get(d):null);
+      if(a){ matched.set(a.email,(matched.get(a.email)||0)+1); } else { const k=String(x.indexNumber||'').trim(); const o=orphan.get(k)||{n:0,courses:new Set()}; o.n++; o.courses.add(x.course||''); orphan.set(k,o); } });
+    const lev=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; let i=0,e=0; if(a.length===b.length){ for(let k=0;k<a.length;k++) if(a[k]!==b[k]) e++; return e; } const L=a.length>b.length?a:b, S=a.length>b.length?b:a; while(i<S.length&&S[i]===L[i]) i++; return S.slice(i)===L.slice(i+1)?1:9; };
+    const near=[]; orphan.forEach((o,k)=>{ const d=dg(k); let hit=null; if(d.length>=5){ for(const a of accts){ const ad=dg(a.indexNumber); if(ad.length>=5 && lev(d,ad)<=1 && !matched.has(a.email)){ hit=a; break; } } } if(hit) near.push({rec:k,n:o.n,courses:[...o.courses].join(', '),acct:hit}); });
+    const withScores=accts.filter(a=>matched.has(a.email)).length;
+    let h='<div style="border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:6px">'
+      +'<div style="font-weight:800;margin-bottom:6px">Score check</div>'
+      +'<div>'+recs.length+' scores saved &middot; '+accts.length+' students signed up</div>'
+      +'<div><b>'+withScores+'</b> signed-up students have at least one score. <b>'+(accts.length-withScores)+'</b> have none yet.</div>'
+      +'<div>'+orphan.size+' index numbers in the scores have no student account yet (normal until they sign up).</div>';
+    if(near.length){ h+='<div style="margin-top:10px;font-weight:800;color:#d9534f">'+near.length+' possible typing mismatches</div><div class="hint">A saved score looks like it belongs to a signed-up student, but the index numbers differ by one character. Fix the index number in the score file.</div><table style="width:100%;font-size:.85rem">'+near.slice(0,40).map(n=>'<tr><td>'+escapeHtml(n.rec)+'</td><td>'+escapeHtml(n.acct.indexNumber)+'</td><td>'+escapeHtml(n.acct.name||'')+'</td></tr>').join('')+'</table>'; }
+    else h+='<div style="margin-top:10px;color:#2e9e55;font-weight:800">No typing mismatches found. Every saved score either matches a student or belongs to someone who has not signed up.</div>';
+    out.innerHTML=h+'</div>';
+  }catch(e){ out.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message||String(e))+'</div>'; }
+}
 async function _ownerStaffToken(){
   try{
     if(!window._ownerStaffClient) window._ownerStaffClient=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2362,6 +2394,7 @@ function renderWelcome(){
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('#adminNav a').forEach(function(a){ a.addEventListener('click',function(){ adminTab(a.getAttribute('data-atab')); }); });
     document.querySelectorAll('[data-ago]').forEach(function(b){ b.addEventListener('click',function(){ adminTab(b.getAttribute('data-ago')); }); });
+    var sc=$('ahScoreChk'); if(sc) sc.addEventListener('click',ahScoreCheck);
     var tr=$('ahTestRow'); if(tr) tr.addEventListener('click',function(){ adminTab('adminStudents'); setTimeout(function(){ var c=$('adminTestCard'); if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); },350); });
     var r=$('adminRegisteredCard'); if(r) new MutationObserver(function(){ if(!r.classList.contains('hidden')) init(); }).observe(r,{attributes:true,attributeFilter:['class']});
     setInterval(function(){ var h=$('adminHub'); if(h&&!h.classList.contains('hidden')) stats(); },2000);
@@ -2384,7 +2417,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=129"></script>
+<script src="updates.js?v=130"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

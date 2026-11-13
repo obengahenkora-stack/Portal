@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-13h', date:'13 Nov 2026', title:'Check all student scores',
+      all:[], student:[], staff:['The owner hub has a Check all student scores button. It compares every saved score with every signed-up student and lists any index numbers that differ by a typing slip.'] },
     { id:'2026-11-13g', date:'13 Nov 2026', title:'Owner view banner shows the reason',
       all:[], student:[], staff:['If scores cannot load in the owner view, the reason now shows on the Owner view banner.'] },
     { id:'2026-11-13f', date:'13 Nov 2026', title:'Owner view explains missing scores',

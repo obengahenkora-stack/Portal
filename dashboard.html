@@ -1035,7 +1035,7 @@ async function ahScoreCheck(){
     recs.forEach(x=>{ const n=nz(x.indexNumber), d=dg(x.indexNumber); const a=byNz.get(n)||(d.length>=5?byDg.get(d):null);
       if(a){ matched.set(a.email,(matched.get(a.email)||0)+1); } else { const k=String(x.indexNumber||'').trim(); const o=orphan.get(k)||{n:0,courses:new Set()}; o.n++; o.courses.add(x.course||''); orphan.set(k,o); } });
     const lev=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; let i=0,e=0; if(a.length===b.length){ for(let k=0;k<a.length;k++) if(a[k]!==b[k]) e++; return e; } const L=a.length>b.length?a:b, S=a.length>b.length?b:a; while(i<S.length&&S[i]===L[i]) i++; return S.slice(i)===L.slice(i+1)?1:9; };
-    const near=[]; orphan.forEach((o,k)=>{ const d=dg(k); let hit=null; if(d.length>=5){ for(const a of accts){ const ad=dg(a.indexNumber); if(ad.length>=5 && lev(d,ad)<=1 && !matched.has(a.email)){ hit=a; break; } } } if(hit) near.push({rec:k,n:o.n,courses:[...o.courses].join(', '),acct:hit}); });
+    const near=[]; orphan.forEach((o,k)=>{ const d=dg(k); let hit=null; if(d.length>=5){ for(const a of accts){ const ad=dg(a.indexNumber); if(ad.length>=5 && ad.slice(-2)===d.slice(-2) && lev(d,ad)<=1 && !matched.has(a.email)){ hit=a; break; } } } if(hit) near.push({rec:k,n:o.n,courses:[...o.courses].join(', '),acct:hit}); });
     const withScores=accts.filter(a=>matched.has(a.email)).length;
     let h='<div style="border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:6px">'
       +'<div style="font-weight:800;margin-bottom:6px">Score check</div>'
@@ -2417,7 +2417,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=130"></script>
+<script src="updates.js?v=131"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-13i', date:'13 Nov 2026', title:'Score check ignores different years',
+      all:[], student:[], staff:['Check all student scores no longer flags index numbers that only differ by admission year (for example UEB0700122 and UEB0700126 are different students).'] },
     { id:'2026-11-13h', date:'13 Nov 2026', title:'Check all student scores',
       all:[], student:[], staff:['The owner hub has a Check all student scores button. It compares every saved score with every signed-up student and lists any index numbers that differ by a typing slip.'] },
     { id:'2026-11-13g', date:'13 Nov 2026', title:'Owner view banner shows the reason',

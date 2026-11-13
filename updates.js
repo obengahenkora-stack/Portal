@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-13e', date:'13 Nov 2026', title:'Owner view shows student scores again',
+      all:[], student:[], staff:['When you open a student from Find a student, their scores now load correctly.'] },
     { id:'2026-11-13d', date:'13 Nov 2026', title:'Choose the course when approving',
       all:[], student:[], staff:['Each waiting upload now has a Save under this course picker, so scores land under the right course even if the TA file had a different course name.'] },
     { id:'2026-11-13c', date:'13 Nov 2026', title:'TAs can fix a waiting upload',

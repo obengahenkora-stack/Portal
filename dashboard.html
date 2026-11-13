@@ -1014,7 +1014,30 @@ async function saveSupabaseData(data){
   if(!res.ok) throw new Error("Could not save");
 }
 
+async function _ownerStaffToken(){
+  try{
+    if(!window._ownerStaffClient) window._ownerStaffClient=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data:{ session:st } } = await window._ownerStaffClient.auth.getSession();
+    if(st && st.user && String(st.user.email).toLowerCase()===ADMIN_EMAIL.toLowerCase()) return st.access_token;
+  }catch(e){}
+  return '';
+}
 async function _binCall(payload){
+  /* owner looking at a student: the student-side sign-in has no index number of its own, so load the full file with the staff sign-in and keep only that student's rows */
+  if(payload && payload.action==='student_bin' && window._lookIdx){
+    try{
+      const tok=await _ownerStaffToken();
+      if(tok){
+        const r0=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':tok},body:JSON.stringify({action:'bin_get'})});
+        const j0=await r0.json();
+        if(j0 && j0.ok){
+          const b=j0.bin||{}, nz=function(v){return String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');}, dg=function(v){return String(v==null?'':v).replace(/\D/g,'');};
+          const me=String(window._lookIdx), same=function(v){ const a=nz(v); if(a && a===nz(me)) return true; const d=dg(v), m=dg(me); return d.length>=5 && d===m; };
+          return {ok:true,bin:{courses:b.courses||[],settings:{deviceLockEnabled:(b.settings||{}).deviceLockEnabled},records:(b.records||[]).filter(function(x){return same(x.indexNumber);}),assessmentMax:b.assessmentMax||{},finalShow:b.finalShow||{},reports:(b.reports||[]).filter(function(x){return same(x.indexNumber);})}};
+        }
+      }
+    }catch(e){}
+  }
   var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};
   try{
     var staff=window._adminViaStaff&&window._adminViaStaff.auth?(await window._adminViaStaff.auth.getSession()).data.session:null;
@@ -2358,7 +2381,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=126"></script>
+<script src="updates.js?v=127"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

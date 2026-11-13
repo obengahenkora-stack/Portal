@@ -1014,6 +1014,7 @@ async function saveSupabaseData(data){
   if(!res.ok) throw new Error("Could not save");
 }
 
+function _ownNote(m){ window._ownerBinNote=m; try{ window.shAdminSync&&window.shAdminSync(); }catch(e){} }
 async function _ownerStaffToken(){
   try{
     if(!window._ownerStaffClient) window._ownerStaffClient=window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1027,18 +1028,18 @@ async function _binCall(payload){
   if(payload && payload.action==='student_bin' && window._lookIdx){
     try{
       const tok=await _ownerStaffToken();
-      if(!tok) window._ownerBinNote='Owner view could not load scores: your staff sign-in was not found on this page. Open the Staff page, sign in, then come back.';
+      if(!tok) _ownNote('Owner view could not load scores: your staff sign-in was not found on this page. Open the Staff page, sign in, then come back.');
       if(tok){
         const r0=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':tok},body:JSON.stringify({action:'bin_get'})});
         const j0=await r0.json();
-        if(!(j0 && j0.ok)) window._ownerBinNote='Owner view could not load scores: '+((j0&&j0.error)||'no answer from the server');
-        if(j0 && j0.ok){ window._ownerBinNote='';
+        if(!(j0 && j0.ok)) _ownNote('Owner view could not load scores: '+((j0&&j0.error)||'no answer from the server'));
+        if(j0 && j0.ok){ _ownNote('');
           const b=j0.bin||{}, nz=function(v){return String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');}, dg=function(v){return String(v==null?'':v).replace(/\D/g,'');};
           const me=String(window._lookIdx), same=function(v){ const a=nz(v); if(a && a===nz(me)) return true; const d=dg(v), m=dg(me); return d.length>=5 && d===m; };
           return {ok:true,bin:{courses:b.courses||[],settings:{deviceLockEnabled:(b.settings||{}).deviceLockEnabled},records:(b.records||[]).filter(function(x){return same(x.indexNumber);}),assessmentMax:b.assessmentMax||{},finalShow:b.finalShow||{},reports:(b.reports||[]).filter(function(x){return same(x.indexNumber);})}};
         }
       }
-    }catch(e){ window._ownerBinNote='Owner view could not load scores: '+String(e&&e.message||e); }
+    }catch(e){ _ownNote('Owner view could not load scores: '+String(e&&e.message||e)); }
   }
   var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};
   try{
@@ -2383,7 +2384,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=128"></script>
+<script src="updates.js?v=129"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}
@@ -2540,6 +2541,6 @@ document.addEventListener('click',function(e){
 .attc-d{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:.86rem}
 .attc-d:last-child{border-bottom:0}
 </style>
-<script src="stuhome.js?v=18"></script>
+<script src="stuhome.js?v=19"></script>
 </body>
 </html>

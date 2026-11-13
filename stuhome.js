@@ -198,7 +198,7 @@ function renderNotif(){ renderNotif0(); try{ annInBox(); }catch(e){} }
 window.shRenderAnn=function(){ if($('shNx')) renderNotif(); };
 function renderNotif0(){
   var box=$('shNx'); if(!box) return;
-  if(adminViewing()){ box.innerHTML='<div class="k">Owner view</div><div class="none">You are looking at this student\'s dashboard, read-only.</div><div style="height:6px"></div>'; return; }
+  if(adminViewing()){ box.innerHTML='<div class="k">Owner view</div><div class="none">You are looking at this student\'s dashboard, read-only.</div>'+(window._ownerBinNote?'<div class="none" style="color:#ffb4a8;margin-top:6px;font-weight:700">'+esc(window._ownerBinNote)+'</div>':'')+'<div style="height:6px"></div>'; return; }
   var u=unread(), all=load().list;
   if(!u.length){ box.innerHTML='<div class="k">Notifications</div><div class="none">You are all caught up.</div>'+(all.length?'<button type="button" style="margin-top:10px">See earlier notifications</button>':'<div style="height:6px"></div>'); return; }
   if(u.length===1){ var n=u[0], m=IC[n.ic]||IC.score;

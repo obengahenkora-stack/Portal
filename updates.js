@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-13a', date:'13 Nov 2026', title:'Saving retries on a weak connection',
+      all:['If your phone has a weak signal, saving now tries again by itself, and shows a clear message if it still cannot connect.'], student:[], staff:[] },
     { id:'2026-11-12n', date:'12 Nov 2026', title:'No group for Level 100 outside Civil',
       all:['Level 100 students outside Civil Engineering can now choose No group (their class has no A, B or C) and save.'], student:[], staff:[] },
     { id:'2026-11-12m', date:'12 Nov 2026', title:'Owner hub level bars fixed',

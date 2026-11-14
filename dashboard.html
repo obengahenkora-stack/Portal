@@ -1075,6 +1075,19 @@ async function _binCall(payload){
       }
     }catch(e){ _ownNote('Owner view could not load scores: '+String(e&&e.message||e)); }
   }
+  /* a student's own scores: keep them on the phone and only download again when the scores file has changed */
+  if(payload && payload.action==='student_bin' && !window._lookIdx && !window._asTest && !window._adminViaStaff){
+    try{
+      var stS=(await supabaseClient.auth.getSession()).data.session;
+      if(stS && stS.access_token){
+        var cached=null; try{ cached=JSON.parse(localStorage.getItem('stuBinCache1')||'null'); }catch(e){}
+        var rl=await fetch(SUPABASE_URL+'/functions/v1/lite',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-student-token':stS.access_token},body:JSON.stringify({action:'student_bin',since:(cached&&cached.v)||''})});
+        var jl=await rl.json();
+        if(jl && jl.ok && jl.unchanged && cached && cached.bin) return {ok:true,bin:cached.bin};
+        if(jl && jl.ok && jl.bin){ try{ localStorage.setItem('stuBinCache1',JSON.stringify({v:jl.v,bin:jl.bin})); }catch(e){} return {ok:true,bin:jl.bin}; }
+      }
+    }catch(e){}
+  }
   var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};
   try{
     var staff=window._adminViaStaff&&window._adminViaStaff.auth?(await window._adminViaStaff.auth.getSession()).data.session:null;
@@ -2419,7 +2432,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=132"></script>
+<script src="updates.js?v=133"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

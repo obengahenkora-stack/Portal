@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-14b', date:'14 Nov 2026', title:'Score check shows likely typos',
+      all:[], student:[], staff:['Check all student scores now shows, beside each student with no score, the similar index number found in the score file.'] },
     { id:'2026-11-14a', date:'14 Nov 2026', title:'Scores load faster and use less data',
       all:[], student:['Your scores are now saved on your phone and only downloaded again when new scores are uploaded, so the page opens faster and uses less data.'], staff:[] },
     { id:'2026-11-13i', date:'13 Nov 2026', title:'Score check shows students per level',

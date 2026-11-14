@@ -1033,7 +1033,7 @@ async function ahScoreCheck(){
     accts.forEach(a=>{ const n=nz(a.indexNumber), d=dg(a.indexNumber); if(n) byNz.set(n,a); if(d.length>=5) byDg.set(d,a); });
     const matched=new Map(); const orphan=new Map();
     recs.forEach(x=>{ const n=nz(x.indexNumber), d=dg(x.indexNumber); const a=byNz.get(n)||(d.length>=5?byDg.get(d):null);
-      if(a){ matched.set(a.email,(matched.get(a.email)||0)+1); } else { const k=String(x.indexNumber||'').trim(); const o=orphan.get(k)||{n:0,courses:new Set()}; o.n++; o.courses.add(x.course||''); orphan.set(k,o); } });
+      if(a){ matched.set(a.email,(matched.get(a.email)||0)+1); } else { const k=String(x.indexNumber||'').trim(); const o=orphan.get(k)||{n:0,courses:new Set(),levels:new Set()}; o.n++; o.courses.add(x.course||''); o.levels.add(String(x.level||'')); orphan.set(k,o); } });
     const lev=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; let i=0,e=0; if(a.length===b.length){ for(let k=0;k<a.length;k++) if(a[k]!==b[k]) e++; return e; } const L=a.length>b.length?a:b, S=a.length>b.length?b:a; while(i<S.length&&S[i]===L[i]) i++; return S.slice(i)===L.slice(i+1)?1:9; };
     const near=[]; orphan.forEach((o,k)=>{ const d=dg(k); let hit=null; if(d.length>=5){ for(const a of accts){ const ad=dg(a.indexNumber); if(ad.length>=5 && ad.slice(-2)===d.slice(-2) && lev(d,ad)<=1 && !matched.has(a.email)){ hit=a; break; } } } if(hit) near.push({rec:k,n:o.n,courses:[...o.courses].join(', '),acct:hit}); });
     const withScores=accts.filter(a=>matched.has(a.email)).length;
@@ -1045,7 +1045,8 @@ async function ahScoreCheck(){
     const lv={}; accts.forEach(a=>{ const L=String(a.level||'?'); const o=lv[L]||(lv[L]={t:0,s:0,list:[]}); o.t++; if(matched.has(a.email)) o.s++; else o.list.push(a); });
     h+='<table style="width:100%;font-size:.9rem;margin-top:10px"><tr><th align="left">Level</th><th>Signed up</th><th>With scores</th><th>No scores</th></tr>'+Object.keys(lv).sort().map(L=>'<tr><td>'+escapeHtml(L)+'</td><td align="center">'+lv[L].t+'</td><td align="center">'+lv[L].s+'</td><td align="center"><b>'+(lv[L].t-lv[L].s)+'</b></td></tr>').join('')+'</table>';
     const miss=[]; Object.keys(lv).forEach(L=>{ if(L!=='100') lv[L].list.forEach(a=>miss.push(a)); });
-    h+='<div style="margin-top:10px;font-weight:800">Level 200 to 400 students with no score at all ('+miss.length+')</div><div class="hint">These are signed-up students above Level 100 whose index number matches no saved score. Check each one in the score file.</div><table style="width:100%;font-size:.85rem">'+miss.slice(0,80).map(a=>'<tr><td>'+escapeHtml(a.indexNumber||'')+'</td><td>'+escapeHtml(a.name||'')+'</td><td>L'+escapeHtml(String(a.level||''))+'</td></tr>').join('')+'</table>'+(miss.length>80?'<div class="hint">Showing the first 80.</div>':'');
+    const usedO=new Set(); const guess=a=>{ const n=nz(a.indexNumber); let best=null; orphan.forEach((o,k)=>{ const m=nz(k); if(m.length===n.length){ let e=0; for(let i=0;i<n.length;i++) if(n[i]!==m[i]) e++; if(e===1&&!best) best={k:k,o:o}; } }); return best; };
+    h+='<div style="margin-top:10px;font-weight:800">Level 200 to 400 students with no score at all ('+miss.length+')</div><div class="hint">These are signed-up students above Level 100 whose index number matches no saved score. Red means the score file has a very similar index number, probably a typing slip in the score file.</div><table style="width:100%;font-size:.85rem">'+miss.slice(0,200).map(a=>{ const g=guess(a); return '<tr><td>'+escapeHtml(a.indexNumber||'')+'</td><td>'+escapeHtml(a.name||'')+'</td><td>L'+escapeHtml(String(a.level||''))+'</td><td>'+(g?'<span style="color:#d9534f">score file has '+escapeHtml(g.k)+' ('+escapeHtml([...g.o.levels].join('/'))+')</span>':'<span style="opacity:.6">not in any score file</span>')+'</td></tr>'; }).join('')+'</table>'+(miss.length>200?'<div class="hint">Showing the first 200.</div>':'');
     out.innerHTML=h+'</div>';
   }catch(e){ out.innerHTML='<div class="msg err">Could not check: '+escapeHtml(e.message||String(e))+'</div>'; }
 }
@@ -2432,7 +2433,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=133"></script>
+<script src="updates.js?v=134"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

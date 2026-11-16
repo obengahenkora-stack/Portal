@@ -2508,10 +2508,11 @@ async function renderGradebook(){
   box.innerHTML=h;
   const shown=(bin.finalShow||{})[String(course).trim().toLowerCase()]!==false;
   const fin=rows.map(r=>parseFloat(r.final)).filter(x=>isFinite(x)); const avg=fin.length?Math.round(fin.reduce((t,x)=>t+x,0)/fin.length/40*100)+'%':'-';
-  const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
-  const _isFin=courseIsFinal(bin,course); _gb.final=_isFin; const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(_isFin?'<div class="msg" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;margin-top:8px"><b>Final.</b> This course is locked. Scores are read-only and uploads are blocked.</div>':'')+(isOwner()?'<label class="gb-opt"><span><b>Mark course as final</b><br><small style="color:var(--muted)">Locks it. No more uploads or edits.</small></span><input type="checkbox" '+(_isFin?'checked':'')+' onchange="gbToggleFinal(this)"></label>':'')+(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
+  const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px"><span id="gbStChip" style="font:800 .66rem Inter,system-ui,sans-serif;letter-spacing:.1em;padding:5px 10px;border-radius:99px"></span><span id="gbStNote" class="hint" style="margin:0"></span></div><div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
+  const _isFin=courseIsFinal(bin,course); _gb.final=_isFin; _gb.finalPending=null; const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(_isFin?'<div class="msg" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;margin-top:8px"><b>Final.</b> This course is locked. Scores are read-only and uploads are blocked.</div>':'')+(isOwner()?'<label class="gb-opt"><span><b>Mark course as final</b><br><small style="color:var(--muted)">Tick it, then press Save changes at the top.</small></span><input type="checkbox" '+(_isFin?'checked':'')+' onchange="gbToggleFinal(this)"></label>':'')+(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
   const sub=document.getElementById('gbSub'); if(sub) sub.textContent=isTA?'Edit scores, then submit. The owner approves before students see them.':'Edit any score. Changed scores turn amber until you save.';
   const bar=document.getElementById('gbBar'); if(bar){ const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
+  gbStChip();
   if(_isFin){ document.querySelectorAll('#gradebookTable .gbScore,#gradebookTable .gbMax').forEach(el=>{ el.readOnly=true; el.style.opacity='.6'; }); } try{ const rb=document.getElementById('gbReupBtn'); if(rb) rb.disabled=_isFin; const sb2=document.getElementById('gbSaveTop'); if(sb2) sb2.disabled=_isFin; }catch(e){}
   gbBarSync();
   gbCount(); try{ loadGbPending(); }catch(e){}
@@ -2531,7 +2532,7 @@ setInterval(function(){ try{ gbBarSync(); }catch(e){} },400);
 function gbCount(){
   let n=0; document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{ const v=el.value.trim(); if(v!==''&&v!==el.getAttribute('data-o')) n++; });
   let m=0; document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ if(String(el.value).trim()!==String(el.getAttribute('data-o')||'').trim()) m++; });
-  const c=document.getElementById('gbCount'), c2=document.getElementById('gbCountSub'); if(c) c.textContent=(n||m)?(n+' score'+(n===1?'':'s')+(m?' and '+m+' total'+(m===1?'':'s'):'')+' changed'):'No unsaved changes'; if(c2) c2.textContent=(n||m)?((currentUserRole==='ta')?'Goes to the owner for approval':'Not saved yet'):'';
+  const _fp=(_gb&&_gb.finalPending!=null); const c=document.getElementById('gbCount'), c2=document.getElementById('gbCountSub'); if(_fp&&!(n||m)){ if(c) c.textContent=_gb.finalPending?'Course will be marked FINAL':'Course will be unlocked'; if(c2) c2.textContent='Not saved yet'; return; } if(c) c.textContent=(n||m)?(n+' score'+(n===1?'':'s')+(m?' and '+m+' total'+(m===1?'':'s'):'')+' changed'):'No unsaved changes'; if(c2) c2.textContent=(n||m)?((currentUserRole==='ta')?'Goes to the owner for approval':'Not saved yet'):'';
 }
 async function loadGbPending(){
   const box=document.getElementById('gbPendingBox'); if(!box) return;
@@ -2548,7 +2549,7 @@ async function withdrawGbPending(id){
   loadGbPending();
 }
 async function saveGradebookMarks(){
-  try{ await finalGuard([_gb.course]); }catch(e){ alert(e.message); return; }
+  if(!(_gb.final && _gb.finalPending===false)){ try{ await finalGuard([_gb.course]); }catch(e){ alert(e.message); return; } }
   const msg=document.getElementById('gbMsg');
   if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have access to change marks. Ask the owner.</div>'; return; }
   if(!_gb.course) return;
@@ -2588,9 +2589,10 @@ async function saveGradebookMarks(){
     }
     _gb.savedChanged=ch.length;
     { const fs=document.getElementById('gbShowFinal'); if(fs) bin.finalShow[String(_gb.course).trim().toLowerCase()]=!!fs.checked; }
-    await saveBin(bin);
+    const _fpv=_gb.finalPending; if(_fpv!=null){ bin.courseFinal=bin.courseFinal||{}; const _k=lmBase(_gb.course).toLowerCase(); if(_fpv) bin.courseFinal[_k]=true; else delete bin.courseFinal[_k]; }
+    await saveBin(bin); _gb.finalPending=null;
     await renderGradebook();
-    const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.'+(_gb.savedChanged?' '+_gb.savedChanged+' score(s) changed. Everything else is untouched.':'')+'</div>';
+    const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.'+(_fpv===true?' This course is now FINAL and locked.':(_fpv===false?' This course is unlocked (In progress).':''))+(_gb.savedChanged?' '+_gb.savedChanged+' score(s) changed. Everything else is untouched.':'')+'</div>';
   }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
 }
 
@@ -2671,15 +2673,17 @@ async function gbReupSend(){
     }
   }catch(e){ alert('Could not do that: '+(e.message||'try again')); gbReupRender(); }
 }
-async function gbToggleFinal(el){
-  const course=document.getElementById('gradebookCourse').value; if(!course) return;
-  const on=el.checked;
-  if(!confirm(on?('Mark '+lmBase(course)+' as final? Students will see FINAL, and uploads, re-uploads, Save and TA changes will be blocked until you unlock it.'):('Unlock '+lmBase(course)+'? Students will see it as In progress again and changes will be allowed.'))){ el.checked=!on; return; }
-  try{
-    const bin=await fetchBin(); bin.courseFinal=bin.courseFinal||{}; const k=lmBase(course).toLowerCase();
-    if(on) bin.courseFinal[k]=true; else delete bin.courseFinal[k];
-    await saveBin(bin); renderGradebook();
-  }catch(e){ alert('Could not do that: '+(e.message||'try again')); el.checked=!on; }
+function gbStChip(){
+  const el=document.getElementById('gbStChip'); if(!el) return;
+  const fin=(_gb.finalPending==null)?!!_gb.final:_gb.finalPending, pend=(_gb.finalPending!=null);
+  el.innerHTML=fin?'&#128274; FINAL':'IN PROGRESS'; el.style.background=fin?'#dcfce7':'#fef3c7'; el.style.color=fin?'#166534':'#92400e';
+  const n=document.getElementById('gbStNote'); if(n) n.textContent=pend?(fin?'Will be marked FINAL when you press Save changes.':'Will be unlocked when you press Save changes.'):'';
+}
+function gbToggleFinal(el){
+  if(!document.getElementById('gradebookCourse').value) return;
+  _gb.finalPending=(el.checked===!!_gb.final)?null:el.checked;
+  const sb=document.getElementById('gbSaveTop'); if(sb) sb.disabled=(_gb.final&&_gb.finalPending==null);
+  gbStChip(); gbCount();
 }
 function downloadGradebook(){
   if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
@@ -5694,7 +5698,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=152"></script>
+<script src="updates.js?v=153"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

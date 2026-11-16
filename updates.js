@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16q', date:'16 Nov 2026', title:'Mark as final now needs Save',
+      all:[], student:[], staff:['In the Gradebook, ticking Mark course as final no longer saves straight away. A status chip at the top shows IN PROGRESS or FINAL, and the change is applied when you press Save changes.'] },
     { id:'2026-11-16p', date:'16 Nov 2026', title:'In progress / Final for each course',
       all:[], student:['Every course in My Scores now says IN PROGRESS (more scores may still be added) or FINAL (no more scores will be added).'], staff:['In the Gradebook the owner can switch Mark course as final. A final course is locked: uploads, re-uploads, Save and TA changes are blocked until you unlock it.'] },
     { id:'2026-11-16o', date:'16 Nov 2026', title:'My Scores course names',

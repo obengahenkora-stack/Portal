@@ -326,6 +326,7 @@ html.sh-pre #shLoad{display:block}
 #dashScoresCard .scx-cat th{font:700 .6rem Inter,system-ui,sans-serif;letter-spacing:.12em;color:#8a8070;text-align:left;padding:6px 0;border:0;border-bottom:1px solid #d9d2c4;background:none;text-transform:none}
 #dashScoresCard .scx-cat td{padding:9px 0;border:0;border-bottom:1px solid #e4ddcf;color:#1e1e1e;background:none}
 #dashScoresCard .scx-cat th:not(:first-child),#dashScoresCard .scx-cat td:not(:first-child){text-align:right}
+#dashScoresCard .scx-disc{margin-top:16px;padding:10px 12px;border-left:3px solid #a51c30;background:#f3ece0;font:.76rem/1.45 Inter,system-ui,sans-serif;color:#5a4a3a}#dashScoresCard .scx-disc b{color:#a51c30}
 #dashScoresCard .scx-cat tr:last-child td{border-bottom:0}#dashScoresCard .scx-cat b{color:#a51c30}
 </style>
 
@@ -1817,7 +1818,8 @@ async function loadDashboard(skipLock){
           +(any?'<div class="scx-num">'+(Math.round(ts*100)/100)+'<small>/'+tm+'</small></div>':'')+'</div>'+(any?'<div class="scx-seg">'+seg+'</div>':'')
           +g.items.map(i => '<div class="scx-a"><span>'+escapeHtml(i.n)+'</span><b>'+escapeHtml(i.sc)+(i.mx>0?'/'+i.mx:'')+'</b></div>').join('')+'</div>';
       });
-      html += '</div>';
+      const _disc='<div class="scx-disc"><b>Provisional scores.</b> These scores are provisional until they are finally reviewed and your attendance is taken into consideration.</div>';
+      html += _disc+'</div>';
       scoresContainer.innerHTML = html;
       try{
         const _am=jsonBinData.assessmentMax||{}, _fs=jsonBinData.finalShow||{}, _by={};
@@ -1825,7 +1827,7 @@ async function loadDashboard(skipLock){
         _rows.forEach(r=>{ const c=_bs(r.course||'General'); (_by[c]=_by[c]||{})[r.assessmentName||'Untitled']=r.score; });
         let _fh='';
         Object.keys(_by).sort().forEach(c=>{ const ck=String(c).trim().toLowerCase(); if(_fs[ck]===false) return; let s=0,m=0; const mine={}; Object.keys(_by[c]).forEach(a=>{ mine[String(a).trim().toLowerCase()]=_by[c][a]; }); Object.keys(_am).forEach(k=>{ if(k.indexOf(ck+'|')!==0) return; const mx=parseFloat(_am[k]); if(!(mx>0)) return; m+=mx; const sc=mine[k.slice(ck.length+1)]; const n=parseFloat(String(sc==null?'':sc).replace(/[^0-9.\-]/g,'')); s+=isFinite(n)?n:0; }); if(m>0) _fh+='<tr><td>'+escapeHtml(c)+'</td><td>'+(Math.round(s*100)/100)+' / '+m+'</td><td><b>'+(Math.round(s/m*4000)/100)+'</b> / 40</td></tr>'; });
-        if(_fh) scoresContainer.innerHTML = scoresContainer.innerHTML.replace(/<\/div>$/,'')+'<div class="scx-cat"><h4>Continuous Assessment (out of 40)</h4><table><tr><th>COURSE</th><th>TOTAL</th><th>FINAL</th></tr>'+_fh+'</table></div></div>';
+        if(_fh) scoresContainer.innerHTML = scoresContainer.innerHTML.replace(/<div class="scx-disc">.*?<\/div><\/div>$/,'')+'<div class="scx-cat"><h4>Continuous Assessment (out of 40)</h4><table><tr><th>COURSE</th><th>TOTAL</th><th>FINAL</th></tr>'+_fh+'</table></div>'+_disc+'</div>';
       }catch(e){}
     }
 
@@ -2466,7 +2468,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=147"></script>
+<script src="updates.js?v=148"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

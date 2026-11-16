@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16l', date:'16 Nov 2026', title:'Scores marked provisional',
+      all:[], student:['My Scores now says the scores are provisional until finally reviewed and attendance is taken into consideration.'], staff:[] },
     { id:'2026-11-16k', date:'16 Nov 2026', title:'Harvard-style My Scores, CA shown automatically',
       all:[], student:['My Scores has a new classic academic look. Continuous assessment (out of 40) is now a table that shows for every course.'], staff:['The Final (out of 40) is now shown to students automatically for every course that has Out-of totals. Untick Show the Final in the Gradebook to hide it for a course.'] },
     { id:'2026-11-16j', date:'16 Nov 2026', title:'New My Scores look',

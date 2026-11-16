@@ -3640,10 +3640,30 @@ function escapeHtml(str){
 }
 
 // ===== Full bin read/write (extends storage to include courses + reports) =====
+/* Scores file: ask the tiny "lite" service whether it changed; only download the big file when it did. */
+let _binMem=null;
+async function binStamp(){
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    const r=await fetch(SUPABASE_URL+'/functions/v1/lite',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify({action:'bin_stamp'})});
+    const j=await r.json(); return (j&&j.ok&&j.stamp)||'';
+  }catch(e){ return ''; }
+}
 async function fetchBin(){
+  const stamp = await binStamp();
+  if(stamp){
+    try{
+      if(!_binMem){ const t=sessionStorage.getItem('binCacheS1'); if(t) _binMem=JSON.parse(t); }
+    }catch(e){ _binMem=null; }
+    if(_binMem && _binMem.stamp===stamp) return JSON.parse(_binMem.text);
+  }
   const j = await teamApi({action:'bin_get'});
   if(!j || !j.ok) throw new Error((j && j.error) || "Could not reach storage");
-  return j.bin || {};
+  const bin = j.bin || {};
+  if(stamp){
+    try{ _binMem={stamp:stamp,text:JSON.stringify(bin)}; sessionStorage.setItem('binCacheS1',JSON.stringify(_binMem)); }catch(e){}
+  }
+  return bin;
 }
 
 async function saveBin(binData){
@@ -5559,7 +5579,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=142"></script>
+<script src="updates.js?v=143"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

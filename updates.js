@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16v', date:'16 Nov 2026', title:'Exams and Assignments tiles tidied',
+      all:[], student:[], staff:['The Online Exams and Assignments tiles now show the title with its description underneath, so the text no longer overlaps.'] },
     { id:'2026-11-16u', date:'16 Nov 2026', title:'Exam Integrity check',
       all:[], student:[], staff:['In an exam\'s Results page, tap Integrity check to see students who chose the same wrong answers, students with too few camera photos, and very fast finishes. These are hints to look at, not proof. The shuffle switches now explain that every student gets their own random order.'] },
     { id:'2026-11-16t', date:'16 Nov 2026', title:'Apply to attendance works',

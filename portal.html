@@ -627,8 +627,8 @@
     </div>
 
     <div class="card hidden" id="pendingCard">
-      <label>Pending approvals (uploads from TAs)</label>
-      <div class="hint">Scores a TA uploads wait here. Students and the gradebook do not see them until you approve. Rejecting throws the upload away.</div>
+      <label>Pending approvals</label>
+      <div class="hint">TA uploads and gradebook changes wait here. Students see nothing until you approve. Rejecting throws it away.</div>
       <div id="pendingList"><div class="hint">Loading...</div></div>
       <button class="secondary" onclick="loadPending()" style="margin-top:10px">Refresh</button>
     </div>
@@ -1829,7 +1829,7 @@ async function sfLoad(){
     msg.innerHTML=`<div class="msg ok">${withPic} of ${_sfRows.length} present students have a selfie. Photos older than ${l.days||90} days are removed unless kept.</div>`;
     let h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">';
     _sfRows.forEach((r,n)=>{
-      const t=r.time?new Date(r.time).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}):'';
+      const t=r.time?new Date(r.time).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',hour12:false}):'';
       h+=`<div style="border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;font-size:.78rem;">
         <div id="sfImg${n}" style="width:100%;aspect-ratio:1;border-radius:8px;background:var(--bg2,#eee);display:flex;align-items:center;justify-content:center;color:var(--muted);overflow:hidden;">${r.item?'Loading...':'No selfie'}</div>
         <div style="font-weight:700;margin-top:6px;">${escapeHtml(r.name||'(not on list)')}</div>
@@ -2160,37 +2160,55 @@ function _pcOpts(course){
   opts.forEach(o=>{ h+='<option value="'+escapeHtml(o)+'"'+(o===pick?' selected':'')+'>'+escapeHtml(o)+'</option>'; });
   return h;
 }
-async function loadPending(){
+var _pdTab='wait';
+function pdTab(t){ _pdTab=t; loadPending(true); }
+function _pdWhen(d){ try{ return new Date(d).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false}); }catch(e){ return ''; } }
+function _pdDay(d){ const x=new Date(d), t=new Date(); const k=a=>a.getFullYear()+'-'+a.getMonth()+'-'+a.getDate(); const y=new Date(t.getTime()-86400000); if(k(x)===k(t)) return 'Today'; if(k(x)===k(y)) return 'Yesterday'; return x.toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}); }
+function _pdWho(i){ const n=String(i.byName||i.by||'?').trim(), p=n.split(/\s+/).filter(Boolean); return ((p[0]||'?')[0]+((p[1]||'')[0]||'')).toUpperCase(); }
+async function loadPending(keep){
   const box=document.getElementById('pendingList'); if(!box) return;
-  try{ await loadUploadCourses(); }catch(e){}
+  if(keep!==true){ try{ await loadUploadCourses(); }catch(e){} }
   try{
     const j=await teamApi({action:'pending_list'}); if(!j||!j.ok) throw new Error((j&&j.error)||'x');
-    const wait=(j.items||[]).filter(i=>i.status==='pending'), done=(j.items||[]).filter(i=>i.status!=='pending').slice(0,10);
+    const wait=(j.items||[]).filter(i=>i.status==='pending'), done=(j.items||[]).filter(i=>i.status!=='pending').slice(0,25);
     try{ const t=_TCH_TILES.filter(x=>x.id==='pendingCard')[0]; if(t&&!t.s){ t.d=wait.length?(wait.length+' waiting for you'):'Review TA uploads before students see them.'; t.c=wait.length?'t-lab':''; attRenderTiles(); } }catch(e){}
-    let h='';
-    if(!wait.length) h+='<div class="hint">Nothing is waiting for approval.</div>';
-    wait.forEach(i=>{
-      if(i.kind==='edit'){
-        const mk=Object.keys(i.maxes||{});
-        h+='<div style="border:2px solid #f59e0b;border-radius:10px;padding:12px;margin:10px 0">'
-         +'<div style="display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#f59e0b;color:#111;border-radius:99px;padding:3px 10px;margin-bottom:6px">Gradebook changes to review</div>'
-         +'<div style="font-weight:700;margin-bottom:6px;line-height:1.3">'+escapeHtml(i.course)+'</div>'
-         +'<div class="hint">From '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+' &middot; '+i.count+' score'+(i.count===1?'':'s')+' changed'+(mk.length?' &middot; '+mk.length+' "out of" total'+(mk.length===1?'':'s'):'')+'</div>'
-         +(mk.length?'<div class="hint" style="margin:4px 0">New "out of" totals: '+mk.map(k=>escapeHtml(k)+' = '+escapeHtml(String(i.maxes[k]))).join(', ')+'</div>':'')
-         +'<table style="font-size:.8rem;margin:6px 0"><tr><th>Index #</th><th>Assessment</th><th>Was</th><th>Now</th></tr>'+(i.sample||[]).map(r=>'<tr><td>'+escapeHtml(r.indexNumber)+'</td><td>'+escapeHtml(r.assessmentName||'')+'</td><td>'+escapeHtml(r.was===''||r.was==null?'-':r.was)+'</td><td><b>'+escapeHtml(r.score)+'</b></td></tr>').join('')+'</table>'
-         +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
-         +'<div style="display:flex;gap:10px;margin-top:8px"><button onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">Approve changes</button><button class="secondary" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div></div>';
-        return;
-      }
-      h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">'
-       +'<div style="font-weight:700;margin-bottom:6px;line-height:1.3">'+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+'</div>'
-       +'<div class="hint" style="margin:0 0 6px;font-weight:700">Save under this course:</div><select id="pc_'+escapeHtml(i.id)+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px">'+_pcOpts(i.course)+'</select>'
-       +'<div class="hint">From '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+' &middot; '+i.count+' students'+(i.max?' &middot; out of '+escapeHtml(String(i.max)):'')+(i.top!==null&&i.top!==undefined?' &middot; scores '+escapeHtml(String(i.low))+' to '+escapeHtml(String(i.top)):'')+'</div>'
-       +'<table style="font-size:.8rem;margin:6px 0"><tr><th>Index #</th><th>Score</th></tr>'+(i.sample||[]).map(r=>'<tr><td>'+escapeHtml(r.indexNumber)+'</td><td>'+escapeHtml(r.score)+'</td></tr>').join('')+'</table>'
-       +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
-       +'<div style="display:flex;gap:10px;margin-top:8px"><button onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">Approve</button><button class="secondary" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div></div>';
-    });
-    if(done.length) h+='<div class="hint" style="margin-top:14px;font-weight:700">Recently decided</div>'+done.map(i=>'<div class="hint">'+(i.status==='approved'?'Approved':'Rejected')+': '+(i.kind==='edit'?'gradebook changes, ':'')+escapeHtml(i.course)+(i.kind==='edit'?'':' | '+escapeHtml(i.assessmentName))+' from '+escapeHtml(i.byName||i.by)+'</div>').join('');
+    const chip=x=>'<span style="background:rgba(120,150,150,.16);border-radius:99px;padding:4px 10px;font-size:.76rem;font-weight:600">'+x+'</span>';
+    const tag=(t,c,bg)=>'<span style="display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:3px 9px;margin-bottom:8px;background:'+bg+';color:'+c+'">'+t+'</span>';
+    const who=i=>'<div style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin:2px 0 10px"><span style="width:26px;height:26px;border-radius:50%;background:#0ea5e9;color:#fff;font-weight:800;font-size:.7rem;display:grid;place-items:center">'+escapeHtml(_pdWho(i))+'</span>'+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(_pdDay(i.at))+', '+escapeHtml(_pdWhen(i.at))+'</div>';
+    const btns=(i,l)=>'<div style="display:flex;gap:10px"><button style="flex:1;margin:0;padding:12px;border-radius:14px;background:#1f9d55;color:#fff;font-weight:800" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">'+l+'</button><button class="secondary" style="flex:1;margin:0;padding:12px;border-radius:14px;font-weight:800;color:#b3302c;border:1.5px solid #e6b3b1;background:transparent" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div>';
+    const card='border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 12px;background:var(--card)';
+    let h='<div style="display:flex;gap:6px;border:1px solid var(--line);border-radius:99px;padding:4px;margin:6px 0 14px"><button type="button" onclick="pdTab(\'wait\')" style="flex:1;margin:0;padding:9px 6px;border-radius:99px;font-size:.85rem;font-weight:700;'+(_pdTab==='wait'?'background:#f59e0b;color:#111':'background:transparent;color:var(--muted)')+'">Waiting'+(wait.length?' <span style="background:#d9534f;color:#fff;border-radius:99px;padding:1px 7px;font-size:.7rem;margin-left:4px">'+wait.length+'</span>':'')+'</button><button type="button" onclick="pdTab(\'done\')" style="flex:1;margin:0;padding:9px 6px;border-radius:99px;font-size:.85rem;font-weight:700;'+(_pdTab==='done'?'background:#f59e0b;color:#111':'background:transparent;color:var(--muted)')+'">Decided</button></div>';
+    if(_pdTab==='wait'){
+      if(!wait.length) h+='<div class="hint" style="text-align:center;padding:18px 0">Nothing is waiting for approval.</div>';
+      wait.forEach(i=>{
+        if(i.kind==='edit'){
+          const mk=Object.keys(i.maxes||{});
+          h+='<div style="'+card+'">'+tag('Gradebook changes','#92400e','#fef3c7')
+           +'<div style="font-weight:800;font-size:1rem;line-height:1.25">'+escapeHtml(i.course)+'</div>'
+           +'<div class="hint" style="margin:2px 0 0">'+i.count+' score'+(i.count===1?'':'s')+' changed'+(mk.length?' &middot; '+mk.length+' "out of" total'+(mk.length===1?'':'s')+' changed':'')+'</div>'+who(i)
+           +(mk.length?'<div class="hint" style="margin:0 0 8px">New totals: '+mk.map(k=>escapeHtml(k)+' = '+escapeHtml(String(i.maxes[k]))).join(', ')+'</div>':'')
+           +(i.sample||[]).map(r=>'<div style="display:flex;justify-content:space-between;gap:10px;font-size:.84rem;padding:7px 0;border-top:1px solid var(--line)"><span>'+escapeHtml(r.indexNumber)+' &middot; '+escapeHtml(r.assessmentName||'')+'</span><span><s style="color:var(--muted)">'+escapeHtml(r.was===''||r.was==null?'-':r.was)+'</s> &rarr; <b style="color:#1f9d55">'+escapeHtml(r.score)+'</b></span></div>').join('')
+           +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
+           +'<div style="margin-top:10px">'+btns(i,'Approve changes')+'</div></div>';
+          return;
+        }
+        const rest=Math.max(0,i.count-(i.sample||[]).slice(0,2).length);
+        h+='<div style="'+card+'">'+tag('New upload','#0369a1','#e0f2fe')
+         +'<div style="font-weight:800;font-size:1rem;line-height:1.25">'+escapeHtml(i.course)+'</div><div class="hint" style="margin:2px 0 0;font-size:.9rem">'+escapeHtml(i.assessmentName)+'</div>'+who(i)
+         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chip(i.count+' students')+(i.max?chip('out of '+escapeHtml(String(i.max))):'')+(i.top!==null&&i.top!==undefined?chip('scores '+escapeHtml(String(i.low))+' to '+escapeHtml(String(i.top))):'')+'</div>'
+         +'<div class="hint" style="margin:0 0 4px;font-weight:700">Save under this course</div><select id="pc_'+escapeHtml(i.id)+'" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px">'+_pcOpts(i.course)+'</select>'
+         +'<div style="font-size:.82rem;border:1px dashed var(--line);border-radius:12px;padding:8px 10px;margin-bottom:10px;color:var(--muted)">Preview: '+(i.sample||[]).slice(0,2).map(r=>escapeHtml(r.indexNumber)+' &middot; '+escapeHtml(r.score)).join(' &nbsp;&nbsp; ')+(rest?' &nbsp;<span style="color:#0ea5e9;font-weight:700">+'+rest+' more</span>':'')+'</div>'
+         +btns(i,'Approve')+'</div>';
+      });
+    } else {
+      if(!done.length) h+='<div class="hint" style="text-align:center;padding:18px 0">Nothing decided yet.</div>';
+      let last='';
+      done.forEach(i=>{
+        const d=_pdDay(i.at); if(d!==last){ last=d; h+='<div style="font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 4px 6px">'+escapeHtml(d)+'</div>'; }
+        const ok=i.status==='approved';
+        h+='<div style="display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-bottom:8px;background:var(--card)"><span style="width:10px;height:10px;border-radius:50%;flex:none;background:'+(ok?'#1f9d55':'#d9534f')+'"></span><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:.88rem;line-height:1.25">'+escapeHtml(i.course)+'</div><div class="hint" style="margin:0;font-size:.76rem">'+(i.kind==='edit'?'Gradebook changes':escapeHtml(i.assessmentName))+' &middot; '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(_pdWhen(i.at))+'</div></div><span style="font-size:.72rem;font-weight:800;color:'+(ok?'#1f9d55':'#d9534f')+'">'+(ok?'Approved':'Rejected')+'</span></div>';
+      });
+    }
     box.innerHTML=h;
   }catch(e){ box.innerHTML='<div class="hint">Could not load. '+escapeHtml(e.message||'')+'</div>'; }
 }
@@ -5134,7 +5152,7 @@ async function loadCheckInTimes(){
 
     let html = '';
     if(sessionStartTime){
-      html += `<div class="hint" style="margin-bottom:12px;">Session started at ${sessionStartTime.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}. Students checking in more than ${lateThresholdMin} minutes after that are flagged late. Note: for students marked present manually (not via QR scan), the time shown is when the attendance was saved, not their actual arrival time — treat "late" flags on manual entries with that in mind.</div>`;
+      html += `<div class="hint" style="margin-bottom:12px;">Session started at ${sessionStartTime.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',hour12:false})}. Students checking in more than ${lateThresholdMin} minutes after that are flagged late. Note: for students marked present manually (not via QR scan), the time shown is when the attendance was saved, not their actual arrival time — treat "late" flags on manual entries with that in mind.</div>`;
     } else {
       html += `<div class="hint" style="margin-bottom:12px;">No QR session start time recorded for this date, so late flagging isn't available — times shown reflect when attendance was saved.</div>`;
     }
@@ -5406,7 +5424,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=135"></script>
+<script src="updates.js?v=136"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

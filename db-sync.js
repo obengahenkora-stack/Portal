@@ -23,7 +23,11 @@
           var jl=await rl.json(); if(jl&&jl.ok){ try{ if(!jl.rows||!jl.rows.length) throw 0; var sj=JSON.stringify({t:now,j:jl}); if(sj.length<1500000) sessionStorage.setItem(ck,sj); }catch(e){} return jl; }
         }catch(e){}
       }
-      var r=await fetch(this.url+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
+      /* check-in, QR check and selfies use their own small service; if it cannot be reached the main one answers */
+      var fast=(payload.action==='checkin'||payload.action==='qr_check'||payload.action==='selfie_put');
+      var r=null;
+      if(fast){ try{ r=await fetch(this.url+'/functions/v1/attend',{method:'POST',headers:h,body:JSON.stringify(payload)}); if(r.status>=500) r=null; }catch(e){ r=null; } }
+      if(!r) r=await fetch(this.url+'/functions/v1/api',{method:'POST',headers:h,body:JSON.stringify(payload)});
       var j=null; try{ j=await r.json(); }catch(e){}
       if(!j||!j.ok) throw this.err((j&&j.error)||('The back end did not answer ('+r.status+')'));
       return j;

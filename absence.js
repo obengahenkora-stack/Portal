@@ -11,6 +11,9 @@ css.textContent='.abs-row{padding:12px 14px;border:1px solid var(--line);border-
 +'.abs-f{display:grid;gap:10px;margin:12px 0}'
 +'.abs-f select,.abs-f input,.abs-f textarea{width:100% !important;max-width:100% !important;box-sizing:border-box !important}'
 +'.abs-f textarea{min-height:90px}'
++'.abs-l{font-size:.8rem;font-weight:700;margin:0 0 5px}'
++'.abs-f input[type=date]{min-height:48px;-webkit-appearance:none;appearance:none;display:block;text-align:left;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:inherit}'
++'.abs-day{font-size:.82rem;margin-top:6px;color:var(--muted)}.abs-day.on{color:#0d9488;font-weight:700}'
 +'.abs-b{width:auto !important;padding:8px 16px !important;font-size:.82rem !important;border-radius:999px !important;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;box-shadow:none !important;font-weight:700 !important;letter-spacing:0 !important;text-transform:none !important;white-space:nowrap}'
 +'.abs-b.ok{color:#16a34a !important;border-color:#16a34a !important}.abs-b.no{color:#dc2626 !important}'
 +'.abs-go{width:100% !important;padding:12px !important;border-radius:14px !important;font-weight:700 !important;text-transform:none !important;letter-spacing:0 !important}';
@@ -51,8 +54,9 @@ function fillCourses(){
 window.absStuInit=function(){
   var box=$('absBody'); if(!box) return;
   if(!$('absCourse')){
-    box.innerHTML='<div class="abs-f"><select id="absCourse"></select>'
-      +'<input type="date" id="absDate"><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea>'
+    box.innerHTML='<div class="abs-f"><div><div class="abs-l">Which class?</div><select id="absCourse"></select></div>'
+      +'<div><div class="abs-l">Date of the class you missed or will miss</div><input type="date" id="absDate" onchange="absDay()"><div id="absDay" class="abs-day">Tap the box to choose the date. It can be a past day or a day coming up.</div></div>'
+      +'<div><div class="abs-l">Reason</div><textarea id="absReason" maxlength="600" placeholder="Why were you absent? (e.g. sick, family emergency, official duty)"></textarea></div>'
       +'<div><div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">Proof (optional): photo of a medical note or letter</div><input type="file" id="absFile" accept="image/*"></div>'
       +'<button type="button" class="abs-go" onclick="absSend()">Send request</button><div id="absMsg"></div></div><div id="absList"><div class="empty">Loading...</div></div>';
   }
@@ -85,13 +89,15 @@ window.absView=async function(id,btn){
   catch(e){ slot.innerHTML='<small>Could not load the photo.</small>'; }
 };
 function viewBtn(x){ return x.hasFile?'<button type="button" class="ab-btn" style="margin-top:8px;width:auto" onclick="absView(\''+x.id+'\')">View photo</button><div id="absImg_'+x.id+'"></div>':''; }
+window.absDay=function(){ var v=$('absDate').value, o=$('absDay'); if(!o) return; if(!v){ o.className='abs-day'; o.textContent='Tap the box to choose the date. It can be a past day or a day coming up.'; return; }
+  try{ var t=new Date(v+'T00:00:00'), n=new Date(); n.setHours(0,0,0,0); var diff=Math.round((t-n)/86400000); o.className='abs-day on'; o.textContent=t.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'})+(diff===0?' (today)':diff===1?' (tomorrow)':diff<0?' ('+(-diff)+' day'+(diff===-1?'':'s')+' ago)':' (in '+diff+' days)'); }catch(e){} };
 window.absSend=async function(){
   var m=$('absMsg'), c=$('absCourse').value, d=$('absDate').value, r=$('absReason').value.trim();
   if(!c||!d){ m.innerHTML='<div class="msg err">Choose the course and the date.</div>'; return; }
   if(r.length<5){ m.innerHTML='<div class="msg err">Please give a reason.</div>'; return; }
   m.innerHTML='<div class="msg ok">Sending...</div>';
   try{ var ph=''; var f=$('absFile')&&$('absFile').files[0]; if(f) ph=await shrink(f);
-    await _stu({action:'stu_exc_submit',course:c,date:d,reason:r,photo:ph}); if($('absFile')) $('absFile').value=''; m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absStuList(); }
+    await _stu({action:'stu_exc_submit',course:c,date:d,reason:r,photo:ph}); if($('absFile')) $('absFile').value=''; m.innerHTML='<div class="msg ok">Sent. Your lecturer will reply here.</div>'; $('absReason').value=''; $('absDate').value=''; absDay(); absStuList(); }
   catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'Could not send')+'</div>'; }
 };
 /* build the form the moment the screen opens (also after a reload), and fill courses when they arrive */

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16n', date:'16 Nov 2026', title:'Clearer My Scores layout',
+      all:[], student:['Each course now has its own box with a clear Assessment / Score table and a Total row.'], staff:[] },
     { id:'2026-11-16m', date:'16 Nov 2026', title:'My Scores tidy-up',
       all:[], student:['Course names are now shown as a short code with the title beneath, and the totals no longer wrap onto two lines.'], staff:[] },
     { id:'2026-11-16l', date:'16 Nov 2026', title:'Scores marked provisional',

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzz', date:'16 Nov 2026', title:'Chat runs on its own fast service',
+      all:[], student:[], staff:['Chat messages, online count and read marks now use a separate, lighter service, so chat no longer competes with exams and the Gradebook. If it ever fails, chat falls back to the old route automatically.'] },
     { id:'2026-11-16zzz', date:'16 Nov 2026', title:'Online exams run on their own fast service',
       all:[], student:[], staff:['Students sitting an online exam now use a separate, lighter service, so a full class can sit at the same time without slowing the rest of the portal.'] },
     { id:'2026-11-16zz', date:'16 Nov 2026', title:'Gradebook opens for teaching assistants again',

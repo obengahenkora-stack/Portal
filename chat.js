@@ -65,13 +65,14 @@ function apiCall(payload){
     _hc=h;
     var go=function(fn){ return fetch(G('SUPABASE_URL')+'/functions/v1/'+fn,{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); }); };
     if(payload&&payload.action==='stu_dir') return go('lite').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
+    if(payload&&payload.action==='chat_op'&&payload.op!=='owner_name_set') return go('chat').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
     return go('api');
   });
 }
 var _hc=null;
 function chatOp(op,extra,ka){
   var p=Object.assign({action:'chat_op',op:op},extra||{});
-  if(ka&&_hc) return fetch(G('SUPABASE_URL')+'/functions/v1/api',{method:'POST',keepalive:true,headers:_hc,body:JSON.stringify(p)}).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; });
+  if(ka&&_hc) return fetch(G('SUPABASE_URL')+'/functions/v1/'+(op==='owner_name_set'?'api':'chat'),{method:'POST',keepalive:true,headers:_hc,body:JSON.stringify(p)}).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; });
   return apiCall(p);
 }
 function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};

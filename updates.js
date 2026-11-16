@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16w', date:'16 Nov 2026', title:'Exams: type the overall marks',
+      all:[], student:[], staff:['The exam editor has an Overall marks box. Type the total (for example 40) and tap Apply, and the marks are shared across the questions automatically.'] },
     { id:'2026-11-16v', date:'16 Nov 2026', title:'Exams and Assignments tiles tidied',
       all:[], student:[], staff:['The Online Exams and Assignments tiles now show the title with its description underneath, so the text no longer overlaps.'] },
     { id:'2026-11-16u', date:'16 Nov 2026', title:'Exam Integrity check',

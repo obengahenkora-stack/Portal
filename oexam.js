@@ -87,6 +87,20 @@ window.oeDel=async function(i){
 };
 function addQ(type){ E.questions.push(type==='text'?{id:uid(),type:'text',text:'',marks:5,guide:''}:{id:uid(),type:'mcq',text:'',options:['','','',''],answer:0,marks:1}); }
 window.oeImportInto=function(qs){ sync(); E.questions=E.questions.filter(function(q){ return !(q.type==='mcq'&&!q.text.trim()&&!q.options.some(function(x){return x.trim();})); }); qs.forEach(function(q){ delete q._check; E.questions.push(q); }); renderEdit(); msg('<div class="msg ok">Added '+qs.length+' question'+(qs.length===1?'':'s')+'. Check them, then save or publish.</div>'); };
+window.oeSetTotal=function(){
+  sync(); var T=parseInt($('oeTot').value,10), L=E.questions.length, n=(E.pickN>0&&E.pickN<L)?E.pickN:L, m=$('oeTotMsg');
+  var say=function(t,ok){ if(m){ m.style.color=ok?'#15803d':'#dc2626'; m.textContent=t; } };
+  if(!(T>0)){ say('Type the total marks first.',false); return; }
+  if(!L){ say('Add the questions first.',false); return; }
+  if(T<n){ say('The exam has '+n+' questions per student and every question needs at least 1 mark, so the total cannot be below '+n+'.',false); return; }
+  var base=Math.floor(T/n), rem=T-base*n;
+  if(n<L && rem){ say('Each student gets '+n+' random questions out of '+L+', so every question must carry the same marks. Use a total that divides by '+n+', for example '+(base*n)+' or '+((base+1)*n)+'.',false); return; }
+  if(base+(rem?1:0)>100){ say('A single question can carry at most 100 marks.',false); return; }
+  E.questions.forEach(function(q,i){ q.marks=base+(i<rem?1:0); });
+  renderEdit(false);
+  var mm=$('oeTotMsg'); if($('oeTot')) $('oeTot').value=T;
+  if(mm){ mm.style.color='#15803d'; mm.textContent=rem?('Done. '+(rem)+' question'+(rem===1?'':'s')+' carry '+(base+1)+' marks and the other '+(L-rem)+' carry '+base+'. Total '+T+'.'):('Done. Every question carries '+base+' mark'+(base===1?'':'s')+'. Total '+T+'.'); }
+};
 window.oeAddQ=function(t){ sync(); addQ(t); renderEdit(true); };
 window.oeRemQ=function(i){ sync(); if(!confirm('Remove question '+(i+1)+'?')) return; E.questions.splice(i,1); renderEdit(); };
 window.oeMove=function(i,d){ sync(); var j=i+d; if(j<0||j>=E.questions.length) return; var t=E.questions[i]; E.questions[i]=E.questions[j]; E.questions[j]=t; renderEdit(); };
@@ -122,6 +136,7 @@ function renderEdit(scrollEnd){
    +'<div class="oe-two"><div><div class="oe-l">Photo every (seconds)</div><input type="number" id="oeSnap" min="10" max="300" value="'+E.snapEverySec+'"></div><div><div class="oe-l">Page leaves allowed</div><input type="number" id="oeLeaves" min="0" max="50" value="'+E.maxLeaves+'"></div></div>'
    +'<div style="margin-top:12px"><div class="oe-l">Exam code (optional)</div><input type="text" id="oeCode" value="'+esc(E.code)+'" placeholder="Students must type this to start"></div>'
    +sw('shuffleQ','Shuffle questions','Every student gets their own random order, picked fresh when they start. With 30 questions the same order will practically never repeat.')+sw('shuffleOpt','Shuffle answer options','The options of each question are mixed differently for every student.')+sw('oneWay','One question at a time, no going back','Harder to look things up.')+sw('bioStart','Fingerprint or face to start','Each student confirms with their phone before the exam begins.')+'</div>'
+   +'<div class="oe-box" id="oeTotBox"><div class="oe-h">Overall marks</div><div class="oe-sub">Type the total marks for the whole exam and the marks are shared across the questions for you.</div><div style="display:flex;gap:10px;align-items:flex-end;margin-top:8px"><div style="flex:1"><div class="oe-l">Exam total (marks)</div><input type="number" id="oeTot" min="1" max="1000" value="'+marks+'"></div><button type="button" class="oe-btn" style="width:auto;padding:12px 18px;margin:0" onclick="oeSetTotal()">Apply</button></div><div id="oeTotMsg" class="oe-sub" style="margin-top:8px"></div></div>'
    +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:18px"><div class="oe-h" style="font-size:1.05rem">Questions</div><div style="font-size:.8rem;color:var(--muted)">'+E.questions.length+' &middot; '+marks+' marks</div></div>';
   h+=E.questions.map(function(q,i){
     var body='<textarea id="oeQt'+i+'" placeholder="Type the question">'+esc(q.text)+'</textarea>';

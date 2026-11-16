@@ -571,16 +571,41 @@
     </div>
 
     <div class="card hidden" id="gradebookCard">
-      <label>Gradebook (whole class, one column per assessment)</label>
-      <div class="hint">Upload the class roster once under Attendance. Every assessment you upload then becomes a column here. Students on the roster with no score for an assessment show 0.</div>
-      <select id="gradebookCourse" onchange="renderGradebook()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Select a course...</option></select>
-      <input type="search" id="gbSearch" placeholder="Search by index number or name..." oninput="gbFilter()" autocomplete="off" style="margin-bottom:10px">
+      <style id="gbD">
+        #gradebookCard .gb-h{font-size:1.15rem;font-weight:800;margin:0 0 2px}
+        #gradebookCard .gb-sub{color:var(--muted);font-size:.85rem;margin:0 0 12px;line-height:1.4}
+        #gradebookCard #gradebookCourse{width:100%;box-sizing:border-box;margin:0 0 10px}
+        #gradebookCard .gb-stats{display:flex;gap:8px;margin:0 0 10px}
+        #gradebookCard .gb-stat{flex:1;border:1px solid var(--line);border-radius:14px;padding:9px 10px;background:var(--card)}
+        #gradebookCard .gb-stat b{display:block;font-size:1.05rem}#gradebookCard .gb-stat span{display:block;font-size:.62rem;color:var(--muted);font-weight:700;letter-spacing:.03em;white-space:nowrap;line-height:1.2;font-family:inherit;text-transform:uppercase}
+        #gradebookCard .gb-tools{display:flex;gap:8px;margin:0 0 10px}
+        #gradebookCard .gb-tools input{flex:1;min-width:0;margin:0 !important;box-sizing:border-box}
+        #gradebookCard .gb-tools button{margin:0 !important;padding:0 14px !important;border-radius:12px !important;font-size:.8rem !important;font-weight:700 !important;white-space:nowrap;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important}
+        #gradebookCard #gradebookTable{border:1px solid var(--line);border-radius:16px;max-height:68vh;overflow:auto}
+        #gradebookCard #gradebookTable th:first-child,#gradebookCard #gradebookTable td:first-child{min-width:132px;padding-left:12px}
+        #gradebookCard #gradebookTable td:nth-child(2){min-width:0}
+        #gradebookCard .gb-nm{font-weight:700;font-size:.82rem;line-height:1.15;white-space:normal}#gradebookCard .gb-ix{font-size:.7rem;color:var(--muted)}
+        #gradebookCard .gb-opt,#gradebookCard .gb-opt *{font-family:Inter,system-ui,sans-serif !important}#gradebookCard .gb-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;font-size:.85rem;font-weight:600;text-transform:none;letter-spacing:0}
+        #gradebookCard .gb-opt input{width:20px;height:20px;margin:0}
+        #gbBar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 -8px 20px rgba(20,60,70,.12)}
+        #gbBar.hidden{display:none !important}
+        #gbBar .gb-t{flex:1;font-size:.82rem;line-height:1.25}#gbBar .gb-t span{display:block;color:var(--muted);font-size:.74rem}
+        #gbBar button{margin:0 !important;padding:13px 18px !important;border-radius:14px !important;font-weight:800 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}
+        #gbBar button.ta{background:linear-gradient(90deg,#f59e0b,#f97316) !important;color:#111 !important}
+      </style>
+      <div class="gb-h">Gradebook</div>
+      <div class="gb-sub" id="gbSub">Edit any score. Changed scores turn amber until you save.</div>
+      <select id="gradebookCourse" onchange="renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
+      <div id="gbStats"></div>
       <div id="gbPendingBox"></div>
-      <div id="gbBar" class="hidden" style="position:sticky;top:0;z-index:6;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)"><span id="gbCount" class="hint" style="margin:0">No unsaved changes</span><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()" style="margin:0">Save changes</button></div>
+      <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button></div>
       <div id="gradebookTable" style="overflow-x:auto"></div>
+      <div id="gbOpts"></div>
+      <div id="gbMsg"></div>
       <div id="gbCharts"></div>
-      <button onclick="downloadGradebook()" style="margin-top:12px">Download Gradebook (Excel)</button>
       <div id="gbMsgTop"></div>
+      <div style="height:96px"></div>
+      <div id="gbBar" class="hidden"><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button></div>
     </div>
 
     <div class="card hidden" id="scoreHistCard">
@@ -2389,7 +2414,7 @@ async function loadGradebookCourses(){
 }
 async function renderGradebook(){
   const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
-  if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; var _b0=document.getElementById('gbBar'); if(_b0){ _b0.classList.add('hidden'); _b0.style.display='none'; } return; }
+  if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; var _b0=document.getElementById('gbBar'); if(_b0){ _b0.classList.add('hidden'); } var _s0=document.getElementById('gbStats'); if(_s0) _s0.innerHTML=''; var _o0=document.getElementById('gbOpts'); if(_o0) _o0.innerHTML=''; return; }
   box.innerHTML='<div class="empty">Loading...</div>';
   const [recs,data,bin]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData(),fetchBin()]);
   const cb=lmBase(course).toLowerCase();
@@ -2403,18 +2428,20 @@ async function renderGradebook(){
   const totalMax=maxes.reduce((t,v)=>t+numOf(v),0);
   const rows=Object.keys(stu).sort().map(k=>{ const o=stu[k]; const vals=cols.map(c=>o.scores.hasOwnProperty(c)?o.scores[c]:'0'); const f=finalOf(course,o.scores,cols,bin); return {index:o.index,name:o.name,vals:vals,total:f?f.score:'',final:f?f.final:''}; });
   _gb={cols:cols,rows:rows,course:course,maxes:maxes,totalMax:totalMax};
-  if(!rows.length){ box.innerHTML='<div class="empty">No students or scores for this course yet.</div>'; return; }
+  if(!rows.length){ box.innerHTML='<div class="empty">No students or scores for this course yet.</div>'; var _b1=document.getElementById('gbBar'); if(_b1) _b1.classList.add('hidden'); return; }
   const missing=cols.filter((c,i)=>!(numOf(maxes[i])>0));
-  let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final (out of 40)</th></tr>';
-  h+='<tr style="background:rgba(14,165,233,.08)"><td colspan="2"><b>Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" data-o="'+escapeHtml(String(maxes[i]))+'" oninput="gbCount()" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:74px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
-  rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:70px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
-  h+='</table>';
-  if(missing.length) h+='<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>';
-  const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
   const isTA=(currentUserRole==='ta');
-  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">'+(isTA?'':'<label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label>')+'<button onclick="saveGradebookMarks()">'+(isTA?'Submit changes for approval':'Save changes')+'</button></div>'+(isTA?'<div class="hint">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'')+'<div id="gbMsg"></div>';
+  let h='<table><tr><th>Student</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final /40</th></tr>';
+  h+='<tr style="background:rgba(14,165,233,.08)"><td><b style="font-size:.75rem">Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" data-o="'+escapeHtml(String(maxes[i]))+'" oninput="gbCount()" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:64px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
+  rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td><div class="gb-nm">'+escapeHtml(r.name||r.index)+'</div>'+(r.name?'<div class="gb-ix">'+escapeHtml(r.index)+'</div>':'')+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:58px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
+  h+='</table>';
   box.innerHTML=h;
-  const bar=document.getElementById('gbBar'); if(bar){ bar.classList.remove('hidden'); bar.style.display='flex'; const sb=document.getElementById('gbSaveTop'); if(sb) sb.textContent=isTA?'Submit for approval':'Save changes'; }
+  const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
+  const fin=rows.map(r=>parseFloat(r.final)).filter(x=>isFinite(x)); const avg=fin.length?Math.round(fin.reduce((t,x)=>t+x,0)/fin.length/40*100)+'%':'-';
+  const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
+  const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
+  const sub=document.getElementById('gbSub'); if(sub) sub.textContent=isTA?'Edit scores, then submit. The owner approves before students see them.':'Edit any score. Changed scores turn amber until you save.';
+  const bar=document.getElementById('gbBar'); if(bar){ bar.classList.remove('hidden'); const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
   gbCount(); try{ loadGbPending(); }catch(e){}
 }
 function gbFilter(){
@@ -2425,7 +2452,7 @@ function gbMark(el){ const ch=el.value.trim()!==el.getAttribute('data-o'); el.st
 function gbCount(){
   let n=0; document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{ const v=el.value.trim(); if(v!==''&&v!==el.getAttribute('data-o')) n++; });
   let m=0; document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ if(String(el.value).trim()!==String(el.getAttribute('data-o')||'').trim()) m++; });
-  const c=document.getElementById('gbCount'); if(c) c.innerHTML=(n||m)?('<b>'+n+' score'+(n===1?'':'s')+(m?' and '+m+' "out of" total'+(m===1?'':'s'):'')+' changed, not saved yet</b>'):'No unsaved changes';
+  const c=document.getElementById('gbCount'), c2=document.getElementById('gbCountSub'); if(c) c.textContent=(n||m)?(n+' score'+(n===1?'':'s')+(m?' and '+m+' total'+(m===1?'':'s'):'')+' changed'):'No unsaved changes'; if(c2) c2.textContent=(n||m)?((currentUserRole==='ta')?'Goes to the owner for approval':'Not saved yet'):'';
 }
 async function loadGbPending(){
   const box=document.getElementById('gbPendingBox'); if(!box) return;
@@ -5472,7 +5499,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=137"></script>
+<script src="updates.js?v=138"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

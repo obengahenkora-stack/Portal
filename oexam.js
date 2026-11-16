@@ -88,18 +88,19 @@ window.oeDel=async function(i){
 function addQ(type){ E.questions.push(type==='text'?{id:uid(),type:'text',text:'',marks:5,guide:''}:{id:uid(),type:'mcq',text:'',options:['','','',''],answer:0,marks:1}); }
 window.oeImportInto=function(qs){ sync(); E.questions=E.questions.filter(function(q){ return !(q.type==='mcq'&&!q.text.trim()&&!q.options.some(function(x){return x.trim();})); }); qs.forEach(function(q){ delete q._check; E.questions.push(q); }); renderEdit(); msg('<div class="msg ok">Added '+qs.length+' question'+(qs.length===1?'':'s')+'. Check them, then save or publish.</div>'); };
 window.oeSetTotal=function(){
-  sync(); var T=parseInt($('oeTot').value,10), L=E.questions.length, n=(E.pickN>0&&E.pickN<L)?E.pickN:L, m=$('oeTotMsg');
+  sync(); var T=parseFloat($('oeTot').value), L=E.questions.length, n=(E.pickN>0&&E.pickN<L)?E.pickN:L, m=$('oeTotMsg');
   var say=function(t,ok){ if(m){ m.style.color=ok?'#15803d':'#dc2626'; m.textContent=t; } };
   if(!(T>0)){ say('Type the total marks first.',false); return; }
   if(!L){ say('Add the questions first.',false); return; }
-  if(T<n){ say('Questions can only carry whole marks, so the exam total cannot be below '+n+'. For a lower total, leave the marks as they are and use "Record in the Gradebook out of" on the Results page. For example 30 questions can be recorded out of 15.',false); return; }
-  var base=Math.floor(T/n), rem=T-base*n;
-  if(n<L && rem){ say('Each student gets '+n+' random questions out of '+L+', so every question must carry the same marks. Use a total that divides by '+n+', for example '+(base*n)+' or '+((base+1)*n)+'.',false); return; }
-  if(base+(rem?1:0)>100){ say('A single question can carry at most 100 marks.',false); return; }
-  E.questions.forEach(function(q,i){ q.marks=base+(i<rem?1:0); });
+  T=Math.round(T*2)/2; var U=T*2;
+  if(U<n){ say('The smallest mark per question is 0.5, so the exam total cannot be below '+(n/2)+'.',false); return; }
+  var base=Math.floor(U/n), rem=U-base*n;
+  if(n<L && rem){ say('Each student gets '+n+' random questions out of '+L+', so every question must carry the same marks. Use a total such as '+(base*n/2)+' or '+((base+1)*n/2)+'.',false); return; }
+  if((base+(rem?1:0))/2>100){ say('A single question can carry at most 100 marks.',false); return; }
+  E.questions.forEach(function(q,i){ q.marks=(base+(i<rem?1:0))/2; });
   renderEdit(false);
   var mm=$('oeTotMsg'); if($('oeTot')) $('oeTot').value=T;
-  if(mm){ mm.style.color='#15803d'; mm.textContent=rem?('Done. '+(rem)+' question'+(rem===1?'':'s')+' carry '+(base+1)+' marks and the other '+(L-rem)+' carry '+base+'. Total '+T+'.'):('Done. Every question carries '+base+' mark'+(base===1?'':'s')+'. Total '+T+'.'); }
+  if(mm){ mm.style.color='#15803d'; mm.textContent=rem?('Done. '+rem+' question'+(rem===1?'':'s')+' carry '+((base+1)/2)+' marks and the other '+(L-rem)+' carry '+(base/2)+'. Total '+T+'.'):('Done. Every question carries '+(base/2)+' mark'+(base===2?'':'s')+'. Total '+T+'.'); }
 };
 window.oeAddQ=function(t){ sync(); addQ(t); renderEdit(true); };
 window.oeRemQ=function(i){ sync(); if(!confirm('Remove question '+(i+1)+'?')) return; E.questions.splice(i,1); renderEdit(); };
@@ -170,7 +171,10 @@ window.oeSave=async function(publish){
   var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft';
   ex.questions.forEach(function(q){ if(q.type==='mcq'){ var keep=[], na=0; q.options.forEach(function(o,k){ if(o.trim()){ if(k===q.answer) na=keep.length; keep.push(o.trim()); } }); q.options=keep; q.answer=na; } });
   msg('<div class="msg ok">Saving...</div>');
-  try{ var r=await teamApi({action:'oe_save',exam:ex}); if(!r||!r.ok) throw new Error((r&&r.error)||'Could not save'); await oeInit(); msg('<div class="msg ok">'+(publish?'Published.':'Saved as a draft.')+'</div>'); }
+  try{ var r=await teamApi({action:'oe_save',exam:ex}); if(!r||!r.ok) throw new Error((r&&r.error)||'Could not save');
+    var mk={}, frac=false; ex.questions.forEach(function(q){ mk[q.id]=q.marks; if(Math.round(q.marks)!==q.marks) frac=true; });
+    if(frac){ var r2=await teamApi({action:'oe_marks',id:(r.exam&&r.exam.id)||ex.id,marks:mk}); if(!r2||!r2.ok) throw new Error('Saved, but the half marks could not be stored: '+((r2&&r2.error)||'try again')); }
+    await oeInit(); msg('<div class="msg ok">'+(publish?'Published.':'Saved as a draft.')+'</div>'); }
   catch(e){ msg('<div class="msg err">'+esc(e.message||'error')+'</div>'); }
 };
 })();

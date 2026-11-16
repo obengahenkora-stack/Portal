@@ -477,30 +477,76 @@
     </div>
 
     <div class="card hidden" id="uploadCard">
+      <style id="upD">
+        #uploadCard .up-h{font-size:1.15rem;font-weight:800;margin:0 0 2px}
+        #uploadCard .up-sub{color:var(--muted);font-size:.85rem;margin:0 0 14px;line-height:1.4}
+        #uploadCard .up-step{border:1px solid var(--line);border-radius:18px;padding:14px;margin:0 0 12px;background:var(--card)}
+        #uploadCard .up-t{display:flex;gap:10px;align-items:center;margin:0 0 10px;font-weight:800;font-size:.98rem}
+        #uploadCard .up-n{width:26px;height:26px;border-radius:50%;background:#0ea5e9;color:#fff;font-weight:800;font-size:.8rem;display:grid;place-items:center;flex:none}
+        #uploadCard .up-lab{font-size:.72rem;font-weight:700;color:var(--muted);margin:0 0 4px 2px;letter-spacing:.04em;text-transform:uppercase;display:block}
+        #uploadCard .up-two{display:flex;gap:8px}#uploadCard .up-two>div{flex:1;min-width:0}#uploadCard .up-two>div+div{max-width:116px}
+        #uploadCard .up-step select,#uploadCard .up-step input[type=text],#uploadCard .up-step input[type=number]{width:100%;margin:0 0 8px;box-sizing:border-box}
+        #uploadCard .up-hint{color:var(--muted);font-size:.8rem;line-height:1.4;margin:2px 0 0}
+        #uploadCard .up-drop{display:block;border:2px dashed #b9d3cc;border-radius:16px;padding:20px 12px;text-align:center;background:rgba(120,170,150,.07);cursor:pointer}
+        #uploadCard .up-drop,#uploadCard .up-drop *,#uploadCard .up-danger button{font-family:Inter,system-ui,sans-serif !important;text-transform:none !important;letter-spacing:0 !important}#uploadCard .up-drop b,#uploadCard .up-drop span{display:block;text-transform:none !important;letter-spacing:0 !important;margin-top:4px}#uploadCard .up-drop b{font-size:.95rem;font-weight:800;color:var(--ink)}#uploadCard .up-drop span{font-size:.78rem;font-weight:500;color:var(--muted);line-height:1.4}
+        #uploadCard .up-big{font-family:inherit !important;text-transform:none !important;letter-spacing:0 !important;font-size:.95rem !important}
+        #uploadCard #uploadFileBtn,#uploadCard #uploadBtn{background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}
+        #uploadCard .up-big.secondary{background:transparent !important;color:var(--ink) !important;border:1px solid var(--line) !important}
+        #uploadCard .up-step select{font-size:.9rem}
+        #uploadCard .up-drop input{position:absolute;opacity:0;width:1px;height:1px}
+        #uploadCard #upFileName{display:none;gap:10px;align-items:center;border:1px solid #bfe3cf;background:rgba(31,157,85,.1);border-radius:14px;padding:10px 12px;margin-top:8px;font-size:.85rem}
+        #uploadCard #upFileName.on{display:flex}
+        #uploadCard .up-big{display:block;width:100%;margin:12px 0 0 !important;padding:14px !important;border-radius:14px !important;font-weight:800}
+        #uploadCard details.up-acc{border:1px solid var(--line);border-radius:14px;margin:0 0 8px;background:var(--card)}
+        #uploadCard details.up-acc>summary{padding:14px;font-weight:700;font-size:.92rem;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+        #uploadCard details.up-acc>summary::-webkit-details-marker{display:none}
+        #uploadCard details.up-acc>summary::after{content:"\25BE";color:var(--muted)}
+        #uploadCard details.up-acc[open]>summary::after{content:"\25B4"}
+        #uploadCard details.up-acc>div{padding:0 14px 14px}
+        #uploadCard #csvInput{width:100%;box-sizing:border-box;min-height:96px}
+        #uploadCard .up-danger{border:1px solid #efc3c1;border-radius:14px;padding:12px;background:rgba(217,83,79,.07)}
+        #uploadCard .up-danger b{color:#b3302c;font-size:.9rem}
+      </style>
+      <div class="up-h">Upload scores</div>
+      <div class="up-sub">Add one assessment for a course. Students see it once it is saved (for TAs, once the owner approves).</div>
       <div id="myPendingBox"></div>
-      <label>Course (the ones already created for attendance)</label>
-      <select id="uploadCourse" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Use the course written in the file</option></select>
-      <div class="hint" style="margin-top:-6px">Pick a course here and every score in the file or paste goes to that exact course, so it matches the attendance and class list. No need to edit the file.</div>
-      <label>Assessment Name (e.g. "Mid-Term 2026")</label>
-      <input type="text" id="assessmentName" placeholder="Assessment name">
-      <label>Marked out of (e.g. 10, 20)</label>
-      <input type="number" id="assessmentMax" min="1" step="any" placeholder="Total marks for this assessment">
 
-      <label>Upload Assessment Sheet (any Excel or CSV file)</label>
-      <div class="hint">Works with any Excel or CSV file. It finds the headings itself: an index number column (IndexNumber, Index No, Student ID...) and a score column (Score, Marks, Total, or a column named like your assessment). If it cannot tell, it asks you to choose. Names are ignored.</div>
-      <input type="file" id="csvFileInput" style="margin-bottom:14px;">
-      <button id="uploadFileBtn" onclick="uploadScoresFromFile()">Upload From File</button>
-      <button class="secondary" onclick="downloadAssessmentSheet()" style="margin-left:8px;">Download Sheet to Fill</button>
-      <div id="fileUploadMsg"></div>
+      <div class="up-step">
+        <div class="up-t"><span class="up-n">1</span>Which course?</div>
+        <select id="uploadCourse"><option value="">Use the course written in the file</option></select>
+        <div class="up-hint">Pick a course and every score goes to that exact course, matching attendance and class lists.</div>
+      </div>
 
-      <hr style="border:none;border-top:1px solid var(--line);margin:20px 0;">
+      <div class="up-step">
+        <div class="up-t"><span class="up-n">2</span>Name the assessment</div>
+        <div class="up-two">
+          <div><span class="up-lab">Assessment</span><input type="text" id="assessmentName" placeholder="e.g. Mid-Term 2026"></div>
+          <div><span class="up-lab">Out of</span><input type="number" id="assessmentMax" min="1" step="any" placeholder="20"></div>
+        </div>
+      </div>
 
-      <label>Or paste scores manually — one per line: Index Number, Course, Score</label>
-      <div class="hint">Example: 4501, CIVL 368, 78 (no names — index number only)</div>
-      <textarea id="csvInput" placeholder="4501, CIVL 368, 78&#10;4502, CIVL 368, 65"></textarea>
+      <div class="up-step">
+        <div class="up-t"><span class="up-n">3</span>Add the sheet</div>
+        <label class="up-drop" for="csvFileInput"><div style="font-size:1.6rem">&#128196;</div><b>Choose an Excel or CSV file</b><span>It finds the index number and score columns itself. Names are ignored. If it cannot tell, it asks you.</span><input type="file" id="csvFileInput" onchange="upFileShow(this)"></label>
+        <div id="upFileName"><span>&#9989;</span><b id="upFileLbl" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b></div>
+        <button id="uploadFileBtn" class="up-big" onclick="uploadScoresFromFile()">Upload scores</button>
+        <button class="secondary up-big" style="margin-top:8px !important" onclick="downloadAssessmentSheet()">Download sheet to fill</button>
+        <div id="fileUploadMsg"></div>
+      </div>
 
-      <button id="uploadBtn" onclick="uploadScores()">Upload Pasted Scores</button>
-      <button class="secondary" onclick="clearAllData()" style="margin-left:8px;">Clear All Data</button>
+      <details class="up-acc"><summary>Paste scores instead</summary><div>
+        <div class="up-hint" style="margin-bottom:8px">One per line: index number, course, score. No names. Example: 4501, CIVL 368, 78</div>
+        <textarea id="csvInput" placeholder="4501, CIVL 368, 78&#10;4502, CIVL 368, 65"></textarea>
+        <button id="uploadBtn" class="up-big" onclick="uploadScores()">Upload pasted scores</button>
+      </div></details>
+
+      <details class="up-acc hidden" id="upDangerBox"><summary>More options</summary><div>
+        <div class="up-danger"><b>Danger zone (owner only)</b>
+          <div class="up-hint" style="margin:4px 0 8px">This deletes <b>every saved score for every course</b>. It cannot be undone. To go ahead, type DELETE below.</div>
+          <input type="text" id="upDelWord" placeholder="Type DELETE" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:8px">
+          <button class="secondary" onclick="clearAllData()" style="color:#b3302c;border:1.5px solid #e6b3b1;font-weight:800">Clear all data</button>
+        </div>
+      </div></details>
       <div id="uploadMsg"></div>
     </div>
 
@@ -2099,7 +2145,7 @@ async function onAuthReady(showToast){
     loadCleanupCourseOptions(); try{delAttInit();}catch(e){}
   }
 
-  try{ if(isOwner()){ document.getElementById('practiceCard').classList.remove('hidden'); } }catch(e){}
+  try{ if(isOwner()){ document.getElementById('practiceCard').classList.remove('hidden'); var _db=document.getElementById('upDangerBox'); if(_db) _db.classList.remove('hidden'); } }catch(e){}
   try{ applyPerms(); }catch(e){ console.warn('perms',e); }
   try{ attRenderTiles(); }catch(e){}
   try{ _qBanner(); if(_qGet().length) flushAttQueue(); }catch(e){}
@@ -2123,6 +2169,7 @@ async function submitPending(newRecords, assessmentName){
   return total;
 }
 
+function upFileShow(inp){ var f=inp&&inp.files&&inp.files[0], b=document.getElementById('upFileName'), l=document.getElementById('upFileLbl'); if(!b||!l) return; if(f){ l.textContent=f.name+' ('+Math.max(1,Math.round(f.size/1024))+' KB)'; b.classList.add('on'); } else { b.classList.remove('on'); } }
 async function loadMyPending(){
   const box=document.getElementById('myPendingBox'); if(!box) return;
   if(currentUserRole==='owner'||currentUserRole==='admin'){ box.innerHTML=''; return; }
@@ -3074,7 +3121,7 @@ async function _upFinish(aoa,hrow,idxCol,scoreCol,heads){
     if(skippedEmpty > 0) note += ` Skipped ${skippedEmpty} row(s) with blank scores.`;
     note += ` Total now: ${combined.length}.`;
     msg.innerHTML = `<div class="msg ok">${note}</div>`;
-    fileInput.value = '';
+    fileInput.value = ''; try{ upFileShow(fileInput); }catch(e){}
     loadRecords(); loadGradebookCourses(); loadUploadCourses(); loadEditAssess(); renderGradebook();
   }catch(e){
     msg.innerHTML = `<div class="msg err">Upload failed: ${escapeHtml(e.message)}</div>`;
@@ -3105,12 +3152,13 @@ async function downloadAssessmentSheet(){
 }
 
 async function clearAllData(){
-  if(!isAdmin()){ alert('Only the owner or an admin can clear all data.'); return; }
-  if(!confirm("This will permanently delete ALL uploaded records. Continue?")) return;
   const msg = document.getElementById('uploadMsg');
+  if(!isOwner()){ alert('Only the owner can clear all data.'); return; }
+  const w=document.getElementById('upDelWord'); if(!w || String(w.value||'').trim()!=='DELETE'){ if(msg) msg.innerHTML='<div class="msg err">Type DELETE in the box first.</div>'; return; }
+  if(!confirm("This will permanently delete ALL uploaded records for EVERY course. Continue?")) return;
   try{
     await saveAllRecords([]);
-    msg.innerHTML = '<div class="msg ok">All data cleared.</div>';
+    msg.innerHTML = '<div class="msg ok">All data cleared.</div>'; if(w) w.value='';
     loadRecords();
   }catch(e){
     msg.innerHTML = '<div class="msg err">Could not clear data.</div>';
@@ -5424,7 +5472,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=136"></script>
+<script src="updates.js?v=137"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

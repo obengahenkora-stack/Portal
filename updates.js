@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16c', date:'16 Nov 2026', title:'Upload scores page redesigned',
+      all:[], student:[], staff:['The Upload page now has three clear steps: course, assessment name and total, then the sheet. It shows the chosen file name, and Paste scores sits in a fold-away section. Clear all data moved into a Danger zone that only the owner sees and that needs you to type DELETE.'] },
     { id:'2026-11-16b', date:'16 Nov 2026', title:'Cleaner Pending Approvals page',
       all:[], student:[], staff:['Pending Approvals now has Waiting and Decided tabs, one tidy card per item, a short preview instead of a table, and the decided list is grouped by day.'] },
     { id:'2026-11-16a', date:'16 Nov 2026', title:'Gradebook: Save bar, and TA changes go for approval',

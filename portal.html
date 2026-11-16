@@ -3768,7 +3768,16 @@ async function binStamp(){
     const j=await r.json(); return (j&&j.ok&&j.stamp)||'';
   }catch(e){ return ''; }
 }
+var _binFresh=null, _binFlight=null;
 async function fetchBin(){
+  /* many parts of the page ask for the scores at once: share one request, and reuse the answer for 20 seconds */
+  if(_binFresh && Date.now()-_binFresh.at<20000) return JSON.parse(_binFresh.text);
+  if(!_binFlight){
+    _binFlight=_fetchBinReal().then(function(bin){ _binFresh={at:Date.now(),text:JSON.stringify(bin)}; return _binFresh.text; }).finally(function(){ _binFlight=null; });
+  }
+  return JSON.parse(await _binFlight);
+}
+async function _fetchBinReal(){
   const stamp = await binStamp();
   if(stamp){
     try{
@@ -3788,6 +3797,7 @@ async function fetchBin(){
 async function saveBin(binData){
   const j = await teamApi({action:'bin_put', bin: binData});
   if(!j || !j.ok) throw new Error("Could not save to storage (" + ((j && j.error) || 'back end unreachable') + ")");
+  _binFresh=null; _binMem=null; try{ sessionStorage.removeItem('binCacheS1'); }catch(e){}
   return { success: true };
 }
 
@@ -5698,7 +5708,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=153"></script>
+<script src="updates.js?v=154"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

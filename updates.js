@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16r', date:'16 Nov 2026', title:'Faster staff pages',
+      all:[], student:[], staff:['The Gradebook and other staff pages now share one request for the scores instead of asking several times, so they open faster.'] },
     { id:'2026-11-16q', date:'16 Nov 2026', title:'Mark as final now needs Save',
       all:[], student:[], staff:['In the Gradebook, ticking Mark course as final no longer saves straight away. A status chip at the top shows IN PROGRESS or FINAL, and the change is applied when you press Save changes.'] },
     { id:'2026-11-16p', date:'16 Nov 2026', title:'In progress / Final for each course',

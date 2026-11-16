@@ -107,7 +107,17 @@ window.oeOpenAtt=async function(i){
 };
 window.oeMore=async function(){
   var A=window._rvA, b=$('rvMore'); if(b) b.textContent='Loading...';
-  try{ var r=await api({action:'oe_snaps',id:D.exam.id,email:A.email,offset:SN.length,limit:24}); r.photos.forEach(function(p){SN.push(p);});
+  try{ var r=await api({action:'oe_snaps',id:D.exam.id,email:A.email,offset:SN.length,limit:24});
+    /* photos of exams written on the fast Cloudflare service are kept there: when none came back from the usual place, ask Cloudflare */
+    if(r.photos.length && !r.photos.some(function(p){return p.img;})){
+      try{
+        var h={'Content-Type':'application/json'}, sess=(await supabaseClient.auth.getSession()).data.session;
+        if(sess&&sess.access_token) h['x-staff-token']=sess.access_token;
+        var rc=await fetch('https://exams-api.obengahenkora.workers.dev/',{method:'POST',headers:h,body:JSON.stringify({action:'staff_snaps',id:D.exam.id,email:A.email,offset:SN.length,limit:24})});
+        var jc=await rc.json(); if(jc&&jc.ok) r=jc; else if(jc&&jc.error) throw new Error(jc.error);
+      }catch(e2){ throw e2; }
+    }
+    r.photos.forEach(function(p){SN.push(p);});
     var bad=function(w){return w&&w!=='timer'&&w!=='random'&&w!=='start';};
     $('rvPh').innerHTML=SN.map(function(p,i){return '<div class="'+(bad(p.why)?'f':'')+'"><img src="'+p.img+'" onclick="oeBig(this.src)"><small>'+tm(p.t).split(', ').pop()+(bad(p.why)?' '+esc(p.why):'')+'</small></div>';}).join('');
     if(b){ if(SN.length<r.total){ b.textContent='Load more ('+(r.total-SN.length)+' left)'; } else b.remove(); } }catch(e){ if(b) b.textContent='Failed, tap to retry'; }

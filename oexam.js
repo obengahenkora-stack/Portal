@@ -67,7 +67,9 @@ function renderList(){
   if(!LIST.length) h+='<div class="empty" style="margin-top:14px">No online exams yet.</div>';
   h+=LIST.map(function(x,i){
     var pub=x.status==='published', n=(x.questions||[]).length, marks=(x.questions||[]).reduce(function(t,q){ return t+(q.marks||0); },0);
-    return '<div class="oe-card'+(pub?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+'</div></div><span class="oe-st'+(pub?' pub':'')+'">'+(pub?'Published':'Draft')+'</span></div>'
+    var now=Date.now(), ts=Date.parse(x.start), te=Date.parse(x.end), ended=pub&&isFinite(te)&&now>te, upcoming=pub&&isFinite(ts)&&now<ts;
+    var stTxt=!pub?'Draft':(ended?'Ended':(upcoming?'Upcoming':'Open now')), stSty=ended?' style="background:rgba(100,116,139,.18);color:#475569"':(upcoming?' style="background:rgba(14,165,233,.15);color:#0369a1"':'');
+    return '<div class="oe-card'+(pub&&!ended?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+(ended?' &middot; Closed '+esc(fmt(x.end)):'')+'</div></div><span class="oe-st'+(pub&&!ended&&!upcoming?' pub':'')+'"'+stSty+'>'+stTxt+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
       +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div></div>';
   }).join('');

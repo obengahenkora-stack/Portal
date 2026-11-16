@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzzzzzz', date:'16 Nov 2026', title:'Online exams now run on a faster service',
+      all:[], student:['Online exams now save and load on a faster service, so they stay quick even when the whole class sits together. If it cannot be reached, your exam falls back to the usual route by itself.'], staff:['Exam answers and photos for students now live in Cloudflare while the exam runs. Answers reach the normal results and grading when the student submits. Photo review for these exams is not built yet.'] },
     { id:'2026-11-16zzzzzzz', date:'16 Nov 2026', title:'Attendance and roster tables load faster for staff',
       all:[], student:[], staff:['When staff open attendance or rosters, the whole table is now read by the light service and remembered for a minute, so pages open faster and use less of the server allowance.'] },
     { id:'2026-11-16zzzzzz', date:'16 Nov 2026', title:'Exams save answers in batches',

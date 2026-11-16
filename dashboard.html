@@ -1131,14 +1131,31 @@ async function _binCall(payload){
   }catch(e){}
   if(window._asTest) payload=Object.assign({},payload,{asTest:window._asTest});
   var body=JSON.stringify(payload), r=null, lastErr=null;
+  var act=String(payload&&payload.action||''), isOe=act.indexOf('stu_oe_')===0;
+  var SBU=SUPABASE_URL+(isOe?'/functions/v1/exams':'/functions/v1/api');
+  /* exams run on the fast Cloudflare service. Each exam sticks to one service for a student (remembered), and if Cloudflare cannot be reached when the student starts, that student uses the old route instead */
+  var CFU='https://exams-api.obengahenkora.workers.dev/', pk='oeBk_'+(payload&&payload.id), pin='';
+  var viaCf=isOe && act!=='stu_oe_list' && payload && payload.id && !window._asTest;
+  if(viaCf){ try{ pin=localStorage.getItem(pk)||''; }catch(e){} if(pin==='sb') viaCf=false; }
+  var url=viaCf?CFU:SBU, trial=(viaCf && pin!=='cf');
   /* a phone with a weak signal can fail to reach the server ("Load failed"): try again a few times before giving up */
-  for(var tryN=0; tryN<4 && !r; tryN++){
+  for(var tryN=0; tryN<(trial?1:4) && !r; tryN++){
     if(tryN) await new Promise(function(ok){ setTimeout(ok, tryN*1500); });
-    try{ r=await fetch(SUPABASE_URL+(String(payload&&payload.action||'').indexOf('stu_oe_')===0?'/functions/v1/exams':'/functions/v1/api'),{method:'POST',headers:h,body:body}); }
+    try{ r=await fetch(url,{method:'POST',headers:h,body:body}); }
     catch(e){ lastErr=e; r=null; }
   }
+  if(trial && (!r || r.status>=500)){
+    url=SBU; viaCf=false; r=null;
+    try{ localStorage.setItem(pk,'sb'); }catch(e){}
+    for(var t2=0; t2<4 && !r; t2++){
+      if(t2) await new Promise(function(ok){ setTimeout(ok, t2*1500); });
+      try{ r=await fetch(url,{method:'POST',headers:h,body:body}); }catch(e){ lastErr=e; r=null; }
+    }
+  }
   if(!r) throw new Error('Could not reach the server. Check your internet or data connection and tap Save again.');
-  return await r.json();
+  var jr=await r.json();
+  if(trial && viaCf && jr && jr.ok && act==='stu_oe_start'){ try{ localStorage.setItem(pk,'cf'); }catch(e){} }
+  return jr;
 }
 async function fetchBin(){
   const j = await _binCall({action:'student_bin'});
@@ -2484,7 +2501,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=168"></script>
+<script src="updates.js?v=169"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16p', date:'16 Nov 2026', title:'In progress / Final for each course',
+      all:[], student:['Every course in My Scores now says IN PROGRESS (more scores may still be added) or FINAL (no more scores will be added).'], staff:['In the Gradebook the owner can switch Mark course as final. A final course is locked: uploads, re-uploads, Save and TA changes are blocked until you unlock it.'] },
     { id:'2026-11-16o', date:'16 Nov 2026', title:'My Scores course names',
       all:[], student:['Course headings are smaller and always show a short code with the full title beneath it.'], staff:[] },
     { id:'2026-11-16n', date:'16 Nov 2026', title:'Clearer My Scores layout',

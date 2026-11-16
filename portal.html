@@ -2236,6 +2236,7 @@ async function onAuthReady(showToast){
 var _gb={cols:[],rows:[]};
 async function submitPending(newRecords, assessmentName){
   const by={}; newRecords.forEach(r=>{ const c=r.course||'General'; (by[c]=by[c]||[]).push(r); });
+  await finalGuard(Object.keys(by));
   const mxEl=document.getElementById('assessmentMax'); const mx=mxEl?parseFloat(mxEl.value):0;
   let total=0;
   for(const c of Object.keys(by)){
@@ -2353,6 +2354,7 @@ async function decidePending(id,decision){
       /* save the scores exactly like a normal upload, and only then mark the request approved */
       const g=await teamApi({action:'pending_get',id:id});
       if(!g||!g.ok) throw new Error((g&&g.error)||'Could not open the upload');
+      if(g.item && g.item.course && g.item.kind!=='upload'){ await finalGuard([g.item.course]); }
       if(g.item && g.item.kind==='replace'){
         const it1=g.item; if(!(it1.records||[]).length) throw new Error('This re-upload is empty');
         const bin=await fetchBin(); const cn=((it1.records[0]||{}).course)||it1.course;
@@ -2507,9 +2509,10 @@ async function renderGradebook(){
   const shown=(bin.finalShow||{})[String(course).trim().toLowerCase()]!==false;
   const fin=rows.map(r=>parseFloat(r.final)).filter(x=>isFinite(x)); const avg=fin.length?Math.round(fin.reduce((t,x)=>t+x,0)/fin.length/40*100)+'%':'-';
   const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
-  const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
+  const _isFin=courseIsFinal(bin,course); _gb.final=_isFin; const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(_isFin?'<div class="msg" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;margin-top:8px"><b>Final.</b> This course is locked. Scores are read-only and uploads are blocked.</div>':'')+(isOwner()?'<label class="gb-opt"><span><b>Mark course as final</b><br><small style="color:var(--muted)">Locks it. No more uploads or edits.</small></span><input type="checkbox" '+(_isFin?'checked':'')+' onchange="gbToggleFinal(this)"></label>':'')+(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
   const sub=document.getElementById('gbSub'); if(sub) sub.textContent=isTA?'Edit scores, then submit. The owner approves before students see them.':'Edit any score. Changed scores turn amber until you save.';
   const bar=document.getElementById('gbBar'); if(bar){ const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
+  if(_isFin){ document.querySelectorAll('#gradebookTable .gbScore,#gradebookTable .gbMax').forEach(el=>{ el.readOnly=true; el.style.opacity='.6'; }); } try{ const rb=document.getElementById('gbReupBtn'); if(rb) rb.disabled=_isFin; const sb2=document.getElementById('gbSaveTop'); if(sb2) sb2.disabled=_isFin; }catch(e){}
   gbBarSync();
   gbCount(); try{ loadGbPending(); }catch(e){}
 }
@@ -2545,6 +2548,7 @@ async function withdrawGbPending(id){
   loadGbPending();
 }
 async function saveGradebookMarks(){
+  try{ await finalGuard([_gb.course]); }catch(e){ alert(e.message); return; }
   const msg=document.getElementById('gbMsg');
   if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have access to change marks. Ask the owner.</div>'; return; }
   if(!_gb.course) return;
@@ -2653,6 +2657,7 @@ async function gbReupApply(bin,course,cname,recs,maxes){
 }
 async function gbReupSend(){
   if(!_ru) return; const ru=_ru, ta=(currentUserRole==='ta');
+  try{ await finalGuard([ru.course]); }catch(e){ alert(e.message); return; }
   if(!ta && !confirm('Replace ALL scores for '+ru.course+' with this file?')) return;
   const box=document.getElementById('gbReup'); box.insertAdjacentHTML('beforeend','<div class="msg ok">Working...</div>');
   try{
@@ -2665,6 +2670,16 @@ async function gbReupSend(){
       gbReupClose(); try{ loadRecords(); renderGradebook(); }catch(e){}
     }
   }catch(e){ alert('Could not do that: '+(e.message||'try again')); gbReupRender(); }
+}
+async function gbToggleFinal(el){
+  const course=document.getElementById('gradebookCourse').value; if(!course) return;
+  const on=el.checked;
+  if(!confirm(on?('Mark '+lmBase(course)+' as final? Students will see FINAL, and uploads, re-uploads, Save and TA changes will be blocked until you unlock it.'):('Unlock '+lmBase(course)+'? Students will see it as In progress again and changes will be allowed.'))){ el.checked=!on; return; }
+  try{
+    const bin=await fetchBin(); bin.courseFinal=bin.courseFinal||{}; const k=lmBase(course).toLowerCase();
+    if(on) bin.courseFinal[k]=true; else delete bin.courseFinal[k];
+    await saveBin(bin); renderGradebook();
+  }catch(e){ alert('Could not do that: '+(e.message||'try again')); el.checked=!on; }
 }
 function downloadGradebook(){
   if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
@@ -2700,6 +2715,7 @@ function finalOf(course,scores,cols,bin){
 function _mxArg(name,recs){ const el=document.getElementById('assessmentMax'); const v=el?parseFloat(el.value):NaN; if(!(v>0)) return null; return {name:name,max:v,courses:[...new Set(recs.map(r=>lmBase(r.course||'General')))]}; }
 async function saveAllRecords(records,mx){
   const bin = await fetchBin();
+  if(mx&&mx.courses) await finalGuard(mx.courses);
   bin.records = records;
   if(mx && mx.max>0){ bin.assessmentMax = bin.assessmentMax || {}; mx.courses.forEach(c=>{ bin.assessmentMax[amKey(c,mx.name)] = mx.max; }); }
   return saveBin(bin);
@@ -3733,6 +3749,12 @@ function escapeHtml(str){
 }
 
 // ===== Full bin read/write (extends storage to include courses + reports) =====
+/* Course "final" lock: once the owner marks a course final, no uploads or changes are accepted for it. */
+function courseIsFinal(bin,course){ return !!((bin&&bin.courseFinal)||{})[lmBase(course||'General').toLowerCase()]; }
+async function finalGuard(courses){
+  const bin=await fetchBin(); const bad=[...new Set((courses||[]).filter(c=>courseIsFinal(bin,c)).map(c=>lmBase(c)))];
+  if(bad.length) throw new Error(bad.join(', ')+' is marked final, so no more scores can be added. Ask the owner to unlock it first.');
+}
 /* Scores file: ask the tiny "lite" service whether it changed; only download the big file when it did. */
 let _binMem=null;
 async function binStamp(){
@@ -5672,7 +5694,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=151"></script>
+<script src="updates.js?v=152"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -335,6 +335,10 @@ html.sh-pre #shLoad{display:block}
 #dashScoresCard .scx-cat th{font:700 .6rem Inter,system-ui,sans-serif;letter-spacing:.12em;color:#8a8070;text-align:left;padding:6px 0;border:0;border-bottom:1px solid #d9d2c4;background:none;text-transform:none}
 #dashScoresCard .scx-cat td{white-space:nowrap;padding:9px 0 9px 8px;border:0;border-bottom:1px solid #e4ddcf;color:#1e1e1e;background:none}
 #dashScoresCard .scx-cat th:not(:first-child),#dashScoresCard .scx-cat td:not(:first-child){text-align:right}
+#dashScoresCard .scx-hd{position:relative}
+#dashScoresCard .scx-bg{position:absolute;right:12px;top:14px;font:800 .55rem Inter,system-ui,sans-serif;letter-spacing:.1em;padding:4px 8px;border-radius:99px;white-space:nowrap}
+#dashScoresCard .scx-bg.pr{background:#fef3c7;color:#92400e}#dashScoresCard .scx-bg.fn{background:#dcfce7;color:#166534}
+#dashScoresCard .scx-nt{padding:9px 14px;font:.72rem/1.4 Inter,system-ui,sans-serif;background:#fffbeb;color:#78350f;border-top:1px solid #f5d78a}#dashScoresCard .scx-nt.f{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
 #dashScoresCard .scx-disc{margin-top:16px;padding:10px 12px;border-left:3px solid #a51c30;background:#f3ece0;font:.76rem/1.45 Inter,system-ui,sans-serif;color:#5a4a3a}#dashScoresCard .scx-disc b{color:#a51c30}
 #dashScoresCard .scx-cat tr:last-child td{border-bottom:0}#dashScoresCard .scx-cat b{color:#a51c30}
 </style>
@@ -1101,7 +1105,7 @@ async function _binCall(payload){
         if(j0 && j0.ok){ _ownNote('');
           const b=j0.bin||{}, nz=function(v){return String(v==null?'':v).toLowerCase().replace(/[^a-z0-9]/g,'');}, dg=function(v){return String(v==null?'':v).replace(/\D/g,'');};
           const me=String(window._lookIdx), same=function(v){ const a=nz(v); if(a && a===nz(me)) return true; const d=dg(v), m=dg(me); return d.length>=5 && d===m; };
-          return {ok:true,bin:{courses:b.courses||[],settings:{deviceLockEnabled:(b.settings||{}).deviceLockEnabled},records:(b.records||[]).filter(function(x){return same(x.indexNumber);}),assessmentMax:b.assessmentMax||{},finalShow:b.finalShow||{},reports:(b.reports||[]).filter(function(x){return same(x.indexNumber);})}};
+          return {ok:true,bin:{courses:b.courses||[],settings:{deviceLockEnabled:(b.settings||{}).deviceLockEnabled},records:(b.records||[]).filter(function(x){return same(x.indexNumber);}),assessmentMax:b.assessmentMax||{},finalShow:b.finalShow||{},courseFinal:b.courseFinal||{},reports:(b.reports||[]).filter(function(x){return same(x.indexNumber);})}};
         }
       }
     }catch(e){ _ownNote('Owner view could not load scores: '+String(e&&e.message||e)); }
@@ -1824,10 +1828,11 @@ async function loadDashboard(skipLock){
         const fill = tm>0 ? Math.max(0,Math.min(10,Math.round(ts/tm*10))) : 0;
         let seg=''; for(let k=0;k<10;k++) seg+='<i'+(k<fill?' class="on"':'')+'></i>';
         const _lvT=(_cp.lv||(g.lv?'Level '+g.lv:'')).toUpperCase();
-        html += '<div class="scx-c"><div class="scx-hd"><div class="scx-code">'+escapeHtml(_cp.code)+'</div>'+(_cp.title?'<div class="scx-ti">'+escapeHtml(_cp.title)+'</div>':'')+(_lvT?'<span class="scx-lv">'+escapeHtml(_lvT)+'</span>':'')+'</div>'
+        const _isF=!!((jsonBinData.courseFinal||{})[String(c).trim().toLowerCase()]||(jsonBinData.courseFinal||{})[(_cp.code||'').toLowerCase()]); window._scxFin=window._scxFin||{}; window._scxFin[c]=_isF;
+        html += '<div class="scx-c"><div class="scx-hd"><span class="scx-bg '+(_isF?'fn':'pr')+'">'+(_isF?'&#10003; FINAL':'IN PROGRESS')+'</span><div class="scx-code">'+escapeHtml(_cp.code)+'</div>'+(_cp.title?'<div class="scx-ti">'+escapeHtml(_cp.title)+'</div>':'')+(_lvT?'<span class="scx-lv">'+escapeHtml(_lvT)+'</span>':'')+'</div>'
           +'<table class="scx-t"><tr><th>ASSESSMENT</th><th>SCORE</th></tr>'
           +g.items.map(i => '<tr><td>'+escapeHtml(i.n)+'</td><td>'+escapeHtml(i.sc)+(i.mx>0?' / '+i.mx:'')+'</td></tr>').join('')
-          +(any?'<tr class="scx-tot"><td>Total</td><td>'+(Math.round(ts*100)/100)+' / '+tm+'</td></tr>':'')+'</table></div>';
+          +(any?'<tr class="scx-tot"><td>'+(_isF?'Total':'Total so far')+'</td><td>'+(Math.round(ts*100)/100)+' / '+tm+'</td></tr>':'')+'</table><div class="scx-nt '+(_isF?'f':'')+'">'+(_isF?'Final for this course. No more scores will be added.':'More scores may still be added. This total will change as they come in.')+'</div></div>';
       });
       const _disc='<div class="scx-disc"><b>Provisional scores.</b> These scores are provisional until they are finally reviewed and your attendance is taken into consideration.</div>';
       html += _disc+'</div>';
@@ -1837,7 +1842,7 @@ async function loadDashboard(skipLock){
         const _bs=n=>{ const t=String(n||'').trim(); const m=t.match(/^(.*\d)\s*[-_\/]?\s*\(?\s*(?:group|grp|class|section|sec)?\s*[A-Za-z]\s*\)?$/i); return m?m[1].trim():t; };
         _rows.forEach(r=>{ const c=_bs(r.course||'General'); (_by[c]=_by[c]||{})[r.assessmentName||'Untitled']=r.score; });
         let _fh='';
-        Object.keys(_by).sort().forEach(c=>{ const ck=String(c).trim().toLowerCase(); if(_fs[ck]===false) return; let s=0,m=0; const mine={}; Object.keys(_by[c]).forEach(a=>{ mine[String(a).trim().toLowerCase()]=_by[c][a]; }); Object.keys(_am).forEach(k=>{ if(k.indexOf(ck+'|')!==0) return; const mx=parseFloat(_am[k]); if(!(mx>0)) return; m+=mx; const sc=mine[k.slice(ck.length+1)]; const n=parseFloat(String(sc==null?'':sc).replace(/[^0-9.\-]/g,'')); s+=isFinite(n)?n:0; }); if(m>0) _fh+='<tr><td>'+escapeHtml((String(c).match(/[A-Za-z]{3,5}\s?\d{3}/)||[c])[0].toUpperCase())+'</td><td>'+(Math.round(s*100)/100)+' / '+m+'</td><td><b>'+(Math.round(s/m*4000)/100)+'</b> / 40</td></tr>'; });
+        Object.keys(_by).sort().forEach(c=>{ const ck=String(c).trim().toLowerCase(); if(_fs[ck]===false) return; let s=0,m=0; const mine={}; Object.keys(_by[c]).forEach(a=>{ mine[String(a).trim().toLowerCase()]=_by[c][a]; }); Object.keys(_am).forEach(k=>{ if(k.indexOf(ck+'|')!==0) return; const mx=parseFloat(_am[k]); if(!(mx>0)) return; m+=mx; const sc=mine[k.slice(ck.length+1)]; const n=parseFloat(String(sc==null?'':sc).replace(/[^0-9.\-]/g,'')); s+=isFinite(n)?n:0; }); if(m>0) _fh+='<tr><td>'+escapeHtml((String(c).match(/[A-Za-z]{3,5}\s?\d{3}/)||[c])[0].toUpperCase())+' <span class="scx-bg '+((window._scxFin||{})[c]?'fn':'pr')+'" style="position:static;margin-left:4px;font-size:.5rem">'+((window._scxFin||{})[c]?'FINAL':'IN PROGRESS')+'</span></td><td>'+(Math.round(s*100)/100)+' / '+m+'</td><td><b>'+(Math.round(s/m*4000)/100)+'</b> / 40</td></tr>'; });
         if(_fh) scoresContainer.innerHTML = scoresContainer.innerHTML.replace(/<div class="scx-disc">.*?<\/div><\/div>$/,'')+'<div class="scx-cat"><h4>Continuous Assessment (out of 40)</h4><table><tr><th>COURSE</th><th>TOTAL</th><th>FINAL</th></tr>'+_fh+'</table></div>'+_disc+'</div>';
       }catch(e){}
     }
@@ -2479,7 +2484,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=151"></script>
+<script src="updates.js?v=152"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

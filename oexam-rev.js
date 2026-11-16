@@ -28,7 +28,8 @@ window.oeResults=async function(id){
   var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+'</div>'
   +'<div class="rv-t"><div><b>'+sub.length+' / '+(rows.length+D.missing.length)+'</b><span>Submitted</span></div><div><b>'+avg.toFixed(1)+'</b><span>Average score</span></div><div><b>'+fl+'</b><span>Flagged</span></div><div><b>'+pend+'</b><span>Need marking</span></div></div>'
   +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
-  +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div>';
+  +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button><button type="button" class="oe-mini" onclick="oeIntegrity()">Integrity check</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div>';
+  h+='<div id="oeIntegrity"></div>';
   rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
   h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
     return '<div class="rv-r" onclick="oeOpenAtt('+i+')"><div class="n">'+esc(r.name||r.email)+' <span style="font-weight:400;color:var(--muted)">'+esc(r.index||'')+'</span></div><div class="s">'+st+' &middot; Score '+((r.mcq||0)+r.written)+' / '+r.total+(r.pending?' (marking pending)':'')+' &middot; Photos '+r.snaps+'</div>'+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div>';}).join('');
@@ -44,6 +45,39 @@ async function gbSync(add){
   await saveAllRecords(add?keep.concat(recs):keep, add&&tot>0?{name:ex.title,max:tot,courses:[lmBase(ex.course)]}:null);
   return recs.length;
 }
+
+/* ---- Integrity check: missing photos, unusually fast finishes, and students with matching wrong answers ---- */
+window.oeIntegrity=async function(){
+  var box=$('oeIntegrity'); if(!box||!D) return;
+  var rows=D.rows.filter(function(r){return r.submittedAt&&r.startedAt;}), ex=D.exam;
+  if(rows.length<2){ box.innerHTML='<div class="rv-warn">Not enough submitted attempts to check yet.</div>'; return; }
+  box.innerHTML='<div class="rv-q">Checking... <span id="oeIgP">0</span> / '+rows.length+'</div>';
+  var mins=function(r){ return (Date.parse(r.submittedAt)-Date.parse(r.startedAt))/60000; };
+  /* 1 photos */
+  var every=ex.snapEverySec||30, lowPh=[];
+  rows.forEach(function(r){ var exp=mins(r)*60/every; if(exp>=4 && r.snaps<exp*0.4) lowPh.push({r:r,exp:Math.round(exp)}); });
+  /* 2 fast */
+  var ms=rows.map(mins).sort(function(a,b){return a-b;}), med=ms[Math.floor(ms.length/2)], fast=[];
+  if(med>=3) rows.forEach(function(r){ if(mins(r)<med*0.35) fast.push(r); });
+  /* 3 answers */
+  var att=[], i=0, done=0, fail=0;
+  async function worker(){ while(i<rows.length){ var r=rows[i++]; try{ var j=await api({action:'oe_attempt',id:ex.id,email:r.email}); att.push({r:r,items:j.attempt.items||[]}); }catch(e){ fail++; } done++; var p=$('oeIgP'); if(p) p.textContent=done; } }
+  await Promise.all([worker(),worker(),worker(),worker(),worker()]);
+  var info=att.map(function(a){ var m={}, wrong=0; a.items.forEach(function(q){ if(q.type!=='mcq'||q.chosen==null) return; if(!q.right){ wrong++; m[q.id]=String(q.options[q.chosen]||'').trim().toLowerCase(); } }); return {r:a.r,m:m,wrong:wrong}; });
+  var pairs=[];
+  for(var x=0;x<info.length;x++) for(var y=x+1;y<info.length;y++){
+    var A=info[x], B=info[y], low=Math.min(A.wrong,B.wrong); if(low<4) continue; var same=0;
+    Object.keys(A.m).forEach(function(k){ if(B.m[k]!==undefined && B.m[k]===A.m[k]) same++; });
+    if(same>=4 && same/low>=0.6) pairs.push({a:A.r,b:B.r,same:same,low:low});
+  }
+  pairs.sort(function(p,q){return q.same-p.same;});
+  var nm=function(r){ return esc(r.name||r.email)+' <span style="color:var(--muted)">'+esc(r.index||'')+'</span>'; };
+  var h='<div class="rv-q"><b>Integrity check</b><div class="oe-sub" style="margin:4px 0 0">'+rows.length+' submitted attempts checked'+(fail?' ('+fail+' could not be read)':'')+'. These are hints to look at, not proof.</div></div>';
+  h+='<div class="rv-q"><b>Matching wrong answers ('+pairs.length+')</b>'+(pairs.length?pairs.slice(0,30).map(function(p){ return '<div class="oe-sub" style="margin:8px 0 0">&#9888; '+nm(p.a)+' and '+nm(p.b)+': chose the <b>same wrong answer</b> on '+p.same+' of their '+p.low+' wrong questions.</div>'; }).join(''):'<div class="oe-sub" style="margin:6px 0 0">No pairs of students stand out.</div>')+'</div>';
+  h+='<div class="rv-q"><b>Few photos ('+lowPh.length+')</b>'+(lowPh.length?lowPh.slice(0,30).map(function(p){ return '<div class="oe-sub" style="margin:8px 0 0">&#9888; '+nm(p.r)+': '+p.r.snaps+' photos, about '+p.exp+' expected.</div>'; }).join(''):'<div class="oe-sub" style="margin:6px 0 0">Photos arrived as expected.</div>')+'</div>';
+  h+='<div class="rv-q"><b>Very fast finishes ('+fast.length+')</b>'+(fast.length?fast.slice(0,30).map(function(r){ return '<div class="oe-sub" style="margin:8px 0 0">&#9888; '+nm(r)+': '+Math.max(1,Math.round(mins(r)))+' min, while the middle student took '+Math.round(med)+' min.</div>'; }).join(''):'<div class="oe-sub" style="margin:6px 0 0">No unusually fast finishes.</div>')+'</div>';
+  box.innerHTML=h;
+};
 window.oeRelease=async function(v){ try{ await api({action:'oe_release',id:D.exam.id,released:v}); await oeResults(D.exam.id); var n=await gbSync(v); var nt=''; if(v&&window.ceNotify){ try{ nt=ceNotifyText(await ceNotify('results',D.exam.course,D.exam.title)); }catch(_e){} } msg('<div class="msg ok">'+(v?'Results released and '+n+' scores added to the Gradebook as "'+esc(D.exam.title)+'".'+esc(nt):'Results hidden and removed from the Gradebook.')+'</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
 window.oePurge=async function(){ if(!confirm('Delete ALL photos for this exam?\n\nThis cannot be undone.')) return; try{ var r=await api({action:'oe_purge',id:D.exam.id}); await oeResults(D.exam.id); msg('<div class="msg ok">Deleted '+r.removed+' photos.</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
 window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}; var L=[['Name','Index','Status','MCQ','Written','Total','Out of','Left page','Flags','Photos'].map(q).join(',')];

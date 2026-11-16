@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16u', date:'16 Nov 2026', title:'Exam Integrity check',
+      all:[], student:[], staff:['In an exam\'s Results page, tap Integrity check to see students who chose the same wrong answers, students with too few camera photos, and very fast finishes. These are hints to look at, not proof. The shuffle switches now explain that every student gets their own random order.'] },
     { id:'2026-11-16t', date:'16 Nov 2026', title:'Apply to attendance works',
       all:[], student:[], staff:['On an approved absence excuse, Apply to attendance now marks the student Excused in the attendance session for that date and tells you what happened (done, already applied, was present, or no session yet).'] },
     { id:'2026-11-16s', date:'16 Nov 2026', title:'Absence Excuse: choose the date',

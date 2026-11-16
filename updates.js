@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16h', date:'16 Nov 2026', title:'Gradebook tidy-up',
+      all:[], student:[], staff:['The "Out of" row in the Gradebook no longer overlaps the first score box on phones.'] },
     { id:'2026-11-16g', date:'16 Nov 2026', title:'Faster, lighter score pages',
       all:[], student:[], staff:['The portal now checks a tiny stamp first and only downloads the full scores file when it has really changed. Everything looks the same, it just uses far less data.'] },
     { id:'2026-11-16f', date:'16 Nov 2026', title:'Team Access screen redesigned',

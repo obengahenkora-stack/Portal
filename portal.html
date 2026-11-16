@@ -2484,7 +2484,7 @@ async function renderGradebook(){
   const missing=cols.filter((c,i)=>!(numOf(maxes[i])>0));
   const isTA=(currentUserRole==='ta');
   let h='<table><tr><th>Student</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final /40</th></tr>';
-  h+='<tr style="background:rgba(14,165,233,.08)"><td><b style="font-size:.75rem">Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" data-o="'+escapeHtml(String(maxes[i]))+'" oninput="gbCount()" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:64px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
+  h+='<tr style="background:rgba(14,165,233,.08)"><td style="white-space:normal"><b style="font-size:.72rem">Out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" data-o="'+escapeHtml(String(maxes[i]))+'" oninput="gbCount()" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:64px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
   rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td><div class="gb-nm">'+escapeHtml(r.name||r.index)+'</div>'+(r.name?'<div class="gb-ix">'+escapeHtml(r.index)+'</div>':'')+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:58px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
   h+='</table>';
   box.innerHTML=h;
@@ -5579,7 +5579,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=143"></script>
+<script src="updates.js?v=144"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

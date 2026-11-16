@@ -529,6 +529,8 @@
       <div class="hint">Upload the class roster once under Attendance. Every assessment you upload then becomes a column here. Students on the roster with no score for an assessment show 0.</div>
       <select id="gradebookCourse" onchange="renderGradebook()" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;margin-bottom:14px;background:rgba(0,0,0,0.2);color:var(--ink);"><option value="">Select a course...</option></select>
       <input type="search" id="gbSearch" placeholder="Search by index number or name..." oninput="gbFilter()" autocomplete="off" style="margin-bottom:10px">
+      <div id="gbPendingBox"></div>
+      <div id="gbBar" class="hidden" style="position:sticky;top:0;z-index:6;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)"><span id="gbCount" class="hint" style="margin:0">No unsaved changes</span><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()" style="margin:0">Save changes</button></div>
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <div id="gbCharts"></div>
       <button onclick="downloadGradebook()" style="margin-top:12px">Download Gradebook (Excel)</button>
@@ -2129,7 +2131,7 @@ async function loadMyPending(){
     const it=j.items||[];
     if(!it.length){ box.innerHTML=''; return; }
     box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px"><div style="font-weight:800;margin-bottom:4px">Waiting for approval</div><div class="hint" style="margin:0 0 8px">The owner has not approved these yet. Spotted a mistake? Tap Re-upload, choose the corrected file, and it replaces the one waiting.</div>'
-      +it.map(function(i){ return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)"><div style="flex:1;min-width:180px"><b>'+escapeHtml(i.course)+'</b> | '+escapeHtml(i.assessmentName)+'<div class="hint" style="margin:0">'+i.count+' students &middot; '+escapeHtml(new Date(i.at).toLocaleString())+'</div></div><button type="button" onclick="reuploadPending(this)" data-c="'+escapeHtml(i.course)+'" data-n="'+escapeHtml(i.assessmentName)+'" data-m="'+escapeHtml(String(i.max||''))+'">Re-upload</button><button type="button" class="secondary" onclick="withdrawPending(\''+escapeHtml(i.id)+'\')">Withdraw</button></div>'; }).join('')+'</div>';
+      +it.map(function(i){ return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)"><div style="flex:1;min-width:180px"><b>'+escapeHtml(i.course)+'</b> | '+escapeHtml(i.assessmentName)+'<div class="hint" style="margin:0">'+i.count+' students &middot; '+escapeHtml(new Date(i.at).toLocaleString())+'</div></div>'+(i.kind==='edit'?'':'<button type="button" onclick="reuploadPending(this)" data-c="'+escapeHtml(i.course)+'" data-n="'+escapeHtml(i.assessmentName)+'" data-m="'+escapeHtml(String(i.max||''))+'">Re-upload</button>')+'<button type="button" class="secondary" onclick="withdrawPending(\''+escapeHtml(i.id)+'\')">Withdraw</button></div>'; }).join('')+'</div>';
   }catch(e){ box.innerHTML=''; }
 }
 function reuploadPending(btn){
@@ -2168,6 +2170,18 @@ async function loadPending(){
     let h='';
     if(!wait.length) h+='<div class="hint">Nothing is waiting for approval.</div>';
     wait.forEach(i=>{
+      if(i.kind==='edit'){
+        const mk=Object.keys(i.maxes||{});
+        h+='<div style="border:2px solid #f59e0b;border-radius:10px;padding:12px;margin:10px 0">'
+         +'<div style="display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#f59e0b;color:#111;border-radius:99px;padding:3px 10px;margin-bottom:6px">Gradebook changes to review</div>'
+         +'<div style="font-weight:700;margin-bottom:6px;line-height:1.3">'+escapeHtml(i.course)+'</div>'
+         +'<div class="hint">From '+escapeHtml(i.byName||i.by)+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+' &middot; '+i.count+' score'+(i.count===1?'':'s')+' changed'+(mk.length?' &middot; '+mk.length+' "out of" total'+(mk.length===1?'':'s'):'')+'</div>'
+         +(mk.length?'<div class="hint" style="margin:4px 0">New "out of" totals: '+mk.map(k=>escapeHtml(k)+' = '+escapeHtml(String(i.maxes[k]))).join(', ')+'</div>':'')
+         +'<table style="font-size:.8rem;margin:6px 0"><tr><th>Index #</th><th>Assessment</th><th>Was</th><th>Now</th></tr>'+(i.sample||[]).map(r=>'<tr><td>'+escapeHtml(r.indexNumber)+'</td><td>'+escapeHtml(r.assessmentName||'')+'</td><td>'+escapeHtml(r.was===''||r.was==null?'-':r.was)+'</td><td><b>'+escapeHtml(r.score)+'</b></td></tr>').join('')+'</table>'
+         +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
+         +'<div style="display:flex;gap:10px;margin-top:8px"><button onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">Approve changes</button><button class="secondary" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div></div>';
+        return;
+      }
       h+='<div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">'
        +'<div style="font-weight:700;margin-bottom:6px;line-height:1.3">'+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+'</div>'
        +'<div class="hint" style="margin:0 0 6px;font-weight:700">Save under this course:</div><select id="pc_'+escapeHtml(i.id)+'" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px">'+_pcOpts(i.course)+'</select>'
@@ -2176,19 +2190,36 @@ async function loadPending(){
        +(i.count>(i.sample||[]).length?'<div class="hint">Showing the first '+(i.sample||[]).length+' of '+i.count+'.</div>':'')
        +'<div style="display:flex;gap:10px;margin-top:8px"><button onclick="decidePending(\''+escapeHtml(i.id)+'\',\'approve\')">Approve</button><button class="secondary" onclick="decidePending(\''+escapeHtml(i.id)+'\',\'reject\')">Reject</button></div></div>';
     });
-    if(done.length) h+='<div class="hint" style="margin-top:14px;font-weight:700">Recently decided</div>'+done.map(i=>'<div class="hint">'+(i.status==='approved'?'Approved':'Rejected')+': '+escapeHtml(i.course)+' | '+escapeHtml(i.assessmentName)+' from '+escapeHtml(i.byName||i.by)+'</div>').join('');
+    if(done.length) h+='<div class="hint" style="margin-top:14px;font-weight:700">Recently decided</div>'+done.map(i=>'<div class="hint">'+(i.status==='approved'?'Approved':'Rejected')+': '+(i.kind==='edit'?'gradebook changes, ':'')+escapeHtml(i.course)+(i.kind==='edit'?'':' | '+escapeHtml(i.assessmentName))+' from '+escapeHtml(i.byName||i.by)+'</div>').join('');
     box.innerHTML=h;
   }catch(e){ box.innerHTML='<div class="hint">Could not load. '+escapeHtml(e.message||'')+'</div>'; }
 }
 async function decidePending(id,decision){
-  if(decision==='reject' && !confirm('Reject this upload? It will be thrown away.')) return;
-  if(decision==='approve' && !confirm('Approve this upload? Students will see it.')) return;
+  if(decision==='reject' && !confirm('Reject this? It will be thrown away.')) return;
+  if(decision==='approve' && !confirm('Approve this? Students will see it.')) return;
   const box=document.getElementById('pendingList'); if(box) box.insertAdjacentHTML('afterbegin','<div class="msg ok">Working...</div>');
   try{
     if(decision==='approve'){
       /* save the scores exactly like a normal upload, and only then mark the request approved */
       const g=await teamApi({action:'pending_get',id:id});
       if(!g||!g.ok) throw new Error((g&&g.error)||'Could not open the upload');
+      if(g.item && g.item.kind==='edit'){
+        /* gradebook changes: change only the listed cells, leave everything else alone */
+        const it0=g.item; const bin=await fetchBin(); bin.assessmentMax=bin.assessmentMax||{}; const recs=bin.records||[]; let applied=0;
+        (it0.records||[]).forEach(r=>{
+          const course=r.course||it0.course, cb=lmBase(course).toLowerCase(), idx=String(r.indexNumber||'').toLowerCase();
+          const hit=recs.find(x=>String(x.indexNumber||'').toLowerCase()===idx && lmBase(x.course||'General').toLowerCase()===cb && String(x.assessmentName||'Untitled')===r.assessmentName);
+          if(hit){ hit.score=r.score; }
+          else { const ref=recs.find(x=>lmBase(x.course||'General').toLowerCase()===cb && String(x.assessmentName||'Untitled')===r.assessmentName); recs.push({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName,course:ref?ref.course:course,level:''}); }
+          applied++;
+        });
+        Object.keys(it0.maxes||{}).forEach(a=>{ const v=Number(it0.maxes[a]); if(v>0) bin.assessmentMax[amKey(it0.course,a)]=v; });
+        if(!applied && !Object.keys(it0.maxes||{}).length) throw new Error('These changes are empty');
+        bin.records=recs; await saveBin(bin);
+        const j0=await teamApi({action:'pending_decide',id:id,decision:'approve'}); if(!j0||!j0.ok) throw new Error((j0&&j0.error)||'try again');
+        await loadPending(); try{ loadActivity(); loadRecords(); renderGradebook(); }catch(e){}
+        return;
+      }
       const it=g.item, pcs=document.getElementById('pc_'+id), chosen=pcs&&pcs.value?pcs.value:'', newRecords=(it.records||[]).map(r=>({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName||it.assessmentName,course:chosen||r.course||it.course}));
       if(!newRecords.length) throw new Error('This upload is empty');
       const existing=await fetchAllRecords();
@@ -2293,7 +2324,7 @@ async function loadGradebookCourses(){
 }
 async function renderGradebook(){
   const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
-  if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; return; }
+  if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; var _b0=document.getElementById('gbBar'); if(_b0){ _b0.classList.add('hidden'); _b0.style.display='none'; } return; }
   box.innerHTML='<div class="empty">Loading...</div>';
   const [recs,data,bin]=await Promise.all([fetchVisibleRecords(),fetchSupabaseData(),fetchBin()]);
   const cb=lmBase(course).toLowerCase();
@@ -2310,38 +2341,69 @@ async function renderGradebook(){
   if(!rows.length){ box.innerHTML='<div class="empty">No students or scores for this course yet.</div>'; return; }
   const missing=cols.filter((c,i)=>!(numOf(maxes[i])>0));
   let h='<table><tr><th>Index #</th><th>Name</th>'+cols.map(c=>'<th>'+escapeHtml(c)+'</th>').join('')+'<th>Total</th><th>Final (out of 40)</th></tr>';
-  h+='<tr style="background:rgba(14,165,233,.08)"><td colspan="2"><b>Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:74px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
+  h+='<tr style="background:rgba(14,165,233,.08)"><td colspan="2"><b>Marked out of</b></td>'+cols.map((c,i)=>'<td><input type="number" class="gbMax" data-i="'+i+'" data-o="'+escapeHtml(String(maxes[i]))+'" oninput="gbCount()" min="0" step="any" value="'+escapeHtml(String(maxes[i]))+'" style="width:74px;padding:6px;margin:0"></td>').join('')+'<td><b>'+(totalMax||'')+'</b></td><td><b>40</b></td></tr>';
   rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td>'+escapeHtml(r.index)+'</td><td>'+escapeHtml(r.name)+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:70px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
   h+='</table>';
   if(missing.length) h+='<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>';
   const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
-  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label><button onclick="saveGradebookMarks()">Save changes</button></div><div id="gbMsg"></div>';
+  const isTA=(currentUserRole==='ta');
+  h+='<div style="margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">'+(isTA?'':'<label style="display:flex;gap:8px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:.85rem"><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'> Show the Final (out of 40) to students</label>')+'<button onclick="saveGradebookMarks()">'+(isTA?'Submit changes for approval':'Save changes')+'</button></div>'+(isTA?'<div class="hint">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'')+'<div id="gbMsg"></div>';
   box.innerHTML=h;
+  const bar=document.getElementById('gbBar'); if(bar){ bar.classList.remove('hidden'); bar.style.display='flex'; const sb=document.getElementById('gbSaveTop'); if(sb) sb.textContent=isTA?'Submit for approval':'Save changes'; }
+  gbCount(); try{ loadGbPending(); }catch(e){}
 }
 function gbFilter(){
   const q=String((document.getElementById('gbSearch')||{}).value||'').trim().toLowerCase();
   document.querySelectorAll('#gradebookTable tr[data-s]').forEach(tr=>{ tr.style.display=(!q||tr.getAttribute('data-s').indexOf(q)>=0)?'':'none'; });
 }
-function gbMark(el){ const ch=el.value.trim()!==el.getAttribute('data-o'); el.style.outline=ch?'2px solid #f59e0b':''; el.style.background=ch?'rgba(245,158,11,.18)':''; }
+function gbMark(el){ const ch=el.value.trim()!==el.getAttribute('data-o'); el.style.outline=ch?'2px solid #f59e0b':''; el.style.background=ch?'rgba(245,158,11,.18)':''; gbCount(); }
+function gbCount(){
+  let n=0; document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{ const v=el.value.trim(); if(v!==''&&v!==el.getAttribute('data-o')) n++; });
+  let m=0; document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ if(String(el.value).trim()!==String(el.getAttribute('data-o')||'').trim()) m++; });
+  const c=document.getElementById('gbCount'); if(c) c.innerHTML=(n||m)?('<b>'+n+' score'+(n===1?'':'s')+(m?' and '+m+' "out of" total'+(m===1?'':'s'):'')+' changed, not saved yet</b>'):'No unsaved changes';
+}
+async function loadGbPending(){
+  const box=document.getElementById('gbPendingBox'); if(!box) return;
+  if(currentUserRole==='owner'||currentUserRole==='admin'){ box.innerHTML=''; return; }
+  try{
+    const j=await teamApi({action:'pending_mine'}); const it=((j&&j.items)||[]).filter(i=>i.kind==='edit');
+    if(!it.length){ box.innerHTML=''; return; }
+    box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:800;margin-bottom:4px">Your gradebook changes are waiting for approval</div>'+it.map(i=>'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0"><div style="flex:1;min-width:160px"><b>'+escapeHtml(i.course)+'</b><div class="hint" style="margin:0">'+i.count+' score'+(i.count===1?'':'s')+(i.maxCount?' and '+i.maxCount+' total'+(i.maxCount===1?'':'s'):'')+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+'</div></div><button type="button" class="secondary" onclick="withdrawGbPending(\''+escapeHtml(i.id)+'\')">Withdraw</button></div>').join('')+'<div class="hint" style="margin:6px 0 0">Need to fix something? Change it above and submit again. The new submission replaces this one.</div></div>';
+  }catch(e){ box.innerHTML=''; }
+}
+async function withdrawGbPending(id){
+  if(!confirm('Withdraw these changes? The owner will no longer see them.')) return;
+  const j=await teamApi({action:'pending_withdraw',id:id}); if(!j||!j.ok) alert('Could not withdraw: '+((j&&j.error)||'try again'));
+  loadGbPending();
+}
 async function saveGradebookMarks(){
   const msg=document.getElementById('gbMsg');
-  if(!canUploadScores() || currentUserRole==='ta'){ msg.innerHTML='<div class="msg err">TAs cannot change marks. Ask the owner.</div>'; return; }
+  if(!canUploadScores()){ msg.innerHTML='<div class="msg err">You do not have access to change marks. Ask the owner.</div>'; return; }
   if(!_gb.course) return;
+  const isTA=(currentUserRole==='ta');
   msg.innerHTML='<div class="msg ok">Saving...</div>';
   try{
     const bin=await fetchBin(); bin.assessmentMax=bin.assessmentMax||{}; bin.finalShow=bin.finalShow||{};
-    document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ const c=_gb.cols[parseInt(el.getAttribute('data-i'),10)]; const v=parseFloat(el.value); const k=amKey(_gb.course,c); if(v>0) bin.assessmentMax[k]=v; else delete bin.assessmentMax[k]; });
+    const mchg={};
+    document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ const c=_gb.cols[parseInt(el.getAttribute('data-i'),10)]; const v=parseFloat(el.value); const k=amKey(_gb.course,c); if(isTA){ if(v>0 && v!==numOf(bin.assessmentMax[k])) mchg[c]=v; return; } if(v>0) bin.assessmentMax[k]=v; else delete bin.assessmentMax[k]; });
     // changed scores only
     const ch=[]; let bad='';
     document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{
       const v=el.value.trim(), o=el.getAttribute('data-o'); if(v===''||v===o) return;
       const row=_gb.rows[parseInt(el.getAttribute('data-r'),10)], col=_gb.cols[parseInt(el.getAttribute('data-c'),10)];
       if(!isFinite(parseFloat(v))){ bad='"'+v+'" is not a number ('+row.index+', '+col+').'; return; }
-      ch.push({row:row,col:col,v:v});
+      ch.push({row:row,col:col,v:v,was:o});
     });
     if(bad){ msg.innerHTML='<div class="msg err">'+escapeHtml(bad)+'</div>'; return; }
     const over=ch.filter(c=>{ const mx=numOf(bin.assessmentMax[amKey(_gb.course,c.col)]); return mx>0 && parseFloat(c.v)>mx; });
     if(over.length && !confirm(over.length+' score(s) are higher than the "marked out of" total (for example '+over[0].row.index+': '+over[0].v+'). Save anyway?')){ msg.innerHTML=''; return; }
+    if(isTA){
+      if(!ch.length && !Object.keys(mchg).length){ msg.innerHTML='<div class="msg err">Nothing has changed yet. Edit a score, then submit.</div>'; return; }
+      const j=await teamApi({action:'pending_add',kind:'edit',course:_gb.course,maxes:mchg,records:ch.map(c=>({indexNumber:c.row.index,score:c.v,assessmentName:c.col,course:_gb.course,was:c.was}))});
+      if(!j||!j.ok) throw new Error((j&&j.error)||'Could not send for approval');
+      msg.innerHTML='<div class="msg ok">Sent to the owner for approval: '+ch.length+' score(s)'+(Object.keys(mchg).length?' and '+Object.keys(mchg).length+' total(s)':'')+'. Students will not see them until the owner approves.</div>';
+      loadGbPending(); return;
+    }
     if(ch.length){
       const cb=lmBase(_gb.course).toLowerCase(); const recs=bin.records||[];
       ch.forEach(c=>{
@@ -2353,7 +2415,7 @@ async function saveGradebookMarks(){
       bin.records=recs;
     }
     _gb.savedChanged=ch.length;
-    bin.finalShow[String(_gb.course).trim().toLowerCase()]=!!document.getElementById('gbShowFinal').checked;
+    { const fs=document.getElementById('gbShowFinal'); if(fs) bin.finalShow[String(_gb.course).trim().toLowerCase()]=!!fs.checked; }
     await saveBin(bin);
     await renderGradebook();
     const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.'+(_gb.savedChanged?' '+_gb.savedChanged+' score(s) changed. Everything else is untouched.':'')+'</div>';
@@ -5344,7 +5406,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=134"></script>
+<script src="updates.js?v=135"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

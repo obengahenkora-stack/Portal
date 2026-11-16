@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16a', date:'16 Nov 2026', title:'Gradebook: Save bar, and TA changes go for approval',
+      all:[], student:[], staff:['The gradebook now has a Save bar at the top that shows how many changes you have not saved yet.','TAs can edit the gradebook after you approve their upload. Their changes go to you under Pending Approvals as Gradebook changes, showing each score as it was and as it is now. Only the changed scores are updated when you approve.'] },
     { id:'2026-11-14b', date:'14 Nov 2026', title:'Score check shows likely typos',
       all:[], student:[], staff:['Check all student scores now shows, beside each student with no score, the similar index number found in the score file.'] },
     { id:'2026-11-14a', date:'14 Nov 2026', title:'Scores load faster and use less data',

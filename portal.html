@@ -601,7 +601,7 @@
       <select id="gradebookCourse" onchange="renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
       <div id="gbStats"></div>
       <div id="gbPendingBox"></div>
-      <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button></div>
+      <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button><button type="button" id="gbReupBtn" onclick="gbReupOpen()" style="border:2px solid #0d9488;color:#0d9488">&#10227; Re-upload</button><input type="file" id="gbReupFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="gbReupPick(this)"></div><div id="gbReup" class="hidden"></div>
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <div id="gbOpts"></div>
       <div id="gbMsg"></div>
@@ -2316,6 +2316,14 @@ async function loadPending(keep){
            +'<div style="margin-top:10px">'+btns(i,'Approve changes')+'</div></div>';
           return;
         }
+        if(i.kind==='replace'){
+          const st=i.stats||{}, rw=(l,v,w)=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:.88rem"><span'+(w?' style="color:#b45309"':'')+'>'+l+'</span><b'+(w?' style="color:#b45309"':'')+'>'+v+'</b></div>';
+          h+='<div style="'+card+'">'+tag('Re-upload &middot; replaces all','#92400e','#fef3c7')
+           +'<div style="font-weight:800;font-size:1rem;line-height:1.25">'+escapeHtml(i.course)+'</div><div class="hint" style="margin:2px 0 0">Whole sheet, '+i.count+' scores</div>'+who(i)
+           +rw('Changed',st.changed||0)+rw('Added',st.added||0)+rw('Will be removed',st.removed||0,(st.removed||0)>0)+rw('Unchanged',st.same||0)
+           +'<div style="margin-top:10px">'+btns(i,'Approve &amp; replace')+'</div><div class="hint" style="margin-top:8px">A backup of the current scores file is kept.</div></div>';
+          return;
+        }
         const rest=Math.max(0,i.count-(i.sample||[]).slice(0,2).length);
         h+='<div style="'+card+'">'+tag('New upload','#0369a1','#e0f2fe')
          +'<div style="font-weight:800;font-size:1rem;line-height:1.25">'+escapeHtml(i.course)+'</div><div class="hint" style="margin:2px 0 0;font-size:.9rem">'+escapeHtml(i.assessmentName)+'</div>'+who(i)
@@ -2345,6 +2353,14 @@ async function decidePending(id,decision){
       /* save the scores exactly like a normal upload, and only then mark the request approved */
       const g=await teamApi({action:'pending_get',id:id});
       if(!g||!g.ok) throw new Error((g&&g.error)||'Could not open the upload');
+      if(g.item && g.item.kind==='replace'){
+        const it1=g.item; if(!(it1.records||[]).length) throw new Error('This re-upload is empty');
+        const bin=await fetchBin(); const cn=((it1.records[0]||{}).course)||it1.course;
+        await gbReupApply(bin,it1.course,cn,it1.records,it1.maxes||{}); await saveBin(bin);
+        const j1=await teamApi({action:'pending_decide',id:id,decision:'approve'}); if(!j1||!j1.ok) throw new Error((j1&&j1.error)||'try again');
+        await loadPending(); try{ loadActivity(); loadRecords(); renderGradebook(); }catch(e){}
+        return;
+      }
       if(g.item && g.item.kind==='edit'){
         /* gradebook changes: change only the listed cells, leave everything else alone */
         const it0=g.item; const bin=await fetchBin(); bin.assessmentMax=bin.assessmentMax||{}; const recs=bin.records||[]; let applied=0;
@@ -2518,7 +2534,7 @@ async function loadGbPending(){
   const box=document.getElementById('gbPendingBox'); if(!box) return;
   if(currentUserRole==='owner'||currentUserRole==='admin'){ box.innerHTML=''; return; }
   try{
-    const j=await teamApi({action:'pending_mine'}); const it=((j&&j.items)||[]).filter(i=>i.kind==='edit');
+    const j=await teamApi({action:'pending_mine'}); const it=((j&&j.items)||[]).filter(i=>i.kind==='edit'||i.kind==='replace');
     if(!it.length){ box.innerHTML=''; return; }
     box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px"><div style="font-weight:800;margin-bottom:4px">Your gradebook changes are waiting for approval</div>'+it.map(i=>'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0"><div style="flex:1;min-width:160px"><b>'+escapeHtml(i.course)+'</b><div class="hint" style="margin:0">'+i.count+' score'+(i.count===1?'':'s')+(i.maxCount?' and '+i.maxCount+' total'+(i.maxCount===1?'':'s'):'')+' &middot; '+escapeHtml(new Date(i.at).toLocaleString())+'</div></div><button type="button" class="secondary" onclick="withdrawGbPending(\''+escapeHtml(i.id)+'\')">Withdraw</button></div>').join('')+'<div class="hint" style="margin:6px 0 0">Need to fix something? Change it above and submit again. The new submission replaces this one.</div></div>';
   }catch(e){ box.innerHTML=''; }
@@ -2572,6 +2588,83 @@ async function saveGradebookMarks(){
     await renderGradebook();
     const m2=document.getElementById('gbMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.'+(_gb.savedChanged?' '+_gb.savedChanged+' score(s) changed. Everything else is untouched.':'')+'</div>';
   }catch(e){ msg.innerHTML='<div class="msg err">Could not save: '+escapeHtml(e.message)+'</div>'; }
+}
+
+/* ---- Re-upload the whole gradebook sheet (TA: goes to the owner for approval; owner/lecturer: applies straight away) ---- */
+var _ru=null;
+function gbReupOpen(){
+  const c=(document.getElementById('gradebookCourse')||{}).value;
+  if(!c){ alert('Pick a course first.'); return; }
+  const f=document.getElementById('gbReupFile'); f.value=''; f.click();
+}
+function gbReupClose(){ _ru=null; const b=document.getElementById('gbReup'); if(b){ b.classList.add('hidden'); b.innerHTML=''; } }
+async function gbReupPick(inp){
+  const file=inp.files&&inp.files[0]; if(!file) return;
+  const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gbReup');
+  box.classList.remove('hidden'); box.innerHTML='<div class="hint">Reading '+escapeHtml(file.name)+'...</div>';
+  try{
+    const {aoa}=await readSheetAsAoa(file);
+    let hr=-1, ix=-1;
+    for(let r=0;r<Math.min(6,aoa.length)&&hr<0;r++){ for(let j=0;j<(aoa[r]||[]).length;j++){ if(/index/i.test(String(aoa[r][j]||''))){ hr=r; ix=j; break; } } }
+    if(hr<0){ hr=0; ix=0; }
+    const head=(aoa[hr]||[]).map(x=>String(x==null?'':x).trim());
+    const cols=[]; head.forEach((h,j)=>{ if(j!==ix && h && !/^(name|names|student|student name|full ?name|total|final|final \(.*|sum|grade|percent.*|%|remarks?|level|programme|program|no\.?|s\/?n)$/i.test(h) && !/^final/i.test(h)) cols.push({h:h,j:j}); });
+    if(!cols.length) throw new Error('I could not find any score columns. Use the Excel button to download the sheet, edit it, and upload that.');
+    const num=v=>{ const t=String(v==null?'':v).trim(); return /^-?\d+(\.\d+)?$/.test(t)?t:null; };
+    const maxes={}, recs=[]; let rows=0;
+    for(let r=hr+1;r<aoa.length;r++){
+      const row=aoa[r]||[], first=String(row[ix]==null?'':row[ix]).trim(); if(!first) continue;
+      if(/marked out|out of|^max/i.test(first)){ cols.forEach(c=>{ const m=num(row[c.j]); if(m!==null && Number(m)>0) maxes[c.h]=Number(m); }); continue; }
+      if(!/\d/.test(first)) continue;
+      rows++;
+      cols.forEach(c=>{ const v=num(row[c.j]); if(v!==null) recs.push({indexNumber:first,score:v,assessmentName:c.h}); });
+    }
+    if(!rows||!recs.length) throw new Error('I could not find any student scores in that file.');
+    const bin=await fetchBin(); const cb=lmBase(course).toLowerCase();
+    const old=(bin.records||[]).filter(x=>lmBase(x.course||'General').toLowerCase()===cb);
+    const nk=x=>String(x.indexNumber||'').toLowerCase().replace(/[^a-z0-9]/g,'')+'|'+String(x.assessmentName||'Untitled').trim().toLowerCase();
+    const om={}; old.forEach(x=>om[nk(x)]=x);
+    const seen={}; let changed=0,added=0,same=0;
+    recs.forEach(x=>{ const k=nk(x); seen[k]=1; const o=om[k]; if(!o) added++; else if(Number(o.score)!==Number(x.score)) changed++; else same++; });
+    const removed=old.filter(x=>!seen[nk(x)]).length;
+    const cname=old.length?old[0].course:course;
+    recs.forEach(x=>x.course=cname);
+    _ru={course:course,cname:cname,recs:recs,maxes:maxes,stats:{changed:changed,added:added,removed:removed,same:same},file:file.name,rows:rows,oldN:old.length};
+    gbReupRender();
+  }catch(e){ box.innerHTML='<div class="msg err">'+escapeHtml(e.message||'Could not read that file')+'</div><button type="button" class="secondary" onclick="gbReupClose()">Close</button>'; }
+}
+function gbReupRender(){
+  const box=document.getElementById('gbReup'); if(!box||!_ru) return;
+  const st=_ru.stats, ta=(currentUserRole==='ta');
+  const row=(l,v,w)=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line)"><span'+(w?' style="color:#b45309"':'')+'>'+l+'</span><b'+(w?' style="color:#b45309"':'')+'>'+v+'</b></div>';
+  box.innerHTML='<div style="border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px;background:var(--card)">'
+   +'<div style="font-weight:800;font-size:1rem">Re-upload sheet</div><div class="hint" style="margin:2px 0 8px">'+escapeHtml(_ru.course)+' &middot; '+escapeHtml(_ru.file)+' &middot; '+_ru.rows+' students</div>'
+   +row('Scores changed',st.changed)+row('New scores added',st.added)+row('Scores missing from the new file',st.removed,st.removed>0)+row('Unchanged',st.same)
+   +'<div style="margin:10px 0;padding:10px;border-radius:12px;background:#fffbeb;border:1px solid #f5d78a;font-size:.84rem;color:#78350f">'+(ta?'Once the owner approves, this replaces everything for this course with your file. Scores missing from it are removed.':'This replaces everything for this course with your file. Scores missing from it are removed. A backup of the old file is kept.')+'</div>'
+   +'<div style="display:flex;gap:10px"><button type="button" style="flex:2;margin:0;padding:13px;border-radius:14px;background:#1f9d55;color:#fff;font-weight:800" onclick="gbReupSend()">'+(ta?'Send for approval':'Replace now')+'</button><button type="button" class="secondary" style="flex:1;margin:0;padding:13px;border-radius:14px" onclick="gbReupClose()">Cancel</button></div>'
+   +(ta?'<div class="hint" style="text-align:center;margin-top:8px">Nothing changes until the owner approves.</div>':'')+'</div>';
+}
+async function gbReupApply(bin,course,cname,recs,maxes){
+  bin.records=bin.records||[]; bin.assessmentMax=bin.assessmentMax||{};
+  const cb=lmBase(course).toLowerCase();
+  bin.records=bin.records.filter(x=>lmBase(x.course||'General').toLowerCase()!==cb).concat(recs.map(r=>({indexNumber:r.indexNumber,score:r.score,assessmentName:r.assessmentName,course:cname||course,level:''})));
+  Object.keys(maxes||{}).forEach(a=>{ const v=Number(maxes[a]); if(v>0) bin.assessmentMax[amKey(course,a)]=v; });
+  return bin;
+}
+async function gbReupSend(){
+  if(!_ru) return; const ru=_ru, ta=(currentUserRole==='ta');
+  if(!ta && !confirm('Replace ALL scores for '+ru.course+' with this file?')) return;
+  const box=document.getElementById('gbReup'); box.insertAdjacentHTML('beforeend','<div class="msg ok">Working...</div>');
+  try{
+    if(ta){
+      const j=await teamApi({action:'pending_add',kind:'replace',course:ru.course,maxes:ru.maxes,stats:ru.stats,records:ru.recs});
+      if(!j||!j.ok) throw new Error((j&&j.error)||'Could not send');
+      gbReupClose(); alert('Sent. The owner will review it before anything changes.'); try{ loadGbPending(); }catch(e){}
+    } else {
+      const bin=await fetchBin(); await gbReupApply(bin,ru.course,ru.cname,ru.recs,ru.maxes); await saveBin(bin);
+      gbReupClose(); try{ loadRecords(); renderGradebook(); }catch(e){}
+    }
+  }catch(e){ alert('Could not do that: '+(e.message||'try again')); gbReupRender(); }
 }
 function downloadGradebook(){
   if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
@@ -5579,7 +5672,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=144"></script>
+<script src="updates.js?v=145"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

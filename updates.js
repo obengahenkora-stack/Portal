@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zz', date:'16 Nov 2026', title:'Gradebook opens for teaching assistants again',
+      all:[], student:[], staff:['Teaching assistants and lecturers can open a course in the Gradebook again.'] },
     { id:'2026-11-16z', date:'16 Nov 2026', title:'Gradebook shows a clear message if a course cannot open',
       all:[], student:[], staff:['If a course fails to open in the Gradebook you now see the reason and a Try again button instead of a stuck Loading message.'] },
     { id:'2026-11-16y', date:'16 Nov 2026', title:'Exams: half marks per question',

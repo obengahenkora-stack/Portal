@@ -1505,7 +1505,7 @@ async function addTeamMember(){
 async function teamApi(payload){
   try{
     const { data:{ session } } = await supabaseClient.auth.getSession();
-    const r=await fetch(SUPABASE_URL+((String(payload&&payload.action||'').indexOf('pending_')===0||(payload&&payload.action)==='oe_marks')?'/functions/v1/approvals':'/functions/v1/api'),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    const r=await fetch(SUPABASE_URL+((String(payload&&payload.action||'').indexOf('pending_')===0||(payload&&(payload.action==='oe_marks'||payload.action==='bin_get')))?'/functions/v1/approvals':'/functions/v1/api'),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     const out=await r.json();
     try{ if(out&&out.ok) auditNote(payload); }catch(e){}
     return out;
@@ -5713,7 +5713,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=162"></script>
+<script src="updates.js?v=163"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'exam-report-wording', date:'16 Nov 2026', title:'Exam report wording', all:[], student:[], staff:['The printable exam report now tells students that flagged students will be reviewed and may receive a penalty or other marked action.'] },
   { id:'exam-review-levels', date:'16 Nov 2026', title:'Exam results now show flag levels, a Final mark and a printable report', all:[], student:[], staff:['Online exam cards now say Open now, Upcoming or Ended instead of always saying Published.','Results show each student\'s flag level (Very serious, Serious, High, Medium, Low) and mark students proposed for cancellation or review. Nobody is cancelled automatically.','Open any student to type a Final mark with a private reason. It replaces the system score in the Gradebook and the download.','Print report prints the overview only: scores, spread and flag level counts, with no student names.'] },
     { id:'2026-11-16zzzzzzzzzzz', date:'16 Nov 2026', title:'Student chat pauses by itself during exams',
       all:[], student:['Chat is automatically switched off for students while an exam is open (from 15 minutes before it starts until it closes), and comes back by itself afterwards.'], staff:['Whenever any published exam is open (opening window of up to 8 hours), student chat pauses automatically to keep the server free for the exam. Staff chat is not affected.'] },

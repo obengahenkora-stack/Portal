@@ -85,7 +85,7 @@ window.oePrint=function(){
    +'<h2>Participation</h2><div class="g"><div><b>'+S.expected+'</b><span>Expected</span></div><div><b>'+S.sub+'</b><span>Submitted</span></div><div><b>'+S.missing+'</b><span>Did not start</span></div></div>'
    +'<h2>Scores (out of '+rnd(S.tot)+')</h2><div class="g"><div><b>'+rnd(S.avg)+'</b><span>Average</span></div><div><b>'+rnd(S.med)+'</b><span>Middle score</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div><div><b>'+S.pend+'</b><span>Scripts still being marked</span></div><div><b>'+S.sub+'</b><span>Scores counted</span></div></div>'
    +'<h2>How scores were spread</h2><table>'+bandRows+'</table>'
-   +'<h2>Flag levels</h2><table>'+lvRows+'</table><div class="note">Flags are automatic warnings raised during the exam (for example the camera not seeing a face, or leaving the exam page). Each student is counted once, at their highest level. A flag is a reason to look more closely, not proof of wrongdoing.</div>'
+   +'<h2>Flag levels</h2><table>'+lvRows+'</table><div class="note">Flags are automatic warnings raised during the exam (for example the camera not seeing a face, or leaving the exam page). Each student is counted once, at their highest level. Students with flags at one or more levels will be reviewed, and may receive a penalty or other marked action.</div>'
    +'<div class="note">No student names appear in this report. Generated '+esc(new Date().toLocaleString())+'.</div>'
    +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script></body></html>';
   var w=window.open('','_blank');

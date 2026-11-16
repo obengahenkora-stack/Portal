@@ -194,12 +194,14 @@ function render(){
 }
 window.oesPick=function(k){ var q=S.q[S.cur]; S.ans[q.id]=k; S.dirty[q.id]=k; render(); saveSoon(); };
 window.oesText=function(v){ var q=S.q[S.cur]; S.ans[q.id]=v; S.dirty[q.id]=v; saveSoon(); };
-window.oesGo=function(i){ if(i<0||i>=S.q.length) return; flushNow(); S.cur=i; render(); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
-function saveSoon(){ clearTimeout(S.saveT); S.saveT=setTimeout(flushNow,1200); var s=$('oerSave'); if(s) s.textContent='Saving...'; }
+window.oesGo=function(i){ if(i<0||i>=S.q.length) return; S.cur=i; render(); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
+/* answers are saved together every few seconds (not after every tap) so hundreds of students do not overload the server; leaving the page and submitting always save everything */
+function saveSoon(){ if(S.saveT) return; S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },10000); var s=$('oerSave'); if(s) s.textContent='Will save in a few seconds'; }
+if(!window._oesFlushBound){ window._oesFlushBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ try{ flushNow(); }catch(e){} } }); window.addEventListener('pagehide',function(){ try{ flushNow(); }catch(e){} }); }
 async function flushNow(){
   if(!S||!S.running||!Object.keys(S.dirty).length) return; var d=S.dirty; S.dirty={};
   try{ await call({action:'stu_oe_save',id:S.x.id,answers:d,cur:S.cur}); var s=$('oerSave'); if(s) s.textContent='Saved'; }
-  catch(e){ Object.keys(d).forEach(function(k){ if(!(k in S.dirty)) S.dirty[k]=d[k]; }); var s2=$('oerSave'); if(s2) s2.textContent='Connection problem. Your answers are kept and will save when it returns.'; clearTimeout(S.saveT); S.saveT=setTimeout(flushNow,4000); }
+  catch(e){ Object.keys(d).forEach(function(k){ if(!(k in S.dirty)) S.dirty[k]=d[k]; }); var s2=$('oerSave'); if(s2) s2.textContent='Connection problem. Your answers are kept and will save when it returns.'; clearTimeout(S.saveT); S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },5000); }
 }
 async function leave(kind){
   if(!S||!S.running) return;

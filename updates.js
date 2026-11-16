@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzzzz', date:'16 Nov 2026', title:'Exams save answers in batches',
+      all:[], student:[], staff:['During an online exam, answers are now saved together every few seconds instead of after every tap, and always when a student leaves the page or submits. This keeps the server fast when a whole class sits at once.'] },
     { id:'2026-11-16zzzzz', date:'16 Nov 2026', title:'QR check-in on its own fast service',
       all:[], student:[], staff:['QR check-in, the QR pass check and selfie photos now use a separate, lighter service, so a full class can check in at once. If it cannot be reached, the old route answers automatically.'] },
     { id:'2026-11-16zzzz', date:'16 Nov 2026', title:'Chat runs on its own fast service',

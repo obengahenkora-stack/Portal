@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'scores-count-fix', date:'16 Nov 2026', title:'Scores count fixed', all:[], student:['The dashboard no longer counts the Total row as an extra score, so "scores recorded" now matches the scores you see.'], staff:[] },
     { id:'avg-score-percent', date:'16 Nov 2026', title:'Average score is now a percentage', all:[], student:['The Average score on your dashboard is now a percentage of each assessment total, so a mark out of 10 and a mark out of 38 are averaged fairly.'], staff:[] },
     { id:'exam-csv-flag-counts', date:'16 Nov 2026', title:'Exam download shows true flag counts', all:[], student:[], staff:['The Results download now shows the total number of flags for each student and what kinds they were, so the count matches the flag level.'] },
     { id:'exam-report-onepage', date:'16 Nov 2026', title:'Exam report fits one page', all:[], student:[], staff:['The printable exam report is spaced more tightly so it prints on a single page.'] },

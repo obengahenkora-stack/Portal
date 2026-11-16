@@ -2258,7 +2258,7 @@ setInterval(updateWhoBar,1500);
     var bk=document.getElementById('dashBack'); if(bk) bk.classList.toggle('hidden', id==='dashOverviewCard');
     try{ var n=document.getElementById('dashBack'); var y=n.getBoundingClientRect().top+window.scrollY-12; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); }catch(e){}
   };
-  function rows(id){ var t=document.querySelector('#'+id+' table'); if(!t) return 0; var n=0; t.querySelectorAll('tr').forEach(function(r){ if(r.querySelector('td')) n++; }); return n; }
+  function rows(id){ var t=document.querySelector('#'+id+' table'); if(!t) return 0; var n=0; t.querySelectorAll('tr').forEach(function(r){ if(r.querySelector('td') && !r.classList.contains('scx-tot')) n++; }); return n; }
   function summarize(){
     var sc=rows('dashScores'), at=document.querySelectorAll('#dashAttendance .attc').length, rp=document.querySelectorAll('#dashReports .report-item').length;
     var set=function(id,t){ var e=document.getElementById(id); if(e) e.textContent=t; };
@@ -2506,7 +2506,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=177"></script>
+<script src="updates.js?v=178"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

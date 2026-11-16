@@ -1613,20 +1613,69 @@ function applyPerms(){
   if(ta && !any(_TCH_TILES)) ta.classList.add('hidden');
   if(aa && !any(_ATT_TILES)) aa.classList.add('hidden');
 }
+function _permCount(){
+  var all=[].slice.call(document.querySelectorAll('#permModal .permCb')), on=all.filter(function(c){return c.checked;}).length;
+  var t=document.getElementById('pmTotal'); if(t) t.textContent=on+' of '+all.length+' features on';
+  [].slice.call(document.querySelectorAll('#permModal details.pm-g')).forEach(function(g){ var a=g.querySelectorAll('.permCb'), n=[].slice.call(a).filter(function(c){return c.checked;}).length; var e=g.querySelector('.pm-c'); if(e) e.textContent=n+' of '+a.length; });
+}
+function permGrp(btn,on){ var g=btn.closest('details.pm-g'); [].slice.call(g.querySelectorAll('.permCb')).forEach(function(c){ c.checked=on; }); _permCount(); }
+function permPreset(name,role){
+  var A=['takeAttendanceCard','qrCheckinCard','examCard','attendanceSummaryCard'], want;
+  if(name==='att') want=A; else if(name==='sc') want=A.concat(['uploadCard','gradebookCard']); else if(name==='all') want=null; else want=_permDefaults(role);
+  [].slice.call(document.querySelectorAll('#permModal .permCb')).forEach(function(c){ c.checked=want?want.indexOf(c.value)>=0:true; });
+  [].slice.call(document.querySelectorAll('#permModal .pm-pre i')).forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-p')===name); });
+  _permCount();
+}
+function permSearch(q){
+  q=String(q||'').trim().toLowerCase();
+  [].slice.call(document.querySelectorAll('#permModal details.pm-g')).forEach(function(g){
+    var any=false; [].slice.call(g.querySelectorAll('.pm-it')).forEach(function(r){ var m=!q||r.getAttribute('data-s').indexOf(q)>=0; r.style.display=m?'':'none'; if(m) any=true; });
+    g.style.display=any?'':'none'; if(q&&any) g.open=true;
+  });
+}
 async function openPerms(email){
   try{
     const tl=await teamApi({action:'team_list'}); const m=((tl&&tl.members)||[]).find(x=>(x.email||'').toLowerCase()===String(email).toLowerCase()); if(!m) return;
     const cur=Array.isArray(m.perms)?m.perms:_permDefaults(m.role);
     var old=document.getElementById('permModal'); if(old) old.remove();
+    if(!document.getElementById('permCss')){ var st=document.createElement('style'); st.id='permCss'; st.textContent=
+      '#permModal .pm-sheet{background:var(--card,#fff);color:var(--ink,#111);border-radius:24px;width:100%;max-width:460px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:Inter,system-ui,sans-serif}'
+     +'#permModal .pm-top{padding:16px 16px 10px}#permModal .pm-who{display:flex;gap:12px;align-items:center}'
+     +'#permModal .pm-av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#8b5cf6);color:#fff;font-weight:800;display:grid;place-items:center;flex:none}'
+     +'#permModal .pm-who b{font-size:1.05rem;display:block;line-height:1.2}#permModal .pm-who small{font-size:.78rem;color:var(--muted)}'
+     +'#permModal .pm-role{display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:99px;font-size:.66rem;font-weight:800;padding:2px 9px;margin-left:6px;vertical-align:middle;text-transform:uppercase}'
+     +'#permModal .pm-x{margin-left:auto;font-size:1.4rem;color:var(--muted);background:none !important;border:0 !important;padding:4px 8px !important;width:auto !important;margin-top:0 !important;box-shadow:none !important}'
+     +'#permModal .pm-pre{display:flex;gap:6px;margin:12px 0 8px;overflow-x:auto}#permModal .pm-pre i{font-style:normal;white-space:nowrap;border:1px solid var(--line);background:var(--card,#fff);border-radius:99px;padding:6px 11px;font-size:.74rem;font-weight:700;cursor:pointer}#permModal .pm-pre i.on{background:#0ea5e9;color:#fff;border-color:#0ea5e9}'
+     +'#permModal .pm-srch{width:100%;box-sizing:border-box;margin:0 !important}#permModal #pmTotal{font-size:.76rem;color:var(--muted);margin:8px 2px 0}'
+     +'#permModal .pm-body{flex:1;overflow:auto;padding:0 16px 8px}'
+     +'#permModal details.pm-g{background:var(--card,#fff);border:1px solid var(--line);border-radius:16px;margin:10px 0;overflow:hidden}'
+     +'#permModal details.pm-g>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:800;font-size:.88rem;cursor:pointer}#permModal details.pm-g>summary::-webkit-details-marker{display:none}'
+     +'#permModal .pm-c{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:700}#permModal details.pm-g>summary::after{content:"\\25BE";color:var(--muted)}#permModal details.pm-g[open]>summary::after{content:"\\25B4"}'
+     +'#permModal .pm-lk{font-size:.72rem;color:#0ea5e9;font-weight:700;background:none !important;border:0 !important;padding:2px 4px !important;width:auto !important;margin:0 !important;box-shadow:none !important;text-transform:none !important;letter-spacing:0 !important}'
+     +'#permModal label.pm-it{display:flex;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);margin:0;text-transform:none;letter-spacing:0;cursor:pointer}'
+     +'#permModal .pm-t{flex:1;min-width:0}#permModal .pm-sheet *{font-family:Inter,system-ui,sans-serif !important}#permModal .pm-t b{color:var(--ink,#111);font-size:.88rem;display:block;font-weight:700;text-transform:none;letter-spacing:0}#permModal .pm-t span{font-size:.74rem;color:var(--muted);line-height:1.3;display:block;font-weight:500;text-transform:none;letter-spacing:0}'
+     +'#permModal .pm-it input{position:absolute;opacity:0;width:1px;height:1px}#permModal .pm-tg{width:44px;height:26px;border-radius:99px;background:#d4dedb;position:relative;flex:none;transition:background .15s}'
+     +'#permModal .pm-tg::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}'
+     +'#permModal .pm-it input:checked+.pm-tg{background:#16a34a}#permModal .pm-it input:checked+.pm-tg::after{left:21px}'
+     +'#permModal .pm-auto{display:inline;font-size:.62rem !important;font-weight:800 !important;color:#0b7a5a !important;background:#dcf5e9;border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:middle}'
+     +'#permModal .pm-foot{padding:12px 16px 16px;border-top:1px solid var(--line);display:flex;gap:10px}#permModal .pm-foot button{flex:1;margin:0 !important;padding:13px !important;border-radius:14px !important;font-weight:800 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important}'
+     +'#permModal .pm-foot button.secondary{flex:.6;background:transparent !important;color:var(--ink,#111) !important;border:1px solid var(--line) !important}'
+     +'#permModal .pm-foot button.pm-save{background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}';
+      document.head.appendChild(st); }
     var groups={}, order=[]; _permTiles().forEach(function(t){ if(!groups[t.g]){ groups[t.g]=[]; order.push(t.g); } groups[t.g].push(t); });
-    var h='<div style="background:var(--card,#fff);color:var(--ink,#111);border-radius:16px;padding:20px;max-width:460px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);">'
-      +'<h3 style="margin:0 0 4px;">Access for '+escapeHtml(m.name)+'</h3><div style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">Tick what this person may use. Unticked features are hidden from them.</div>';
-    order.forEach(function(g){ h+='<div style="font-weight:700;font-size:.78rem;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">'+escapeHtml(g)+'</div>';
-      groups[g].forEach(function(t){ h+='<label style="display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;cursor:pointer;"><input type="checkbox" class="permCb" value="'+t.id+'" '+(cur.indexOf(t.id)>=0?'checked':'')+' style="width:auto;margin:3px 0 0;flex:none;"><span><b>'+escapeHtml(t.t)+'</b><br><span style="color:var(--muted);font-size:.74rem;">'+escapeHtml(t.d)+'</span></span></label>'; }); });
-    h+='<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;"><button type="button" onclick="savePerms(\''+escapeHtml(m.email)+'\')" style="text-transform:none !important;">Save access</button>'
-      +'<button type="button" class="secondary" onclick="resetPerms(\''+escapeHtml(m.email)+'\')" style="text-transform:none !important;">Use role defaults</button>'
-      +'<button type="button" class="secondary" onclick="document.getElementById(\'permModal\').remove()" style="text-transform:none !important;">Cancel</button></div><div id="permMsg" style="margin-top:8px;"></div></div>';
+    var parts=String(m.name||'?').trim().split(/\s+/).filter(Boolean), ini=((parts[0]||'?')[0]+((parts[1]||'')[0]||'')).toUpperCase();
+    var roleLbl={admin:'Admin',lecturer:'Lecturer',ta:'TA'}[m.role]||m.role;
+    var h='<div class="pm-sheet"><div class="pm-top"><div class="pm-who"><span class="pm-av">'+escapeHtml(ini)+'</span><div><b>'+escapeHtml(m.name)+' <span class="pm-role">'+escapeHtml(roleLbl)+'</span></b><small>'+escapeHtml(m.email)+'</small></div><button type="button" class="pm-x" onclick="document.getElementById(\'permModal\').remove()">&times;</button></div>'
+      +'<div class="pm-pre"><i data-p="att" onclick="permPreset(\'att\',\''+escapeHtml(m.role)+'\')">Attendance only</i><i data-p="sc" onclick="permPreset(\'sc\',\''+escapeHtml(m.role)+'\')">Attendance + scores</i><i data-p="all" onclick="permPreset(\'all\',\''+escapeHtml(m.role)+'\')">Everything</i><i data-p="def" onclick="permPreset(\'def\',\''+escapeHtml(m.role)+'\')">Role default</i></div>'
+      +'<input type="search" class="pm-srch" placeholder="Search features" oninput="permSearch(this.value)" autocomplete="off"><div id="pmTotal"></div></div><div class="pm-body">';
+    order.forEach(function(g,gi){
+      h+='<details class="pm-g"'+(gi===0?' open':'')+'><summary>'+escapeHtml(g)+'<span class="pm-c"></span><button type="button" class="pm-lk" onclick="event.preventDefault();permGrp(this,true)">All</button><button type="button" class="pm-lk" onclick="event.preventDefault();permGrp(this,false)">None</button></summary>';
+      groups[g].forEach(function(t){ var auto=(t.id==='gradebookCard'&&m.role==='ta')?'<span class="pm-auto">on with Upload Scores</span>':'';
+        h+='<label class="pm-it" data-s="'+escapeHtml((t.t+' '+t.d).toLowerCase())+'"><div class="pm-t"><b>'+escapeHtml(t.t)+auto+'</b><span>'+escapeHtml(t.d)+'</span></div><input type="checkbox" class="permCb" value="'+t.id+'" '+(cur.indexOf(t.id)>=0?'checked':'')+' onchange="_permCount()"><span class="pm-tg"></span></label>'; });
+      h+='</details>'; });
+    h+='</div><div id="permMsg" style="padding:0 16px"></div><div class="pm-foot"><button type="button" class="secondary" onclick="document.getElementById(\'permModal\').remove()">Cancel</button><button type="button" class="pm-save" onclick="savePerms(\''+escapeHtml(m.email)+'\')">Save access</button></div></div>';
     var d=document.createElement('div'); d.id='permModal'; d.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;'; d.innerHTML=h; document.body.appendChild(d);
+    _permCount();
   }catch(e){ alert('Could not load: '+e.message); }
 }
 async function _permWrite(email,perms){
@@ -5510,7 +5559,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=141"></script>
+<script src="updates.js?v=142"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16f', date:'16 Nov 2026', title:'Team Access screen redesigned',
+      all:[], student:[], staff:['The Access screen for each team member now has quick presets, a search box, fold-away groups with All and None, switches instead of tick boxes, and Save and Cancel pinned at the bottom.'] },
     { id:'2026-11-16e', date:'16 Nov 2026', title:'TAs can open the Gradebook',
       all:[], student:[], staff:['A TA who can upload scores now also sees the Gradebook. Their changes there are sent to you under Pending Approvals as Gradebook changes.'] },
     { id:'2026-11-16d', date:'16 Nov 2026', title:'Gradebook redesigned',

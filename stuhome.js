@@ -161,7 +161,7 @@ function paint(){
   var at=num('ovAttendance'), sc=num('ovAvgScore');
   var ra=$('shRa'); ra.style.setProperty('--p',at==null?0:Math.max(0,Math.min(100,at))); $('shRaV').textContent=at==null?'–':Math.round(at)+'%';
   $('shRaS').className=(at!=null&&at<75)?'w':''; $('shRaS').textContent=at==null?'No attendance yet':(at<75?'Below 75%':'On track');
-  var rs=$('shRs'); rs.style.setProperty('--p',sc==null?0:Math.max(0,Math.min(100,sc))); $('shRsV').textContent=sc==null?'–':String(sc);
+  var rs=$('shRs'); rs.style.setProperty('--p',sc==null?0:Math.max(0,Math.min(100,sc))); $('shRsV').textContent=sc==null?'–':Math.round(sc)+'%';
   $('shRsS').textContent=txt('ovsScores')||'';
   /* alert */
   var al=$('shAl');

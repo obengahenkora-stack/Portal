@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16x', date:'16 Nov 2026', title:'Exam: record in the Gradebook out of a lower total',
+      all:[], student:[], staff:['On an exam Results page, Record in the Gradebook out of lets you scale scores, for example 30 questions recorded out of 15, when you release the results.'] },
     { id:'2026-11-16w', date:'16 Nov 2026', title:'Exams: type the overall marks',
       all:[], student:[], staff:['The exam editor has an Overall marks box. Type the total (for example 40) and tap Apply, and the marks are shared across the questions automatically.'] },
     { id:'2026-11-16v', date:'16 Nov 2026', title:'Exams and Assignments tiles tidied',

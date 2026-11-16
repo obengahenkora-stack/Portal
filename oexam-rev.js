@@ -27,6 +27,7 @@ window.oeResults=async function(id){
   var fl=rows.filter(function(r){return (r.why&&r.why.length)||r.flags>0||r.leaves>0;}).length, pend=rows.filter(function(r){return r.submittedAt&&r.pending>0;}).length;
   var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+'</div>'
   +'<div class="rv-t"><div><b>'+sub.length+' / '+(rows.length+D.missing.length)+'</b><span>Submitted</span></div><div><b>'+avg.toFixed(1)+'</b><span>Average score</span></div><div><b>'+fl+'</b><span>Flagged</span></div><div><b>'+pend+'</b><span>Need marking</span></div></div>'
+  +'<div class="oe-sw"><div>Record in the Gradebook out of<small>Scores are scaled to this total, for example 30 questions recorded out of 15. Students\' exam tile still shows the raw score.</small></div><input type="number" id="oeGbOut" min="1" max="1000" step="0.5" style="width:90px;flex:0 0 90px" value="'+esc(gbOutGet(ex.id,rows.length?rows[0].total:0))+'" onchange="gbOutSet()"></div>'
   +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
   +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button><button type="button" class="oe-mini" onclick="oeIntegrity()">Integrity check</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div>';
   h+='<div id="oeIntegrity"></div>';
@@ -36,10 +37,13 @@ window.oeResults=async function(id){
   if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
 };
+function gbOutGet(id,tot){ try{ var v=localStorage.getItem('oeGbOut_'+id); if(v&&parseFloat(v)>0) return v; }catch(e){} return tot||''; }
+window.gbOutSet=function(){ try{ var el=$('oeGbOut'); if(el&&D) localStorage.setItem('oeGbOut_'+D.exam.id,el.value); }catch(e){} };
 async function gbSync(add){
   var ex=D.exam, key=function(r){return [(r.indexNumber||'').toLowerCase(),(r.course||'').toLowerCase(),(r.assessmentName||'').toLowerCase()].join('|');};
-  var recs=D.rows.filter(function(r){return r.submittedAt&&r.index;}).map(function(r){return {indexNumber:r.index,score:String((r.mcq||0)+r.written),assessmentName:ex.title,course:ex.course,level:''};});
-  var drop=new Set(recs.map(key)), tot=D.rows.length?D.rows[0].total:0;
+  var raw=D.rows.length?D.rows[0].total:0, gout=parseFloat(($('oeGbOut')||{}).value)||parseFloat(gbOutGet(ex.id,raw))||raw, f=(raw>0&&gout>0)?gout/raw:1;
+  var recs=D.rows.filter(function(r){return r.submittedAt&&r.index;}).map(function(r){return {indexNumber:r.index,score:String(Math.round(((r.mcq||0)+r.written)*f*100)/100),assessmentName:ex.title,course:ex.course,level:''};});
+  var drop=new Set(recs.map(key)), tot=(raw>0&&gout>0)?gout:raw;
   var existing=await fetchAllRecords();
   var keep=existing.filter(function(r){return !drop.has(key(r));});
   await saveAllRecords(add?keep.concat(recs):keep, add&&tot>0?{name:ex.title,max:tot,courses:[lmBase(ex.course)]}:null);

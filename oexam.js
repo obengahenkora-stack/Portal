@@ -92,7 +92,7 @@ window.oeSetTotal=function(){
   var say=function(t,ok){ if(m){ m.style.color=ok?'#15803d':'#dc2626'; m.textContent=t; } };
   if(!(T>0)){ say('Type the total marks first.',false); return; }
   if(!L){ say('Add the questions first.',false); return; }
-  if(T<n){ say('The exam has '+n+' questions per student and every question needs at least 1 mark, so the total cannot be below '+n+'.',false); return; }
+  if(T<n){ say('Questions can only carry whole marks, so the exam total cannot be below '+n+'. For a lower total, leave the marks as they are and use "Record in the Gradebook out of" on the Results page. For example 30 questions can be recorded out of 15.',false); return; }
   var base=Math.floor(T/n), rem=T-base*n;
   if(n<L && rem){ say('Each student gets '+n+' random questions out of '+L+', so every question must carry the same marks. Use a total that divides by '+n+', for example '+(base*n)+' or '+((base+1)*n)+'.',false); return; }
   if(base+(rem?1:0)>100){ say('A single question can carry at most 100 marks.',false); return; }

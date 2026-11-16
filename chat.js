@@ -65,7 +65,7 @@ function apiCall(payload){
     _hc=h;
     var go=function(fn){ return fetch(G('SUPABASE_URL')+'/functions/v1/'+fn,{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); }); };
     if(payload&&payload.action==='stu_dir') return go('lite').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
-    if(payload&&payload.action==='chat_op'&&payload.op!=='owner_name_set') return go('chat').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
+    if(payload&&payload.action==='chat_op'&&payload.op!=='owner_name_set') return go('chat').then(function(j){ if(j&&j.paused){ window.__cePause=Math.min(Number(j.until)||0,Date.now()+6*3600000); return j; } return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
     return go('api');
   });
 }
@@ -812,6 +812,7 @@ var _lastPurge=0;
 function tick(){
   var me=identity()||portalIdentity();
   /* chat is switched off for students while the big exam runs, so the server is left free for the exam (staff keep chat) */
+  if(me && !me.staff && window.__cePause && Date.now()<window.__cePause){ if(S.started) stop(); return; }
   if(me && !me.staff && Date.now()>=Date.parse('2026-11-16T16:45:00Z') && Date.now()<Date.parse('2026-11-16T18:45:00Z')){ if(S.started) stop(); return; }
   if(!me){ if(S.started) stop(); return; }
   if(!S.started){ start(me); return; }

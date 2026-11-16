@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzzzzzzzzz', date:'16 Nov 2026', title:'Student chat pauses by itself during exams',
+      all:[], student:['Chat is automatically switched off for students while an exam is open (from 15 minutes before it starts until it closes), and comes back by itself afterwards.'], staff:['Whenever any published exam is open (opening window of up to 8 hours), student chat pauses automatically to keep the server free for the exam. Staff chat is not affected.'] },
     { id:'2026-11-16zzzzzzzzzz', date:'16 Nov 2026', title:'Student chat is paused during the big exam',
       all:[], student:['Chat is switched off for students from 4:45 PM to 6:45 PM today so the exam runs smoothly. It comes back by itself afterwards.'], staff:['Student chat is paused 4:45 PM to 6:45 PM on 16 Nov to keep the server free for the exam. Staff chat is unchanged.'] },
     { id:'2026-11-16zzzzzzzzz', date:'16 Nov 2026', title:'Photos of exams on the fast service can be reviewed',

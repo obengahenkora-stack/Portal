@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16j', date:'16 Nov 2026', title:'New My Scores look',
+      all:[], student:['My Scores has a new dark console style: one card per course with a progress bar, each result on its own line, and a clear Continuous assessment total.'], staff:[] },
     { id:'2026-11-16i', date:'16 Nov 2026', title:'Re-upload a whole gradebook sheet',
       all:[], student:[], staff:['In the Gradebook, pick a course and tap Re-upload to replace all its scores with an edited Excel sheet. It shows what will change first. For TAs it goes to the owner as a Re-upload card in Pending Approvals; approving it replaces everything for that course.'] },
     { id:'2026-11-16h', date:'16 Nov 2026', title:'Gradebook tidy-up',

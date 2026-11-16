@@ -2441,7 +2441,8 @@ async function renderGradebook(){
   const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
   const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
   const sub=document.getElementById('gbSub'); if(sub) sub.textContent=isTA?'Edit scores, then submit. The owner approves before students see them.':'Edit any score. Changed scores turn amber until you save.';
-  const bar=document.getElementById('gbBar'); if(bar){ bar.classList.remove('hidden'); const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
+  const bar=document.getElementById('gbBar'); if(bar){ if(bar.parentNode!==document.body) document.body.appendChild(bar); const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
+  gbBarSync();
   gbCount(); try{ loadGbPending(); }catch(e){}
 }
 function gbFilter(){
@@ -2449,6 +2450,13 @@ function gbFilter(){
   document.querySelectorAll('#gradebookTable tr[data-s]').forEach(tr=>{ tr.style.display=(!q||tr.getAttribute('data-s').indexOf(q)>=0)?'':'none'; });
 }
 function gbMark(el){ const ch=el.value.trim()!==el.getAttribute('data-o'); el.style.outline=ch?'2px solid #f59e0b':''; el.style.background=ch?'rgba(245,158,11,.18)':''; gbCount(); }
+function gbBarSync(){
+  const bar=document.getElementById('gbBar'), card=document.getElementById('gradebookCard'); if(!bar||!card) return;
+  const course=(document.getElementById('gradebookCourse')||{}).value;
+  const vis=!!(card.offsetParent!==null && course && _gb && _gb.rows && _gb.rows.length);
+  bar.classList.toggle('hidden',!vis);
+}
+setInterval(function(){ try{ gbBarSync(); }catch(e){} },400);
 function gbCount(){
   let n=0; document.querySelectorAll('#gradebookTable .gbScore').forEach(el=>{ const v=el.value.trim(); if(v!==''&&v!==el.getAttribute('data-o')) n++; });
   let m=0; document.querySelectorAll('#gradebookTable .gbMax').forEach(el=>{ if(String(el.value).trim()!==String(el.getAttribute('data-o')||'').trim()) m++; });
@@ -5499,7 +5507,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=138"></script>
+<script src="updates.js?v=139"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

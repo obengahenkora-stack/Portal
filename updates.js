@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16z', date:'16 Nov 2026', title:'Gradebook shows a clear message if a course cannot open',
+      all:[], student:[], staff:['If a course fails to open in the Gradebook you now see the reason and a Try again button instead of a stuck Loading message.'] },
     { id:'2026-11-16y', date:'16 Nov 2026', title:'Exams: half marks per question',
       all:[], student:[], staff:['In the exam editor, type the Overall marks (for example 15 for 30 questions) and tap Apply: every question gets 0.5 automatically and students see their score out of 15. Save the exam again after Apply so the half marks are stored.'] },
     { id:'2026-11-16x', date:'16 Nov 2026', title:'Exam: record in the Gradebook out of a lower total',

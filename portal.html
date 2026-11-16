@@ -2485,6 +2485,9 @@ async function loadGradebookCourses(){
   }catch(e){}
 }
 async function renderGradebook(){
+  try{ await _renderGradebook(); }catch(e){ var _bx=document.getElementById('gradebookTable'); if(_bx) _bx.innerHTML='<div class="msg err">Could not open this course: '+escapeHtml(String((e&&e.message)||e))+'<br><button type="button" onclick="renderGradebook()" style="margin-top:8px">Try again</button></div>'; }
+}
+async function _renderGradebook(){
   const course=document.getElementById('gradebookCourse').value, box=document.getElementById('gradebookTable');
   if(!course){ box.innerHTML=''; _gb={cols:[],rows:[]}; var _b0=document.getElementById('gbBar'); if(_b0){ _b0.classList.add('hidden'); } var _s0=document.getElementById('gbStats'); if(_s0) _s0.innerHTML=''; var _o0=document.getElementById('gbOpts'); if(_o0) _o0.innerHTML=''; return; }
   box.innerHTML='<div class="empty">Loading...</div>';
@@ -5710,7 +5713,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=161"></script>
+<script src="updates.js?v=162"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

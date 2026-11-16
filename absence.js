@@ -170,6 +170,26 @@ function absRender(){
   }).join('');
 }
 window.absSetTa=async function(on){ var m=$('absStaffMsg'); try{ var r=await teamApi({action:'stu_exc_cfg_set',taApprove:on}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed'); _ta=on; absRender(); m.innerHTML='<div class="msg ok">'+(on?'Teaching assistants can now approve for their courses.':'Only lecturers can approve now.')+'</div>'; }catch(e){ m.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; } };
+window.absApply=async function(i){
+  var x=_L[i]; if(!x) return; var msg=$('absStaffMsg'); if(!msg) return;
+  var show=function(cls,t){ msg.innerHTML='<div class="msg '+cls+'">'+t+'</div>'; try{ msg.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} };
+  show('ok','Checking attendance for '+esc(x.course)+' on '+esc(fd(x.date))+'...');
+  try{
+    var data=await fetchSupabaseData(true), base=String(lmBase(x.course)).toLowerCase(), k=key(x.index), found=0, done=0, was=0, pres=0;
+    (data.attendance||[]).forEach(function(a){
+      if(String(a.date).slice(0,10)!==x.date || String(lmBase(a.course||'')).toLowerCase()!==base) return;
+      found++;
+      if((a.present||[]).some(function(p){ return key(p)===k; })){ pres++; return; }
+      a.excused=a.excused||[];
+      if(a.excused.some(function(p){ return key(p)===k; })){ was++; return; }
+      a.excused.push(x.index); done++;
+    });
+    if(!found){ show('err','No attendance session was taken for '+esc(x.course)+' on '+esc(fd(x.date))+' yet. Nothing to apply. It will be applied automatically when attendance is taken for that day.'); return; }
+    if(done){ await saveSupabaseData(data); show('ok','Done. '+esc(x.name||x.index)+' is now marked Excused in '+done+' session'+(done>1?'s':'')+' ('+esc(x.course)+', '+esc(fd(x.date))+').'); return; }
+    if(was) show('ok','Already applied. '+esc(x.name||x.index)+' is already marked Excused for '+esc(fd(x.date))+'.');
+    else show('ok',esc(x.name||x.index)+' was marked Present for '+esc(fd(x.date))+', so no excuse was needed.');
+  }catch(e){ show('err',esc(e.message||'Could not apply')); }
+};
 window.absRevoke=async function(i){
   var x=_L[i]; if(!x) return;
   if(!confirm('Revoke this approval?\n\n'+(x.name||x.index)+' will no longer be excused for '+x.course+' on '+fd(x.date)+'. If they were marked Excused in attendance, that mark is removed.')) return;

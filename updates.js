@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16t', date:'16 Nov 2026', title:'Apply to attendance works',
+      all:[], student:[], staff:['On an approved absence excuse, Apply to attendance now marks the student Excused in the attendance session for that date and tells you what happened (done, already applied, was present, or no session yet).'] },
     { id:'2026-11-16s', date:'16 Nov 2026', title:'Absence Excuse: choose the date',
       all:[], student:['Absence Excuse now has labelled boxes and a clear date picker. Choose the day of the class you missed or will miss; it shows the weekday and how many days away it is.'], staff:[] },
     { id:'2026-11-16r', date:'16 Nov 2026', title:'Faster staff pages',

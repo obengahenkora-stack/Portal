@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'ta-report-reply', date:'16 Nov 2026', title:'Teaching assistants can reply to reports again', all:[], student:[], staff:['Replies to issue reports now save through a safe route that only changes that one reply, so teaching assistants can answer reports for their assigned courses.'] },
     { id:'scores-match-fix', date:'16 Nov 2026', title:'Dashboard scores now match My Scores', all:[], student:['The score count and average on your dashboard now use the same list as the My Scores page, across all your courses.'], staff:[] },
     { id:'scores-count-fix', date:'16 Nov 2026', title:'Scores count fixed', all:[], student:['The dashboard no longer counts the Total row as an extra score, so "scores recorded" now matches the scores you see.'], staff:[] },
     { id:'avg-score-percent', date:'16 Nov 2026', title:'Average score is now a percentage', all:[], student:['The Average score on your dashboard is now a percentage of each assessment total, so a mark out of 10 and a mark out of 38 are averaged fairly.'], staff:[] },

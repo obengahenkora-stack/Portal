@@ -1505,7 +1505,7 @@ async function addTeamMember(){
 async function teamApi(payload){
   try{
     const { data:{ session } } = await supabaseClient.auth.getSession();
-    const r=await fetch(SUPABASE_URL+(String(payload&&payload.action||'').indexOf('rv_')===0?'/functions/v1/review':((String(payload&&payload.action||'').indexOf('pending_')===0||(payload&&(payload.action==='oe_marks'||payload.action==='bin_get')))?'/functions/v1/approvals':'/functions/v1/api')),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
+    const r=await fetch(SUPABASE_URL+(String(payload&&payload.action||'').indexOf('rv_')===0?'/functions/v1/review':((String(payload&&payload.action||'').indexOf('pending_')===0||(payload&&(payload.action==='oe_marks'||payload.action==='bin_get'||payload.action==='report_reply')))?'/functions/v1/approvals':'/functions/v1/api')),{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-staff-token':session?session.access_token:''},body:JSON.stringify(payload)});
     const out=await r.json();
     try{ if(out&&out.ok) auditNote(payload); }catch(e){}
     return out;
@@ -4002,14 +4002,11 @@ async function saveReportReply(submittedAt){
   const replyText = input.value.trim();
   if(note){ note.style.color='var(--muted)'; note.textContent='Saving...'; }
   try{
-    const bin = await fetchBin();
-    const reports = bin.reports || [];
-    const report = reports.find(r => r.submittedAt === key);
-    if(report && !reportVisible(report)){ if(note){ note.style.color='#dc2626'; note.textContent='You are not assigned to this course.'; } return; }
-    if(report){
-      report.reply = replyText;
-      bin.reports = reports;
-      await saveBin(bin);
+    // the server changes only this one reply (and checks the course), instead of rewriting the whole scores file
+    const j = await teamApi({action:'report_reply', submittedAt:key, reply:replyText});
+    if(!j || !j.ok) throw new Error((j && j.error) || 'back end unreachable');
+    _binFresh=null; _binMem=null; try{ sessionStorage.removeItem('binCacheS1'); }catch(e){}
+    {
       if(badge){ badge.textContent = replyText ? 'Replied' : 'Waiting'; badge.style.background = replyText ? '#16a34a' : '#f59e0b'; }
       if(note){ note.style.color='#16a34a'; note.textContent = replyText ? 'Saved. Student can see it.' : 'Reply cleared.'; setTimeout(()=>{ if(note) note.textContent=''; }, 4000); }
       try{ const sel=document.getElementById('rptCourseSel'); if(sel){ const o=sel.options[sel.selectedIndex]; } }catch(e){}
@@ -5713,7 +5710,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=179"></script>
+<script src="updates.js?v=180"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

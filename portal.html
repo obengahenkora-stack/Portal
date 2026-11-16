@@ -2504,7 +2504,7 @@ async function renderGradebook(){
   rows.forEach((r,ri)=>{ h+='<tr data-s="'+escapeHtml((String(r.index||'')+' '+String(r.name||'')).toLowerCase())+'"><td><div class="gb-nm">'+escapeHtml(r.name||r.index)+'</div>'+(r.name?'<div class="gb-ix">'+escapeHtml(r.index)+'</div>':'')+'</td>'+r.vals.map((v,ci)=>'<td><input type="text" inputmode="decimal" class="gbScore" data-r="'+ri+'" data-c="'+ci+'" data-o="'+escapeHtml(String(v))+'" value="'+escapeHtml(String(v))+'" oninput="gbMark(this)" style="width:58px;padding:6px;margin:0"></td>').join('')+'<td>'+escapeHtml(String(r.total))+'</td><td><b>'+escapeHtml(String(r.final))+'</b></td></tr>'; });
   h+='</table>';
   box.innerHTML=h;
-  const shown=!!(bin.finalShow||{})[String(course).trim().toLowerCase()];
+  const shown=(bin.finalShow||{})[String(course).trim().toLowerCase()]!==false;
   const fin=rows.map(r=>parseFloat(r.final)).filter(x=>isFinite(x)); const avg=fin.length?Math.round(fin.reduce((t,x)=>t+x,0)/fin.length/40*100)+'%':'-';
   const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
   const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
@@ -5672,7 +5672,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=146"></script>
+<script src="updates.js?v=147"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'exam-csv-flag-counts', date:'16 Nov 2026', title:'Exam download shows true flag counts', all:[], student:[], staff:['The Results download now shows the total number of flags for each student and what kinds they were, so the count matches the flag level.'] },
     { id:'exam-report-onepage', date:'16 Nov 2026', title:'Exam report fits one page', all:[], student:[], staff:['The printable exam report is spaced more tightly so it prints on a single page.'] },
     { id:'exam-report-wording', date:'16 Nov 2026', title:'Exam report wording', all:[], student:[], staff:['The printable exam report now tells students that flagged students will be reviewed and may receive a penalty or other marked action.'] },
   { id:'exam-review-levels', date:'16 Nov 2026', title:'Exam results now show flag levels, a Final mark and a printable report', all:[], student:[], staff:['Online exam cards now say Open now, Upcoming or Ended instead of always saying Published.','Results show each student\'s flag level (Very serious, Serious, High, Medium, Low) and mark students proposed for cancellation or review. Nobody is cancelled automatically.','Open any student to type a Final mark with a private reason. It replaces the system score in the Gradebook and the download.','Print report prints the overview only: scores, spread and flag level counts, with no student names.'] },

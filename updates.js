@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzzzzzzzz', date:'16 Nov 2026', title:'Student chat is paused during the big exam',
+      all:[], student:['Chat is switched off for students from 4:45 PM to 6:45 PM today so the exam runs smoothly. It comes back by itself afterwards.'], staff:['Student chat is paused 4:45 PM to 6:45 PM on 16 Nov to keep the server free for the exam. Staff chat is unchanged.'] },
     { id:'2026-11-16zzzzzzzzz', date:'16 Nov 2026', title:'Photos of exams on the fast service can be reviewed',
       all:[], student:[], staff:['In an exam\'s Results, open a student and tap Load photos. Photos for exams written on the fast Cloudflare service are now fetched from there, after checking you are signed in as staff for that exam.'] },
     { id:'2026-11-16zzzzzzzz', date:'16 Nov 2026', title:'Online exams now run on a faster service',

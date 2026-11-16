@@ -811,6 +811,8 @@ function stop(){
 var _lastPurge=0;
 function tick(){
   var me=identity()||portalIdentity();
+  /* chat is switched off for students while the big exam runs, so the server is left free for the exam (staff keep chat) */
+  if(me && !me.staff && Date.now()>=Date.parse('2026-11-16T16:45:00Z') && Date.now()<Date.parse('2026-11-16T18:45:00Z')){ if(S.started) stop(); return; }
   if(!me){ if(S.started) stop(); return; }
   if(!S.started){ start(me); return; }
   if(S.me.id!==me.id){ stop(); start(me); return; }

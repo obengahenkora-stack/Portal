@@ -587,10 +587,10 @@
         #gradebookCard .gb-nm{font-weight:700;font-size:.82rem;line-height:1.15;white-space:normal}#gradebookCard .gb-ix{font-size:.7rem;color:var(--muted)}
         #gradebookCard .gb-opt,#gradebookCard .gb-opt *{font-family:Inter,system-ui,sans-serif !important}#gradebookCard .gb-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;font-size:.85rem;font-weight:600;text-transform:none;letter-spacing:0}
         #gradebookCard .gb-opt input{width:20px;height:20px;margin:0}
-        #gbBar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 -8px 20px rgba(20,60,70,.12)}
+        #gbBar{position:sticky;top:72px;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 10px;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 6px 16px rgba(20,60,70,.1)}
         #gbBar.hidden{display:none !important}
         #gbBar .gb-t{flex:1;font-size:.82rem;line-height:1.25}#gbBar .gb-t span{display:block;color:var(--muted);font-size:.74rem}
-        #gbBar button{margin:0 !important;padding:13px 18px !important;border-radius:14px !important;font-weight:800 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}
+        #gbBar button{margin:0 !important;padding:12px 18px !important;border-radius:14px !important;font-weight:800 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}
         #gbBar button.ta{background:linear-gradient(90deg,#f59e0b,#f97316) !important;color:#111 !important}
       </style>
       <div class="gb-h">Gradebook</div>
@@ -599,13 +599,12 @@
       <div id="gbStats"></div>
       <div id="gbPendingBox"></div>
       <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button></div>
+      <div id="gbBar" class="hidden"><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button></div>
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <div id="gbOpts"></div>
       <div id="gbMsg"></div>
       <div id="gbCharts"></div>
       <div id="gbMsgTop"></div>
-      <div style="height:96px"></div>
-      <div id="gbBar" class="hidden"><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button></div>
     </div>
 
     <div class="card hidden" id="scoreHistCard">
@@ -2441,7 +2440,7 @@ async function renderGradebook(){
   const st=document.getElementById('gbStats'); if(st) st.innerHTML='<div class="gb-stats"><div class="gb-stat"><b>'+rows.length+'</b><span>STUDENTS</span></div><div class="gb-stat"><b>'+cols.length+'</b><span>ASSESSMENTS</span></div><div class="gb-stat"><b>'+avg+'</b><span>CLASS AVERAGE</span></div></div>';
   const op=document.getElementById('gbOpts'); if(op) op.innerHTML=(missing.length?'<div class="hint" style="margin-top:8px;color:var(--danger)">No "out of" mark yet for: '+missing.map(escapeHtml).join(', ')+'. They are left out of the Final until you enter it and save.</div>':'')+(isTA?'<div class="hint" style="margin-top:8px">Your changes go to the owner first. Students do not see them until the owner approves.</div>':'<label class="gb-opt"><span>Show the Final (out of 40) to students</span><input type="checkbox" id="gbShowFinal" '+(shown?'checked':'')+'></label>');
   const sub=document.getElementById('gbSub'); if(sub) sub.textContent=isTA?'Edit scores, then submit. The owner approves before students see them.':'Edit any score. Changed scores turn amber until you save.';
-  const bar=document.getElementById('gbBar'); if(bar){ if(bar.parentNode!==document.body) document.body.appendChild(bar); const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
+  const bar=document.getElementById('gbBar'); if(bar){ const sb=document.getElementById('gbSaveTop'); if(sb){ sb.textContent=isTA?'Submit for approval':'Save changes'; sb.className=isTA?'ta':''; } }
   gbBarSync();
   gbCount(); try{ loadGbPending(); }catch(e){}
 }
@@ -5507,7 +5506,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=139"></script>
+<script src="updates.js?v=140"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

@@ -587,19 +587,21 @@
         #gradebookCard .gb-nm{font-weight:700;font-size:.82rem;line-height:1.15;white-space:normal}#gradebookCard .gb-ix{font-size:.7rem;color:var(--muted)}
         #gradebookCard .gb-opt,#gradebookCard .gb-opt *{font-family:Inter,system-ui,sans-serif !important}#gradebookCard .gb-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;font-size:.85rem;font-weight:600;text-transform:none;letter-spacing:0}
         #gradebookCard .gb-opt input{width:20px;height:20px;margin:0}
-        #gbBar{position:sticky;top:72px;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0 0 10px;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 6px 16px rgba(20,60,70,.1)}
+        #gradebookCard .gb-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin:0 0 12px}
+        #gradebookCard .gb-hl{flex:1;min-width:0}#gradebookCard .gb-hl .gb-sub{margin:0}
+        #gbBar{flex:none;text-align:right}
         #gbBar.hidden{display:none !important}
-        #gbBar .gb-t{flex:1;font-size:.82rem;line-height:1.25}#gbBar .gb-t span{display:block;color:var(--muted);font-size:.74rem}
-        #gbBar button{margin:0 !important;padding:12px 18px !important;border-radius:14px !important;font-weight:800 !important;font-size:.9rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important}
+        #gbBar .gb-t{font-size:.7rem;line-height:1.2;margin-top:5px;color:var(--muted)}#gbBar .gb-t b{display:block;font-size:.72rem;color:var(--ink)}#gbBar .gb-t span{display:block;font-size:.66rem}
+        #gbBar button{margin:0 !important;padding:11px 16px !important;border-radius:14px !important;font-weight:800 !important;font-size:.88rem !important;text-transform:none !important;letter-spacing:0 !important;font-family:inherit !important;background:linear-gradient(90deg,#16a34a,#0d9488) !important;color:#fff !important;border:0 !important;white-space:nowrap}
         #gbBar button.ta{background:linear-gradient(90deg,#f59e0b,#f97316) !important;color:#111 !important}
       </style>
-      <div class="gb-h">Gradebook</div>
-      <div class="gb-sub" id="gbSub">Edit any score. Changed scores turn amber until you save.</div>
+      <div class="gb-head"><div class="gb-hl"><div class="gb-h">Gradebook</div>
+      <div class="gb-sub" id="gbSub">Edit any score. Changed scores turn amber until you save.</div></div>
+      <div id="gbBar" class="hidden"><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div></div></div>
       <select id="gradebookCourse" onchange="renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
       <div id="gbStats"></div>
       <div id="gbPendingBox"></div>
       <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button></div>
-      <div id="gbBar" class="hidden"><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button></div>
       <div id="gradebookTable" style="overflow-x:auto"></div>
       <div id="gbOpts"></div>
       <div id="gbMsg"></div>

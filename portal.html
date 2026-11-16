@@ -1284,6 +1284,8 @@ let currentUserEmail = null;
 function isOwner(){ return currentUserRole === 'owner'; }
 function isAdmin(){ return currentUserRole === 'owner' || currentUserRole === 'admin'; }
 var currentUserPerms = null;   // null = role defaults; array = exactly these features were granted by the owner
+/* a TA who may upload scores also gets the Gradebook: their edits there are sent to the owner for approval */
+function _taGb(p,role){ if(Array.isArray(p) && role==='ta' && p.indexOf('uploadCard')>=0 && p.indexOf('gradebookCard')<0) return p.concat(['gradebookCard']); return p; }
 function _hasP(ids){ return Array.isArray(currentUserPerms) && ids.some(function(i){ return currentUserPerms.indexOf(i)>=0; }); }
 function canUploadScores(){ return isAdmin() || currentUserRole === 'lecturer' || _hasP(['uploadCard','gradebookCard','dataCard','exportScoresCard','fillSheetCard','transferScoresCard','manageCoursesCard','rosterUploadCard']); }
 function canManageRosters(){ return isAdmin() || currentUserRole === 'lecturer' || _hasP(['attendanceEditCard','attendanceDeleteCard','attPdfCard']); }
@@ -1313,11 +1315,11 @@ async function resolveCurrentUserRole(){
     currentUserRole = me ? me.role : null;
     currentUserName = me ? me.name : null;
     currentUserCourses = (me && Array.isArray(me.courses)) ? me.courses : null;
-    currentUserPerms = (me && Array.isArray(me.perms)) ? me.perms : null;
+    currentUserPerms = _taGb((me && Array.isArray(me.perms)) ? me.perms : null, currentUserRole);
     try{ localStorage.setItem('ceRoleCache', JSON.stringify({email:email, role:currentUserRole, name:currentUserName, courses:currentUserCourses, perms:currentUserPerms})); }catch(e){}
   }catch(e){
     // offline: fall back to the last role we saw for this same account
-    try{ var rc=JSON.parse(localStorage.getItem('ceRoleCache')||'null'); if(rc && rc.email===email){ currentUserRole=rc.role; currentUserName=rc.name; currentUserCourses=rc.courses; currentUserPerms=Array.isArray(rc.perms)?rc.perms:null; return; } }catch(e2){}
+    try{ var rc=JSON.parse(localStorage.getItem('ceRoleCache')||'null'); if(rc && rc.email===email){ currentUserRole=rc.role; currentUserName=rc.name; currentUserCourses=rc.courses; currentUserPerms=_taGb(Array.isArray(rc.perms)?rc.perms:null, rc.role); return; } }catch(e2){}
     currentUserRole = null; currentUserName = null;
   }
 }
@@ -5508,7 +5510,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=6"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=140"></script>
+<script src="updates.js?v=141"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

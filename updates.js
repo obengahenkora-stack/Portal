@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16e', date:'16 Nov 2026', title:'TAs can open the Gradebook',
+      all:[], student:[], staff:['A TA who can upload scores now also sees the Gradebook. Their changes there are sent to you under Pending Approvals as Gradebook changes.'] },
     { id:'2026-11-16d', date:'16 Nov 2026', title:'Gradebook redesigned',
       all:[], student:[], staff:['The Gradebook now shows students, assessments and class average at the top, keeps the student name in a frozen column, and has a Save bar at the top, above the table, that counts your unsaved changes. TAs see Submit for approval instead.'] },
     { id:'2026-11-16c', date:'16 Nov 2026', title:'Upload scores page redesigned',

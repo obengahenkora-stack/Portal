@@ -23,6 +23,13 @@
           var jl=await rl.json(); if(jl&&jl.ok){ try{ if(!jl.rows||!jl.rows.length) throw 0; var sj=JSON.stringify({t:now,j:jl}); if(sj.length<1500000) sessionStorage.setItem(ck,sj); }catch(e){} return jl; }
         }catch(e){}
       }
+      /* staff reading a whole table: the light service answers (remembered there for a minute); the main one is the fallback */
+      if(h['x-staff-token'] && payload.action==='db_op' && payload.op==='getAll'){
+        try{
+          var rs=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
+          var js=await rs.json(); if(js&&js.ok) return js;
+        }catch(e){}
+      }
       /* check-in, QR check and selfies use their own small service; if it cannot be reached the main one answers */
       var fast=(payload.action==='checkin'||payload.action==='qr_check'||payload.action==='selfie_put');
       var r=null;

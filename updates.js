@@ -1,6 +1,8 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'2026-11-16zzzzzzz', date:'16 Nov 2026', title:'Attendance and roster tables load faster for staff',
+      all:[], student:[], staff:['When staff open attendance or rosters, the whole table is now read by the light service and remembered for a minute, so pages open faster and use less of the server allowance.'] },
     { id:'2026-11-16zzzzzz', date:'16 Nov 2026', title:'Exams save answers in batches',
       all:[], student:[], staff:['During an online exam, answers are now saved together every few seconds instead of after every tap, and always when a student leaves the page or submits. This keeps the server fast when a whole class sits at once.'] },
     { id:'2026-11-16zzzzz', date:'16 Nov 2026', title:'QR check-in on its own fast service',

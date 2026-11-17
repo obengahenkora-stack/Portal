@@ -317,15 +317,15 @@ function monStart(){
           M.bad.face=0;
           var real2=false; if(f.length>1){ var A0=f[0].boundingBox||{}, B0=f[1].boundingBox||{}, a0=(A0.width||0)*(A0.height||0), b0=(B0.width||0)*(B0.height||0), big=a0>=b0?A0:B0, sm=a0>=b0?B0:A0, as=Math.max(a0,b0), bs=Math.min(a0,b0), sc2=(f[1].categories&&f[1].categories[0]&&f[1].categories[0].score)||1;
             // a real second face: big enough compared with the first, clearly in a different place, and confident
-            real2=bs>=as*.3 && Math.abs((big.originX+big.width/2)-(sm.originX+sm.width/2))>big.width*.7 && sc2>=.7; }
-          if(real2){ M.bad.multi++; if(M.bad.multi>=4) flag('multi_face',f.length+' faces, second is '+Math.round(bs/as*100)+'% of the first'); } else M.bad.multi=0;
+            real2=bs>=as*.2 && Math.abs((big.originX+big.width/2)-(sm.originX+sm.width/2))>big.width*.7 && sc2>=.55; }
+          if(real2){ M.bad.multi++; if(M.bad.multi>=2) flag('multi_face',f.length+' faces, second is '+Math.round(bs/as*100)+'% of the first'); } else M.bad.multi=0;
           var kp=f[0].keypoints||[], bb=f[0].boundingBox||{};
           if(kp.length>=3){ var er=kp[0], el=kp[1], no=kp[2], mid=(er.x+el.x)/2, w=Math.abs(er.x-el.x)||1, yaw=Math.abs(no.x-mid)/w;
             var cxp=bb.originX+bb.width/2, cxn=cxp/v.videoWidth, sgn=(no.x-mid)/w;
             // judged against the student's own starting position (saved face-guard position, or the first 12 clear looks)
             if(!M.base){ if(S.base) M.base={yaw:S.base.yaw,cx:S.base.cx}; else if(f.length===1){ M.hb.push({yaw:sgn,cx:cxn}); if(M.hb.length>=12){ var ys=M.hb.map(function(x){return x.yaw;}).sort(function(a,b){return a-b;}), cs=M.hb.map(function(x){return x.cx;}).sort(function(a,b){return a-b;}); M.base={yaw:ys[6],cx:cs[6]}; } } }
             if(M.base){ if(Math.abs(sgn-M.base.yaw)>.42||Math.abs(cxn-M.base.cx)>.3){ M.bad.turn++; if(M.bad.turn>=4) flag('head_turn','turned '+Math.abs(sgn-M.base.yaw).toFixed(2)+', moved '+Math.abs(cxn-M.base.cx).toFixed(2)); } else M.bad.turn=0; } }
-          if(S.g&&S.g.on){ var fi=faceInfo(f[0],v), B=S.base; gStep(Math.abs(fi.cx-B.cx)<.22&&Math.abs(fi.cy-B.cy)<.28&&fi.w>B.w*.55&&fi.w<B.w*1.8&&Math.abs(fi.yaw-B.yaw)<.4); }
+          if(S.g&&S.g.on){ var fi=faceInfo(f[0],v), B=S.base; var multiNow=M.bad.multi>=2; gStep(!multiNow&&Math.abs(fi.cx-B.cx)<.22&&Math.abs(fi.cy-B.cy)<.28&&fi.w>B.w*.55&&fi.w<B.w*1.8&&Math.abs(fi.yaw-B.yaw)<.4, multiNow?'Another face is in view. Only you may be seen. Ask the other person to move away.':''); }
         }
       }catch(e){}
     }
@@ -334,7 +334,7 @@ function monStart(){
 /* ---- face guard in the exam: early warning, pause, report a problem, pause log (items 13-17) ---- */
 function gLog(kind,snap){ try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} if(snap){ try{ sendSnap(kind); }catch(e){} } }
 function recCol(ok){ var ge=$('oerGE'); if(ge) ge.setAttribute('stroke',ok?'#16a34a':'#dc2626'); var e=$('oerRecE'), b=e&&e.closest('.oer-rec'); if(!e) return; var c=ok?'#16a34a':'#dc2626'; e.setAttribute('stroke',c); if(b) b.style.borderColor=c; }
-function gStep(ok){
+function gStep(ok,why){
   var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now();
   if(G.state==='pause' && G.rep && now-G.rep>=20000){ G.rep=0; G.hold=now+30000; gResume('report'); return; }
   recCol(ok||G.hold>now);
@@ -346,9 +346,9 @@ function gStep(ok){
   } else {
     G.okAt=0; if(!G.offAt) G.offAt=now; var d=now-G.offAt;
     if(G.state!=='pause'){
-      if(d>=G.pauseMs) gPause();
+      if(d>=G.pauseMs){ G.why=why||''; gPause(); }
       else if(d>=G.warnMs){ G.state='warn'; var r=$('oeRun'), w=$('oerGwarn'); if(!w&&r){ w=document.createElement('div'); w.id='oerGwarn'; w.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:6;background:#b45309;color:#fff;border-radius:14px;padding:12px 14px;font-weight:700;text-align:center;box-shadow:0 6px 20px #0006'; r.appendChild(w); }
-        if(w) w.innerHTML='Your face is out of the oval. Move back now. The exam pauses in '+Math.max(1,Math.ceil((G.pauseMs-d)/1000))+' s.'; }
+        if(w) w.innerHTML=(why||'Your face is out of the oval. Move back now.')+' The exam pauses in '+Math.max(1,Math.ceil((G.pauseMs-d)/1000))+' s.'; }
     }
   }
 }
@@ -356,7 +356,7 @@ function gPause(){
   var G=S.g; G.state='pause'; G.rep=0; G.pauses++; var w=$('oerGwarn'); if(w) w.remove();
   gLog('guard_pause',true);
   var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.id='oerGuard'; o.style.cssText='position:fixed;inset:0;z-index:7;background:#0b2a3a;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center';
-  o.innerHTML='<div style="max-width:380px"><div style="font-weight:800;font-size:1.3rem;margin-bottom:8px">Exam paused</div><div style="line-height:1.5">We cannot see your face in the saved position. Look at the screen to continue.</div><div style="margin:16px 0;font:700 2rem Georgia,serif" id="oerGtm">--:--</div><div style="font-size:.85rem;opacity:.85">The timer is still running. Your answers are saved.</div><div style="position:relative;width:170px;margin:14px auto 0"><video id="oerGvid" autoplay playsinline muted style="width:170px;border-radius:12px;display:block;transform:scaleX(-1);background:#000"></video><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><ellipse id="oerGE" cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#dc2626" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg></div><div id="oerGrep" style="font-size:.85rem;margin-top:10px;min-height:2.6em"></div><button type="button" class="oes-btn s" id="oerGbtn" style="margin-top:10px" onclick="oesGuardReport()">Report a problem (takes your photo)</button></div>';
+  o.innerHTML='<div style="max-width:380px"><div style="font-weight:800;font-size:1.3rem;margin-bottom:8px">Exam paused</div><div style="line-height:1.5">'+esc(G.why||'We cannot see your face in the saved position. Look at the screen to continue.')+'</div><div style="margin:16px 0;font:700 2rem Georgia,serif" id="oerGtm">--:--</div><div style="font-size:.85rem;opacity:.85">The timer is still running. Your answers are saved.</div><div style="position:relative;width:170px;margin:14px auto 0"><video id="oerGvid" autoplay playsinline muted style="width:170px;border-radius:12px;display:block;transform:scaleX(-1);background:#000"></video><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><ellipse id="oerGE" cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#dc2626" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg></div><div id="oerGrep" style="font-size:.85rem;margin-top:10px;min-height:2.6em"></div><button type="button" class="oes-btn s" id="oerGbtn" style="margin-top:10px" onclick="oesGuardReport()">Report a problem (takes your photo)</button></div>';
   r.appendChild(o); try{ var gv=$('oerGvid'); gv.srcObject=S.stream; gv.play().catch(function(){}); }catch(e){}
 }
 function gResume(how){

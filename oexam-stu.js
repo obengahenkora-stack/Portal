@@ -64,6 +64,9 @@ function badge(l){
 
 /* ---------- running an exam ---------- */
 var S=null; // state of the running exam
+var GMARK=/\[\[faceguard\]\]/ig;
+function gOn(x){ return !!(x&&/\[\[faceguard\]\]/i.test(x.instructions||'')); }
+function insTxt(x){ return String((x&&x.instructions)||'').replace(GMARK,'').trim(); }
 function run(h){ var r=$('oeRun'); if(!r){ r=document.createElement('div'); r.id='oeRun'; document.body.appendChild(r); document.body.style.overflow='hidden'; } r.innerHTML=h; return r; }
 function closeRun(){ var r=$('oeRun'); if(r) r.remove(); document.body.style.overflow=''; }
 function stopAll(){
@@ -82,10 +85,11 @@ window.oesOpen=function(i){
   S={x:x,stream:null,running:false,ans:{},dirty:{},cur:0,q:[],queue:[]};
   var resume=x.state==='in_progress';
   run('<div class="oer"><h2 style="margin:0">'+esc(x.title)+'</h2><div class="oes-sub">'+esc(x.course)+'</div>'
-   +(x.instructions?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(x.instructions)+'</div>':'')
-   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
+   +(insTxt(x)?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(insTxt(x))+'</div>':'')
+   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face in view. Look away for a few seconds and you get a warning; stay away and the exam <b>pauses</b> and hides the questions. <b>The timer keeps running while paused.</b></li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
    +'<div class="oer-q" style="text-align:center"><video id="oerVid" class="oer-vid" autoplay playsinline muted></video><div id="oerCamMsg" class="oes-sub">Tap the button and allow the camera.</div>'
    +'<button type="button" class="oes-btn s" id="oerCamBtn" onclick="oesCam()">Turn on camera</button>'
+   +(gOn(x)?'<div id="oerGchk" class="oes-sub" style="margin-top:8px"></div>':'')
    +(x.needsCode&&!resume?'<input type="text" id="oerCode" placeholder="Exam code from your lecturer" autocomplete="off">':'')
    +'<label style="display:flex;gap:10px;align-items:flex-start;text-align:left;margin-top:14px;font-size:.86rem;text-transform:none;letter-spacing:0"><input type="checkbox" id="oerAgree" style="width:auto !important;margin-top:3px" onchange="oesReady()"> <span>I agree to be photographed during this exam and to follow the rules above.</span></label>'
    +'<button type="button" class="oes-btn" id="oerGo" disabled onclick="oesStart()">'+(resume?'Continue exam':'Start exam')+'</button>'
@@ -98,10 +102,37 @@ window.oesCam=async function(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('This browser cannot use the camera. Please use Chrome or Safari.');
     S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:480},height:{ideal:360}},audio:false});
     var v=$('oerVid'); v.srcObject=S.stream; await v.play().catch(function(){});
-    m.textContent='Camera is on. Make sure your face is clearly visible.'; $('oerCamBtn').style.display='none'; oesReady();
+    m.textContent='Camera is on. Make sure your face is clearly visible.'; $('oerCamBtn').style.display='none'; if(gOn(S.x)) gCheck(); oesReady();
   }catch(e){ m.innerHTML='<span style="color:#dc2626">Camera blocked. Allow the camera for this site in your browser settings, then tap again. ('+esc(e.name==='NotAllowedError'?'permission denied':(e.message||'error'))+')</span>'; }
 };
-window.oesReady=function(){ var go=$('oerGo'); if(go) go.disabled=!(S&&S.stream&&S.stream.active&&$('oerAgree').checked); };
+window.oesReady=function(){ var go=$('oerGo'); if(go) go.disabled=!(S&&S.stream&&S.stream.active&&$('oerAgree').checked&&(!gOn(S.x)||S.gOk)); };
+/* ---- face guard: start check, saved baseline (items 11, 12, 18) ---- */
+function faceInfo(f,v){
+  var kp=f.keypoints||[], bb=f.boundingBox||{}; var W=v.videoWidth||1, H=v.videoHeight||1;
+  var o={cx:(bb.originX+bb.width/2)/W, cy:(bb.originY+bb.height/2)/H, w:bb.width/W, yaw:0};
+  if(kp.length>=3){ var mid=(kp[0].x+kp[1].x)/2, ww=Math.abs(kp[0].x-kp[1].x)||1; o.yaw=(kp[2].x-mid)/ww; }
+  return o;
+}
+function gCheck(){
+  var G=S.gc={t0:Date.now(),good:[],tm:0}; var m=$('oerGchk'); if(m) m.textContent='Loading the face check...';
+  S.gOk=false; fdLoad();
+  G.tm=setInterval(function(){
+    if(!S||S.running||!$('oerGchk')){ clearInterval(G.tm); return; }
+    var v=$('oerVid'), msg=$('oerGchk'), el=Date.now()-G.t0;
+    if(!_fd){ if(_fdTry && el>12000){ S.gOk='skip'; msg.innerHTML='<span style="color:#b45309">The face check could not load on this phone. You can still start; the exam will not pause.</span>'; clearInterval(G.tm); oesReady(); } return; }
+    if(!v||v.readyState<2||!v.videoWidth) return;
+    try{
+      var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
+      if(f.length===1){ var i=faceInfo(f[0],v); if(Math.abs(i.cx-.5)<.2&&Math.abs(i.cy-.5)<.25&&i.w>.15&&i.w<.75&&Math.abs(i.yaw)<.3){ G.good.push(i); } else { G.good=[]; msg.innerHTML='<span style="color:#b45309">Centre your face and look straight at the screen.</span>'; } }
+      else { G.good=[]; msg.innerHTML='<span style="color:#b45309">'+(f.length?'Only one face should be in view.':'I cannot see your face yet. Move closer and add light.')+'</span>'; }
+      if(G.good.length>=4){
+        var med=function(k){ var a=G.good.map(function(x){return x[k];}).sort(function(a,b){return a-b;}); return a[Math.floor(a.length/2)]; };
+        S.base={cx:med('cx'),cy:med('cy'),w:med('w'),yaw:med('yaw')}; S.gOk=true; msg.innerHTML='<span style="color:#15803d">&#10003; Face check passed. Your position is saved.</span>'; clearInterval(G.tm); oesReady();
+      } else if(el>25000 && !S.gHelp){ S.gHelp=1; msg.innerHTML+='<div style="margin-top:6px"><button type="button" class="oes-btn s" onclick="oesGuardSkip()">Face check not working? Start anyway (recorded)</button></div>'; }
+    }catch(e){}
+  },700);
+}
+window.oesGuardSkip=function(){ if(!S) return; S.gOk='manual'; if(S.gc) clearInterval(S.gc.tm); var m=$('oerGchk'); if(m) m.innerHTML='<span style="color:#b45309">Starting without the face check. This will be recorded.</span>'; oesReady(); };
 
 function shot(why){
   try{
@@ -163,7 +194,8 @@ function begin(){
   render();
   S.vid=$('oerRecV'); S.vid.srcObject=stream; S.vid.play().catch(function(){});
   S.tick=setInterval(tick,500); tick();
-  S.cam=setInterval(camCheck,2000); try{ monStart(); }catch(e){}
+  S.cam=setInterval(camCheck,2000); S.g={on:gOn(x)&&S.gOk===true&&!!S.base,state:'run',offAt:0,okAt:0,hold:0,pauses:0,warnMs:3000,pauseMs:6000,backMs:1500}; try{ monStart(); }catch(e){}
+  if(gOn(x)&&S.gOk==='manual'){ try{ call({action:'stu_oe_leave',id:x.id,kind:'guard_nocheck'}); }catch(e){} }
   S.onVis=function(){ if(!S||!S.running) return; if(document.hidden){ S.hiddenAt=Date.now(); } else if(S.hiddenAt){ S.hiddenAt=0; leave('leave'); } };
   document.addEventListener('visibilitychange',S.onVis);
   S.onUnload=function(e){ if(S&&S.running){ e.preventDefault(); e.returnValue=''; } }; window.addEventListener('beforeunload',S.onUnload);
@@ -251,7 +283,7 @@ function monStart(){
     if(_fd && M.n%1===0){
       try{
         var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
-        if(f.length===0){ M.bad.face++; M.bad.turn=0; M.bad.multi=0; if(M.bad.face>=5) flag('no_face'); }
+        if(f.length===0){ M.bad.face++; M.bad.turn=0; M.bad.multi=0; if(M.bad.face>=5) flag('no_face'); gStep(false); }
         else{
           M.bad.face=0;
           if(f.length>1){ M.bad.multi++; if(M.bad.multi>=3) flag('multi_face'); } else M.bad.multi=0;
@@ -259,11 +291,42 @@ function monStart(){
           if(kp.length>=3){ var er=kp[0], el=kp[1], no=kp[2], mid=(er.x+el.x)/2, w=Math.abs(er.x-el.x)||1, yaw=Math.abs(no.x-mid)/w;
             var cxp=bb.originX+bb.width/2, off=Math.abs(cxp/v.videoWidth-.5);
             if(yaw>.42||off>.32){ M.bad.turn++; if(M.bad.turn>=4) flag('head_turn'); } else M.bad.turn=0; }
+          if(S.g&&S.g.on){ var fi=faceInfo(f[0],v), B=S.base; gStep(Math.abs(fi.cx-B.cx)<.22&&Math.abs(fi.cy-B.cy)<.28&&fi.w>B.w*.55&&fi.w<B.w*1.8&&Math.abs(fi.yaw-B.yaw)<.4); }
         }
       }catch(e){}
     }
   },700);
 }
+/* ---- face guard in the exam: early warning, pause, report a problem, pause log (items 13-17) ---- */
+function gLog(kind,snap){ try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} if(snap){ try{ sendSnap(kind); }catch(e){} } }
+function gStep(ok){
+  var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now();
+  if(G.hold>now){ G.offAt=0; G.okAt=0; return; }
+  if(ok){
+    G.offAt=0; if(!G.okAt) G.okAt=now;
+    if(G.state==='warn'){ G.state='run'; var w=$('oerGwarn'); if(w) w.remove(); }
+    else if(G.state==='pause' && now-G.okAt>=G.backMs) gResume('face');
+  } else {
+    G.okAt=0; if(!G.offAt) G.offAt=now; var d=now-G.offAt;
+    if(G.state!=='pause'){
+      if(d>=G.pauseMs) gPause();
+      else if(d>=G.warnMs){ G.state='warn'; var r=$('oeRun'), w=$('oerGwarn'); if(!w&&r){ w=document.createElement('div'); w.id='oerGwarn'; w.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:6;background:#b45309;color:#fff;border-radius:14px;padding:12px 14px;font-weight:700;text-align:center;box-shadow:0 6px 20px #0006'; r.appendChild(w); }
+        if(w) w.innerHTML='Look at the screen. The exam pauses in '+Math.max(1,Math.ceil((G.pauseMs-d)/1000))+' s.'; }
+    }
+  }
+}
+function gPause(){
+  var G=S.g; G.state='pause'; G.pauses++; var w=$('oerGwarn'); if(w) w.remove();
+  gLog('guard_pause',true);
+  var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.id='oerGuard'; o.style.cssText='position:fixed;inset:0;z-index:7;background:#0b2a3a;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center';
+  o.innerHTML='<div style="max-width:380px"><div style="font-weight:800;font-size:1.3rem;margin-bottom:8px">Exam paused</div><div style="line-height:1.5">We cannot see your face in the saved position. Look at the screen to continue.</div><div style="margin:16px 0;font:700 2rem Georgia,serif" id="oerGtm">--:--</div><div style="font-size:.85rem;opacity:.85">The timer is still running. Your answers are saved.</div><video id="oerGvid" autoplay playsinline muted style="width:150px;border-radius:12px;margin:14px auto 0;display:block;transform:scaleX(-1);background:#000"></video><button type="button" class="oes-btn s" style="margin-top:16px" onclick="oesGuardReport()">Report a problem</button></div>';
+  r.appendChild(o); try{ var gv=$('oerGvid'); gv.srcObject=S.stream; gv.play().catch(function(){}); }catch(e){}
+}
+function gResume(how){
+  var G=S.g; G.state='run'; G.offAt=0; G.okAt=0; var o=$('oerGuard'); if(o) o.remove(); var w=$('oerGwarn'); if(w) w.remove();
+  gLog(how==='report'?'guard_report':'guard_resume',false); if(how==='report') gLog('guard_resume',false);
+}
+window.oesGuardReport=function(){ if(!S||!S.g||S.g.state!=='pause') return; S.g.hold=Date.now()+60000; gResume('report'); };
 function camCheck(){
   if(!S||!S.running) return; var t=S.stream&&S.stream.getVideoTracks()[0], ok=t&&t.readyState==='live'&&!t.muted&&S.stream.active;
   if(!ok && !$('oerCamOv')){ leave('camera_off'); var r=$('oeRun'); var o=document.createElement('div'); o.id='oerCamOv'; o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Camera is off</div><div style="line-height:1.5">Your camera must stay on during the exam. Turn it back on to continue. The timer is still running.</div><button type="button" class="oes-btn" onclick="oesCamBack()">Turn camera on</button><div id="oerCamErr" class="oes-sub"></div></div>'; r.appendChild(o); }
@@ -272,7 +335,7 @@ function camCheck(){
 window.oesCamBack=async function(){ try{ S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:480},height:{ideal:360}},audio:false}); S.vid.srcObject=S.stream; S.vid.play().catch(function(){}); var o=$('oerCamOv'); if(o) o.remove(); }catch(e){ var m=$('oerCamErr'); if(m) m.textContent='Still blocked. Allow the camera in your browser settings.'; } };
 function tick(){
   if(!S||!S.running) return; var left=Math.max(0,S.deadline-(Date.now()+_off)), m=Math.floor(left/60000), s=Math.floor(left/1000)%60, t=$('oerTm');
-  if(t){ t.textContent=('0'+m).slice(-2)+':'+('0'+s).slice(-2); t.classList.toggle('low',left<300000); }
+  if(t){ t.textContent=('0'+m).slice(-2)+':'+('0'+s).slice(-2); t.classList.toggle('low',left<300000); var gt=$('oerGtm'); if(gt) gt.textContent=t.textContent; }
   if(left<=0 && !S.ending){ S.ending=true; submit('Time is up. Your exam was submitted.'); }
 }
 window.oesFinish=function(){

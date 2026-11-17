@@ -31,14 +31,14 @@ var RV=null, LVN={VS:'Very serious',S:'Serious',H:'High',M:'Medium',L:'Low'}, LV
 function eff(r){ return (r.final!=null)?r.final:((r.mcq||0)+r.written); }
 function rnd(x){ return Math.round(x*10)/10; }
 function lvTag(l){ return l?'<span class="rv-lv" style="background:'+LVC[l]+'">'+LVN[l]+'</span>':''; }
-var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',camera_off:'M',no_face:'L',flash:'L'};
+var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',camera_off:'M',no_face:'L',flash:'L',guard_pause:'M'};
 function rawLv(r){ var best='',o=['VS','S','H','M','L']; Object.keys(r.kinds||{}).forEach(function(k){ var l=RAWLV[k]; if(l&&(!best||o.indexOf(l)<o.indexOf(best))) best=l; }); return best; }
 function stTag(r){ if(r.st==='toreview') return '<span class="rv-lv" style="background:#94a3b8">To review</span>'; if(r.st==='cleared') return '<span class="rv-lv" style="background:#16a34a">Cleared</span>'; return ''; }
 function propTag(p){ return p==='cancel'?'<span class="rv-lv" style="background:#111">Proposed for cancellation</span>':(p==='review'?'<span class="rv-lv" style="background:#7c3aed">Needs review</span>':''); }
 function mergeRv(){
   if(!RV||!D) return;
   var by={}; RV.rows.forEach(function(x){ if(x.email) by['e:'+x.email]=x; if(x.index) by['i:'+String(x.index).toLowerCase()]=x; });
-  D.rows.forEach(function(r){ var x=by['e:'+String(r.email||'').toLowerCase()]||by['i:'+String(r.index||'').toLowerCase()]; r.lv=x?x.level:''; r.prop=x?x.proposal:''; r.final=(x&&x.final!=null)?x.final:null; r.reason=x?x.reason:''; r.kinds=x?x.kinds:{}; r.st=x?(x.status||'none'):'none'; r.nf=x?(x.nflags||0):0; r.nc=x?(x.nconf||0):0; r.nd=x?(x.ndis||0):0; r.vd=x?(x.verdicts||{}):{}; });
+  D.rows.forEach(function(r){ var x=by['e:'+String(r.email||'').toLowerCase()]||by['i:'+String(r.index||'').toLowerCase()]; r.lv=x?x.level:''; r.prop=x?x.proposal:''; r.final=(x&&x.final!=null)?x.final:null; r.reason=x?x.reason:''; r.kinds=x?x.kinds:{}; r.st=x?(x.status||'none'):'none'; r.nf=x?(x.nflags||0):0; r.nc=x?(x.nconf||0):0; r.nd=x?(x.ndis||0):0; r.vd=x?(x.verdicts||{}):{}; r.pz=x?(x.pauses||0):0; });
 }
 function stats(){
   var rows=D.rows, sub=rows.filter(function(r){return r.submittedAt;}), sc=sub.map(eff).sort(function(a,b){return a-b;}), n=sc.length;
@@ -83,7 +83,7 @@ window.oeRender=function(){
     h+='<div class="oe-row" style="margin-top:2px"><select id="rvFil" onchange="oeFilter(this.value)" style="flex:1 1 auto"><option value="">Show: everyone</option><option value="p:cancel">Proposed for cancellation</option><option value="p:review">Needs review</option><option value="l:VS">Very serious</option><option value="l:S">Serious</option><option value="l:H">High</option><option value="l:M">Medium</option><option value="l:L">Low</option><option value="s:toreview">To review</option><option value="s:cleared">Cleared</option><option value="s:confirmed">Has confirmed flags</option><option value="l:">No confirmed flags</option><option value="f:1">Has a Final mark</option></select></div>';
     rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
     h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
-      return '<div class="rvh-row rv-r" data-lv="'+(r.lv||'')+'" data-st="'+(r.st||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><span class="rvh-d" style="background:'+(r.lv?LVC[r.lv]:(r.st==='toreview'?'#94a3b8':(r.st==='cleared'?'#16a34a':'#d8e8e3')))+'"></span><div class="m"><div class="n">'+esc(r.name||r.email)+'</div><div class="s">'+esc(r.index||'')+' &middot; '+st+(r.final!=null?' &middot; Final mark':'')+(r.pending?' &middot; marking pending':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop||r.st==='toreview'||r.st==='cleared')?'<div>'+propTag(r.prop)+lvTag(r.lv)+stTag(r)+'</div>':'')+(r.nf?'<div class="s">'+r.nf+' flag'+(r.nf===1?'':'s')+' &middot; '+r.nc+' confirmed &middot; '+r.nd+' dismissed'+(r.st==='toreview'&&rawLv(r)?' &middot; automatic: '+LVN[rawLv(r)]:'')+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div><div class="sc">'+rnd(eff(r))+'<small>/'+r.total+'</small></div></div>';}).join('');
+      return '<div class="rvh-row rv-r" data-lv="'+(r.lv||'')+'" data-st="'+(r.st||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><span class="rvh-d" style="background:'+(r.lv?LVC[r.lv]:(r.st==='toreview'?'#94a3b8':(r.st==='cleared'?'#16a34a':'#d8e8e3')))+'"></span><div class="m"><div class="n">'+esc(r.name||r.email)+'</div><div class="s">'+esc(r.index||'')+' &middot; '+st+(r.final!=null?' &middot; Final mark':'')+(r.pending?' &middot; marking pending':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop||r.st==='toreview'||r.st==='cleared')?'<div>'+propTag(r.prop)+lvTag(r.lv)+stTag(r)+'</div>':'')+(r.nf?'<div class="s">'+r.nf+' flag'+(r.nf===1?'':'s')+' &middot; '+r.nc+' confirmed &middot; '+r.nd+' dismissed'+(r.pz?' &middot; paused '+r.pz+'x':'')+(r.st==='toreview'&&rawLv(r)?' &middot; automatic: '+LVN[rawLv(r)]:'')+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div><div class="sc">'+rnd(eff(r))+'<small>/'+r.total+'</small></div></div>';}).join('');
     if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
   }
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
@@ -171,12 +171,18 @@ window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).repla
   var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\n')],{type:'text/csv'})); a.download=(D.exam.title||'exam').replace(/[^\w]+/g,'_')+'_results.csv'; a.click(); };
 window.oeBig=function(src){ var d=document.createElement('div'); d.id='rvBig'; d.onclick=function(){d.remove();}; d.innerHTML='<img src="'+src+'">'; document.body.appendChild(d); };
 var FACT={leave:1,fullscreen_exit:1,phone_seen:1,other_device:1};
-function flagRow(r,f,k){ var v=(r.vd||{})[String(k)], l=RAWLV[f.kind];
+var INFOK={guard_resume:1,guard_report:1,guard_nocheck:1};
+var INFOT={guard_report:'Student tapped "Report a problem" (face not seen)',guard_nocheck:'Started without the face check (it was not working)'};
+function pauseLen(A,k){ var fl=A.flags||[],t0=Date.parse(fl[k].t); for(var j=k+1;j<fl.length;j++){ if(fl[j].kind==='guard_resume'){ var s=Math.round((Date.parse(fl[j].t)-t0)/1000); return s>=0?s:null; } } return null; }
+function flagRow(r,f,k,A){ var v=(r.vd||{})[String(k)], l=RAWLV[f.kind];
+  if(f.kind==='guard_resume') return '';
+  if(INFOK[f.kind]) return '<div class="rvf"><div class="rvf-t"><b>'+esc(INFOT[f.kind]||f.kind)+'</b></div><div class="oe-sub" style="margin:2px 0 0">'+tm(f.t)+'</div></div>';
+  if(f.kind==='guard_pause'){ var pl=pauseLen(A,k); f=Object.assign({},f,{note:(f.note?f.note+' \u00b7 ':'')+(pl!=null?'paused for '+pl+' s':'still paused or closed while paused')}); }
   return '<div class="rvf"><div class="rvf-t"><b>'+esc(String(f.kind).replace(/_/g,' '))+'</b>'+(l?' <span class="rv-lv" style="background:'+LVC[l]+';margin:0">'+LVN[l]+'</span>':'')+'</div><div class="oe-sub" style="margin:2px 0 0">'+tm(f.t)+(f.note?' &middot; '+esc(f.note):'')+'</div>'
   +'<div class="rvf-b"><button type="button" class="oe-mini'+(v==='c'?' rvf-c':'')+'" onclick="oeVerdict('+k+',\'c\')">'+(v==='c'?'&#10003; Confirmed':'Confirm')+'</button><button type="button" class="oe-mini'+(v==='d'?' rvf-d':'')+'" onclick="oeVerdict('+k+',\'d\')">'+(v==='d'?'&#10003; Dismissed':'Dismiss')+'</button>'+(v?'<button type="button" class="oe-mini" onclick="oeVerdict('+k+',null)">Undo</button>':'')+'</div></div>'; }
 function flagBox(r,A){
   var fl=A.flags||[]; if(!fl.length) return '';
-  var fa=[],gu=[]; fl.forEach(function(f,k){ (FACT[f.kind]?fa:gu).push(flagRow(r,f,k)); });
+  var fa=[],gu=[]; fl.forEach(function(f,k){ (FACT[f.kind]?fa:gu).push(flagRow(r,f,k,A)); });
   var sm='<div class="oe-sub" style="margin:0 0 6px">Level now: '+(r.lv?lvTag(r.lv):'<b>'+(r.st==='cleared'?'Cleared':'Not yet reviewed')+'</b>')+' &middot; '+r.nc+' confirmed, '+r.nd+' dismissed, '+(r.nf-r.nc-r.nd)+' waiting. Only confirmed flags count.</div>';
   return '<div class="rv-q"><b>Recorded by the system (facts)</b>'+sm+(fa.join('')||'<div class="oe-sub">None.</div>')+'</div><div class="rv-q" style="background:rgba(100,116,139,.06)"><b>Camera guesses (need your eyes)</b><div class="oe-sub" style="margin:4px 0 6px">Check the photos below before confirming.</div>'+(gu.join('')||'<div class="oe-sub">None.</div>')+'</div>';
 }

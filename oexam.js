@@ -82,8 +82,10 @@ window.oeNew=function(){
   E={id:'',course:COURSES[0]||'',title:'',instructions:'',start:s.toISOString(),end:e.toISOString(),durationMin:30,pickN:0,shuffleQ:true,shuffleOpt:true,oneWay:false,bioStart:true,snapEverySec:30,maxLeaves:3,code:'',status:'draft',questions:[]};
   addQ('mcq'); renderEdit();
 };
-window.oeEdit=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); renderEdit(); };
-window.oeCopy=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); E.id=''; E.title=E.title+' (copy)'; E.status='draft'; E.questions.forEach(function(q){ q.id=uid(); }); renderEdit(); };
+var GM=/\s*\[\[faceguard\]\]\s*/ig;
+function gmOut(){ E.faceGuard=/\[\[faceguard\]\]/i.test(E.instructions||''); E.instructions=String(E.instructions||'').replace(GM,'').trim(); }
+window.oeEdit=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); renderEdit(); };
+window.oeCopy=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); E.id=''; E.title=E.title+' (copy)'; E.status='draft'; E.questions.forEach(function(q){ q.id=uid(); }); renderEdit(); };
 window.oeDel=async function(i){
   var x=LIST[i]; if(!x||!confirm('Delete "'+x.title+'"?\n\nThis removes the exam and its questions. This cannot be undone.')) return;
   try{ var r=await teamApi({action:'oe_delete',id:x.id}); if(!r||!r.ok) throw new Error((r&&r.error)||'Failed'); oeInit(); }catch(e){ msg('<div class="msg err">'+esc(e.message||'error')+'</div>'); }
@@ -139,7 +141,7 @@ function renderEdit(scrollEnd){
    +'<div class="oe-box"><div class="oe-h">Security</div><div class="oe-sub">The camera is always required. Photos are shrunk to about 15 KB each.</div>'
    +'<div class="oe-two"><div><div class="oe-l">Photo every (seconds)</div><input type="number" id="oeSnap" min="10" max="300" value="'+E.snapEverySec+'"></div><div><div class="oe-l">Page leaves allowed</div><input type="number" id="oeLeaves" min="0" max="50" value="'+E.maxLeaves+'"></div></div>'
    +'<div style="margin-top:12px"><div class="oe-l">Exam code (optional)</div><input type="text" id="oeCode" value="'+esc(E.code)+'" placeholder="Students must type this to start"></div>'
-   +sw('shuffleQ','Shuffle questions','Every student gets their own random order, picked fresh when they start. With 30 questions the same order will practically never repeat.')+sw('shuffleOpt','Shuffle answer options','The options of each question are mixed differently for every student.')+sw('oneWay','One question at a time, no going back','Harder to look things up.')+sw('bioStart','Fingerprint or face to start','Each student confirms with their phone before the exam begins.')+'</div>'
+   +sw('shuffleQ','Shuffle questions','Every student gets their own random order, picked fresh when they start. With 30 questions the same order will practically never repeat.')+sw('shuffleOpt','Shuffle answer options','The options of each question are mixed differently for every student.')+sw('oneWay','One question at a time, no going back','Harder to look things up.')+sw('bioStart','Fingerprint or face to start','Each student confirms with their phone before the exam begins.')+sw('faceGuard','Face guard (test on a practice exam first)','Students must show their face at the start. If they look away for 3 seconds they get a warning, and after 6 seconds the exam pauses and hides the questions. The timer keeps running. Each pause is logged for review.')+'</div>'
    +'<div class="oe-box" id="oeTotBox"><div class="oe-h">Overall marks</div><div class="oe-sub">Type the total marks for the whole exam and the marks are shared across the questions for you.</div><div style="display:flex;gap:10px;align-items:flex-end;margin-top:8px"><div style="flex:1"><div class="oe-l">Exam total (marks)</div><input type="number" id="oeTot" min="1" max="1000" value="'+marks+'"></div><button type="button" class="oe-btn" style="width:auto;padding:12px 18px;margin:0" onclick="oeSetTotal()">Apply</button></div><div id="oeTotMsg" class="oe-sub" style="margin-top:8px"></div></div>'
    +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:18px"><div class="oe-h" style="font-size:1.05rem">Questions</div><div style="font-size:.8rem;color:var(--muted)">'+E.questions.length+' &middot; '+marks+' marks</div></div>';
   h+=E.questions.map(function(q,i){
@@ -171,7 +173,7 @@ window.oeSave=async function(publish){
   if(publish && !E.questions.length){ msg('<div class="msg err">Add at least one question before publishing.</div>'); return; }
   if(publish && !confirm('Publish "'+E.title+'"?\n\nStudents on '+E.course+' will see it from '+fmt(E.start)+'.')) return;
   /* drop blank options but keep the correct answer pointing at the right one */
-  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft';
+  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft'; ex.instructions=String(ex.instructions||'').replace(GM,'').trim()+(E.faceGuard?' [[faceguard]]':''); delete ex.faceGuard;
   ex.questions.forEach(function(q){ if(q.type==='mcq'){ var keep=[], na=0; q.options.forEach(function(o,k){ if(o.trim()){ if(k===q.answer) na=keep.length; keep.push(o.trim()); } }); q.options=keep; q.answer=na; } });
   msg('<div class="msg ok">Saving...</div>');
   try{ var r=await teamApi({action:'oe_save',exam:ex}); if(!r||!r.ok) throw new Error((r&&r.error)||'Could not save');

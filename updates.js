@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'student-cache', date:'17 Nov 2026', title:'Faster, lighter student pages', all:[], student:['Pages reuse the portal data for 30 seconds instead of downloading it again every time you move around.'], staff:[] },
     { id:'staff-cache', date:'17 Nov 2026', title:'Fewer repeated downloads', all:[], student:[], staff:['Staff pages now remember the class lists for 10 minutes and attendance for 15 seconds, so the same tables are not downloaded again and again. Saving clears them. If you edit a class list on another device, reload this page to see it.'] },
     { id:'fewer-calls', date:'17 Nov 2026', title:'Lighter background checks', all:[], student:[], staff:['The attendance page now refreshes ticks every 30 seconds instead of every 20, and the QR check-in list every 10 seconds instead of 4. This cuts the load on the server. Nothing else changes.'] },
     { id:'filter-stays', date:'17 Nov 2026', title:'Student list keeps your filter', all:[], student:[], staff:['When you open a student from a filtered list and press Back to results, the list stays filtered and returns to the same place.'] },

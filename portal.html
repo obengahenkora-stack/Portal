@@ -1219,10 +1219,17 @@ const SUPABASE_QR_FILE = "qr-sessions.json"; // kept separate from site-data.jso
 
 async function fetchSupabaseData(strict){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
-    if(!res.ok){ if(strict) throw new Error('Could not reach the database ('+res.status+')'); return {}; }
+    /* students' plain reads reuse the file text downloaded in the last 30 seconds; staff, strict reads and saves always fetch it fresh */
+    let _txt = null, _sc = window.__sdC;
+    let _stf=false; try{ _stf = !!window._adminViaStaff || (typeof isAdmin==='function' && !!isAdmin()); }catch(e){ _stf=true; }
+    if(!strict && !_stf && _sc && Date.now()-_sc.t < 30000) _txt = _sc.s;
+    if(_txt === null){
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+      if(!res.ok){ if(strict) throw new Error('Could not reach the database ('+res.status+')'); return {}; }
+      _txt = await res.text(); window.__sdC = { t: Date.now(), s: _txt };
+    }
     if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
-    const _full = _normAllAttendance(_normAllRosters(await DBS.load(await res.json())));
+    const _full = _normAllAttendance(_normAllRosters(await DBS.load(JSON.parse(_txt))));
     _cacheRosters(_full);
     return _full;
   }catch(e){
@@ -1233,6 +1240,7 @@ async function fetchSupabaseData(strict){
 
 async function saveSupabaseData(data, _opts){
   if(!data || typeof data!=='object' || !Object.keys(data).length) throw new Error("Refusing to save empty data — reload the page and try again.");
+  window.__sdC = null;
   if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
   try{ delete data.teamMembers; }catch(e){}
   data = await DBS.persist(data);
@@ -5726,7 +5734,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=222"></script>
+<script src="updates.js?v=223"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

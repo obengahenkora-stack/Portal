@@ -5179,7 +5179,7 @@ async function refreshAttendanceLive(){
     });
   }catch(e){}
 }
-setInterval(refreshAttendanceLive,20000);
+setInterval(refreshAttendanceLive,60000);
 window.addEventListener('online',function(){ _qBanner(); flushAttQueue(); });
 window.addEventListener('offline',function(){ _qBanner(); });
 window.addEventListener('beforeunload',function(e){ if(_qGet().length){ e.preventDefault(); e.returnValue=''; } });
@@ -5726,7 +5726,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=219"></script>
+<script src="updates.js?v=220"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){
@@ -5783,7 +5783,7 @@ function updateWhoBar(){
 .card button:not([class]):not([data-m]):disabled{opacity:.55;box-shadow:none !important}
 .card button.secondary:not(.navback){border-radius:14px !important;padding:12px 18px !important;font-weight:700 !important}
 </style>
-<script src="exam.js?v=7"></script>
+<script src="exam.js?v=8"></script>
 <script src="atrisk.js?v=1"></script>
 <script src="usage.js?v=1"></script>
 <script src="absence.js?v=7"></script>

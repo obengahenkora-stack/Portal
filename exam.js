@@ -85,7 +85,7 @@ async function poll(force){
   S.present=m;
   if(force || sig!==_sig){ _sig=sig; render(); var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length; }
 }
-setInterval(function(){ var c=$('examCard'); if(c && !c.classList.contains('hidden') && !c.classList.contains('pane-off') && S.ready && !document.hidden) poll(false); },4000);
+setInterval(function(){ var c=$('examCard'); if(c && !c.classList.contains('hidden') && !c.classList.contains('pane-off') && S.ready && !document.hidden) poll(false); },10000);
 function find(idx){ var k=key(idx); for(var i=0;i<S.roster.length;i++){ if(key(S.roster[i].indexNumber)===k) return S.roster[i]; } return null; }
 
 /* ---------- render ---------- */

@@ -11,6 +11,12 @@ css.textContent='#onlineExamCard .rv-t{display:grid;grid-template-columns:repeat
 +'#onlineExamCard .rv-warn{border:1px solid #d97706;background:rgba(217,119,6,.12);border-radius:12px;padding:10px;margin-top:12px;font-size:.84rem}'
 +'#onlineExamCard .rv-lv{display:inline-block;color:#fff;border-radius:999px;font-size:.68rem;font-weight:700;padding:2px 9px;margin:5px 5px 0 0}#onlineExamCard .rv-lr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--line)}#onlineExamCard .rv-lr b{font-size:1.05rem}'
 +'#rvBig{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px}#rvBig img{max-width:100%;max-height:100%;border-radius:10px}';
+css.textContent+='#onlineExamCard .rvh-seg{display:flex;background:rgba(15,118,110,.10);border-radius:14px;padding:4px;margin:12px 0}#onlineExamCard .rvh-seg button{flex:1;border:0;background:transparent;padding:10px 6px;border-radius:11px;font:700 .88rem inherit;font-family:inherit;color:var(--muted);cursor:pointer}#onlineExamCard .rvh-seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(11,42,58,.18)}'
++'#onlineExamCard .rvh-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 4px}#onlineExamCard .rvh-k div{border:1px solid var(--line);border-radius:14px;padding:11px 6px;text-align:center;background:var(--card)}#onlineExamCard .rvh-k b{display:block;font:700 1.35rem/1 Georgia,serif}#onlineExamCard .rvh-k span{font-size:.72rem;color:var(--muted)}'
++'#onlineExamCard .rvh-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;margin:10px 0 12px;background:#d8e8e3}#onlineExamCard .rvh-bar i{display:block;height:100%}'
++'#onlineExamCard .rvh-leg{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;font-size:.82rem}#onlineExamCard .rvh-leg div{display:flex;align-items:center;gap:7px}#onlineExamCard .rvh-leg b{margin-left:auto}#onlineExamCard .rvh-d{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 10px}'
++'#onlineExamCard .rvh-row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:10px 12px;margin-top:8px;cursor:pointer}#onlineExamCard .rvh-row .m{flex:1;min-width:0}#onlineExamCard .rvh-row .n{font-weight:700;font-size:.92rem;overflow-wrap:anywhere}#onlineExamCard .rvh-row .s{font-size:.74rem;color:var(--muted);margin-top:2px}#onlineExamCard .rvh-row .sc{font:700 1rem Georgia,serif;white-space:nowrap}#onlineExamCard .rvh-row .sc small{font:.72rem sans-serif;color:var(--muted)}'
++'#onlineExamCard .rvh-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}';
 document.head.appendChild(css);
 var X=null, D=null, SN=[];
 function msg(h){var m=$('oeMsg'); if(m) m.innerHTML=h||'';}
@@ -41,26 +47,37 @@ function stats(){
 window.oeResults=async function(id){
   var box=$('oeBody'); box.innerHTML='<div class="empty">Loading results...</div>';
   try{ D=await api({action:'oe_results',id:id}); }catch(e){ box.innerHTML='<div class="empty">Could not load ('+esc(e.message)+')</div><button type="button" class="oe-btn s" onclick="oeInit()">Back</button>'; return; }
+  if(window.__rvId!==id){ TAB='ov'; window.__rvId=id; }
   RV=null; try{ RV=await api({action:'rv_summary',id:id}); }catch(e){ RV=null; }
   mergeRv(); oeRender();
   if(!RV) msg('<div class="rv-warn">Flag levels could not be loaded just now. Marks and photos still work. Open Results again to try once more.</div>');
 };
+var TAB='ov';
+window.oeTab=function(t){ TAB=t; oeRender(); };
 window.oeRender=function(){
-  var box=$('oeBody'), ex=D.exam, rows=D.rows, S=stats();
-  var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+'</div>'
-  +'<div class="rv-t"><div><b>'+S.sub+' / '+S.expected+'</b><span>Submitted</span></div><div><b>'+rnd(S.avg)+'</b><span>Average score</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div><div><b>'+rnd(S.med)+'</b><span>Middle score</span></div><div><b>'+S.pend+'</b><span>Need marking</span></div></div>';
-  h+='<div class="rv-q"><b>Flag levels</b><div class="oe-sub" style="margin:4px 0 8px">Each student is counted once, at their highest level. Out of '+S.sub+' submitted.</div>'
-  +['VS','S','H','M','L'].map(function(k){ return '<div class="rv-lr"><span>'+lvTag(k)+'</span><b>'+S.lv[k]+'</b></div>'; }).join('')+'<div class="rv-lr"><span>No flags</span><b>'+S.lv.none+'</b></div>'
-  +(RV?'<div class="rv-lr" style="margin-top:8px"><span>'+propTag('cancel')+'</span><b>'+S.cancel+'</b></div><div class="rv-lr"><span>'+propTag('review')+'</span><b>'+S.review+'</b></div><div class="oe-sub" style="margin:6px 0 0">The two lines above are for you only and are not in the printed report. Nobody is cancelled automatically: you decide.</div>':'')+'</div>';
-  h+='<div class="oe-sw"><div>Record in the Gradebook out of<small>Scores are scaled to this total, for example 30 questions recorded out of 15. Students\' exam tile still shows the raw score.</small></div><input type="number" id="oeGbOut" min="1" max="1000" step="0.5" style="width:90px;flex:0 0 90px" value="'+esc(gbOutGet(ex.id,S.tot))+'" onchange="gbOutSet()"></div>'
-  +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
-  +'<div class="oe-row"><button type="button" class="oe-mini" onclick="oePrint()">Print report</button><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button><button type="button" class="oe-mini" onclick="oeIntegrity()">Integrity check</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div>';
-  h+='<div id="oeIntegrity"></div>';
-  h+='<div class="oe-row" style="margin-top:12px"><select id="rvFil" onchange="oeFilter(this.value)" style="flex:1 1 auto"><option value="">Show: everyone</option><option value="p:cancel">Proposed for cancellation</option><option value="p:review">Needs review</option><option value="l:VS">Very serious</option><option value="l:S">Serious</option><option value="l:H">High</option><option value="l:M">Medium</option><option value="l:L">Low</option><option value="l:">No flags</option><option value="f:1">Has a Final mark</option></select></div>';
-  rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
-  h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
-    return '<div class="rv-r" data-lv="'+(r.lv||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><div class="n">'+esc(r.name||r.email)+' <span style="font-weight:400;color:var(--muted)">'+esc(r.index||'')+'</span></div><div class="s">'+st+' &middot; Score '+rnd(eff(r))+' / '+r.total+(r.final!=null?' (Final mark)':'')+(r.pending?' (marking pending)':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop)?'<div>'+propTag(r.prop)+lvTag(r.lv)+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div>';}).join('');
-  if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
+  var box=$('oeBody'), ex=D.exam, rows=D.rows, S=stats(), tot=Math.max(1,S.sub);
+  var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+' &middot; '+S.sub+' of '+S.expected+' submitted</div>'
+  +'<div class="rvh-seg"><button type="button" class="'+(TAB==='ov'?'on':'')+'" onclick="oeTab(\'ov\')">Overview</button><button type="button" class="'+(TAB==='st'?'on':'')+'" onclick="oeTab(\'st\')">Students</button><button type="button" class="'+(TAB==='se'?'on':'')+'" onclick="oeTab(\'se\')">Settings</button></div>';
+  var KS=['VS','S','H','M','L'];
+  if(TAB==='ov'){
+    h+='<div class="rvh-k"><div><b>'+rnd(S.avg)+'</b><span>Average</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div></div>'
+    +'<div class="rvh-k" style="margin-top:8px"><div><b>'+rnd(S.med)+'</b><span>Middle score</span></div><div><b>'+S.sub+' / '+S.expected+'</b><span>Submitted</span></div><div><b>'+S.pend+'</b><span>Need marking</span></div></div>';
+    h+='<div class="rv-q"><b>Flag levels</b><div class="oe-sub" style="margin:4px 0 0">Each student is counted once, at their highest level.</div>'
+    +'<div class="rvh-bar">'+KS.map(function(k){ return '<i style="width:'+(S.lv[k]/tot*100)+'%;background:'+LVC[k]+'"></i>'; }).join('')+'</div>'
+    +'<div class="rvh-leg">'+KS.map(function(k){ return '<div><span class="rvh-d" style="background:'+LVC[k]+'"></span>'+LVN[k]+'<b>'+S.lv[k]+'</b></div>'; }).join('')+'<div><span class="rvh-d" style="background:#d8e8e3"></span>No flags<b>'+S.lv.none+'</b></div></div></div>';
+    if(RV) h+='<div class="rv-q"><div style="display:flex;justify-content:space-between"><b>For your decision</b><span class="oe-sub">owner only</span></div><div class="rv-lr" style="margin-top:8px"><span>'+propTag('cancel')+'</span><b>'+S.cancel+'</b></div><div class="rv-lr"><span>'+propTag('review')+'</span><b>'+S.review+'</b></div><div class="oe-sub" style="margin:6px 0 0">These two lines are not in the printed report. Nobody is cancelled automatically: you decide.</div></div>';
+    h+='<div class="rvh-act"><button type="button" class="oe-mini" onclick="oePrint()">Print report</button><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button></div>';
+  } else if(TAB==='se'){
+    h+='<div class="oe-sw"><div>Record in the Gradebook out of<small>Scores are scaled to this total, for example 30 questions recorded out of 15. Students\' exam tile still shows the raw score.</small></div><input type="number" id="oeGbOut" min="1" max="1000" step="0.5" style="width:90px;flex:0 0 90px" value="'+esc(gbOutGet(ex.id,S.tot))+'" onchange="gbOutSet()"></div>'
+    +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
+    +'<div class="rvh-act"><button type="button" class="oe-mini" onclick="oeIntegrity()">Integrity check</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div><div id="oeIntegrity"></div>';
+  } else {
+    h+='<div class="oe-row" style="margin-top:2px"><select id="rvFil" onchange="oeFilter(this.value)" style="flex:1 1 auto"><option value="">Show: everyone</option><option value="p:cancel">Proposed for cancellation</option><option value="p:review">Needs review</option><option value="l:VS">Very serious</option><option value="l:S">Serious</option><option value="l:H">High</option><option value="l:M">Medium</option><option value="l:L">Low</option><option value="l:">No flags</option><option value="f:1">Has a Final mark</option></select></div>';
+    rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+    h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
+      return '<div class="rvh-row rv-r" data-lv="'+(r.lv||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><span class="rvh-d" style="background:'+(r.lv?LVC[r.lv]:'#d8e8e3')+'"></span><div class="m"><div class="n">'+esc(r.name||r.email)+'</div><div class="s">'+esc(r.index||'')+' &middot; '+st+(r.final!=null?' &middot; Final mark':'')+(r.pending?' &middot; marking pending':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop)?'<div>'+propTag(r.prop)+lvTag(r.lv)+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div><div class="sc">'+rnd(eff(r))+'<small>/'+r.total+'</small></div></div>';}).join('');
+    if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
+  }
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
 };
 window.oeFilter=function(v){

@@ -333,9 +333,11 @@ function monStart(){
 }
 /* ---- face guard in the exam: early warning, pause, report a problem, pause log (items 13-17) ---- */
 function gLog(kind,snap){ try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} if(snap){ try{ sendSnap(kind); }catch(e){} } }
-function recCol(ok){ var e=$('oerRecE'), b=e&&e.closest('.oer-rec'); if(!e) return; var c=ok?'#16a34a':'#dc2626'; e.setAttribute('stroke',c); if(b) b.style.borderColor=c; }
+function recCol(ok){ var ge=$('oerGE'); if(ge) ge.setAttribute('stroke',ok?'#16a34a':'#dc2626'); var e=$('oerRecE'), b=e&&e.closest('.oer-rec'); if(!e) return; var c=ok?'#16a34a':'#dc2626'; e.setAttribute('stroke',c); if(b) b.style.borderColor=c; }
 function gStep(ok){
-  var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now(); recCol(ok||G.hold>now);
+  var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now();
+  if(G.state==='pause' && G.rep && now-G.rep>=20000){ G.rep=0; G.hold=now+30000; gResume('report'); return; }
+  recCol(ok||G.hold>now);
   if(G.hold>now){ G.offAt=0; G.okAt=0; return; }
   if(ok){
     G.offAt=0; if(!G.okAt) G.okAt=now;
@@ -351,17 +353,17 @@ function gStep(ok){
   }
 }
 function gPause(){
-  var G=S.g; G.state='pause'; G.pauses++; var w=$('oerGwarn'); if(w) w.remove();
+  var G=S.g; G.state='pause'; G.rep=0; G.pauses++; var w=$('oerGwarn'); if(w) w.remove();
   gLog('guard_pause',true);
   var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.id='oerGuard'; o.style.cssText='position:fixed;inset:0;z-index:7;background:#0b2a3a;color:#fff;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center';
-  o.innerHTML='<div style="max-width:380px"><div style="font-weight:800;font-size:1.3rem;margin-bottom:8px">Exam paused</div><div style="line-height:1.5">We cannot see your face in the saved position. Look at the screen to continue.</div><div style="margin:16px 0;font:700 2rem Georgia,serif" id="oerGtm">--:--</div><div style="font-size:.85rem;opacity:.85">The timer is still running. Your answers are saved.</div><video id="oerGvid" autoplay playsinline muted style="width:150px;border-radius:12px;margin:14px auto 0;display:block;transform:scaleX(-1);background:#000"></video><button type="button" class="oes-btn s" style="margin-top:16px" onclick="oesGuardReport()">Report a problem</button></div>';
+  o.innerHTML='<div style="max-width:380px"><div style="font-weight:800;font-size:1.3rem;margin-bottom:8px">Exam paused</div><div style="line-height:1.5">We cannot see your face in the saved position. Look at the screen to continue.</div><div style="margin:16px 0;font:700 2rem Georgia,serif" id="oerGtm">--:--</div><div style="font-size:.85rem;opacity:.85">The timer is still running. Your answers are saved.</div><div style="position:relative;width:170px;margin:14px auto 0"><video id="oerGvid" autoplay playsinline muted style="width:170px;border-radius:12px;display:block;transform:scaleX(-1);background:#000"></video><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><ellipse id="oerGE" cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#dc2626" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg></div><div id="oerGrep" style="font-size:.85rem;margin-top:10px;min-height:2.6em"></div><button type="button" class="oes-btn s" id="oerGbtn" style="margin-top:10px" onclick="oesGuardReport()">Report a problem (takes your photo)</button></div>';
   r.appendChild(o); try{ var gv=$('oerGvid'); gv.srcObject=S.stream; gv.play().catch(function(){}); }catch(e){}
 }
 function gResume(how){
   var G=S.g; G.state='run'; G.offAt=0; G.okAt=0; var o=$('oerGuard'); if(o) o.remove(); var w=$('oerGwarn'); if(w) w.remove();
-  gLog(how==='report'?'guard_report':'guard_resume',false); if(how==='report') gLog('guard_resume',false);
+  gLog('guard_resume',false);
 }
-window.oesGuardReport=function(){ if(!S||!S.g||S.g.state!=='pause') return; S.g.hold=Date.now()+60000; gResume('report'); };
+window.oesGuardReport=function(){ var G=S&&S.g; if(!G||G.state!=='pause'||G.rep) return; G.rep=Date.now(); gLog('guard_report',true); var m=$('oerGrep'); if(m) m.textContent='Your photo was sent to your lecturer. Keep your face inside the oval and look at the screen. The exam continues when your face is seen.'; var b=$('oerGbtn'); if(b) b.style.display='none'; };
 /* ---- random identity re-checks (item 25) ---- */
 function rcPlan(){
   var n=rcOn(S.x); if(!n||!S.deadline) return; var t0=Date.now()+_off, span=S.deadline-t0; if(span<300000) return;

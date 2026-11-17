@@ -121,7 +121,7 @@ function renderList(){
     var stTxt=!pub?'Draft':(ended?'Ended':(upcoming?'Upcoming':'Open now')), stSty=ended?' style="background:rgba(100,116,139,.18);color:#475569"':(upcoming?' style="background:rgba(14,165,233,.15);color:#0369a1"':'');
     return '<div class="oe-card'+(pub&&!ended?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+(ended?' &middot; Closed '+esc(fmt(x.end)):'')+'</div></div><span class="oe-st'+(pub&&!ended&&!upcoming?' pub':'')+'"'+stSty+'>'+stTxt+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
-      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeLive(\''+x.id+'\')"><span style="color:#16a34a">&#9679;</span> Live</button><button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended&&!upcoming?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
+      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeLive(\''+x.id+'\')"><span style="color:#16a34a">&#9679;</span> Live</button><button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
   }).join('');
   box.innerHTML=h; lvStart(); hStart();
 }
@@ -129,7 +129,7 @@ function renderList(){
 /* ---- exam health panel: while an exam is open, checks the services and the students every 30 s ---- */
 var HT=0, HBUSY=false;
 var H_CF='https://exams-api.obengahenkora.workers.dev/', H_AUTH='https://qqnsbuirelhwfrshafay.supabase.co', H_AUTHKEY='sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ';
-function hOpen(){ var n=Date.now(); return (LIST||[]).filter(function(x){ var ts=Date.parse(x.start), te=Date.parse(x.end); return x.status==='published' && isFinite(ts) && isFinite(te) && n>=ts && n<=te; }); }
+function hOpen(){ var n=Date.now(); return (LIST||[]).filter(function(x){ var ts=Date.parse(x.start), te=Date.parse(x.end); return x.status==='published' && isFinite(ts) && isFinite(te) && n<=te; }); }
 function hPing(url,opt){ var t=performance.now(), ac=(typeof AbortController!=='undefined')?new AbortController():null, to=ac?setTimeout(function(){ ac.abort(); },8000):0; if(ac) opt.signal=ac.signal;
   return fetch(url,opt).then(function(r){ clearTimeout(to); return {ms:Math.round(performance.now()-t),ok:r.status<500}; }).catch(function(){ clearTimeout(to); return {ms:Math.round(performance.now()-t),ok:false}; }); }
 function hStart(){ if(HT){ clearInterval(HT); HT=0; } if(!$('oeHealth')) return; hRun(); HT=setInterval(function(){ if(!$('oeHealth')){ clearInterval(HT); HT=0; return; } hRun(); },30000); }
@@ -175,7 +175,7 @@ async function lvPoll(){
 }
 window.oeLive=function(id){
   var b=$('oeLv_'+id);
-  if(!b){ msg('<div class="msg">This exam is not open right now, so there is nothing live to show. The live view appears here while it is open.</div>'); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){} return; }
+  if(!b){ msg('<div class="msg">This exam has closed, so there is nothing live to show. Use Results to see how it went.</div>'); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){} return; }
   msg(''); LVALL[id]=true; lvPoll(); hRun();
   try{ var h=$('oeHealth'); (h||b).scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
   try{ b.style.transition='box-shadow .3s'; b.style.boxShadow='0 0 0 3px #16a34a'; setTimeout(function(){ b.style.boxShadow=''; },1600); }catch(e){}
@@ -188,7 +188,7 @@ function lvDraw(id,r){
   var all=!!LVALL[id], rows=all?L:L.slice(0,5);
   h+=rows.map(function(x){ var st=x.paused?'border-color:#dc2626;background:rgba(220,38,38,.10)':(x.flags>0?'border-color:#d97706':''); var gone=x.seen>150;
     return '<div style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin-top:6px;font-size:.8rem;'+st+'"><span style="overflow-wrap:anywhere">'+esc(x.name||x.index||'')+' <span style="color:var(--muted)">'+esc(x.index||'')+'</span></span><span style="text-align:right;white-space:nowrap">'+(x.paused?'<b style="color:#dc2626">PAUSED</b> &middot; ':'')+(gone?'<span style="color:var(--muted)">no signal '+Math.round(x.seen/60)+' min &middot; </span>':'')+'Q'+x.q+'/'+x.n+(x.flags?' &middot; '+x.flags+' flag'+(x.flags===1?'':'s'):'')+(x.leaves?' &middot; left page '+x.leaves+'x':'')+'</span></div>'; }).join('');
-  if(!L.length) h+='<div class="oe-sub" style="margin:8px 0 0">Nobody is writing right now.</div>';
+  if(!L.length){ var _x=(LIST||[]).filter(function(q){ return q.id===id; })[0], _w=_x&&Date.now()<Date.parse(_x.start); h+='<div class="oe-sub" style="margin:8px 0 0">'+(_w?'Waiting for students. This exam opens '+esc(fmt(_x.start))+'. Students appear here by themselves as they start.':'Nobody is writing right now.')+'</div>'; }
   if(L.length>5) h+='<button type="button" class="oe-mini" style="margin-top:8px" onclick="oeLvAll(\''+id+'\')">'+(all?'Show fewer':'Show all '+L.length)+'</button>';
   b.innerHTML=h;
 }

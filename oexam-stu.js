@@ -184,7 +184,7 @@ window.oesStart=async function(){
     var bio='off'; if(S.x.bioStart!==false){ m.innerHTML='<div class="msg ok">Confirm with your fingerprint or face...</div>'; bio=await bioCheck(); m.innerHTML='<div class="msg ok">Starting...</div>'; }
     var cam=''; try{ cam=(S.stream.getVideoTracks()[0]||{}).label||''; }catch(e){}
     var j=await _stu({action:'stu_oe_start',id:S.x.id,device:device(),code:($('oerCode')||{}).value||'',photo:ph,bio:bio,cam:cam}); _off=j.now-Date.now(); S.me=j.me||null;
-    S.q=j.questions; S.ans=j.answers||{}; S.cur=Math.min(j.cur||0,S.q.length-1); S.deadline=Date.parse(j.deadline); S.leaves=j.leaves||0; S.max=j.exam.maxLeaves; S.oneWay=j.exam.oneWay||!!qtOn(S.x); S.qT=qtOn(S.x); S.running=true; S.hiddenAt=0; S.pasteN=0;
+    S.q=j.questions; S.ans=j.answers||{}; S.cur=Math.min(j.cur||0,S.q.length-1); S.deadline=Date.parse(j.deadline); S.leaves=j.leaves||0; S.max=j.exam.maxLeaves; S.oneWay=j.exam.oneWay||!!qtOn(S.x); S.qT=qtOn(S.x); S.qAtSrv=(S.qT&&j.qAt)?Date.parse(j.qAt):0; if(S.qT&&j.qAt) S.cur=Math.min(S.q.length-1,Math.max(S.cur,j.qCur||0)); S.running=true; S.hiddenAt=0; S.pasteN=0;
     begin();
   }catch(e){ var t=e.message||'error'; m.innerHTML='<div class="msg err">'+esc(t)+'</div>'; go.disabled=false; }
 };
@@ -215,7 +215,8 @@ function begin(){
 function qtKey(){ return 'ceQt_'+S.x.id; }
 function qtStart(fresh){
   if(!S||!S.qT) return; var now=Date.now()+_off, end=now+S.qT*1000;
-  if(!fresh){ try{ var o=JSON.parse(localStorage.getItem(qtKey())||'null'); if(o&&o.cur===S.cur&&o.end>now-60000&&o.end<=end) end=o.end; }catch(e){} }
+  if(!fresh&&S.qAtSrv){ end=S.qAtSrv+S.qT*1000; }
+  else if(!fresh){ try{ var o=JSON.parse(localStorage.getItem(qtKey())||'null'); if(o&&o.cur===S.cur&&o.end>now-60000&&o.end<=end) end=o.end; }catch(e){} }
   S.qEnd=end; try{ localStorage.setItem(qtKey(),JSON.stringify({cur:S.cur,end:end})); }catch(e){}
 }
 function qtTick(){
@@ -240,13 +241,15 @@ function render(){
 }
 window.oesPick=function(k){ var q=S.q[S.cur]; S.ans[q.id]=k; S.dirty[q.id]=k; render(); saveSoon(); };
 window.oesText=function(v){ var q=S.q[S.cur]; S.ans[q.id]=v; S.dirty[q.id]=v; saveSoon(); };
-window.oesGo=function(i){ if(i<0||i>=S.q.length) return; S.cur=i; qtStart(true); render(); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
+window.oesGo=function(i){ if(i<0||i>=S.q.length) return; S.cur=i; qtStart(true); render(); if(S.qT) flushNow(true); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
 /* answers are saved together every few seconds (not after every tap) so hundreds of students do not overload the server; leaving the page and submitting always save everything */
 function saveSoon(){ if(S.saveT) return; S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },10000); var s=$('oerSave'); if(s) s.textContent='Will save in a few seconds'; }
 if(!window._oesFlushBound){ window._oesFlushBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ try{ flushNow(); }catch(e){} } }); window.addEventListener('pagehide',function(){ try{ flushNow(); }catch(e){} }); }
-async function flushNow(){
-  if(!S||!S.running||!Object.keys(S.dirty).length) return; var d=S.dirty; S.dirty={};
-  try{ await call({action:'stu_oe_save',id:S.x.id,answers:d,cur:S.cur}); var s=$('oerSave'); if(s) s.textContent='Saved'; }
+async function flushNow(force){
+  if(!S||!S.running||(!Object.keys(S.dirty).length&&!force)) return; var d=S.dirty; S.dirty={};
+  try{ var jr=await call({action:'stu_oe_save',id:S.x.id,answers:d,cur:S.cur});
+    if(jr&&jr.qAt&&S.qT&&S.running){ if(jr.qCur>S.cur){ S.cur=Math.min(S.q.length-1,jr.qCur); S.qEnd=Date.parse(jr.qAt)+S.qT*1000; render(); } else if(jr.qCur===S.cur){ S.qEnd=Date.parse(jr.qAt)+S.qT*1000; } }
+    var s=$('oerSave'); if(s) s.textContent='Saved'; }
   catch(e){ Object.keys(d).forEach(function(k){ if(!(k in S.dirty)) S.dirty[k]=d[k]; }); var s2=$('oerSave'); if(s2) s2.textContent='Connection problem. Your answers are kept and will save when it returns.'; clearTimeout(S.saveT); S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },5000); }
 }
 async function leave(kind){

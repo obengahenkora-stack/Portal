@@ -4,7 +4,8 @@ function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function tm(t){try{return new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return t||'';}}
 var css=document.createElement('style');
-css.textContent='#onlineExamCard .rv-t{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}#onlineExamCard .rv-t div{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:var(--card)}#onlineExamCard .rv-t b{display:block;font-size:1.25rem}#onlineExamCard .rv-t span{font-size:.7rem;color:var(--muted);font-weight:600}'
+css.textContent='#onlineExamCard .rvf{border-bottom:1px solid var(--line);padding:9px 0}#onlineExamCard .rvf:last-child{border:0}#onlineExamCard .rvf-b{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}#onlineExamCard .rvf-c{background:#fee2e2;border-color:#fca5a5;color:#991b1b}#onlineExamCard .rvf-d{background:#dcfce7;border-color:#86efac;color:#166534}'
++'#onlineExamCard .rv-t{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}#onlineExamCard .rv-t div{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:var(--card)}#onlineExamCard .rv-t b{display:block;font-size:1.25rem}#onlineExamCard .rv-t span{font-size:.7rem;color:var(--muted);font-weight:600}'
 +'#onlineExamCard .rv-r{border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-top:8px;background:var(--card);cursor:pointer}#onlineExamCard .rv-r .n{font-weight:700;overflow-wrap:anywhere}#onlineExamCard .rv-r .s{font-size:.76rem;color:var(--muted);margin-top:2px}'
 +'#onlineExamCard .rv-p{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}#onlineExamCard .rv-p img{width:100%;border-radius:8px;display:block;cursor:pointer}#onlineExamCard .rv-p .f img{outline:3px solid #dc2626}#onlineExamCard .rv-p small{display:block;font-size:.62rem;color:var(--muted);text-align:center}#onlineExamCard .rv-p .f small{color:#dc2626;font-weight:700}'
 +'#onlineExamCard .rv-q{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px;background:var(--card)}#onlineExamCard .rv-ok{color:#15803d;font-weight:700}#onlineExamCard .rv-no{color:#dc2626;font-weight:700}'
@@ -30,19 +31,22 @@ var RV=null, LVN={VS:'Very serious',S:'Serious',H:'High',M:'Medium',L:'Low'}, LV
 function eff(r){ return (r.final!=null)?r.final:((r.mcq||0)+r.written); }
 function rnd(x){ return Math.round(x*10)/10; }
 function lvTag(l){ return l?'<span class="rv-lv" style="background:'+LVC[l]+'">'+LVN[l]+'</span>':''; }
+var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',camera_off:'M',no_face:'L',flash:'L'};
+function rawLv(r){ var best='',o=['VS','S','H','M','L']; Object.keys(r.kinds||{}).forEach(function(k){ var l=RAWLV[k]; if(l&&(!best||o.indexOf(l)<o.indexOf(best))) best=l; }); return best; }
+function stTag(r){ if(r.st==='toreview') return '<span class="rv-lv" style="background:#94a3b8">To review</span>'; if(r.st==='cleared') return '<span class="rv-lv" style="background:#16a34a">Cleared</span>'; return ''; }
 function propTag(p){ return p==='cancel'?'<span class="rv-lv" style="background:#111">Proposed for cancellation</span>':(p==='review'?'<span class="rv-lv" style="background:#7c3aed">Needs review</span>':''); }
 function mergeRv(){
   if(!RV||!D) return;
   var by={}; RV.rows.forEach(function(x){ if(x.email) by['e:'+x.email]=x; if(x.index) by['i:'+String(x.index).toLowerCase()]=x; });
-  D.rows.forEach(function(r){ var x=by['e:'+String(r.email||'').toLowerCase()]||by['i:'+String(r.index||'').toLowerCase()]; r.lv=x?x.level:''; r.prop=x?x.proposal:''; r.final=(x&&x.final!=null)?x.final:null; r.reason=x?x.reason:''; r.kinds=x?x.kinds:{}; });
+  D.rows.forEach(function(r){ var x=by['e:'+String(r.email||'').toLowerCase()]||by['i:'+String(r.index||'').toLowerCase()]; r.lv=x?x.level:''; r.prop=x?x.proposal:''; r.final=(x&&x.final!=null)?x.final:null; r.reason=x?x.reason:''; r.kinds=x?x.kinds:{}; r.st=x?(x.status||'none'):'none'; r.nf=x?(x.nflags||0):0; r.nc=x?(x.nconf||0):0; r.nd=x?(x.ndis||0):0; r.vd=x?(x.verdicts||{}):{}; });
 }
 function stats(){
   var rows=D.rows, sub=rows.filter(function(r){return r.submittedAt;}), sc=sub.map(eff).sort(function(a,b){return a-b;}), n=sc.length;
   var sum=sc.reduce(function(a,b){return a+b;},0), med=n?(n%2?sc[(n-1)/2]:(sc[n/2-1]+sc[n/2])/2):0, tot=rows.length?rows[0].total:0;
-  var lv={VS:0,S:0,H:0,M:0,L:0,none:0}, bands=[0,0,0,0,0], cancel=0, review=0, anyFlag=0;
-  sub.forEach(function(r){ lv[r.lv||'none']++; if(r.prop==='cancel') cancel++; else if(r.prop==='review') review++; if(r.lv||(r.why&&r.why.length)||r.flags>0||r.leaves>0) anyFlag++; });
+  var lv={VS:0,S:0,H:0,M:0,L:0,none:0}, st={none:0,toreview:0,cleared:0,confirmed:0}, bands=[0,0,0,0,0], cancel=0, review=0, anyFlag=0;
+  sub.forEach(function(r){ lv[r.lv||'none']++; st[r.st||'none']=(st[r.st||'none']||0)+1; if(r.prop==='cancel') cancel++; else if(r.prop==='review') review++; if(r.lv||(r.why&&r.why.length)||r.flags>0||r.leaves>0) anyFlag++; });
   if(tot>0) sc.forEach(function(s){ bands[Math.min(4,Math.floor(s/tot*5))]++; });
-  return {sub:n, expected:rows.length+D.missing.length, missing:D.missing.length, avg:n?sum/n:0, med:med, hi:n?sc[n-1]:0, lo:n?sc[0]:0, tot:tot, lv:lv, bands:bands, cancel:cancel, review:review, anyFlag:anyFlag, pend:rows.filter(function(r){return r.submittedAt&&r.pending>0;}).length};
+  return {sub:n, expected:rows.length+D.missing.length, missing:D.missing.length, avg:n?sum/n:0, med:med, hi:n?sc[n-1]:0, lo:n?sc[0]:0, tot:tot, lv:lv, st:st, bands:bands, cancel:cancel, review:review, anyFlag:anyFlag, pend:rows.filter(function(r){return r.submittedAt&&r.pending>0;}).length};
 }
 window.oeResults=async function(id){
   var box=$('oeBody'); box.innerHTML='<div class="empty">Loading results...</div>';
@@ -62,9 +66,13 @@ window.oeRender=function(){
   if(TAB==='ov'){
     h+='<div class="rvh-k"><div><b>'+rnd(S.avg)+'</b><span>Average</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div></div>'
     +'<div class="rvh-k" style="margin-top:8px"><div><b>'+rnd(S.med)+'</b><span>Middle score</span></div><div><b>'+S.sub+' / '+S.expected+'</b><span>Submitted</span></div><div><b>'+S.pend+'</b><span>Need marking</span></div></div>';
-    h+='<div class="rv-q"><b>Flag levels</b><div class="oe-sub" style="margin:4px 0 0">Each student is counted once, at their highest level.</div>'
+    var fl=S.st.toreview+S.st.cleared+S.st.confirmed, dn=S.st.cleared+S.st.confirmed, pc=fl?Math.round(dn/fl*100):100;
+    h+='<div class="rv-q"><b>Flag review</b><div class="oe-sub" style="margin:4px 0 0">'+dn+' of '+fl+' students with flags reviewed ('+pc+'%). A flag counts only after you or a TA confirm it.</div>'
+    +'<div class="rvh-bar"><i style="width:'+(fl?S.st.confirmed/fl*100:0)+'%;background:#dc2626"></i><i style="width:'+(fl?S.st.cleared/fl*100:0)+'%;background:#16a34a"></i><i style="width:'+(fl?S.st.toreview/fl*100:0)+'%;background:#94a3b8"></i></div>'
+    +'<div class="rvh-leg"><div><span class="rvh-d" style="background:#94a3b8"></span>To review<b>'+S.st.toreview+'</b></div><div><span class="rvh-d" style="background:#16a34a"></span>Cleared<b>'+S.st.cleared+'</b></div><div><span class="rvh-d" style="background:#dc2626"></span>Confirmed<b>'+S.st.confirmed+'</b></div><div><span class="rvh-d" style="background:#d8e8e3"></span>No flags<b>'+S.st.none+'</b></div></div></div>'
+    +'<div class="rv-q"><b>Levels from confirmed flags</b><div class="oe-sub" style="margin:4px 0 0">Each student is counted once, at their highest confirmed level.</div>'
     +'<div class="rvh-bar">'+KS.map(function(k){ return '<i style="width:'+(S.lv[k]/tot*100)+'%;background:'+LVC[k]+'"></i>'; }).join('')+'</div>'
-    +'<div class="rvh-leg">'+KS.map(function(k){ return '<div><span class="rvh-d" style="background:'+LVC[k]+'"></span>'+LVN[k]+'<b>'+S.lv[k]+'</b></div>'; }).join('')+'<div><span class="rvh-d" style="background:#d8e8e3"></span>No flags<b>'+S.lv.none+'</b></div></div></div>';
+    +'<div class="rvh-leg">'+KS.map(function(k){ return '<div><span class="rvh-d" style="background:'+LVC[k]+'"></span>'+LVN[k]+'<b>'+S.lv[k]+'</b></div>'; }).join('')+'<div><span class="rvh-d" style="background:#d8e8e3"></span>No confirmed flags<b>'+S.lv.none+'</b></div></div></div>';
     if(RV) h+='<div class="rv-q"><div style="display:flex;justify-content:space-between"><b>For your decision</b><span class="oe-sub">owner only</span></div><div class="rv-lr" style="margin-top:8px"><span>'+propTag('cancel')+'</span><b>'+S.cancel+'</b></div><div class="rv-lr"><span>'+propTag('review')+'</span><b>'+S.review+'</b></div><div class="oe-sub" style="margin:6px 0 0">These two lines are not in the printed report. Nobody is cancelled automatically: you decide.</div></div>';
     h+='<div class="rvh-act"><button type="button" class="oe-mini" onclick="oePrint()">Print report</button><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button></div>';
   } else if(TAB==='se'){
@@ -72,10 +80,10 @@ window.oeRender=function(){
     +'<div class="oe-sw"><div>Release results to students<small>They see score and comment on their Exams tile.</small></div><button type="button" class="oe-tg'+(ex.released?' on':'')+'" onclick="oeRelease('+(ex.released?'false':'true')+')"><i></i></button></div>'
     +'<div class="rvh-act"><button type="button" class="oe-mini" onclick="oeIntegrity()">Integrity check</button>'+(ex.hasPhotos?'<button type="button" class="oe-mini x" onclick="oePurge()">Delete photos</button>':'')+'</div><div id="oeIntegrity"></div>';
   } else {
-    h+='<div class="oe-row" style="margin-top:2px"><select id="rvFil" onchange="oeFilter(this.value)" style="flex:1 1 auto"><option value="">Show: everyone</option><option value="p:cancel">Proposed for cancellation</option><option value="p:review">Needs review</option><option value="l:VS">Very serious</option><option value="l:S">Serious</option><option value="l:H">High</option><option value="l:M">Medium</option><option value="l:L">Low</option><option value="l:">No flags</option><option value="f:1">Has a Final mark</option></select></div>';
+    h+='<div class="oe-row" style="margin-top:2px"><select id="rvFil" onchange="oeFilter(this.value)" style="flex:1 1 auto"><option value="">Show: everyone</option><option value="p:cancel">Proposed for cancellation</option><option value="p:review">Needs review</option><option value="l:VS">Very serious</option><option value="l:S">Serious</option><option value="l:H">High</option><option value="l:M">Medium</option><option value="l:L">Low</option><option value="s:toreview">To review</option><option value="s:cleared">Cleared</option><option value="s:confirmed">Has confirmed flags</option><option value="l:">No confirmed flags</option><option value="f:1">Has a Final mark</option></select></div>';
     rows.sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
     h+=rows.map(function(r,i){var st=r.submittedAt?(r.how==='auto'||r.how==='time'?'Auto-submitted':'Submitted'):'Not finished';
-      return '<div class="rvh-row rv-r" data-lv="'+(r.lv||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><span class="rvh-d" style="background:'+(r.lv?LVC[r.lv]:'#d8e8e3')+'"></span><div class="m"><div class="n">'+esc(r.name||r.email)+'</div><div class="s">'+esc(r.index||'')+' &middot; '+st+(r.final!=null?' &middot; Final mark':'')+(r.pending?' &middot; marking pending':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop)?'<div>'+propTag(r.prop)+lvTag(r.lv)+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div><div class="sc">'+rnd(eff(r))+'<small>/'+r.total+'</small></div></div>';}).join('');
+      return '<div class="rvh-row rv-r" data-lv="'+(r.lv||'')+'" data-st="'+(r.st||'')+'" data-prop="'+(r.prop||'')+'" data-fin="'+(r.final!=null?1:0)+'" onclick="oeOpenAtt('+i+')"><span class="rvh-d" style="background:'+(r.lv?LVC[r.lv]:(r.st==='toreview'?'#94a3b8':(r.st==='cleared'?'#16a34a':'#d8e8e3')))+'"></span><div class="m"><div class="n">'+esc(r.name||r.email)+'</div><div class="s">'+esc(r.index||'')+' &middot; '+st+(r.final!=null?' &middot; Final mark':'')+(r.pending?' &middot; marking pending':'')+' &middot; Photos '+r.snaps+'</div>'+((r.lv||r.prop||r.st==='toreview'||r.st==='cleared')?'<div>'+propTag(r.prop)+lvTag(r.lv)+stTag(r)+'</div>':'')+(r.nf?'<div class="s">'+r.nf+' flag'+(r.nf===1?'':'s')+' &middot; '+r.nc+' confirmed &middot; '+r.nd+' dismissed'+(r.st==='toreview'&&rawLv(r)?' &middot; automatic: '+LVN[rawLv(r)]:'')+'</div>':'')+(r.why&&r.why.length?'<div class="s" style="color:#dc2626;margin-top:4px">&#9888; '+r.why.map(esc).join(' &middot; ')+'</div>':'')+'</div><div class="sc">'+rnd(eff(r))+'<small>/'+r.total+'</small></div></div>';}).join('');
     if(D.missing.length) h+='<div class="oe-sub" style="margin-top:16px">Did not start ('+D.missing.length+')</div><div class="oe-sub">'+D.missing.map(function(m){return esc(m.name||m.index);}).join(', ')+'</div>';
   }
   box.innerHTML=h; msg(''); window.scrollTo(0,0);
@@ -85,6 +93,7 @@ window.oeFilter=function(v){
   document.querySelectorAll('#oeBody .rv-r').forEach(function(el){
     var show=true;
     if(t==='p') show=el.getAttribute('data-prop')===val;
+    else if(t==='s') show=el.getAttribute('data-st')===val;
     else if(t==='l') show=el.getAttribute('data-lv')===val;
     else if(t==='f') show=el.getAttribute('data-fin')==='1';
     el.style.display=show?'':'none';
@@ -95,14 +104,14 @@ window.oePrint=function(){
   if(!D) return; var S=stats(), ex=D.exam, d=function(t){ try{ return new Date(t).toLocaleDateString([], {day:'numeric',month:'long',year:'numeric'}); }catch(e){ return ''; } };
   var labels=['0-20%','20-40%','40-60%','60-80%','80-100%'], mx=Math.max.apply(null,S.bands.concat([1]));
   var bandRows=S.bands.map(function(c,i){ return '<tr><td>'+labels[i]+' of the total</td><td class="n">'+c+'</td><td><div class="bar" style="width:'+Math.round(c/mx*100)+'%"></div></td></tr>'; }).join('');
-  var lvRows=['VS','S','H','M','L'].map(function(k){ return '<tr><td>'+LVN[k]+'</td><td class="n">'+S.lv[k]+'</td></tr>'; }).join('')+'<tr><td>No flags</td><td class="n">'+S.lv.none+'</td></tr>';
+  var lvRows=['VS','S','H','M','L'].map(function(k){ return '<tr><td>'+LVN[k]+'</td><td class="n">'+S.lv[k]+'</td></tr>'; }).join('')+'<tr><td>No confirmed flags</td><td class="n">'+S.lv.none+'</td></tr><tr><td>Flags still being reviewed</td><td class="n">'+S.st.toreview+'</td></tr>';
   var css='body{font:14px/1.5 Arial,Helvetica,sans-serif;color:#111;margin:28px}h1{font-size:22px;margin:0 0 2px}h2{font-size:15px;margin:14px 0 5px;border-bottom:1px solid #999;padding-bottom:3px}.sub{color:#555}table{border-collapse:collapse;width:100%}td,th{padding:3px 8px;border-bottom:1px solid #ddd;text-align:left}td.n{text-align:right;font-weight:700;width:90px}.bar{height:12px;background:#334155}.g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.g div{border:1px solid #bbb;border-radius:8px;padding:8px;text-align:center}.g b{display:block;font-size:20px}.g span{font-size:11px;color:#555}.note{font-size:11px;color:#555;margin-top:10px}@media print{body{margin:8mm}}';
   var html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(ex.title)+' - report</title><style>'+css+'</style></head><body>'
    +'<h1>'+esc(ex.title)+'</h1><div class="sub">'+esc(ex.course)+(ex.start?' &middot; '+esc(d(ex.start)):'')+(ex.durationMin?' &middot; '+esc(ex.durationMin)+' minutes':'')+' &middot; Total marks: '+rnd(S.tot)+'</div>'
    +'<h2>Participation</h2><div class="g"><div><b>'+S.expected+'</b><span>Expected</span></div><div><b>'+S.sub+'</b><span>Submitted</span></div><div><b>'+S.missing+'</b><span>Did not start</span></div></div>'
    +'<h2>Scores (out of '+rnd(S.tot)+')</h2><div class="g"><div><b>'+rnd(S.avg)+'</b><span>Average</span></div><div><b>'+rnd(S.med)+'</b><span>Middle score</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div><div><b>'+S.pend+'</b><span>Scripts still being marked</span></div><div><b>'+S.sub+'</b><span>Scores counted</span></div></div>'
    +'<h2>How scores were spread</h2><table>'+bandRows+'</table>'
-   +'<h2>Flag levels</h2><table>'+lvRows+'</table><div class="note">Flags are automatic warnings raised during the exam (for example the camera not seeing a face, or leaving the exam page). Each student is counted once, at their highest level. Students with flags at one or more levels will be reviewed, and may receive a penalty or other marked action.</div>'
+   +'<h2>Flag levels</h2><table>'+lvRows+'</table><div class="note">Flags are automatic warnings raised during the exam (for example the camera not seeing a face, or leaving the exam page). Levels count flags confirmed after review. Each student is counted once, at their highest level. Students with flags at one or more levels will be reviewed, and may receive a penalty or other marked action.</div>'
    +'<div class="note">No student names appear in this report. Generated '+esc(new Date().toLocaleString())+'.</div>'
    +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script></body></html>';
   var w=window.open('','_blank');
@@ -156,19 +165,36 @@ window.oeIntegrity=async function(){
 };
 window.oeRelease=async function(v){ try{ await api({action:'oe_release',id:D.exam.id,released:v}); await oeResults(D.exam.id); var n=await gbSync(v); var nt=''; if(v&&window.ceNotify){ try{ nt=ceNotifyText(await ceNotify('results',D.exam.course,D.exam.title)); }catch(_e){} } msg('<div class="msg ok">'+(v?'Results released and '+n+' scores added to the Gradebook as "'+esc(D.exam.title)+'".'+esc(nt):'Results hidden and removed from the Gradebook.')+'</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
 window.oePurge=async function(){ if(!confirm('Delete ALL photos for this exam?\n\nThis cannot be undone.')) return; try{ var r=await api({action:'oe_purge',id:D.exam.id}); await oeResults(D.exam.id); msg('<div class="msg ok">Deleted '+r.removed+' photos.</div>'); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };
-window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}; var L=[['Name','Index','Status','MCQ','Written','System score','Final mark','Score used','Out of','Flag level','Proposal','Left page','Flags (all)','Flag types','Photos'].map(q).join(',')];
+window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}; var L=[['Name','Index','Status','MCQ','Written','System score','Final mark','Score used','Out of','Flag level (confirmed)','Proposal','Left page','Flags (all)','Flag types','Photos'].map(q).join(',')];
   D.rows.forEach(function(r){L.push([r.name,r.index,r.submittedAt?'Submitted':'Not finished',r.mcq||0,r.written,(r.mcq||0)+r.written,r.final!=null?r.final:'',eff(r),r.total,r.lv?LVN[r.lv]:'',r.prop==='cancel'?'Proposed for cancellation':(r.prop==='review'?'Needs review':''),r.leaves,Object.keys(r.kinds||{}).reduce(function(s,k){return s+r.kinds[k];},0),Object.keys(r.kinds||{}).map(function(k){return k.replace(/_/g,' ')+' x'+r.kinds[k];}).join('; '),r.snaps].map(q).join(','));});
   D.missing.forEach(function(m){L.push([m.name,m.index,'Did not start',0,0,0,'',0,'','','','','',''].map(q).join(','));});
   var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\n')],{type:'text/csv'})); a.download=(D.exam.title||'exam').replace(/[^\w]+/g,'_')+'_results.csv'; a.click(); };
 window.oeBig=function(src){ var d=document.createElement('div'); d.id='rvBig'; d.onclick=function(){d.remove();}; d.innerHTML='<img src="'+src+'">'; document.body.appendChild(d); };
+var FACT={leave:1,fullscreen_exit:1,phone_seen:1,other_device:1};
+function flagRow(r,f,k){ var v=(r.vd||{})[String(k)], l=RAWLV[f.kind];
+  return '<div class="rvf"><div class="rvf-t"><b>'+esc(String(f.kind).replace(/_/g,' '))+'</b>'+(l?' <span class="rv-lv" style="background:'+LVC[l]+';margin:0">'+LVN[l]+'</span>':'')+'</div><div class="oe-sub" style="margin:2px 0 0">'+tm(f.t)+(f.note?' &middot; '+esc(f.note):'')+'</div>'
+  +'<div class="rvf-b"><button type="button" class="oe-mini'+(v==='c'?' rvf-c':'')+'" onclick="oeVerdict('+k+',\'c\')">'+(v==='c'?'&#10003; Confirmed':'Confirm')+'</button><button type="button" class="oe-mini'+(v==='d'?' rvf-d':'')+'" onclick="oeVerdict('+k+',\'d\')">'+(v==='d'?'&#10003; Dismissed':'Dismiss')+'</button>'+(v?'<button type="button" class="oe-mini" onclick="oeVerdict('+k+',null)">Undo</button>':'')+'</div></div>'; }
+function flagBox(r,A){
+  var fl=A.flags||[]; if(!fl.length) return '';
+  var fa=[],gu=[]; fl.forEach(function(f,k){ (FACT[f.kind]?fa:gu).push(flagRow(r,f,k)); });
+  var sm='<div class="oe-sub" style="margin:0 0 6px">Level now: '+(r.lv?lvTag(r.lv):'<b>'+(r.st==='cleared'?'Cleared':'Not yet reviewed')+'</b>')+' &middot; '+r.nc+' confirmed, '+r.nd+' dismissed, '+(r.nf-r.nc-r.nd)+' waiting. Only confirmed flags count.</div>';
+  return '<div class="rv-q"><b>Recorded by the system (facts)</b>'+sm+(fa.join('')||'<div class="oe-sub">None.</div>')+'</div><div class="rv-q" style="background:rgba(100,116,139,.06)"><b>Camera guesses (need your eyes)</b><div class="oe-sub" style="margin:4px 0 6px">Check the photos below before confirming.</div>'+(gu.join('')||'<div class="oe-sub">None.</div>')+'</div>';
+}
+window.oeVerdict=async function(k,v){
+  var A=window._rvA, r=window._rvR; if(!A||!r) return;
+  try{ var res=await api({action:'rv_verdict',id:D.exam.id,email:A.email,i:k,v:v});
+    r.vd=res.verdicts||{}; r.st=res.status; r.nf=res.nflags; r.nc=res.nconf; r.nd=res.ndis; r.lv=res.level; r.prop=res.proposal;
+    var b=$('rvFlags'); if(b) b.innerHTML=flagBox(r,A);
+  }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); }
+};
 window.oeOpenAtt=async function(i){
   var r=D.rows[i], box=$('oeBody'); box.innerHTML='<div class="empty">Loading...</div>';
   var A; try{ A=(await api({action:'oe_attempt',id:D.exam.id,email:r.email})).attempt; }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); return oeResults(D.exam.id); }
-  window._rvA=A; SN=[];
+  window._rvA=A; window._rvR=r; SN=[];
   var h='<button type="button" class="oe-mini" onclick="oeRender()">&larr; Back to results</button><div class="oe-h" style="margin-top:12px">'+esc(A.name||A.email)+'</div><div class="oe-sub">'+esc(A.index||'')+' &middot; Started '+tm(A.startedAt)+(A.submittedAt?' &middot; Submitted '+tm(A.submittedAt):' &middot; Not submitted')+' &middot; Left page '+A.leaves+'x</div>';
-  if(A.flags.length) h+='<div class="rv-q"><b>Flags</b>'+A.flags.map(function(f){return '<div class="oe-sub" style="margin:4px 0 0">'+tm(f.t)+' &middot; '+esc(f.kind)+(f.note?' &middot; '+esc(f.note):'')+'</div>';}).join('')+'</div>';
+  h+='<div id="rvFlags">'+flagBox(r,A)+'</div>';
   var kd=r.kinds||{}, kl=Object.keys(kd).map(function(k){ return esc(k.replace(/_/g,' '))+' &times;'+kd[k]; }).join(' &middot; ');
-  h+='<div class="rv-q"><b>Final mark</b><div>'+propTag(r.prop)+lvTag(r.lv)+(r.lv||r.prop?'':'<span class="oe-sub">No flags</span>')+'</div>'+(kl?'<div class="oe-sub" style="margin:6px 0 0">'+kl+'</div>':'')
+  h+='<div class="rv-q"><b>Final mark</b><div>'+propTag(r.prop)+lvTag(r.lv)+(r.lv||r.prop?'':'<span class="oe-sub">No confirmed flags</span>')+'</div>'+(kl?'<div class="oe-sub" style="margin:6px 0 0">'+kl+'</div>':'')
     +'<div class="oe-sub" style="margin:8px 0 0">System score: <b>'+rnd((r.mcq||0)+r.written)+' / '+r.total+'</b>'+(r.final!=null?' &middot; Final mark: <b>'+rnd(r.final)+'</b> (this is what counts)':'')+'</div>'
     +'<div class="oe-l" style="margin-top:10px">Mark you want to give (0 to '+r.total+')</div><input type="number" id="rvFin" step="0.5" min="0" max="'+r.total+'" value="'+(r.final==null?'':r.final)+'" placeholder="Leave empty to use the system score">'
     +'<div class="oe-l" style="margin-top:8px">Reason (only you see this)</div><input type="text" id="rvFinWhy" maxlength="500" value="'+esc(r.reason||'')+'">'

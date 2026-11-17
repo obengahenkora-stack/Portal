@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'flag-verdicts', date:'17 Nov 2026', title:'Review each exam flag', all:[], student:[], staff:['On a student\'s result page, every flag now has Confirm and Dismiss buttons. Flag levels and proposals count only confirmed flags. System facts (leaving the page, fullscreen, phone seen) are shown apart from camera guesses, and the Overview shows review progress with new filters: To review, Cleared, Has confirmed flags.'] },
     { id:'results-tabs', date:'17 Nov 2026', title:'Exam Results page redesigned', all:[], student:[], staff:['The exam Results page now has three tabs: Overview (numbers, flag levels, decisions, print and download), Students (filter and compact list) and Settings (Gradebook total, release switch, integrity check, delete photos).'] },
     { id:'exams-page-redesign', date:'17 Nov 2026', title:'New Exams & Assignments page', all:[], student:[], staff:['The Exams & Assignments page has a new look: a header with live numbers (open now, upcoming, to review) and two clear cards for Online Exams and Assignments. The overlapping text on phones is fixed.'] },
     { id:'ta-report-reply', date:'16 Nov 2026', title:'Teaching assistants can reply to reports again', all:[], student:[], staff:['Replies to issue reports now save through a safe route that only changes that one reply, so teaching assistants can answer reports for their assigned courses.'] },

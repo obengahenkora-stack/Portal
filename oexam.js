@@ -121,7 +121,7 @@ function renderList(){
     var stTxt=!pub?'Draft':(ended?'Ended':(upcoming?'Upcoming':'Open now')), stSty=ended?' style="background:rgba(100,116,139,.18);color:#475569"':(upcoming?' style="background:rgba(14,165,233,.15);color:#0369a1"':'');
     return '<div class="oe-card'+(pub&&!ended?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+(ended?' &middot; Closed '+esc(fmt(x.end)):'')+'</div></div><span class="oe-st'+(pub&&!ended&&!upcoming?' pub':'')+'"'+stSty+'>'+stTxt+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
-      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended&&!upcoming?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
+      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeLive(\''+x.id+'\')"><span style="color:#16a34a">&#9679;</span> Live</button><button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended&&!upcoming?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
   }).join('');
   box.innerHTML=h; lvStart(); hStart();
 }
@@ -173,6 +173,13 @@ async function lvPoll(){
   var els=[].slice.call(document.querySelectorAll('.oe-lv'));
   for(var k=0;k<els.length;k++){ var id=els[k].id.replace('oeLv_',''); try{ var r=await teamApi({action:'rv_live',id:id}); lvDraw(id,r); }catch(e){ var b=$('oeLv_'+id); if(b) b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE: could not load ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; } }
 }
+window.oeLive=function(id){
+  var b=$('oeLv_'+id);
+  if(!b){ msg('<div class="msg">This exam is not open right now, so there is nothing live to show. The live view appears here while it is open.</div>'); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){} return; }
+  msg(''); LVALL[id]=true; lvPoll(); hRun();
+  try{ var h=$('oeHealth'); (h||b).scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+  try{ b.style.transition='box-shadow .3s'; b.style.boxShadow='0 0 0 3px #16a34a'; setTimeout(function(){ b.style.boxShadow=''; },1600); }catch(e){}
+};
 window.oeLvAll=function(id){ LVALL[id]=!LVALL[id]; var b=$('oeLv_'+id); if(b&&b._r) lvDraw(id,b._r); };
 function lvDraw(id,r){
   var b=$('oeLv_'+id); if(!b) return; b._r=r; var L=(r&&r.live)||[]; var paused=L.filter(function(x){return x.paused;}).length, flagged=L.filter(function(x){return x.flags>0||x.leaves>0;}).length, writing=L.length-paused;

@@ -113,7 +113,7 @@ window.oeInit=async function(){
 function renderList(){
   var box=$('oeBody'); msg('');
   try{ var _n=Date.now(),_a=0,_u=0,_r=0; LIST.forEach(function(x){ if(x.status!=='published') return; var ts=Date.parse(x.start),te=Date.parse(x.end); if(isFinite(te)&&_n>te){ if(!x.released) _r++; } else if(isFinite(ts)&&_n<ts) _u++; else _a++; }); var g=function(i){ return document.getElementById(i); }; if(g('exaN1')){ g('exaN1').textContent=_a; g('exaN2').textContent=_u; g('exaN3').textContent=_r; } var lv=g('exaLive'); if(lv){ lv.style.display=_a?'':'none'; lv.textContent=_a+' live'; } }catch(e){}
-  var h=(window.oeBanner?oeBanner(LIST):'')+(hOpen().length?'<div id="oeHealth"></div>':'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
+  var h=(window.oeBanner?oeBanner(LIST):'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
   if(!LIST.length) h+='<div class="empty" style="margin-top:14px">No online exams yet.</div>';
   h+=LIST.map(function(x,i){
     var pub=x.status==='published', n=(x.questions||[]).length, marks=(x.questions||[]).reduce(function(t,q){ return t+(q.marks||0); },0);
@@ -121,13 +121,13 @@ function renderList(){
     var stTxt=!pub?'Draft':(ended?'Ended':(upcoming?'Upcoming':'Open now')), stSty=ended?' style="background:rgba(100,116,139,.18);color:#475569"':(upcoming?' style="background:rgba(14,165,233,.15);color:#0369a1"':'');
     return '<div class="oe-card'+(pub&&!ended?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+(ended?' &middot; Closed '+esc(fmt(x.end)):'')+'</div></div><span class="oe-st'+(pub&&!ended&&!upcoming?' pub':'')+'"'+stSty+'>'+stTxt+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
-      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeLive(\''+x.id+'\')"><span style="color:#16a34a">&#9679;</span> Live</button><button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
+      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeLive(\''+x.id+'\')"><span style="color:#16a34a">&#9679;</span> Live</button><button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+'</div>';
   }).join('');
-  box.innerHTML=h; lvStart(); hStart();
+  box.innerHTML=h; closeLive();
 }
 
 /* ---- exam health panel: while an exam is open, checks the services and the students every 30 s ---- */
-var HT=0, HBUSY=false;
+var HT=0, HBUSY=false, HSEL='';
 var H_CF='https://exams-api.obengahenkora.workers.dev/', H_AUTH='https://qqnsbuirelhwfrshafay.supabase.co', H_AUTHKEY='sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ';
 function hOpen(){ var n=Date.now(); return (LIST||[]).filter(function(x){ var ts=Date.parse(x.start), te=Date.parse(x.end); return x.status==='published' && isFinite(ts) && isFinite(te) && n<=te; }); }
 function hPing(url,opt){ var t=performance.now(), ac=(typeof AbortController!=='undefined')?new AbortController():null, to=ac?setTimeout(function(){ ac.abort(); },8000):0; if(ac) opt.signal=ac.signal;
@@ -136,7 +136,7 @@ function hStart(){ if(HT){ clearInterval(HT); HT=0; } if(!$('oeHealth')) return;
 async function hRun(){
   if(HBUSY) return; HBUSY=true;
   try{
-    var ex=hOpen(); if(!ex.length){ HBUSY=false; return; }
+    var ex=HSEL?(LIST||[]).filter(function(x){ return x.id===HSEL; }):hOpen(); if(!ex.length){ HBUSY=false; return; }
     var js={method:'POST',headers:{'Content-Type':'text/plain'},body:'{"action":"ping"}'};
     var jk={method:'POST',headers:{'Content-Type':'text/plain',apikey:SUPABASE_KEY},body:'{"action":"ping"}'};
     var t0=performance.now();
@@ -173,13 +173,18 @@ async function lvPoll(){
   var els=[].slice.call(document.querySelectorAll('.oe-lv'));
   for(var k=0;k<els.length;k++){ var id=els[k].id.replace('oeLv_',''); try{ var r=await teamApi({action:'rv_live',id:id}); lvDraw(id,r); }catch(e){ var b=$('oeLv_'+id); if(b) b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE: could not load ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; } }
 }
+function closeLive(){ var o=$('oeLvPop'); if(o) o.remove(); HSEL=''; document.body.style.overflow=''; if(HT){ clearInterval(HT); HT=0; } if(LVT){ clearInterval(LVT); LVT=0; } }
 window.oeLive=function(id){
-  var b=$('oeLv_'+id);
-  if(!b){ msg('<div class="msg">This exam has closed, so there is nothing live to show. Use Results to see how it went.</div>'); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){} return; }
-  msg(''); LVALL[id]=true; lvPoll(); hRun();
-  try{ var h=$('oeHealth'); (h||b).scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
-  try{ b.style.transition='box-shadow .3s'; b.style.boxShadow='0 0 0 3px #16a34a'; setTimeout(function(){ b.style.boxShadow=''; },1600); }catch(e){}
+  var x=(LIST||[]).filter(function(q){ return q.id===id; })[0]; if(!x) return;
+  closeLive(); HSEL=id; LVALL[id]=true;
+  var o=document.createElement('div'); o.id='oeLvPop'; o.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px';
+  o.onclick=function(e){ if(e.target===o) closeLive(); };
+  o.innerHTML='<div style="background:var(--page,var(--bg,#fff));color:var(--ink);width:100%;max-width:780px;border-radius:18px;padding:16px 16px 20px;box-shadow:0 20px 60px rgba(0,0,0,.4)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><div><div style="font-weight:800;font-size:1.05rem"><span style="color:#16a34a">&#9679;</span> Live &middot; '+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted)">'+esc(x.course)+' &middot; '+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'. Runs by itself every 30 s while this window is open.</div></div><button type="button" class="oe-mini" onclick="closeLive()">Close</button></div><div id="oeHealth"></div><div class="oe-lv" id="oeLv_'+id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div></div>';
+  document.body.appendChild(o); document.body.style.overflow='hidden';
+  hStart(); lvStart();
 };
+window.closeLive=closeLive;
+try{ document.addEventListener('keydown',function(e){ if(e.key==='Escape' && $('oeLvPop')) closeLive(); }); }catch(e){}
 window.oeLvAll=function(id){ LVALL[id]=!LVALL[id]; var b=$('oeLv_'+id); if(b&&b._r) lvDraw(id,b._r); };
 function lvDraw(id,r){
   var b=$('oeLv_'+id); if(!b) return; b._r=r; var L=(r&&r.live)||[]; var paused=L.filter(function(x){return x.paused;}).length, flagged=L.filter(function(x){return x.flags>0||x.leaves>0;}).length, writing=L.length-paused;

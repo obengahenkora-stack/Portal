@@ -131,7 +131,7 @@ function gCheck(){
       return; }
     if(!v||v.readyState<2||!v.videoWidth) return;
     try{
-      var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
+      var r=_fd.detectForVideo(v,performance.now()), f=((r&&r.detections)||[]).filter(function(d){ var c=d.categories&&d.categories[0]; return !c||c.score>=.6; });
       if(f.length===1){ var i=faceInfo(f[0],v); if(Math.abs(i.cx-.5)<.2&&Math.abs(i.cy-.5)<.25&&i.w>.15&&i.w<.75&&Math.abs(i.yaw)<.3){ G.good.push(i); ovCol('#16a34a'); msg.innerHTML='<span style="color:#15803d">Good. Hold still...</span>'; } else { G.good=[]; ovCol('#f59e0b'); msg.innerHTML='<span style="color:#b45309">Put your head inside the oval and look straight at the screen.</span>'; } }
       else { G.good=[]; ovCol('#dc2626'); msg.innerHTML='<span style="color:#b45309">'+(f.length?'Only one face should be in view.':'I cannot see your face yet. Move closer and add light.')+'</span>'; }
       if(G.good.length>=4){
@@ -287,7 +287,7 @@ async function fdLoad(){
   try{
     var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
     var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-    _fd=await m.FaceDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},runningMode:'VIDEO',minDetectionConfidence:.5});
+    _fd=await m.FaceDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},runningMode:'VIDEO',minDetectionConfidence:.35});
   }catch(e){ _fd=null; _fdErr=String((e&&e.message)||e||'error').replace(/[<>]/g,'').slice(0,90); }
   return _fd;
 }
@@ -315,10 +315,11 @@ function monStart(){
         if(f.length===0){ M.bad.face++; M.bad.turn=0; M.bad.multi=0; if(M.bad.face>=5) flag('no_face','no face for '+M.bad.face+' looks'); gStep(false); }
         else{
           M.bad.face=0;
-          var real2=false; if(f.length>1){ var A0=f[0].boundingBox||{}, B0=f[1].boundingBox||{}, a0=(A0.width||0)*(A0.height||0), b0=(B0.width||0)*(B0.height||0), big=a0>=b0?A0:B0, sm=a0>=b0?B0:A0, as=Math.max(a0,b0), bs=Math.min(a0,b0), sc2=(f[1].categories&&f[1].categories[0]&&f[1].categories[0].score)||1;
-            // a real second face: big enough compared with the first, clearly in a different place, and confident
-            real2=bs>=as*.2 && Math.abs((big.originX+big.width/2)-(sm.originX+sm.width/2))>big.width*.7 && sc2>=.55; }
-          if(real2){ M.bad.multi++; if(M.bad.multi>=2) flag('multi_face',f.length+' faces, second is '+Math.round(bs/as*100)+'% of the first'); } else M.bad.multi=0;
+          var real2=false, sc2=0, bs=0, as=0; if(f.length>1){ var A0=f[0].boundingBox||{}; as=(A0.width||0)*(A0.height||0);
+            // any other face anywhere in the picture (inside or outside the oval): a different place from the first, not tiny, and reasonably confident
+            for(var fi2=1;fi2<f.length;fi2++){ var B0=f[fi2].boundingBox||{}, b0=(B0.width||0)*(B0.height||0), s2=(f[fi2].categories&&f[fi2].categories[0]&&f[fi2].categories[0].score)||1;
+              if(b0>=as*.06 && Math.abs((A0.originX+A0.width/2)-(B0.originX+B0.width/2))>(A0.width||1)*.5 && s2>=.4){ real2=true; if(s2>sc2){ sc2=s2; bs=b0; } } } }
+          if(real2){ M.bad.multi=(sc2>=.65?Math.max(2,M.bad.multi+1):M.bad.multi+1); if(M.bad.multi>=2) flag('multi_face',f.length+' faces, other is '+Math.round(bs/Math.max(as,1)*100)+'% of the first'); } else M.bad.multi=0;
           var kp=f[0].keypoints||[], bb=f[0].boundingBox||{};
           if(kp.length>=3){ var er=kp[0], el=kp[1], no=kp[2], mid=(er.x+el.x)/2, w=Math.abs(er.x-el.x)||1, yaw=Math.abs(no.x-mid)/w;
             var cxp=bb.originX+bb.width/2, cxn=cxp/v.videoWidth, sgn=(no.x-mid)/w;

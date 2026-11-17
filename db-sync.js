@@ -24,11 +24,18 @@
         }catch(e){}
       }
       /* staff reading a whole table: the light service answers (remembered there for a minute); the main one is the fallback */
+      /* remembered in this page only, so repeated reads do not download the same tables again: class lists 10 minutes (they rarely change), attendance 15 seconds (this also joins reads that arrive together). Any save by this page clears that table. */
+      var GC=(window.__dbsGC=window.__dbsGC||{});
+      if(payload.action==='db_op' && payload.op!=='getAll' && payload.table){ Object.keys(GC).forEach(function(k){ if(k.indexOf(payload.table+'|')===0) delete GC[k]; }); }
       if(h['x-staff-token'] && payload.action==='db_op' && payload.op==='getAll'){
-        try{
-          var rs=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
-          var js=await rs.json(); if(js&&js.ok) return js;
-        }catch(e){}
+        var gk=payload.table+'|'+(payload.order||''), ttl=payload.table==='roster_entries'?600000:15000, g0=GC[gk];
+        if(g0 && Date.now()-g0.t<ttl){ try{ return await g0.p; }catch(e){ delete GC[gk]; } }
+        var pr=(async function(self){
+          var rs=await fetch(self.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
+          var js=await rs.json(); if(js&&js.ok) return js; throw 0;
+        })(this);
+        GC[gk]={t:Date.now(),p:pr};
+        try{ return await pr; }catch(e){ delete GC[gk]; }
       }
       /* check-in, QR check and selfies use their own small service; if it cannot be reached the main one answers */
       var fast=(payload.action==='checkin'||payload.action==='qr_check'||payload.action==='selfie_put');

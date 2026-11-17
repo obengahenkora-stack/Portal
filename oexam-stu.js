@@ -86,7 +86,7 @@ function stopAll(){
 window.oesOpen=function(i){
   var x=(window._oesList||[])[i]; if(!x) return;
   S={x:x,stream:null,running:false,ans:{},dirty:{},cur:0,q:[],queue:[]};
-  var resume=x.state==='in_progress';
+  var resume=x.state==='in_progress'; if(gOn(x)){ try{ fdLoad(); }catch(e){} }
   run('<div class="oer"><h2 style="margin:0">'+esc(x.title)+'</h2><div class="oes-sub">'+esc(x.course)+'</div>'
    +(insTxt(x)?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(insTxt(x))+'</div>':'')
    +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face in view. Look away for a few seconds and you get a warning; stay away and the exam <b>pauses</b> and hides the questions. <b>The timer keeps running while paused.</b></li>':'')+'<li><b>Your camera photos:</b> the camera takes photos at random moments and when something unusual is noticed. They are used only to check the exam was taken fairly, are seen only by your lecturers and teaching assistants, and are deleted by your lecturer when no longer needed. Your fingerprint or face data stays on your phone; the portal only receives a yes or no. A flag is a question for a person to look at, not a decision.</li>'+(rcOn(x)?'<li><b>Identity re-check:</b> '+rcOn(x)+' time'+(rcOn(x)===1?'':'s')+' during the exam you will be asked to confirm with your fingerprint or face again. The timer keeps running.</li>':'')+(qtOn(x)?'<li><b>Each question has its own timer ('+qtOn(x)+' seconds).</b> When it runs out you move to the next question automatically and cannot come back. Unanswered questions get no marks.</li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
@@ -123,7 +123,12 @@ function gCheck(){
   G.tm=setInterval(function(){
     if(!S||S.running||!$('oerGchk')){ clearInterval(G.tm); return; }
     var v=$('oerVid'), msg=$('oerGchk'), el=Date.now()-G.t0;
-    if(!_fd){ if(_fdTry && el>12000){ S.gOk='skip'; ovCol('#9ca3af'); msg.innerHTML='<span style="color:#b45309">The face check could not load on this phone. You can still start; the exam will not pause.</span>'; clearInterval(G.tm); oesReady(); } return; }
+    if(!_fd){
+      var sk='<div style="margin-top:6px"><button type="button" class="oes-btn s" onclick="oesGuardSkip()">Start without the face check (recorded)</button></div>';
+      if(_fdErr){ ovCol('#9ca3af'); msg.innerHTML='<span style="color:#b45309">The face check could not load ('+esc(_fdErr)+').</span><div style="margin-top:6px"><button type="button" class="oes-btn s" onclick="oesFdRetry()">Try again</button></div>'+sk; clearInterval(G.tm); }
+      else if(el>100000){ ovCol('#9ca3af'); msg.innerHTML='<span style="color:#b45309">The face check is taking too long. Check your internet, then try again.</span><div style="margin-top:6px"><button type="button" class="oes-btn s" onclick="oesFdRetry()">Try again</button></div>'+sk; clearInterval(G.tm); }
+      else msg.innerHTML='<span style="color:#b45309">Loading the face check... '+Math.round(el/1000)+' s. The first time can take up to a minute on mobile data.</span>'+(el>30000?sk:'');
+      return; }
     if(!v||v.readyState<2||!v.videoWidth) return;
     try{
       var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
@@ -266,7 +271,8 @@ async function leave(kind){
 function warn(t){ var r=$('oeRun'); if(!r) return; var o=document.createElement('div'); o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Warning</div><div style="line-height:1.5">'+esc(t)+'</div><button type="button" class="oes-btn" onclick="this.closest(\'.oer-ov\').remove();try{document.documentElement.requestFullscreen()}catch(e){}">Continue the exam</button></div>'; r.appendChild(o); }
 
 /* ---- camera watch: flashes, head turns, no face, extra faces (runs on the phone; free) ---- */
-var _fd=null, _fdTry=false, _od=null, _odTry=false;
+var _fd=null, _fdTry=false, _fdErr='', _od=null, _odTry=false;
+window.oesFdRetry=function(){ _fd=null; _fdTry=false; _fdErr=''; if(S&&$('oerGchk')){ S.gOk=false; gCheck(); } };
 async function odLoad(){
   if(_od||_odTry) return _od; _odTry=true;
   try{
@@ -282,7 +288,7 @@ async function fdLoad(){
     var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
     var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
     _fd=await m.FaceDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},runningMode:'VIDEO',minDetectionConfidence:.5});
-  }catch(e){ _fd=null; }
+  }catch(e){ _fd=null; _fdErr=String((e&&e.message)||e||'error').replace(/[<>]/g,'').slice(0,90); }
   return _fd;
 }
 function monStart(){

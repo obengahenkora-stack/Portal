@@ -63,6 +63,7 @@ window.oeInit=async function(){
 
 function renderList(){
   var box=$('oeBody'); msg('');
+  try{ var _n=Date.now(),_a=0,_u=0,_r=0; LIST.forEach(function(x){ if(x.status!=='published') return; var ts=Date.parse(x.start),te=Date.parse(x.end); if(isFinite(te)&&_n>te){ if(!x.released) _r++; } else if(isFinite(ts)&&_n<ts) _u++; else _a++; }); var g=function(i){ return document.getElementById(i); }; if(g('exaN1')){ g('exaN1').textContent=_a; g('exaN2').textContent=_u; g('exaN3').textContent=_r; } var lv=g('exaLive'); if(lv){ lv.style.display=_a?'':'none'; lv.textContent=_a+' live'; } }catch(e){}
   var h=(window.oeBanner?oeBanner(LIST):'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
   if(!LIST.length) h+='<div class="empty" style="margin-top:14px">No online exams yet.</div>';
   h+=LIST.map(function(x,i){

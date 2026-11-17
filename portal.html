@@ -141,6 +141,22 @@
   #attendanceDateInput{width:100% !important;max-width:100% !important;box-sizing:border-box !important;min-width:0}
   .att-tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 2px rgba(43,36,32,0.05);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;font-family:inherit;width:100%;}
   .att-tile,.att-tile *{text-transform:none !important;letter-spacing:normal !important;}
+  /* Exams & Assignments landing: header with live numbers and two big cards */
+  #exaTiles.exa-d{margin-bottom:6px;}
+  #exaTiles .exa-hero{background:linear-gradient(160deg,#0b2a3a,#124a63);color:#fff;border-radius:20px;padding:22px 18px 64px;}
+  #exaTiles .exa-h1{font:700 1.75rem/1.1 'Fraunces',Georgia,serif;color:#fff;}
+  #exaTiles .exa-sub{color:#b8d6e2;font-size:.92rem;margin-top:5px;}
+  #exaTiles .exa-chips{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  #exaTiles .exa-chip{background:rgba(255,255,255,.12);border-radius:12px;padding:9px 13px;font-size:.78rem;color:#d9eef7;min-width:78px;}
+  #exaTiles .exa-chip b{display:block;font:700 1.35rem/1 'Fraunces',Georgia,serif;color:#fff;margin-bottom:4px;}
+  #exaTiles .exa-lift{margin:-46px 12px 0;display:grid;gap:12px;position:relative;}
+  #exaTiles .exa-big{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;cursor:pointer;box-shadow:0 6px 18px rgba(11,42,58,.12);color:var(--ink);font:inherit;}
+  #exaTiles .exa-big:hover{transform:translateY(-2px);border-color:var(--accent);}
+  #exaTiles .exa-ic{flex:0 0 52px;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;color:#fff;}
+  #exaTiles .exa-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  #exaTiles .exa-t{font-weight:700;font-size:1.1rem;color:var(--ink);}
+  #exaTiles .exa-ds{font-size:.85rem;color:var(--muted);}
+  #exaTiles .exa-tag{flex:0 0 auto;font:700 .7rem/1 sans-serif;border-radius:99px;padding:6px 9px;white-space:nowrap;}
   #exaTiles .att-tile{flex-direction:column !important;align-items:flex-start !important;gap:6px !important;}
   #exaTiles .att-tt,#exaTiles .att-td{display:block !important;width:100% !important;white-space:normal !important;position:static !important;}
   .att-tile .att-td{font-weight:400 !important;font-family:'IBM Plex Sans',sans-serif !important;}
@@ -442,7 +458,7 @@
   <!-- ONLINE EXAMS VIEW -->
   <div id="oexamView" class="hidden">
     <button class="navback" onclick="switchTab('hub')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg> Faculty Console</button>
-    <div id="exaTiles"><div class="att-title">Exams &amp; Assignments</div><div class="hint" style="margin-bottom:4px;">Pick one.</div><div class="att-grid"><button type="button" class="att-tile" onclick="exaGo('onlineExamCard')"><span class="att-tt">Online Exams</span><span class="att-td">Timed exams with camera checks</span></button><button type="button" class="att-tile" onclick="exaGo('assignCard')"><span class="att-tt">Assignments</span><span class="att-td">Set work, mark, release</span></button></div></div>
+    <div id="exaTiles" class="exa-d"><div class="exa-hero"><div class="exa-h1">Exams &amp; Assignments</div><div class="exa-sub">Your teaching work at a glance</div><div class="exa-chips"><div class="exa-chip"><b id="exaN1">&ndash;</b>Open now</div><div class="exa-chip"><b id="exaN2">&ndash;</b>Upcoming</div><div class="exa-chip"><b id="exaN3">&ndash;</b>To review</div></div></div><div class="exa-lift"><button type="button" class="exa-big" onclick="exaGo('onlineExamCard')"><span class="exa-ic" style="background:linear-gradient(135deg,#0ea5e9,#2563eb)">&#127909;</span><span class="exa-tx"><span class="exa-t">Online Exams</span><span class="exa-ds">Timed exams with camera checks</span></span><span class="exa-tag" id="exaLive" style="background:#dcfce7;color:#15803d;display:none"></span></button><button type="button" class="exa-big" onclick="exaGo('assignCard')"><span class="exa-ic" style="background:linear-gradient(135deg,#f59e0b,#ea580c)">&#128221;</span><span class="exa-tx"><span class="exa-t">Assignments</span><span class="exa-ds">Set work, mark, release</span></span></button></div></div>
     <button type="button" class="navback hidden" id="exaBack" onclick="exaGo(null)">&lsaquo; Exams &amp; Assignments</button>
     <div class="card pane-off" id="onlineExamCard">
       <label>Online Exams</label>
@@ -5710,7 +5726,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=180"></script>
+<script src="updates.js?v=181"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){
@@ -5771,7 +5787,7 @@ function updateWhoBar(){
 <script src="atrisk.js?v=1"></script>
 <script src="usage.js?v=1"></script>
 <script src="absence.js?v=7"></script>
-<script src="oexam.js?v=10"></script>
+<script src="oexam.js?v=11"></script>
 <script src="oexam-imp.js?v=1"></script>
 <script src="notify.js?v=1"></script>
 <script src="oexam-rev.js?v=12"></script>

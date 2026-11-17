@@ -113,7 +113,7 @@ window.oeInit=async function(){
 function renderList(){
   var box=$('oeBody'); msg('');
   try{ var _n=Date.now(),_a=0,_u=0,_r=0; LIST.forEach(function(x){ if(x.status!=='published') return; var ts=Date.parse(x.start),te=Date.parse(x.end); if(isFinite(te)&&_n>te){ if(!x.released) _r++; } else if(isFinite(ts)&&_n<ts) _u++; else _a++; }); var g=function(i){ return document.getElementById(i); }; if(g('exaN1')){ g('exaN1').textContent=_a; g('exaN2').textContent=_u; g('exaN3').textContent=_r; } var lv=g('exaLive'); if(lv){ lv.style.display=_a?'':'none'; lv.textContent=_a+' live'; } }catch(e){}
-  var h=(window.oeBanner?oeBanner(LIST):'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
+  var h=(window.oeBanner?oeBanner(LIST):'')+(hOpen().length?'<div id="oeHealth"></div>':'')+'<button type="button" class="oe-btn" onclick="oeNew()" style="margin-top:12px">+ Create an exam</button>';
   if(!LIST.length) h+='<div class="empty" style="margin-top:14px">No online exams yet.</div>';
   h+=LIST.map(function(x,i){
     var pub=x.status==='published', n=(x.questions||[]).length, marks=(x.questions||[]).reduce(function(t,q){ return t+(q.marks||0); },0);
@@ -123,7 +123,48 @@ function renderList(){
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
       +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended&&!upcoming?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
   }).join('');
-  box.innerHTML=h; lvStart();
+  box.innerHTML=h; lvStart(); hStart();
+}
+
+/* ---- exam health panel: while an exam is open, checks the services and the students every 30 s ---- */
+var HT=0, HBUSY=false;
+var H_CF='https://exams-api.obengahenkora.workers.dev/', H_AUTH='https://qqnsbuirelhwfrshafay.supabase.co', H_AUTHKEY='sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ';
+function hOpen(){ var n=Date.now(); return (LIST||[]).filter(function(x){ var ts=Date.parse(x.start), te=Date.parse(x.end); return x.status==='published' && isFinite(ts) && isFinite(te) && n>=ts && n<=te; }); }
+function hPing(url,opt){ var t=performance.now(), ac=(typeof AbortController!=='undefined')?new AbortController():null, to=ac?setTimeout(function(){ ac.abort(); },8000):0; if(ac) opt.signal=ac.signal;
+  return fetch(url,opt).then(function(r){ clearTimeout(to); return {ms:Math.round(performance.now()-t),ok:r.status<500}; }).catch(function(){ clearTimeout(to); return {ms:Math.round(performance.now()-t),ok:false}; }); }
+function hStart(){ if(HT){ clearInterval(HT); HT=0; } if(!$('oeHealth')) return; hRun(); HT=setInterval(function(){ if(!$('oeHealth')){ clearInterval(HT); HT=0; return; } hRun(); },30000); }
+async function hRun(){
+  if(HBUSY) return; HBUSY=true;
+  try{
+    var ex=hOpen(); if(!ex.length){ HBUSY=false; return; }
+    var js={method:'POST',headers:{'Content-Type':'text/plain'},body:'{"action":"ping"}'};
+    var jk={method:'POST',headers:{'Content-Type':'text/plain',apikey:SUPABASE_KEY},body:'{"action":"ping"}'};
+    var t0=performance.now();
+    var res=await Promise.all([
+      hPing(H_CF,js),
+      hPing(SUPABASE_URL+'/functions/v1/exams',jk),
+      Promise.all(ex.map(function(x){ return teamApi({action:'rv_live',id:x.id}); })).then(function(r){ return {ms:Math.round(performance.now()-t0),ok:r.every(function(q){ return q&&q.ok; }),r:r}; }).catch(function(){ return {ms:Math.round(performance.now()-t0),ok:false,r:[]}; }),
+      hPing(H_AUTH+'/auth/v1/health',{method:'GET',headers:{apikey:H_AUTHKEY}})
+    ]);
+    var sv=[['Exam service (Cloudflare)',res[0]],['Exams function',res[1]],['Review / live function',res[2]],['Student sign-in service',res[3]]];
+    var L=[],files=0,done=0; (res[2].r||[]).forEach(function(q){ if(q&&q.ok){ L=L.concat(q.live||[]); files+=(q.files||0); done+=(q.doneRecent||0); } });
+    var quiet=L.filter(function(x){ return x.seen>150; }).length, paused=L.filter(function(x){ return x.paused; }).length;
+    var cnt=function(k){ return L.filter(function(x){ return x.last===k; }).length; };
+    var sig=[['Camera turned off',cnt('camera_off')],['Network changes',cnt('network_change')],['Paused by face guard',paused],['Left the exam page',L.filter(function(x){ return x.leaves>0; }).length]];
+    var bad=[],warn=[];
+    sv.forEach(function(p){ var r=p[1]; if(!r.ok) bad.push(p[0]+' is not answering'); else if(r.ms>4000) bad.push(p[0]+' is very slow ('+r.ms+' ms)'); else if(r.ms>1500) warn.push(p[0]+' is a little slow ('+r.ms+' ms)'); });
+    var qLim=Math.max(3,Math.round(L.length*0.05)); if(L.length>=10 && quiet>=Math.max(6,Math.round(L.length*0.15))) bad.push(quiet+' students have gone quiet'); else if(quiet>=qLim) warn.push(quiet+' student'+(quiet===1?' has':'s have')+' gone quiet');
+    var lvl=bad.length?'r':(warn.length?'a':'g'), C={g:['#dcfce7','#86efac','#166534','#16a34a','All good'],a:['#fef3c7','#fcd34d','#92400e','#f59e0b','Watch'],r:['#fee2e2','#fca5a5','#991b1b','#dc2626','Problem']}[lvl];
+    var why=bad.concat(warn).join('. ')||('Everything is answering quickly'+(ex.length===1?' for '+ex[0].title:''));
+    var now=new Date(), tm=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    function kp(n,t,c){ return '<div style="flex:1;min-width:70px;background:var(--card);border-radius:12px;padding:9px 4px;text-align:center"><b style="display:block;font-size:1.3rem'+(c?';color:'+c:'')+'">'+n+'</b><span style="font-size:.68rem;color:var(--muted)">'+t+'</span></div>'; }
+    var h='<div style="display:flex;align-items:center;gap:12px;background:'+C[0]+';border:1px solid '+C[1]+';border-radius:14px;padding:12px 14px;margin-top:12px;flex-wrap:wrap"><i style="width:14px;height:14px;border-radius:50%;background:'+C[3]+';box-shadow:0 0 0 5px '+C[3]+'33;flex:0 0 auto"></i><div style="flex:1;min-width:180px"><b style="font-size:1.05rem;color:'+C[2]+'">'+C[4]+'</b><div style="font-size:.8rem;color:'+C[2]+'">'+esc(why)+'</div></div><span style="font-size:.72rem;color:'+C[2]+';opacity:.85">Checked '+esc(tm)+' &middot; every 30 s</span></div>'
+     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+kp(files,'started')+kp(Math.max(0,L.length-paused),'writing now')+kp(done,'finished')+kp(quiet,'gone quiet',quiet?'#d97706':'')+'</div>'
+     +'<div style="margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:4px 12px">'+sv.map(function(p){ var r=p[1], col=!r.ok||r.ms>4000?'#dc2626':(r.ms>1500?'#f59e0b':'#16a34a'); return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.86rem"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:0 0 auto"></span>'+esc(p[0])+'<span style="margin-left:auto;color:var(--muted);font-size:.8rem;white-space:nowrap">'+(r.ok?r.ms+' ms'+(r.ms>1500?' &middot; slow':''):'not answering')+'</span></div>'; }).join('').replace('border-top:1px solid var(--line);','')+'</div>'
+     +'<div style="margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:4px 12px"><div style="font-size:.7rem;font-weight:800;color:var(--muted);padding:8px 0 2px;text-transform:uppercase;letter-spacing:.04em">Problem signs right now</div>'+sig.map(function(p){ return '<div style="display:flex;justify-content:space-between;font-size:.84rem;padding:6px 0;border-top:1px solid var(--line)"><span>'+p[0]+'</span><b>'+p[1]+'</b></div>'; }).join('')+'</div>';
+    var box=$('oeHealth'); if(box) box.innerHTML=h;
+  }catch(e){ var b2=$('oeHealth'); if(b2) b2.innerHTML='<div class="oe-sub" style="margin-top:12px">Health check could not run ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; }
+  HBUSY=false;
 }
 /* ---- live strip on each open exam card (refreshes every 30 s while this list is on screen) ---- */
 var LVT=0, LVALL={};

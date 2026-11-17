@@ -28,6 +28,7 @@ css.textContent='.oes-card{border:1px solid var(--line);border-left:4px solid #0
 +'#oeRun .oer-p.ans:not(#z){background:rgba(22,163,74,.18) !important;border-color:#16a34a !important}#oeRun .oer-p.cur:not(#z){outline:2px solid #0ea5e9}'
 +'#oeRun .oer-nav{display:flex;gap:10px;margin-top:14px}#oeRun .oer-nav>*{flex:1 1 0}'
 +'#oeRun .oer-rec{position:fixed;right:12px;bottom:12px;z-index:3;width:92px;border-radius:12px;overflow:hidden;border:2px solid #dc2626;background:#000;box-shadow:0 4px 14px rgba(0,0,0,.35)}'
++'#oeRun .oer-rec.gtl{left:10px;right:auto;top:8px;bottom:auto;width:88px;border-color:#16a34a}#oeRun .oer-rec.gtl video{height:66px}#oeRun .oer-rec.gtl svg{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}'
 +'#oeRun .oer-rec video{display:block;width:100%;height:70px;object-fit:cover;transform:scaleX(-1)}#oeRun .oer-rec span{position:absolute;left:5px;top:4px;font-size:.6rem;font-weight:800;color:#fff;background:#dc2626;border-radius:4px;padding:1px 5px}'
 +'#oeRun .oer-vid{width:100%;max-width:320px;border-radius:14px;background:#000;display:block;margin:12px auto;transform:scaleX(-1)}'
 +'#oeRun .oer-rules{margin:10px 0 0;padding-left:18px;font-size:.88rem;line-height:1.6}'
@@ -232,12 +233,12 @@ function render(){
   if(q.type==='mcq'){ body=q.options.map(function(o,k){ return '<button type="button" class="oer-o'+(ans===k?' sel':'')+'" onclick="oesPick('+k+')"><b>'+String.fromCharCode(65+k)+'</b><span>'+esc(o)+'</span></button>'; }).join(''); }
   else body='<textarea id="oerText" placeholder="Type your answer here" oninput="oesText(this.value)">'+esc(ans||'')+'</textarea>';
   var pal=S.oneWay?'':'<div class="oer-pal">'+S.q.map(function(z,i){ var a=S.ans[z.id]; return '<button type="button" class="oer-p'+(a!==undefined&&a!==''?' ans':'')+(i===S.cur?' cur':'')+'" onclick="oesGo('+i+')">'+(i+1)+'</button>'; }).join('')+'</div>';
-  var last=S.cur===n-1;
-  r.innerHTML='<div class="oer-top"><div><div style="font-weight:700;font-size:.85rem;overflow-wrap:anywhere">'+esc(S.x.title)+'</div><div class="oes-sub" style="margin:0">Question '+(S.cur+1)+' of '+n+' &middot; '+q.marks+' mark'+(q.marks===1?'':'s')+'</div>'+(S.qT?'<div id="oerQt" class="oes-sub" style="margin:2px 0 0;font-weight:700"></div>':'')+'</div><div class="oer-tm" id="oerTm">--:--</div></div>'
+  var last=S.cur===n-1; var gTL=gOn(S.x)&&S.gOk===true&&!!S.base;
+  r.innerHTML='<div class="oer-top"'+(gTL?' style="padding-left:108px;min-height:74px"':'')+'><div><div style="font-weight:700;font-size:.85rem;overflow-wrap:anywhere">'+esc(S.x.title)+'</div><div class="oes-sub" style="margin:0">Question '+(S.cur+1)+' of '+n+' &middot; '+q.marks+' mark'+(q.marks===1?'':'s')+'</div>'+(S.qT?'<div id="oerQt" class="oes-sub" style="margin:2px 0 0;font-weight:700"></div>':'')+'</div><div class="oer-tm" id="oerTm">--:--</div></div>'
    +'<div class="oer"><div class="oer-q"><div class="oer-qt">'+esc(q.text)+'</div>'+body+'</div>'
    +'<div class="oer-nav">'+(!S.oneWay&&S.cur>0?'<button type="button" class="oes-btn s" onclick="oesGo('+(S.cur-1)+')">Back</button>':'')+(last?'<button type="button" class="oes-btn" onclick="oesFinish()">Finish and submit</button>':'<button type="button" class="oes-btn" onclick="oesGo('+(S.cur+1)+')">'+(S.oneWay?'Next (cannot come back)':'Next')+'</button>')+'</div>'
    +pal+'<div id="oerSave" class="oes-sub" style="text-align:center;margin-top:12px"></div></div>'
-   +'<div class="oer-rec"><video id="oerRecV" autoplay playsinline muted></video><span>REC</span></div>';
+   +'<div class="oer-rec'+(gTL?' gtl':'')+'"><video id="oerRecV" autoplay playsinline muted></video><span>REC</span>'+(gTL?'<svg viewBox="0 0 100 100" preserveAspectRatio="none"><ellipse id="oerRecE" cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#16a34a" stroke-width="2.2" vector-effect="non-scaling-stroke"/></svg>':'')+'</div>';
   S.vid=$('oerRecV'); S.vid.srcObject=S.stream; S.vid.play().catch(function(){});
   tick();
 }
@@ -326,8 +327,9 @@ function monStart(){
 }
 /* ---- face guard in the exam: early warning, pause, report a problem, pause log (items 13-17) ---- */
 function gLog(kind,snap){ try{ call({action:'stu_oe_leave',id:S.x.id,kind:kind}); }catch(e){} if(snap){ try{ sendSnap(kind); }catch(e){} } }
+function recCol(ok){ var e=$('oerRecE'), b=e&&e.closest('.oer-rec'); if(!e) return; var c=ok?'#16a34a':'#dc2626'; e.setAttribute('stroke',c); if(b) b.style.borderColor=c; }
 function gStep(ok){
-  var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now();
+  var G=S&&S.g; if(!G||!G.on||!S.running) return; var now=Date.now(); recCol(ok||G.hold>now);
   if(G.hold>now){ G.offAt=0; G.okAt=0; return; }
   if(ok){
     G.offAt=0; if(!G.okAt) G.okAt=now;

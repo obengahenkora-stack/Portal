@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Exams | Obeng-Ahenkora</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Sign in and go straight to your online exams.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Obeng-Ahenkora">
+<meta property="og:title" content="Online Exams">
+<meta property="og:description" content="Sign in and go straight to your online exams.">
+<meta property="og:image" content="https://obeng-ahenkora.xyz/og-exams.png">
+<meta name="theme-color" content="#0b2545">
+<style>
+:root{--page:#f3f6f1;--bg:#ffffff;--card:#faf8f3;--ink:#181816;--muted:#726b5c;--accent:#3f7a32;--line:#e2ded2;--danger:#b3261e}
+:root[data-theme=dark]{--page:#101311;--bg:#181c19;--card:#1d221e;--ink:#ecece6;--muted:#a3a89c;--accent:#6fb35e;--line:#2d342f;--danger:#ef6b62}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink);font-size:16px;line-height:1.45}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px}
+h1{font-size:1.2rem;margin:0}h2{margin:0 0 6px;font-size:1.1rem}
+.sub{color:var(--muted);font-size:.85rem}
+label{display:block;font-size:.8rem;font-weight:700;margin:12px 0 4px;color:var(--muted)}
+input[type=text],input[type=email],input[type=password]{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:1rem;font-family:inherit}
+button{font-family:inherit;cursor:pointer}
+.pri{width:100%;margin-top:14px;padding:13px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;font-size:.95rem}
+.lnk{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.8rem;padding:0}
+.msg{margin-top:10px;font-size:.88rem}.msg.err{color:var(--danger)}
+.me{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--page);border-bottom:1px solid var(--line)}
+.me b{display:block;font-size:1.02rem;overflow-wrap:anywhere}.me span{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.me button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:7px 12px;font-size:.8rem;font-weight:700;white-space:nowrap}
+.oes-btn:not(.s){background:var(--accent);color:#fff;border:0}
+.hidden{display:none !important}
+.empty{color:var(--muted);padding:14px 0;font-size:.9rem}
+</style>
+<script>try{if(localStorage.getItem("siteTheme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<script src="vendor/supabase-2.119.0.js"></script>
+</head>
+<body>
+
+<div id="meBar" class="me hidden">
+  <div><b id="meName">&nbsp;</b><span id="meIdx">&nbsp;</span></div>
+  <button type="button" onclick="exSignOut()">Sign out</button>
+</div>
+
+<div class="wrap">
+  <div id="authCard" class="card hidden">
+    <h2>Online Exams</h2>
+    <div class="sub">Sign in with the email and password you use on the student dashboard. You will go straight to your exams.</div>
+    <label for="exEmail">Email</label>
+    <input type="email" id="exEmail" autocomplete="username" placeholder="you@school.edu">
+    <label for="exPw">Password</label>
+    <input type="password" id="exPw" autocomplete="current-password" placeholder="Your password">
+    <button type="button" class="pri" id="exBtn" onclick="exSignIn()">Sign in to my exams</button>
+    <div id="exMsg" class="msg"></div>
+    <div style="margin-top:12px"><a class="lnk" href="dashboard.html">Forgot password, or no account yet? Use the student dashboard</a></div>
+  </div>
+
+  <div id="listCard" class="hidden">
+    <div style="margin-top:14px"><h1>My exams</h1><div class="sub">Your camera must be on while you write.</div></div>
+    <div id="oesHold"></div>
+    <div class="sub" style="margin-top:18px"><a class="lnk" href="dashboard.html">Open my full dashboard</a></div>
+  </div>
+  <div id="noAcct" class="card hidden"></div>
+  <div id="boot" class="empty">Loading...</div>
+</div>
+
+<script>
+var SUPABASE_URL="https://mdbhlndjuddymvderuun.supabase.co", SUPABASE_KEY="sb_publishable_K8BmlHVd_u4gIkx70yqxRw_PaZGnWnW";
+var STUDENT_AUTH_URL="https://qqnsbuirelhwfrshafay.supabase.co", STUDENT_AUTH_KEY="sb_publishable_i7IlRqbP0LRbHABx9iwQKQ_AYMWtzpQ";
+var ADMIN_EMAIL="obengahenkora@gmail.com";
+var supabaseClient=null;
+try{ supabaseClient=window.supabase.createClient(STUDENT_AUTH_URL,STUDENT_AUTH_KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+function $(i){ return document.getElementById(i); }
+function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* same server routing as the dashboard: the list goes to the exams function, a running exam goes to the fast Cloudflare service, with the old route as a fallback */
+async function _stu(payload){
+  var st=(await supabaseClient.auth.getSession()).data.session;
+  var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};
+  if(st&&st.access_token) h['x-student-token']=st.access_token;
+  var body=JSON.stringify(payload), r=null, lastErr=null;
+  var act=String(payload&&payload.action||''), isOe=act.indexOf('stu_oe_')===0;
+  var SBU=SUPABASE_URL+(isOe?'/functions/v1/exams':'/functions/v1/api');
+  var CFU='https://exams-api.obengahenkora.workers.dev/', pk='oeBk_'+(payload&&payload.id), pin='';
+  var viaCf=isOe && act!=='stu_oe_list' && payload && payload.id;
+  if(viaCf){ try{ pin=localStorage.getItem(pk)||''; }catch(e){} if(pin==='sb') viaCf=false; }
+  var url=viaCf?CFU:SBU, trial=(viaCf && pin!=='cf');
+  for(var n=0;n<(trial?1:4)&&!r;n++){
+    if(n) await new Promise(function(ok){ setTimeout(ok,n*1500); });
+    try{ r=await fetch(url,{method:'POST',headers:h,body:body}); }catch(e){ lastErr=e; r=null; }
+  }
+  if(trial && (!r || r.status>=500)){
+    url=SBU; viaCf=false; r=null;
+    try{ localStorage.setItem(pk,'sb'); }catch(e){}
+    for(var t2=0;t2<4&&!r;t2++){
+      if(t2) await new Promise(function(ok){ setTimeout(ok,t2*1500); });
+      try{ r=await fetch(url,{method:'POST',headers:h,body:body}); }catch(e){ lastErr=e; r=null; }
+    }
+  }
+  if(!r) throw new Error('Could not reach the server. Check your internet or data connection and try again.');
+  var j=await r.json();
+  if(trial && viaCf && j && j.ok && act==='stu_oe_start'){ try{ localStorage.setItem(pk,'cf'); }catch(e){} }
+  if(!j || !j.ok) throw new Error((j && j.error) || 'Could not reach the back end');
+  return j;
+}
+
+function show(id,on){ var e=$(id); if(e) e.classList.toggle('hidden',!on); }
+async function exStart(){
+  show('boot',true); show('authCard',false); show('listCard',false); show('noAcct',false); show('meBar',false);
+  var s=null; try{ s=(await supabaseClient.auth.getSession()).data.session; }catch(e){}
+  if(!s){ show('boot',false); show('authCard',true); return; }
+  var em=String(s.user.email||'').toLowerCase();
+  if(em===ADMIN_EMAIL){ show('boot',false); $('noAcct').innerHTML='<b>This is the owner account.</b><div class="sub" style="margin-top:6px">Use the staff pages. <a class="lnk" href="#" onclick="exSignOut();return false">Sign out</a></div>'; show('noAcct',true); return; }
+  var me=null;
+  try{ var j=await _stu({action:'stu_me'}); me=j.row||null; }catch(e){ show('boot',false); $('noAcct').innerHTML='<b>Could not load your details.</b><div class="sub" style="margin-top:6px">'+esc(e.message||'')+'</div><button type="button" class="pri" onclick="exStart()">Try again</button>'; show('noAcct',true); return; }
+  show('boot',false);
+  if(!me || !me.index_number){ $('noAcct').innerHTML='<b>Finish setting up your account first.</b><div class="sub" style="margin-top:6px">Open the student dashboard once and link your index number. After that you can come straight here.</div><a class="pri" style="display:block;text-align:center;text-decoration:none" href="dashboard.html">Open the student dashboard</a>'; show('noAcct',true); return; }
+  $('meName').textContent=me.name||em; $('meIdx').textContent='Index number: '+me.index_number;
+  show('meBar',true); show('listCard',true); if(!$('oesBody')){ var d=document.createElement('div'); d.id='oesBody'; $('oesHold').appendChild(d); }
+  loadExams();
+}
+function loadExams(){ var tries=0; (function w(){ if(typeof window.oesInit==='function') window.oesInit(); else if(tries++<40) setTimeout(w,150); })(); }
+async function exSignIn(){
+  var email=$('exEmail').value.trim(), pw=$('exPw').value, m=$('exMsg');
+  if(!email||!pw){ m.className='msg err'; m.textContent='Enter your email and password.'; return; }
+  m.className='msg'; m.textContent='Signing in...'; $('exBtn').disabled=true;
+  var r=await supabaseClient.auth.signInWithPassword({email:email,password:pw});
+  $('exBtn').disabled=false;
+  if(r.error){ m.className='msg err'; m.textContent=r.error.message; return; }
+  m.textContent=''; exStart();
+}
+async function exSignOut(){ try{ await supabaseClient.auth.signOut(); }catch(e){} location.reload(); }
+document.addEventListener('keydown',function(e){ if(e.key==='Enter' && !$('authCard').classList.contains('hidden')) exSignIn(); });
+</script>
+<script src="oexam-stu.js?v=23"></script>
+<script>exStart();</script>
+</body>
+</html>

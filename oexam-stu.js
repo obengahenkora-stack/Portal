@@ -64,7 +64,8 @@ function badge(l){
 
 /* ---------- running an exam ---------- */
 var S=null; // state of the running exam
-var GMARK=/\[\[faceguard\]\]/ig;
+var GMARK=/\[\[(?:faceguard|qtime=\d+)\]\]/ig;
+function qtOn(x){ var m=/\[\[qtime=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return n>=10?Math.min(600,n):0; }
 function gOn(x){ return !!(x&&/\[\[faceguard\]\]/i.test(x.instructions||'')); }
 function insTxt(x){ return String((x&&x.instructions)||'').replace(GMARK,'').trim(); }
 function run(h){ var r=$('oeRun'); if(!r){ r=document.createElement('div'); r.id='oeRun'; document.body.appendChild(r); document.body.style.overflow='hidden'; } r.innerHTML=h; return r; }
@@ -86,7 +87,7 @@ window.oesOpen=function(i){
   var resume=x.state==='in_progress';
   run('<div class="oer"><h2 style="margin:0">'+esc(x.title)+'</h2><div class="oes-sub">'+esc(x.course)+'</div>'
    +(insTxt(x)?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(insTxt(x))+'</div>':'')
-   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face in view. Look away for a few seconds and you get a warning; stay away and the exam <b>pauses</b> and hides the questions. <b>The timer keeps running while paused.</b></li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
+   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face in view. Look away for a few seconds and you get a warning; stay away and the exam <b>pauses</b> and hides the questions. <b>The timer keeps running while paused.</b></li>':'')+(qtOn(x)?'<li><b>Each question has its own timer ('+qtOn(x)+' seconds).</b> When it runs out you move to the next question automatically and cannot come back. Unanswered questions get no marks.</li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
    +'<div class="oer-q" style="text-align:center"><video id="oerVid" class="oer-vid" autoplay playsinline muted></video><div id="oerCamMsg" class="oes-sub">Tap the button and allow the camera.</div>'
    +'<button type="button" class="oes-btn s" id="oerCamBtn" onclick="oesCam()">Turn on camera</button>'
    +(gOn(x)?'<div id="oerGchk" class="oes-sub" style="margin-top:8px"></div>':'')
@@ -183,7 +184,7 @@ window.oesStart=async function(){
     var bio='off'; if(S.x.bioStart!==false){ m.innerHTML='<div class="msg ok">Confirm with your fingerprint or face...</div>'; bio=await bioCheck(); m.innerHTML='<div class="msg ok">Starting...</div>'; }
     var cam=''; try{ cam=(S.stream.getVideoTracks()[0]||{}).label||''; }catch(e){}
     var j=await _stu({action:'stu_oe_start',id:S.x.id,device:device(),code:($('oerCode')||{}).value||'',photo:ph,bio:bio,cam:cam}); _off=j.now-Date.now(); S.me=j.me||null;
-    S.q=j.questions; S.ans=j.answers||{}; S.cur=Math.min(j.cur||0,S.q.length-1); S.deadline=Date.parse(j.deadline); S.leaves=j.leaves||0; S.max=j.exam.maxLeaves; S.oneWay=j.exam.oneWay; S.running=true; S.hiddenAt=0; S.pasteN=0;
+    S.q=j.questions; S.ans=j.answers||{}; S.cur=Math.min(j.cur||0,S.q.length-1); S.deadline=Date.parse(j.deadline); S.leaves=j.leaves||0; S.max=j.exam.maxLeaves; S.oneWay=j.exam.oneWay||!!qtOn(S.x); S.qT=qtOn(S.x); S.running=true; S.hiddenAt=0; S.pasteN=0;
     begin();
   }catch(e){ var t=e.message||'error'; m.innerHTML='<div class="msg err">'+esc(t)+'</div>'; go.disabled=false; }
 };
@@ -191,6 +192,7 @@ window.oesStart=async function(){
 function begin(){
   var stream=S.stream, x=S.x;
   try{ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  qtStart(false);
   render();
   S.vid=$('oerRecV'); S.vid.srcObject=stream; S.vid.play().catch(function(){});
   S.tick=setInterval(tick,500); tick();
@@ -209,6 +211,18 @@ function begin(){
   nextSnap();
 }
 
+/* ---- per-question timer: runs in the browser; remembered across a reload so refreshing does not give extra time ---- */
+function qtKey(){ return 'ceQt_'+S.x.id; }
+function qtStart(fresh){
+  if(!S||!S.qT) return; var now=Date.now()+_off, end=now+S.qT*1000;
+  if(!fresh){ try{ var o=JSON.parse(localStorage.getItem(qtKey())||'null'); if(o&&o.cur===S.cur&&o.end>now-60000&&o.end<=end) end=o.end; }catch(e){} }
+  S.qEnd=end; try{ localStorage.setItem(qtKey(),JSON.stringify({cur:S.cur,end:end})); }catch(e){}
+}
+function qtTick(){
+  if(!S||!S.qT||!S.running||S.ending||S.qEnd==null) return; var left=S.qEnd-(Date.now()+_off), el=$('oerQt');
+  if(el){ var sec=Math.max(0,Math.ceil(left/1000)); el.textContent=(left>0?'Question time ':'Moving on... ')+Math.floor(sec/60)+':'+('0'+(sec%60)).slice(-2); el.style.color=left<10000?'#dc2626':''; }
+  if(left<=-5000){ if(S.cur>=S.q.length-1){ S.ending=true; submit('Time is up for the last question. Your exam was submitted.'); } else { window.oesGo(S.cur+1); } }
+}
 function render(){
   var r=$('oeRun'), q=S.q[S.cur], n=S.q.length, ans=S.ans[q.id];
   var body;
@@ -216,7 +230,7 @@ function render(){
   else body='<textarea id="oerText" placeholder="Type your answer here" oninput="oesText(this.value)">'+esc(ans||'')+'</textarea>';
   var pal=S.oneWay?'':'<div class="oer-pal">'+S.q.map(function(z,i){ var a=S.ans[z.id]; return '<button type="button" class="oer-p'+(a!==undefined&&a!==''?' ans':'')+(i===S.cur?' cur':'')+'" onclick="oesGo('+i+')">'+(i+1)+'</button>'; }).join('')+'</div>';
   var last=S.cur===n-1;
-  r.innerHTML='<div class="oer-top"><div><div style="font-weight:700;font-size:.85rem;overflow-wrap:anywhere">'+esc(S.x.title)+'</div><div class="oes-sub" style="margin:0">Question '+(S.cur+1)+' of '+n+' &middot; '+q.marks+' mark'+(q.marks===1?'':'s')+'</div></div><div class="oer-tm" id="oerTm">--:--</div></div>'
+  r.innerHTML='<div class="oer-top"><div><div style="font-weight:700;font-size:.85rem;overflow-wrap:anywhere">'+esc(S.x.title)+'</div><div class="oes-sub" style="margin:0">Question '+(S.cur+1)+' of '+n+' &middot; '+q.marks+' mark'+(q.marks===1?'':'s')+'</div>'+(S.qT?'<div id="oerQt" class="oes-sub" style="margin:2px 0 0;font-weight:700"></div>':'')+'</div><div class="oer-tm" id="oerTm">--:--</div></div>'
    +'<div class="oer"><div class="oer-q"><div class="oer-qt">'+esc(q.text)+'</div>'+body+'</div>'
    +'<div class="oer-nav">'+(!S.oneWay&&S.cur>0?'<button type="button" class="oes-btn s" onclick="oesGo('+(S.cur-1)+')">Back</button>':'')+(last?'<button type="button" class="oes-btn" onclick="oesFinish()">Finish and submit</button>':'<button type="button" class="oes-btn" onclick="oesGo('+(S.cur+1)+')">'+(S.oneWay?'Next (cannot come back)':'Next')+'</button>')+'</div>'
    +pal+'<div id="oerSave" class="oes-sub" style="text-align:center;margin-top:12px"></div></div>'
@@ -226,7 +240,7 @@ function render(){
 }
 window.oesPick=function(k){ var q=S.q[S.cur]; S.ans[q.id]=k; S.dirty[q.id]=k; render(); saveSoon(); };
 window.oesText=function(v){ var q=S.q[S.cur]; S.ans[q.id]=v; S.dirty[q.id]=v; saveSoon(); };
-window.oesGo=function(i){ if(i<0||i>=S.q.length) return; S.cur=i; render(); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
+window.oesGo=function(i){ if(i<0||i>=S.q.length) return; S.cur=i; qtStart(true); render(); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
 /* answers are saved together every few seconds (not after every tap) so hundreds of students do not overload the server; leaving the page and submitting always save everything */
 function saveSoon(){ if(S.saveT) return; S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },10000); var s=$('oerSave'); if(s) s.textContent='Will save in a few seconds'; }
 if(!window._oesFlushBound){ window._oesFlushBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ try{ flushNow(); }catch(e){} } }); window.addEventListener('pagehide',function(){ try{ flushNow(); }catch(e){} }); }
@@ -336,6 +350,7 @@ window.oesCamBack=async function(){ try{ S.stream=await navigator.mediaDevices.g
 function tick(){
   if(!S||!S.running) return; var left=Math.max(0,S.deadline-(Date.now()+_off)), m=Math.floor(left/60000), s=Math.floor(left/1000)%60, t=$('oerTm');
   if(t){ t.textContent=('0'+m).slice(-2)+':'+('0'+s).slice(-2); t.classList.toggle('low',left<300000); var gt=$('oerGtm'); if(gt) gt.textContent=t.textContent; }
+  qtTick();
   if(left<=0 && !S.ending){ S.ending=true; submit('Time is up. Your exam was submitted.'); }
 }
 window.oesFinish=function(){

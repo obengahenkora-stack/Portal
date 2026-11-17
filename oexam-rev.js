@@ -58,7 +58,7 @@ window.oeResults=async function(id){
 };
 var TAB='ov';
 var LVT=0;
-window.oeTab=function(t){ TAB=t; clearInterval(LVT); LVT=0; oeRender(); if(t==='lv'){ oeLive(); LVT=setInterval(oeLive,30000); } };
+window.oeTab=function(t){ TAB=t; clearInterval(LVT); LVT=0; oeRender(); if(t==='lv'){ oeLive(); LVT=setInterval(oeLive,15000); } };
 async function oeLive(){ var b=$('rvLive'); if(!b||TAB!=='lv'){ clearInterval(LVT); LVT=0; return; }
   try{ var j=await api({action:'rv_live',id:D.exam.id}); var L=j.live||[], pz=L.filter(function(x){return x.paused;}).length, off=L.filter(function(x){return x.seen>90;}).length;
     var h='<div class="oe-sub" style="margin:8px 0">Updates every 30 seconds. Quiet means the student saved nothing in the last 90 seconds. Students not shown have submitted or are no longer active.</div><div class="rvh-leg" style="margin-bottom:8px"><div>Writing now<b>'+L.length+'</b></div><div>Paused now<b>'+pz+'</b></div><div>Quiet 90 s+<b>'+off+'</b></div><div>Submitted recently<b>'+j.doneRecent+'</b></div></div>';

@@ -47,6 +47,55 @@ css.textContent='#onlineExamCard,#onlineExamCard *{font-family:inherit}'
 document.head.appendChild(css);
 
 var LIST=[], E=null, COURSES=[];
+// ---- question variants: each student gets their own numbers; the server marks numeric answers by formula
+const VARRE = /\[\[var:(\{[\s\S]*?\})\]\]/;
+const varSpec = (q) => { if (!q || q.type !== 'text') return null; const m = VARRE.exec(String(q.guide || '')); if (!m) return null; try { const s = JSON.parse(m[1]); if (s && s.v && typeof s.f === 'string') return s; } catch { /* ignore */ } return null; };
+const hash32 = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = (seed) => () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const varVals = (spec, seedStr) => { const r = rng(hash32(seedStr)); const out = {}; for (const k of Object.keys(spec.v).slice(0, 12)) { const [lo, hi, st] = spec.v[k].map(Number); const step = st > 0 ? st : 1; const n = Math.max(0, Math.floor((hi - lo) / step + 1e-9)); const x = lo + Math.floor(r() * (n + 1)) * step; out[k] = Math.round(x * 1e6) / 1e6; } return out; };
+const calcF = (src, vars) => {
+  const t = String(src).replace(/\s+/g, '').match(/\d*\.?\d+(?:e[+-]?\d+)?|[A-Za-z_]\w*|[-+*/^(),]/gi) || []; let p = 0;
+  const F = { sqrt: Math.sqrt, abs: Math.abs, sin: Math.sin, cos: Math.cos, tan: Math.tan, ln: Math.log, log: Math.log10, exp: Math.exp, asin: Math.asin, acos: Math.acos, atan: Math.atan };
+  const prim = () => { const x = t[p++]; if (x === undefined) throw 1; if (x === '(') { const v = add(); if (t[p++] !== ')') throw 1; return v; } if (/^[\d.]/.test(x)) return parseFloat(x); if (F[x.toLowerCase()] && t[p] === '(') { p++; const v = add(); if (t[p++] !== ')') throw 1; return F[x.toLowerCase()](v); } if (x.toLowerCase() === 'pi') return Math.PI; if (Object.prototype.hasOwnProperty.call(vars, x)) return vars[x]; throw 1; };
+  const un = () => { if (t[p] === '-') { p++; return -un(); } if (t[p] === '+') { p++; return un(); } return pw(); };
+  const pw = () => { const b = prim(); if (t[p] === '^') { p++; return Math.pow(b, un()); } return b; };
+  const mul = () => { let v = un(); while (t[p] === '*' || t[p] === '/') { const o = t[p++]; const r = un(); v = o === '*' ? v * r : v / r; } return v; };
+  const add = () => { let v = mul(); while (t[p] === '+' || t[p] === '-') { const o = t[p++]; const r = mul(); v = o === '+' ? v + r : v - r; } return v; };
+  const v = add(); if (p < t.length) throw 1; return v;
+};
+const varText = (text, vals) => String(text).replace(/\{(\w+)\}/g, (m, k) => (vals && Object.prototype.hasOwnProperty.call(vals, k) ? String(vals[k]) : m));
+const varMark = (spec, vals, ans, marks) => { try { const exp = calcF(spec.f, vals); const m = /-?\d[\d,]*\.?\d*(?:e[+-]?\d+)?|-?\.\d+/i.exec(String(ans == null ? '' : ans).replace(/\s+/g, '')); if (!m || !isFinite(exp)) return { exp, ok: false }; const got = parseFloat(m[0].replace(/,/g, '')); const tol = Math.max(0, Number(spec.tol) || 0) / 100; const ok = Math.abs(got - exp) <= Math.max(Math.abs(exp) * tol, 1e-9, tol === 0 ? 1e-6 : 0); return { exp, ok, got, marks: ok ? marks : 0 }; } catch { return { exp: null, ok: false }; } };
+
+function vrNames(t){ var o=[],m,re=/\{(\w+)\}/g; while((m=re.exec(t||''))){ if(o.indexOf(m[1])<0) o.push(m[1]); } return o; }
+function vrBox(i,q){
+  var on=q.vr&&q.vr.on, h='<div class="oe-sw" style="margin-top:12px"><div><b style="font-size:.88rem">Different numbers for each student</b><small>Write the numbers in the question as {L}, {w} ... Each student gets their own values and the system marks the answer for you.</small></div><input type="checkbox" '+(on?'checked ':'')+'onchange="oeVTog('+i+')" style="width:22px;height:22px"></div>';
+  if(!on) return h;
+  var v=q.vr, names=vrNames(q.text); v.v=v.v||{};
+  h+='<div class="oe-box" style="margin-top:8px"><div class="oe-l">Numbers (write them in the question like {L})</div>';
+  if(!names.length) h+='<div class="oe-sub">No numbers found yet. Type something like {L} in the question above, then press Update.</div>';
+  names.forEach(function(k){ var r=v.v[k]||[1,10,1];
+    h+='<div style="display:flex;gap:6px;align-items:center;margin-top:6px"><b style="min-width:44px">{'+esc(k)+'}</b>from <input type="number" id="oeVl'+i+'_'+k+'" value="'+r[0]+'" step="any" style="width:70px" oninput="oeVPrev('+i+')"> to <input type="number" id="oeVh'+i+'_'+k+'" value="'+r[1]+'" step="any" style="width:70px" oninput="oeVPrev('+i+')"> step <input type="number" id="oeVs'+i+'_'+k+'" value="'+r[2]+'" step="any" min="0" style="width:60px" oninput="oeVPrev('+i+')"></div>'; });
+  h+='<button type="button" class="oe-mini" style="margin-top:8px" onclick="oeVRef('+i+')">Update numbers from question</button>'
+    +'<div class="oe-two" style="margin-top:10px"><div><div class="oe-l">Correct answer (formula)</div><input type="text" id="oeVf'+i+'" value="'+esc(v.f||'')+'" placeholder="e.g. w*L^2/8" oninput="oeVPrev('+i+')"></div><div><div class="oe-l">Allowed error (%)</div><input type="number" id="oeVt'+i+'" min="0" step="0.1" value="'+(v.tol==null?1:v.tol)+'" oninput="oeVPrev('+i+')"></div></div>'
+    +'<div class="oe-sub">Use + - * / ^ ( ) and sqrt, sin, cos, tan, ln, log, exp, abs, pi.</div>'
+    +'<div id="oeVp'+i+'" style="margin-top:10px;background:rgba(21,128,61,.10);border-radius:10px;padding:10px"></div></div>';
+  return h; }
+function vrSync(i,q){
+  if(!q.vr||!q.vr.on) return; var f=$('oeVf'+i); if(!f) return;
+  q.vr.f=f.value; var t=parseFloat($('oeVt'+i).value); q.vr.tol=t>=0?t:0; q.vr.v=q.vr.v||{};
+  vrNames($('oeQt'+i).value).forEach(function(k){ var l=$('oeVl'+i+'_'+k); if(!l) return; q.vr.v[k]=[parseFloat(l.value),parseFloat($('oeVh'+i+'_'+k).value),parseFloat($('oeVs'+i+'_'+k).value)||1]; }); }
+var VSEED={};
+window.oeVPrev=function(i){ var q=E.questions[i], b=$('oeVp'+i); if(!b) return; sync(); if(!VSEED[i]) VSEED[i]=Math.random()+'';
+  var sp=vrSpecOf(q); if(!sp){ b.innerHTML='<div class="oe-sub">Fill in the numbers and the formula to see a preview.</div>'; return; }
+  try{ var vals=varVals(sp,VSEED[i]+'a'), vals2=varVals(sp,VSEED[i]+'b');
+    b.innerHTML='<b>What a student sees</b><div style="margin:6px 0">'+esc(varText(q.text,vals))+'</div><div class="oe-sub">Correct answer for this student: <b>'+(Math.round(calcF(sp.f,vals)*1e4)/1e4)+'</b> (error allowed '+sp.tol+'%)</div><div class="oe-sub">Another student: '+esc(JSON.stringify(vals2).replace(/[{}"]/g,'').replace(/,/g,', '))+' &rarr; answer <b>'+(Math.round(calcF(sp.f,vals2)*1e4)/1e4)+'</b></div><button type="button" class="oe-mini" style="margin-top:8px" onclick="oeVShuf('+i+')">Shuffle preview</button>';
+  }catch(e){ b.innerHTML='<div class="msg err" style="margin:0">The formula does not work with these numbers. Check the letters match the {numbers} in the question.</div>'; } };
+window.oeVShuf=function(i){ VSEED[i]=Math.random()+''; oeVPrev(i); };
+function vrSpecOf(q){ if(!q.vr||!q.vr.on) return null; var names=vrNames(q.text), v={}; for(var k=0;k<names.length;k++){ var r=q.vr.v&&q.vr.v[names[k]]; if(!r||!isFinite(r[0])||!isFinite(r[1])||r[1]<r[0]) return null; v[names[k]]=r; } if(!names.length||!(q.vr.f||'').trim()) return null; return {v:v,f:q.vr.f,tol:q.vr.tol||0}; }
+window.oeVTog=function(i){ sync(); var q=E.questions[i]; if(q.vr&&q.vr.on) q.vr.on=false; else q.vr=Object.assign({v:{},f:'',tol:1},q.vr||{},{on:true}); renderEdit(); setTimeout(function(){ oeVPrev(i); },0); };
+window.oeVRef=function(i){ sync(); renderEdit(); setTimeout(function(){ oeVPrev(i); },0); };
+var VRE=/\s*\[\[var:(\{[\s\S]*?\})\]\]/;
+
 function msg(h){ var m=$('oeMsg'); if(m) m.innerHTML=h||''; }
 
 var _cp=null;
@@ -83,7 +132,7 @@ window.oeNew=function(){
   addQ('mcq'); renderEdit();
 };
 var GM=/\s*\[\[(?:faceguard|qtime=\d+|recheck=\d+)\]\]\s*/ig;
-function gmOut(){ var rm2=/\[\[recheck=(\d+)\]\]/i.exec(E.instructions||''); E.reCheck=rm2?parseInt(rm2[1],10):0; var qm=/\[\[qtime=(\d+)\]\]/i.exec(E.instructions||''); E.qTime=qm?parseInt(qm[1],10):0; E.faceGuard=/\[\[faceguard\]\]/i.test(E.instructions||''); E.instructions=String(E.instructions||'').replace(GM,'').trim(); }
+function gmOut(){ var rm2=/\[\[recheck=(\d+)\]\]/i.exec(E.instructions||''); E.reCheck=rm2?parseInt(rm2[1],10):0; var qm=/\[\[qtime=(\d+)\]\]/i.exec(E.instructions||''); E.qTime=qm?parseInt(qm[1],10):0; E.faceGuard=/\[\[faceguard\]\]/i.test(E.instructions||''); E.instructions=String(E.instructions||'').replace(GM,'').trim(); (E.questions||[]).forEach(function(q){ if(q.type==='text'){ var m=VRE.exec(q.guide||''); if(m){ try{ var o=JSON.parse(m[1]); q.vr={on:true,v:o.v||{},f:o.f||'',tol:o.tol==null?1:o.tol}; }catch(e){} q.guide=String(q.guide).replace(VRE,'').trim(); } } }); }
 window.oeEdit=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); renderEdit(); };
 window.oeCopy=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); E.id=''; E.title=E.title+' (copy)'; E.status='draft'; E.questions.forEach(function(q){ q.id=uid(); }); renderEdit(); };
 window.oeDel=async function(i){
@@ -125,7 +174,7 @@ function sync(){
   E.questions.forEach(function(q,i){
     var t=$('oeQt'+i); if(!t) return; q.text=t.value; q.marks=parseFloat($('oeQm'+i).value); if(!(q.marks>=0)) q.marks=1;
     if(q.type==='mcq'){ q.options=[].slice.call(document.querySelectorAll('.oeQo'+i)).map(function(o){ return o.value; }); var r=document.querySelector('input[name=oeA'+i+']:checked'); if(r) q.answer=parseInt(r.value,10); }
-    else { var g=$('oeQg'+i); if(g) q.guide=g.value; }
+    else { var g=$('oeQg'+i); if(g) q.guide=g.value; vrSync(i,q); }
   });
 }
 function sw(k,label,sub){ return '<div class="oe-sw"><div><b style="font-size:.88rem">'+label+'</b><small>'+sub+'</small></div><button type="button" class="oe-tg'+(E[k]?' on':'')+'" role="switch" aria-checked="'+(E[k]?'true':'false')+'" onclick="oeTog(\''+k+'\')"><i></i></button></div>'; }
@@ -149,7 +198,7 @@ function renderEdit(scrollEnd){
     if(q.type==='mcq'){
       body+='<div class="oe-l" style="margin-top:10px">Options (tick the correct one)</div>'+q.options.map(function(o,k){ return '<div class="oe-opt"><input type="radio" name="oeA'+i+'" value="'+k+'"'+(q.answer===k?' checked':'')+'><input type="text" class="oeQo'+i+'" value="'+esc(o)+'" placeholder="Option '+String.fromCharCode(65+k)+'">'+(q.options.length>2?'<button type="button" class="oe-mini x" onclick="oeRemOpt('+i+','+k+')">&times;</button>':'')+'</div>'; }).join('')
         +(q.options.length<6?'<button type="button" class="oe-mini" style="margin-top:8px" onclick="oeAddOpt('+i+')">+ Add option</button>':'');
-    } else body+='<div class="oe-l" style="margin-top:10px">Marking guide (only you see this)</div><textarea id="oeQg'+i+'" placeholder="What a good answer includes">'+esc(q.guide||'')+'</textarea>';
+    } else body+='<div class="oe-l" style="margin-top:10px">Marking guide (only you see this)</div><textarea id="oeQg'+i+'" placeholder="What a good answer includes">'+esc(q.guide||'')+'</textarea>'+vrBox(i,q);
     return '<div class="oe-q"><div class="oe-qt"><div style="display:flex;align-items:center;gap:8px"><span class="oe-n">'+(i+1)+'</span><select style="width:auto !important" onchange="oeType('+i+',this.value)"><option value="mcq"'+(q.type==='mcq'?' selected':'')+'>Multiple choice</option><option value="text"'+(q.type==='text'?' selected':'')+'>Written answer</option></select></div>'
       +'<div style="display:flex;gap:6px"><button type="button" class="oe-mini" onclick="oeMove('+i+',-1)">&uarr;</button><button type="button" class="oe-mini" onclick="oeMove('+i+',1)">&darr;</button><button type="button" class="oe-mini x" onclick="oeRemQ('+i+')">Remove</button></div></div>'
       +body+'<div style="margin-top:10px;max-width:140px"><div class="oe-l">Marks</div><input type="number" id="oeQm'+i+'" min="0" step="0.5" value="'+(q.marks==null?1:q.marks)+'"></div></div>';
@@ -168,12 +217,13 @@ window.oeSave=async function(publish){
   if(new Date(E.end)<=new Date(E.start)){ msg('<div class="msg err">The closing time must be after the opening time.</div>'); return; }
   for(var i=0;i<E.questions.length;i++){ var q=E.questions[i];
     if(!q.text.trim()){ msg('<div class="msg err">Question '+(i+1)+' is empty.</div>'); return; }
+    if(q.type==='text' && q.vr && q.vr.on){ var sp0=vrSpecOf(q); if(!sp0){ msg('<div class="msg err">Question '+(i+1)+': fill in the number ranges (from must not be above to) and the correct answer formula, or switch the different-numbers option off.</div>'); return; } try{ var cv=calcF(sp0.f,varVals(sp0,'t')); if(!isFinite(cv)) throw 1; }catch(e){ msg('<div class="msg err">Question '+(i+1)+': the answer formula does not work. Use the same letters as the {numbers} in the question.</div>'); return; } }
     if(q.type==='mcq' && q.options.filter(function(o){ return o.trim(); }).length<2){ msg('<div class="msg err">Question '+(i+1)+' needs at least two options.</div>'); return; }
   }
   if(publish && !E.questions.length){ msg('<div class="msg err">Add at least one question before publishing.</div>'); return; }
   if(publish && !confirm('Publish "'+E.title+'"?\n\nStudents on '+E.course+' will see it from '+fmt(E.start)+'.')) return;
   /* drop blank options but keep the correct answer pointing at the right one */
-  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft'; ex.instructions=String(ex.instructions||'').replace(GM,'').trim()+(E.faceGuard?' [[faceguard]]':'')+(E.qTime>=10?' [[qtime='+Math.min(600,E.qTime)+']]':'')+(E.reCheck>0?' [[recheck='+Math.min(3,E.reCheck)+']]':''); delete ex.faceGuard; delete ex.qTime; delete ex.reCheck;
+  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft'; ex.instructions=String(ex.instructions||'').replace(GM,'').trim()+(E.faceGuard?' [[faceguard]]':'')+(E.qTime>=10?' [[qtime='+Math.min(600,E.qTime)+']]':'')+(E.reCheck>0?' [[recheck='+Math.min(3,E.reCheck)+']]':''); delete ex.faceGuard; delete ex.qTime; delete ex.reCheck; ex.questions.forEach(function(q){ if(q.type==='text'){ var sp=vrSpecOf(q); delete q.vr; if(sp) q.guide=String(q.guide||'').replace(VRE,'').trim()+' [[var:'+JSON.stringify(sp)+']]'; } });
   ex.questions.forEach(function(q){ if(q.type==='mcq'){ var keep=[], na=0; q.options.forEach(function(o,k){ if(o.trim()){ if(k===q.answer) na=keep.length; keep.push(o.trim()); } }); q.options=keep; q.answer=na; } });
   msg('<div class="msg ok">Saving...</div>');
   try{ var r=await teamApi({action:'oe_save',exam:ex}); if(!r||!r.ok) throw new Error((r&&r.error)||'Could not save');

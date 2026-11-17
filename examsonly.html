@@ -32,6 +32,23 @@ button{font-family:inherit;cursor:pointer}
 .me b{display:block;font-size:1.02rem;overflow-wrap:anywhere}.me span{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .me button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:7px 12px;font-size:.8rem;font-weight:700;white-space:nowrap}
 .oes-btn:not(.s){background:var(--accent);color:#fff;border:0}
+
+.hero{background:linear-gradient(160deg,#0b2545 0%,#13406b 55%,#2f6f3a 130%);color:#fff;padding:36px 24px 80px;text-align:center;position:relative;overflow:hidden}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero:before{width:220px;height:220px;right:-70px;top:-80px}.hero:after{width:160px;height:160px;left:-60px;bottom:-70px}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 24px;position:relative;text-align:left}
+.brand img{width:44px;height:44px;border-radius:12px;background:#fff;padding:3px}.brand b{display:block;font-size:1rem}.brand span{font-size:.74rem;opacity:.75}
+.hero h1{font-size:1.55rem;letter-spacing:-.01em;position:relative}.hero p{margin:6px 0 0;font-size:.88rem;opacity:.8;position:relative}
+.auth{margin:-50px 16px 0;background:var(--bg);border:1px solid var(--line);border-radius:24px;padding:24px 20px;box-shadow:0 18px 40px rgba(11,37,69,.16);position:relative;max-width:460px}
+@media(min-width:520px){.auth{margin-left:auto;margin-right:auto}}
+.auth label{margin:0 0 6px 2px;letter-spacing:.02em;text-transform:uppercase}
+.fld{position:relative;margin-bottom:16px}.fld svg{position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);stroke:var(--muted);fill:none;stroke-width:1.8}
+.fld input{padding:15px 14px 15px 44px;border:1.5px solid var(--line);border-radius:14px}
+.fld input:focus{outline:none;border-color:var(--accent)}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;font-size:.74rem;font-weight:700;color:var(--accent);padding:10px}
+.auth .pri{margin-top:4px;padding:16px;font-size:1rem;background:linear-gradient(135deg,#3f7a32,#2f6f3a);box-shadow:0 8px 18px rgba(63,122,50,.35)}
+.pts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 16px 0}.pts span{font-size:.72rem;font-weight:700;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted)}
+.foot{text-align:center;font-size:.72rem;color:var(--muted);margin:18px 16px 28px}
 .hidden{display:none !important}
 .empty{color:var(--muted);padding:14px 0;font-size:.9rem}
 </style>
@@ -45,17 +62,20 @@ button{font-family:inherit;cursor:pointer}
   <button type="button" onclick="exSignOut()">Sign out</button>
 </div>
 
-<div class="wrap">
-  <div id="authCard" class="card hidden">
-    <h2>Online Exams</h2>
-    <div class="sub">Sign in with the email and password you use on the student dashboard. You will go straight to your exams.</div>
-    <label for="exEmail">Email</label>
-    <input type="email" id="exEmail" autocomplete="username" placeholder="you@school.edu">
-    <label for="exPw">Password</label>
-    <input type="password" id="exPw" autocomplete="current-password" placeholder="Your password">
-    <button type="button" class="pri" id="exBtn" onclick="exSignIn()">Sign in to my exams</button>
-    <div id="exMsg" class="msg"></div>
-    <div style="margin-top:12px"><a class="lnk" href="dashboard.html">Forgot password, or no account yet? Use the student dashboard</a></div>
+<div class="wrap" id="wrapAll">
+  <div id="authCard" class="hidden">
+    <div class="hero"><div class="brand"><img src="icon-192.png" alt=""><div><b>Obeng-Ahenkora</b><span>obeng-ahenkora.xyz</span></div></div><h1>Online Exams</h1><p>Sign in and go straight to your exams</p></div>
+    <div class="auth">
+      <label for="exEmail">Email</label>
+      <div class="fld"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input type="email" id="exEmail" autocomplete="username" placeholder="you@school.edu"></div>
+      <label for="exPw">Password</label>
+      <div class="fld"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input type="password" id="exPw" autocomplete="current-password" placeholder="Your password"><button type="button" class="eye" id="exEye" onclick="exEye()">SHOW</button></div>
+      <button type="button" class="pri" id="exBtn" onclick="exSignIn()">Sign in to my exams</button>
+      <div id="exMsg" class="msg"></div>
+      <div class="sub" style="text-align:center;margin-top:14px">Forgot password, or no account yet? <a class="lnk" href="dashboard.html">Use the student dashboard</a></div>
+    </div>
+    <div class="pts"><span>Camera required</span><span>Timer on the server</span><span>Works on phone</span></div>
+    <div class="foot">&#128274; obeng-ahenkora.xyz &middot; UENR Civil &amp; Environmental Engineering</div>
   </div>
 
   <div id="listCard" class="hidden">
@@ -109,9 +129,9 @@ async function _stu(payload){
 
 function show(id,on){ var e=$(id); if(e) e.classList.toggle('hidden',!on); }
 async function exStart(){
-  show('boot',true); show('authCard',false); show('listCard',false); show('noAcct',false); show('meBar',false);
+  $('wrapAll').style.cssText=''; show('boot',true); show('authCard',false); show('listCard',false); show('noAcct',false); show('meBar',false);
   var s=null; try{ s=(await supabaseClient.auth.getSession()).data.session; }catch(e){}
-  if(!s){ show('boot',false); show('authCard',true); return; }
+  if(!s){ show('boot',false); show('authCard',true); $('wrapAll').style.cssText='max-width:none;padding:0'; return; }
   var em=String(s.user.email||'').toLowerCase();
   if(em===ADMIN_EMAIL){ show('boot',false); $('noAcct').innerHTML='<b>This is the owner account.</b><div class="sub" style="margin-top:6px">Use the staff pages. <a class="lnk" href="#" onclick="exSignOut();return false">Sign out</a></div>'; show('noAcct',true); return; }
   var me=null;
@@ -132,6 +152,7 @@ async function exSignIn(){
   if(r.error){ m.className='msg err'; m.textContent=r.error.message; return; }
   m.textContent=''; exStart();
 }
+async function exEye(){ var i=$('exPw'), b=$('exEye'); var h=i.type==='password'; i.type=h?'text':'password'; b.textContent=h?'HIDE':'SHOW'; }
 async function exSignOut(){ try{ await supabaseClient.auth.signOut(); }catch(e){} location.reload(); }
 document.addEventListener('keydown',function(e){ if(e.key==='Enter' && !$('authCard').classList.contains('hidden')) exSignIn(); });
 </script>

@@ -121,9 +121,28 @@ function renderList(){
     var stTxt=!pub?'Draft':(ended?'Ended':(upcoming?'Upcoming':'Open now')), stSty=ended?' style="background:rgba(100,116,139,.18);color:#475569"':(upcoming?' style="background:rgba(14,165,233,.15);color:#0369a1"':'');
     return '<div class="oe-card'+(pub&&!ended?' pub':'')+'"><div class="oe-top"><div><div class="oe-nm">'+esc(x.title)+'</div><div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(x.course)+(ended?' &middot; Closed '+esc(fmt(x.end)):'')+'</div></div><span class="oe-st'+(pub&&!ended&&!upcoming?' pub':'')+'"'+stSty+'>'+stTxt+'</span></div>'
       +'<div class="oe-chips"><span class="oe-chip">'+esc(fmt(x.start))+' to '+esc(fmt(x.end))+'</span><span class="oe-chip g">'+x.durationMin+' min</span><span class="oe-chip g">'+n+' question'+(n===1?'':'s')+' &middot; '+marks+' marks</span><span class="oe-chip g">Photo every '+x.snapEverySec+'s</span></div>'
-      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div></div>';
+      +'<div class="oe-row">'+(pub?'<button type="button" class="oe-mini" onclick="oeResults(\''+x.id+'\')">Results</button>':'')+'<button type="button" class="oe-mini" onclick="oeEdit('+i+')">Edit</button><button type="button" class="oe-mini" onclick="oeCopy('+i+')">Duplicate</button><button type="button" class="oe-mini x" onclick="oeDel('+i+')">Delete</button></div>'+(pub&&!ended&&!upcoming?'<div class="oe-lv" id="oeLv_'+x.id+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><div class="oe-sub" style="margin:0">&#9679; LIVE: loading...</div></div>':'')+'</div>';
   }).join('');
-  box.innerHTML=h;
+  box.innerHTML=h; lvStart();
+}
+/* ---- live strip on each open exam card (refreshes every 30 s while this list is on screen) ---- */
+var LVT=0, LVALL={};
+function lvStart(){ if(LVT){ clearInterval(LVT); LVT=0; } if(!document.querySelector('.oe-lv')) return; lvPoll(); LVT=setInterval(function(){ if(!document.querySelector('.oe-lv')){ clearInterval(LVT); LVT=0; return; } lvPoll(); },30000); }
+async function lvPoll(){
+  var els=[].slice.call(document.querySelectorAll('.oe-lv'));
+  for(var k=0;k<els.length;k++){ var id=els[k].id.replace('oeLv_',''); try{ var r=await teamApi({action:'rv_live',id:id}); lvDraw(id,r); }catch(e){ var b=$('oeLv_'+id); if(b) b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE: could not load ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; } }
+}
+window.oeLvAll=function(id){ LVALL[id]=!LVALL[id]; var b=$('oeLv_'+id); if(b&&b._r) lvDraw(id,b._r); };
+function lvDraw(id,r){
+  var b=$('oeLv_'+id); if(!b) return; b._r=r; var L=(r&&r.live)||[]; var paused=L.filter(function(x){return x.paused;}).length, flagged=L.filter(function(x){return x.flags>0||x.leaves>0;}).length, writing=L.length-paused;
+  function kp(n,t,c){ return '<div style="flex:1;min-width:64px;border:1px solid var(--line);border-radius:12px;padding:7px 4px;text-align:center"><b style="display:block;font-size:1.15rem'+(c?';color:'+c:'')+'">'+n+'</b><span style="font-size:.68rem;color:var(--muted)">'+t+'</span></div>'; }
+  var h='<div class="oe-sub" style="margin:0 0 8px"><b style="color:#16a34a">&#9679; LIVE</b> &middot; updates every 30 s</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+kp(writing,'writing now')+kp(paused,'paused',paused?'#dc2626':'')+kp(flagged,'flagged',flagged?'#d97706':'')+kp(r.doneRecent||0,'finished')+kp(r.files||0,'started')+'</div>';
+  var all=!!LVALL[id], rows=all?L:L.slice(0,5);
+  h+=rows.map(function(x){ var st=x.paused?'border-color:#dc2626;background:rgba(220,38,38,.10)':(x.flags>0?'border-color:#d97706':''); var gone=x.seen>150;
+    return '<div style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin-top:6px;font-size:.8rem;'+st+'"><span style="overflow-wrap:anywhere">'+esc(x.name||x.index||'')+' <span style="color:var(--muted)">'+esc(x.index||'')+'</span></span><span style="text-align:right;white-space:nowrap">'+(x.paused?'<b style="color:#dc2626">PAUSED</b> &middot; ':'')+(gone?'<span style="color:var(--muted)">no signal '+Math.round(x.seen/60)+' min &middot; </span>':'')+'Q'+x.q+'/'+x.n+(x.flags?' &middot; '+x.flags+' flag'+(x.flags===1?'':'s'):'')+(x.leaves?' &middot; left page '+x.leaves+'x':'')+'</span></div>'; }).join('');
+  if(!L.length) h+='<div class="oe-sub" style="margin:8px 0 0">Nobody is writing right now.</div>';
+  if(L.length>5) h+='<button type="button" class="oe-mini" style="margin-top:8px" onclick="oeLvAll(\''+id+'\')">'+(all?'Show fewer':'Show all '+L.length)+'</button>';
+  b.innerHTML=h;
 }
 
 window.oeNew=function(){

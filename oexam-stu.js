@@ -250,7 +250,7 @@ function render(){
 function dwFlush(){ if(!S||!S.q||!S.q[S.dwI]) { S.dwT=Date.now(); S.dwI=S.cur; return; } var q=S.q[S.dwI], n=Date.now(); S.dw=S.dw||{}; S.dw[q.id]=(S.dw[q.id]||0)+Math.min(600000,n-(S.dwT||n)); S.dwT=n; S.dwI=S.cur; }
 window.oesPick=function(k){ var q=S.q[S.cur]; S.ans[q.id]=k; S.dirty[q.id]=k; render(); saveSoon(); };
 window.oesText=function(v){ var q=S.q[S.cur]; S.ans[q.id]=v; S.dirty[q.id]=v; saveSoon(); };
-window.oesGo=function(i){ if(i<0||i>=S.q.length) return; dwFlush(); S.cur=i; dwFlush(); qtStart(true); render(); if(S.qT) flushNow(true); window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
+window.oesGo=function(i){ if(i<0||i>=S.q.length) return; dwFlush(); S.cur=i; dwFlush(); qtStart(true); render(); if(S.qT) flushNow(true); else { clearTimeout(S.navT); S.navT=setTimeout(function(){ try{ flushNow(true); }catch(e){} },1500); } window.scrollTo(0,0); var r=$('oeRun'); if(r) r.scrollTop=0; };
 /* answers are saved together every few seconds (not after every tap) so hundreds of students do not overload the server; leaving the page and submitting always save everything */
 function saveSoon(){ if(S.saveT) return; S.saveT=setTimeout(function(){ S.saveT=0; flushNow(); },10000); var s=$('oerSave'); if(s) s.textContent='Will save in a few seconds'; }
 if(!window._oesFlushBound){ window._oesFlushBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden'){ try{ flushNow(); }catch(e){} } }); window.addEventListener('pagehide',function(){ try{ flushNow(); }catch(e){} }); }

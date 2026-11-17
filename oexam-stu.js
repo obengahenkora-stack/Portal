@@ -89,7 +89,7 @@ window.oesOpen=function(i){
   run('<div class="oer"><h2 style="margin:0">'+esc(x.title)+'</h2><div class="oes-sub">'+esc(x.course)+'</div>'
    +(insTxt(x)?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(insTxt(x))+'</div>':'')
    +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face in view. Look away for a few seconds and you get a warning; stay away and the exam <b>pauses</b> and hides the questions. <b>The timer keeps running while paused.</b></li>':'')+'<li><b>Your camera photos:</b> the camera takes photos at random moments and when something unusual is noticed. They are used only to check the exam was taken fairly, are seen only by your lecturers and teaching assistants, and are deleted by your lecturer when no longer needed. Your fingerprint or face data stays on your phone; the portal only receives a yes or no. A flag is a question for a person to look at, not a decision.</li>'+(rcOn(x)?'<li><b>Identity re-check:</b> '+rcOn(x)+' time'+(rcOn(x)===1?'':'s')+' during the exam you will be asked to confirm with your fingerprint or face again. The timer keeps running.</li>':'')+(qtOn(x)?'<li><b>Each question has its own timer ('+qtOn(x)+' seconds).</b> When it runs out you move to the next question automatically and cannot come back. Unanswered questions get no marks.</li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
-   +'<div class="oer-q" style="text-align:center"><video id="oerVid" class="oer-vid" autoplay playsinline muted></video><div id="oerCamMsg" class="oes-sub">Tap the button and allow the camera.</div>'
+   +'<div class="oer-q" style="text-align:center"><div style="position:relative;width:100%;max-width:320px;margin:12px auto"><video id="oerVid" class="oer-vid" style="margin:0" autoplay playsinline muted></video>'+(gOn(x)?'<svg id="oerOval" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><ellipse cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 2" vector-effect="non-scaling-stroke" id="oerOvE"/></svg>':'')+'</div><div id="oerCamMsg" class="oes-sub">Tap the button and allow the camera.</div>'
    +'<button type="button" class="oes-btn s" id="oerCamBtn" onclick="oesCam()">Turn on camera</button>'
    +(gOn(x)?'<div id="oerGchk" class="oes-sub" style="margin-top:8px"></div>':'')
    +(x.needsCode&&!resume?'<input type="text" id="oerCode" placeholder="Exam code from your lecturer" autocomplete="off">':'')
@@ -115,21 +115,22 @@ function faceInfo(f,v){
   if(kp.length>=3){ var mid=(kp[0].x+kp[1].x)/2, ww=Math.abs(kp[0].x-kp[1].x)||1; o.yaw=(kp[2].x-mid)/ww; }
   return o;
 }
+function ovCol(c){ var e=$('oerOvE'); if(e){ e.setAttribute('stroke',c); e.setAttribute('stroke-dasharray',c==='#16a34a'?'0':'4 2'); } }
 function gCheck(){
-  var G=S.gc={t0:Date.now(),good:[],tm:0}; var m=$('oerGchk'); if(m) m.textContent='Loading the face check...';
+  var G=S.gc={t0:Date.now(),good:[],tm:0}; var m=$('oerGchk'); if(m) m.textContent='Loading the face check...'; ovCol('#f59e0b');
   S.gOk=false; fdLoad();
   G.tm=setInterval(function(){
     if(!S||S.running||!$('oerGchk')){ clearInterval(G.tm); return; }
     var v=$('oerVid'), msg=$('oerGchk'), el=Date.now()-G.t0;
-    if(!_fd){ if(_fdTry && el>12000){ S.gOk='skip'; msg.innerHTML='<span style="color:#b45309">The face check could not load on this phone. You can still start; the exam will not pause.</span>'; clearInterval(G.tm); oesReady(); } return; }
+    if(!_fd){ if(_fdTry && el>12000){ S.gOk='skip'; ovCol('#9ca3af'); msg.innerHTML='<span style="color:#b45309">The face check could not load on this phone. You can still start; the exam will not pause.</span>'; clearInterval(G.tm); oesReady(); } return; }
     if(!v||v.readyState<2||!v.videoWidth) return;
     try{
       var r=_fd.detectForVideo(v,performance.now()), f=(r&&r.detections)||[];
-      if(f.length===1){ var i=faceInfo(f[0],v); if(Math.abs(i.cx-.5)<.2&&Math.abs(i.cy-.5)<.25&&i.w>.15&&i.w<.75&&Math.abs(i.yaw)<.3){ G.good.push(i); } else { G.good=[]; msg.innerHTML='<span style="color:#b45309">Centre your face and look straight at the screen.</span>'; } }
-      else { G.good=[]; msg.innerHTML='<span style="color:#b45309">'+(f.length?'Only one face should be in view.':'I cannot see your face yet. Move closer and add light.')+'</span>'; }
+      if(f.length===1){ var i=faceInfo(f[0],v); if(Math.abs(i.cx-.5)<.2&&Math.abs(i.cy-.5)<.25&&i.w>.15&&i.w<.75&&Math.abs(i.yaw)<.3){ G.good.push(i); ovCol('#16a34a'); msg.innerHTML='<span style="color:#15803d">Good. Hold still...</span>'; } else { G.good=[]; ovCol('#f59e0b'); msg.innerHTML='<span style="color:#b45309">Put your head inside the oval and look straight at the screen.</span>'; } }
+      else { G.good=[]; ovCol('#dc2626'); msg.innerHTML='<span style="color:#b45309">'+(f.length?'Only one face should be in view.':'I cannot see your face yet. Move closer and add light.')+'</span>'; }
       if(G.good.length>=4){
         var med=function(k){ var a=G.good.map(function(x){return x[k];}).sort(function(a,b){return a-b;}); return a[Math.floor(a.length/2)]; };
-        S.base={cx:med('cx'),cy:med('cy'),w:med('w'),yaw:med('yaw')}; S.gOk=true; msg.innerHTML='<span style="color:#15803d">&#10003; Face check passed. Your position is saved.</span>'; clearInterval(G.tm); oesReady();
+        S.base={cx:med('cx'),cy:med('cy'),w:med('w'),yaw:med('yaw')}; S.gOk=true; ovCol('#16a34a'); msg.innerHTML='<span style="color:#15803d">&#10003; Face check passed. Your position is saved.</span>'; clearInterval(G.tm); oesReady();
       } else if(el>25000 && !S.gHelp){ S.gHelp=1; msg.innerHTML+='<div style="margin-top:6px"><button type="button" class="oes-btn s" onclick="oesGuardSkip()">Face check not working? Start anyway (recorded)</button></div>'; }
     }catch(e){}
   },700);

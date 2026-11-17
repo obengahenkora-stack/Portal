@@ -100,7 +100,7 @@ function msg(h){ var m=$('oeMsg'); if(m) m.innerHTML=h||''; }
 
 var _cp=null;
 function loadCourses(){ if(_cp) return _cp; _cp=(async function(){ try{ var d=await fetchSupabaseData(); var names=visibleCourses(Object.keys((d&&d.rosters)||{})); var seen={},out=[]; names.forEach(function(n){ var b=lmBase(n); if(!seen[b.toLowerCase()]){ seen[b.toLowerCase()]=1; out.push(b); } }); out.sort(); COURSES=out; }catch(e){ _cp=null; } })(); return _cp; }
-window.oeInit=async function(){
+window.oeInit=async function(){ window.RVFIL="";
   var box=$('oeBody'); if(!box) return;
   if(!box.innerHTML||/Loading|Could not/.test(box.innerHTML)) box.innerHTML='<div class="empty">Loading...</div>';
   loadCourses();

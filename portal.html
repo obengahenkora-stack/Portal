@@ -5179,7 +5179,7 @@ async function refreshAttendanceLive(){
     });
   }catch(e){}
 }
-setInterval(refreshAttendanceLive,60000);
+setInterval(refreshAttendanceLive,30000);
 window.addEventListener('online',function(){ _qBanner(); flushAttQueue(); });
 window.addEventListener('offline',function(){ _qBanner(); });
 window.addEventListener('beforeunload',function(e){ if(_qGet().length){ e.preventDefault(); e.returnValue=''; } });
@@ -5726,7 +5726,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=220"></script>
+<script src="updates.js?v=221"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

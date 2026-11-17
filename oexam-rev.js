@@ -31,7 +31,7 @@ var RV=null, LVN={VS:'Very serious',S:'Serious',H:'High',M:'Medium',L:'Low'}, LV
 function eff(r){ return (r.final!=null)?r.final:((r.mcq||0)+r.written); }
 function rnd(x){ return Math.round(x*10)/10; }
 function lvTag(l){ return l?'<span class="rv-lv" style="background:'+LVC[l]+'">'+LVN[l]+'</span>':''; }
-var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',camera_off:'M',no_face:'L',flash:'L',guard_pause:'M',network_change:'L',recheck_failed:'M'};
+var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',face_changed:'H',camera_off:'M',no_face:'L',flash:'L',guard_pause:'M',network_change:'L',recheck_failed:'M'};
 function rawLv(r){ var best='',o=['VS','S','H','M','L']; Object.keys(r.kinds||{}).forEach(function(k){ var l=RAWLV[k]; if(l&&(!best||o.indexOf(l)<o.indexOf(best))) best=l; }); return best; }
 function stTag(r){ if(r.st==='toreview') return '<span class="rv-lv" style="background:#94a3b8">To review</span>'; if(r.st==='cleared') return '<span class="rv-lv" style="background:#16a34a">Cleared</span>'; return ''; }
 function propTag(p){ return p==='cancel'?'<span class="rv-lv" style="background:#111">Proposed for cancellation</span>':(p==='review'?'<span class="rv-lv" style="background:#7c3aed">Needs review</span>':''); }

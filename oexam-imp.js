@@ -34,6 +34,9 @@ window.oeParse=function(raw,opt){
     var qs=t.match(QSTART);
     if(qs && !(cur&&cur.opts.length&&OPT.test(t)&&false)){ cur={n:qs[1],stem:[qs[2]],opts:[],ans:null,lastOpt:-1}; blocks.push(cur); return; }
     if(!cur) return;
+    var nv=t.match(/^\s*numbers?\s*[:=]\s*(.+)$/i); if(nv){ cur.vv=nv[1]; return; }
+    var fv=t.match(/^\s*(?:answer\s*)?formula\s*[:=]\s*(.+)$/i); if(fv){ cur.vf=fv[1].trim(); return; }
+    var tv=t.match(/^\s*(?:tolerance|allowed\s*error|error)\s*[:=]\s*([\d.]+)/i); if(tv){ cur.vt=parseFloat(tv[1]); return; }
     var a=t.match(ANS); if(a){ cur.ans=a[1].toUpperCase().charCodeAt(0)-65; return; }
     var inl=splitInlineOptions(t);
     if(inl){ if(inl.pre&&!cur.opts.length) cur.stem.push(inl.pre); inl.opts.forEach(function(o){ cur.opts.push(o); }); cur.lastOpt=cur.opts.length-1; return; }
@@ -50,7 +53,9 @@ window.oeParse=function(raw,opt){
       if(ans==null||ans>=b.opts.length){ ans=0; flagged++; var fl=true; }
       out.push({id:uid(),type:'mcq',text:tm.text,options:b.opts.map(function(x){return x.trim();}),answer:ans,marks:tm.marks!=null?tm.marks:mM,_check:!!fl});
     } else {
-      out.push({id:uid(),type:'text',text:tm.text,marks:tm.marks!=null?tm.marks:tM,guide:''});
+      var qq={id:uid(),type:'text',text:tm.text,marks:tm.marks!=null?tm.marks:tM,guide:''};
+      if(b.vv&&b.vf){ var vo={}; String(b.vv).split(/[;,](?=\s*\{?\w+\s*=)/).forEach(function(p){ var m=p.match(/\{?(\w+)\}?\s*=\s*(-?[\d.]+)\s*(?:to|-|\.\.)\s*(-?[\d.]+)(?:\s*(?:step|by)\s*([\d.]+))?/i); if(m) vo[m[1]]=[parseFloat(m[2]),parseFloat(m[3]),m[4]?parseFloat(m[4]):1]; }); if(Object.keys(vo).length) qq.vr={on:true,v:vo,f:b.vf,tol:b.vt==null?1:b.vt}; }
+      out.push(qq);
     }
   });
   out.flagged=flagged; return out;

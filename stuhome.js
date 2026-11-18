@@ -277,7 +277,7 @@ function sync(){
   if(shown&&!sync._f){ sync._f=1; setTimeout(fetchAll,800); }
 }
 var _lastFetch=0;
-function tick(){ if(document.hidden) return; var ov=$('dashOverviewCard'); if($('shHome')&&ov&&!ov.classList.contains('pane-off')&&Date.now()-_lastFetch>300000){ _lastFetch=Date.now(); fetchAll(); } }
+function tick(){ if(document.hidden) return; var ov=$('dashOverviewCard'); if($('shHome')&&ov&&!ov.classList.contains('pane-off')&&Date.now()-_lastFetch>900000){ _lastFetch=Date.now(); fetchAll(); } }
 
 window.shAdminSync=function(){ try{ sync(); if($('shHome')){ exams=[]; asg=[]; paint(); } }catch(e){} };
 /* take over the old attendance warning: same numbers, new look, cannot be hidden by "Got it" */
@@ -290,6 +290,6 @@ document.addEventListener('DOMContentLoaded',function(){
   if(ov) mo.observe(ov,{attributes:true,attributeFilter:['class']});
   if(ah) mo.observe(ah,{attributes:true,attributeFilter:['class']});
   sync(); setInterval(tick,30000);
-  document.addEventListener('visibilitychange',function(){ if(!document.hidden){ _lastFetch=0; tick(); } });
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden && Date.now()-_lastFetch>300000){ _lastFetch=0; tick(); } });
 });
 })();

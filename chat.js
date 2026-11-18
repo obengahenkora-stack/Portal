@@ -358,7 +358,7 @@ function myFullName(){ var n=(S.me&&S.me.name)||''; return n; }
 function lsPush(ka){ if(!S.me||!S.histOK) return; try{ var id='ls:'+S.me.id, row={id:id,room:id,from_id:S.me.id,from_name:'-',text:JSON.stringify({t:Date.now(),n:myFullName()}),created_at:new Date().toISOString()};
   if(S.genCol) row.expires_at=new Date(Date.now()+400*24*3600*1000).toISOString();
   upsertRow(row,ka); }catch(e){} }
-function lsNeed(ids){ if(!S.histOK) return; var need=[]; ids.forEach(function(i){ if(i&&i!==(S.me&&S.me.id)&&need.indexOf(i)<0&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>60000)) need.push(i); }); if(!need.length) return;
+function lsNeed(ids){ if(!S.histOK) return; var need=[]; ids.forEach(function(i){ if(i&&i!==(S.me&&S.me.id)&&need.indexOf(i)<0&&(!S.lsAsk[i]||Date.now()-S.lsAsk[i]>600000)) need.push(i); }); if(!need.length) return;
   need.forEach(function(i){ S.lsAsk[i]=Date.now(); });
   for(var p=0;p<need.length;p+=40) (function(part){
   chatOp('kv_get',{ids:part.map(function(i){ return 'ls:'+i; })}).then(function(j){ return (j&&j.rows)||[]; }).then(function(rows){
@@ -373,7 +373,7 @@ function lsText(id){ var t=Math.max(S.ls[id]||0,lsLocal()[id]||0); if(!t) return
   if(m<1) return 'last seen just now'; if(m<60) return 'last seen '+m+' min ago'; var h=Math.floor(m/60); if(h<24) return 'last seen '+h+' hr ago';
   var d=Math.floor(h/24); if(d<2) return 'last seen yesterday'; return 'last seen '+d+' days ago'; }
 function setupPresence(){
-  lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden'){ lsPush(); S.lsAsk={}; scheduleRender(); } },300000);
+  lsPush(); clearInterval(S.lsT); S.lsT=setInterval(function(){ if(document.visibilityState!=='hidden'){ lsPush(); S.lsAsk={}; scheduleRender(); } },900000);
   if(!S.lsBound){ S.lsBound=1; document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') lsPush(true); }); window.addEventListener('pagehide',function(){ lsPush(true); }); }
   var ch=S.rt.channel('ce-lounge',{config:{presence:{key:S.me.id}}});
   S.lounge=ch;

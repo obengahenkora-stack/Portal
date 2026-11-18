@@ -62,7 +62,7 @@ window.oeResults=async function(id){
 };
 var TAB='ov';
 var LVT=0;
-window.oeTab=function(t){ TAB=t; clearInterval(LVT); LVT=0; oeRender(); if(t==='lv'){ oeLive(); LVT=setInterval(oeLive,15000); } };
+window.oeTab=function(t){ TAB=t; clearInterval(LVT); LVT=0; clearInterval(WT); WT=0; oeRender(); if(t==='wl'){ WM='rand'; WP=false; WS=Date.now(); oeWall(); WT=setInterval(oeWallTick,1000); } if(t==='lv'){ oeLive(); LVT=setInterval(oeLive,15000); } };
 async function oeLive(){ var b=$('rvLive'); if(!b||TAB!=='lv'){ clearInterval(LVT); LVT=0; return; }
   try{ var j=await api({action:'rv_live',id:D.exam.id}); var L=j.live||[], pz=L.filter(function(x){return x.paused;}).length, off=L.filter(function(x){return x.seen>90;}).length;
     var h='<div class="oe-sub" style="margin:8px 0">Updates every 30 seconds. Quiet means the student saved nothing in the last 90 seconds. Students not shown have submitted or are no longer active.</div><div class="rvh-leg" style="margin-bottom:8px"><div>Writing now<b>'+L.length+'</b></div><div>Paused now<b>'+pz+'</b></div><div>Quiet 90 s+<b>'+off+'</b></div><div>Submitted recently<b>'+j.doneRecent+'</b></div></div>';
@@ -71,7 +71,7 @@ async function oeLive(){ var b=$('rvLive'); if(!b||TAB!=='lv'){ clearInterval(LV
 window.oeRender=function(){
   var box=$('oeBody'), ex=D.exam, rows=D.rows, S=stats(), tot=Math.max(1,S.sub);
   var h='<button type="button" class="oe-mini" onclick="oeInit()">&larr; Back to exams</button><div class="oe-h" style="margin-top:12px">'+esc(ex.title)+'</div><div class="oe-sub">'+esc(ex.course)+' &middot; '+S.sub+' of '+S.expected+' submitted</div>'
-  +'<div class="rvh-seg"><button type="button" class="'+(TAB==='ov'?'on':'')+'" onclick="oeTab(\'ov\')">Overview</button><button type="button" class="'+(TAB==='st'?'on':'')+'" onclick="oeTab(\'st\')">Students</button><button type="button" class="'+(TAB==='lv'?'on':'')+'" onclick="oeTab(\'lv\')">Live</button><button type="button" class="'+(TAB==='se'?'on':'')+'" onclick="oeTab(\'se\')">Settings</button></div>';
+  +'<div class="rvh-seg"><button type="button" class="'+(TAB==='ov'?'on':'')+'" onclick="oeTab(\'ov\')">Overview</button><button type="button" class="'+(TAB==='st'?'on':'')+'" onclick="oeTab(\'st\')">Students</button><button type="button" class="'+(TAB==='lv'?'on':'')+'" onclick="oeTab(\'lv\')">Live</button><button type="button" class="'+(TAB==='wl'?'on':'')+'" onclick="oeTab(\'wl\')">Wall</button><button type="button" class="'+(TAB==='se'?'on':'')+'" onclick="oeTab(\'se\')">Settings</button></div>';
   var KS=['VS','S','H','M','L'];
   if(TAB==='ov'){
     h+='<div class="rvh-k"><div><b>'+rnd(S.avg)+'</b><span>Average</span></div><div><b>'+rnd(S.hi)+'</b><span>Highest</span></div><div><b>'+rnd(S.lo)+'</b><span>Lowest</span></div></div>'
@@ -88,6 +88,8 @@ window.oeRender=function(){
     h+='<div class="rv-q"><b>How accurate is each detector?</b><div class="oe-sub" style="margin:4px 0 6px">Share of the flags you reviewed that a person confirmed. A low share means the detector is mostly guessing and its settings should be loosened or removed.</div>'+(ak.length?ak.map(function(n){ var c=AC[n][0], d=AC[n][1], pc=Math.round(c/(c+d)*100); return '<div class="rvh-row"><div style="flex:1">'+esc(n.replace(/_/g,' '))+'<div class="s">'+(c+d)+' reviewed &middot; '+c+' confirmed &middot; '+d+' dismissed</div></div><b>'+pc+'%</b></div>'; }).join(''):'<div class="oe-sub">This appears after you start confirming or dismissing flags.</div>')+'</div>';
     if(RV) h+='<div class="rv-q"><div style="display:flex;justify-content:space-between"><b>For your decision</b><span class="oe-sub">owner only</span></div><div class="rv-lr" style="margin-top:8px"><span>'+propTag('cancel')+'</span><b>'+S.cancel+'</b></div><div class="rv-lr"><span>'+propTag('review')+'</span><b>'+S.review+'</b></div><div class="oe-sub" style="margin:6px 0 0">These two lines are not in the printed report. Nobody is cancelled automatically: you decide.</div></div>';
     h+='<div class="rvh-act"><button type="button" class="oe-mini" onclick="oePrint()">Print report</button><button type="button" class="oe-mini" onclick="oeCsv()">Download results</button></div>';
+  } else if(TAB==='wl'){
+    h+='<div class="rvw-bar"><button type="button" class="oe-mini'+(WM==='rand'?' on':'')+'" onclick="oeWallMode(\'rand\')">Random</button><button type="button" class="oe-mini'+(WM==='flag'?' on':'')+'" onclick="oeWallMode(\'flag\')">Flagged first</button><button type="button" class="oe-mini'+(WM==='slow'?' on':'')+'" onclick="oeWallMode(\'slow\')">Slow to send photos</button><button type="button" class="oe-mini" id="rvwP" onclick="oeWallPause()">Pause</button><span class="oe-sub" id="rvwC" style="margin-left:auto"></span></div><div class="rvw-g" id="rvWall"><div class="oe-sub">Loading...</div></div><div class="oe-sub" style="margin-top:10px">Shows the latest photo of up to 12 students writing now, picked at random and reshuffled every 30 seconds. It stops by itself after 30 minutes. Tap a photo to enlarge it.</div>';
   } else if(TAB==='lv'){
     h+='<div id="rvLive"><div class="oe-sub" style="margin-top:10px">Loading...</div></div>';
   } else if(TAB==='se'){
@@ -187,6 +189,25 @@ window.oeCsv=function(){ var q=function(v){return '"'+String(v==null?'':v).repla
   D.rows.forEach(function(r){L.push([r.name,r.index,r.submittedAt?'Submitted':'Not finished',r.mcq||0,r.written,(r.mcq||0)+r.written,r.final!=null?r.final:'',eff(r),r.total,r.lv?LVN[r.lv]:'',r.prop==='cancel'?'Proposed for cancellation':(r.prop==='review'?'Needs review':''),r.leaves,Object.keys(r.kinds||{}).reduce(function(s,k){return s+r.kinds[k];},0),Object.keys(r.kinds||{}).map(function(k){return k.replace(/_/g,' ')+' x'+r.kinds[k];}).join('; '),r.vv?'Referred to viva':'',r.snaps].map(q).join(','));});
   D.missing.forEach(function(m){L.push([m.name,m.index,'Did not start',0,0,0,'',0,'','','','','','',''].map(q).join(','));});
   var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\n')],{type:'text/csv'})); a.download=(D.exam.title||'exam').replace(/[^\w]+/g,'_')+'_results.csv'; a.click(); };
+var WT=0, WM='rand', WP=false, WS=0, WL=30;
+css.textContent+='#onlineExamCard .rvw-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}#onlineExamCard .rvw-bar .on{background:var(--ink,#1d2433);color:#fff}#onlineExamCard .rvw-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}@media(max-width:700px){#onlineExamCard .rvw-g{grid-template-columns:repeat(2,minmax(0,1fr))}}#onlineExamCard .rvw-t{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);cursor:pointer;transition:opacity .35s}#onlineExamCard .rvw-t img{width:100%;display:block}#onlineExamCard .rvw-t.f{outline:3px solid #dc2626}#onlineExamCard .rvw-t small{display:block;padding:5px 7px;font-size:.7rem}#onlineExamCard .rvw-t .tg{position:absolute;top:6px;left:6px;background:#dc2626;color:#fff;font-size:.62rem;font-weight:700;border-radius:6px;padding:2px 6px}#onlineExamCard .rvw-t .ag{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.5);color:#fff;font-size:.6rem;border-radius:6px;padding:2px 5px}';
+async function oeWall(){
+  var g=$('rvWall'); if(!g||TAB!=='wl'){ clearInterval(WT); WT=0; return; }
+  try{
+    var h={'Content-Type':'application/json'}, sess=(await supabaseClient.auth.getSession()).data.session; if(sess&&sess.access_token) h['x-staff-token']=sess.access_token;
+    var rc=await fetch('https://exams-api.obengahenkora.workers.dev/',{method:'POST',headers:h,body:JSON.stringify({action:'staff_wall',id:D.exam.id,mode:WM})});
+    var j=await rc.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'Could not load');
+    if(TAB!=='wl') return; var c=$('rvwC'); if(c) c.textContent=j.live+' writing now';
+    g.innerHTML=j.shown.length?j.shown.map(function(x){ return '<div class="rvw-t'+(x.flag?' f':'')+'" onclick="oeBig(this.querySelector(\'img\').src)"><img src="'+x.img+'">'+(x.flag?'<span class="tg">'+esc(x.flag)+'</span>':'')+'<span class="ag">'+x.ago+'s ago</span><small><b>'+esc(x.name)+'</b> '+esc(x.idx)+'</small></div>'; }).join(''):'<div class="oe-sub">No photos from students writing right now.</div>';
+  }catch(e){ g.innerHTML='<div class="rv-warn">'+esc(e.message||'Could not load')+'. This works for exams on the fast Cloudflare service only.</div>'; }
+}
+function oeWallTick(){
+  if(TAB!=='wl'){ clearInterval(WT); WT=0; return; }
+  if(Date.now()-WS>30*60*1000){ clearInterval(WT); WT=0; WP=true; var p=$('rvwP'); if(p) p.textContent='Resume'; return; }
+  if(WP) return; WL--; if(WL<=0){ WL=30; oeWall(); }
+}
+window.oeWallMode=function(m){ WM=m; WL=30; WS=Date.now(); document.querySelectorAll('#onlineExamCard .rvw-bar button').forEach(function(b){ b.classList.remove('on'); }); var bs=document.querySelectorAll('#onlineExamCard .rvw-bar button'); var i=['rand','flag','slow'].indexOf(m); if(bs[i]) bs[i].classList.add('on'); oeWall(); };
+window.oeWallPause=function(){ WP=!WP; var p=$('rvwP'); if(p) p.textContent=WP?'Resume':'Pause'; if(!WP){ WS=Date.now(); WL=30; if(!WT) WT=setInterval(oeWallTick,1000); oeWall(); } };
 window.oeBig=function(src){ var d=document.createElement('div'); d.id='rvBig'; d.onclick=function(){d.remove();}; d.innerHTML='<img src="'+src+'">'; document.body.appendChild(d); };
 var FACT={leave:1,fullscreen_exit:1,phone_seen:1,other_device:1};
 var INFOK={guard_resume:1,guard_report:1,guard_nocheck:1,recheck_ok:1};

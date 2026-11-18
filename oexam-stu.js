@@ -65,15 +65,16 @@ function badge(l){
 
 /* ---------- running an exam ---------- */
 var S=null; // state of the running exam
-var GMARK=/\[\[(?:faceguard|qtime=\d+|recheck=\d+)\]\]/ig;
+var GMARK=/\[\[(?:faceguard|sound|qtime=\d+|recheck=\d+)\]\]/ig;
 function rcOn(x){ var m=/\[\[recheck=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return Math.max(0,Math.min(3,n)); }
 function qtOn(x){ var m=/\[\[qtime=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return n>=10?Math.min(600,n):0; }
+function sOn(x){ return !!(x&&/\[\[sound\]\]/i.test(x.instructions||'')); }
 function gOn(x){ return !!(x&&/\[\[faceguard\]\]/i.test(x.instructions||'')); }
 function insTxt(x){ return String((x&&x.instructions)||'').replace(GMARK,'').trim(); }
 function run(h){ var r=$('oeRun'); if(!r){ r=document.createElement('div'); r.id='oeRun'; document.body.appendChild(r); document.body.style.overflow='hidden'; } r.innerHTML=h; return r; }
 function closeRun(){ var r=$('oeRun'); if(r) r.remove(); document.body.style.overflow=''; }
 function stopAll(){
-  if(!S) return; clearInterval(S.tick); clearInterval(S.cam); clearInterval(S.monT); clearTimeout(S.snapT); clearTimeout(S.saveT);
+  if(!S) return; clearInterval(S.tick); clearInterval(S.cam); clearInterval(S.monT); clearInterval(S.sndT); try{ S.sndCtx&&S.sndCtx.close(); }catch(e){} try{ S.mic&&S.mic.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} clearTimeout(S.snapT); clearTimeout(S.saveT);
   try{ S.stream&&S.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
   document.removeEventListener('visibilitychange',S.onVis); window.removeEventListener('beforeunload',S.onUnload);
   ['copy','cut','paste','contextmenu','dragstart'].forEach(function(ev){ document.removeEventListener(ev,S.block,true); });
@@ -89,26 +90,27 @@ window.oesOpen=function(i){
   var resume=x.state==='in_progress'; if(gOn(x)){ try{ fdLoad(); }catch(e){} }
   run('<div class="oer"><h2 style="margin:0">'+esc(x.title)+'</h2><div class="oes-sub">'+esc(x.course)+'</div>'
    +(insTxt(x)?'<div class="oer-q" style="-webkit-user-select:text;user-select:text">'+esc(insTxt(x))+'</div>':'')
-   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face inside the oval. The moment it leaves, you get a warning, and after 2 seconds the exam pauses and the questions are hidden. The timer keeps running. Move back into the oval to continue. Your face is also compared with your face at the start. This happens on your phone only and the face print is never sent or saved. If it does not match, the exam pauses, photos are taken and your lecturer reviews them.</li>':'')+'<li><b>Your camera photos:</b> the camera takes photos at random moments and when something unusual is noticed. They are used only to check the exam was taken fairly, are seen only by your lecturers and teaching assistants, and are deleted by your lecturer when no longer needed. Your fingerprint or face data stays on your phone; the portal only receives a yes or no. A flag is a question for a person to look at, not a decision.</li>'+(rcOn(x)?'<li><b>Identity re-check:</b> '+rcOn(x)+' time'+(rcOn(x)===1?'':'s')+' during the exam you will be asked to confirm with your fingerprint or face again. The timer keeps running.</li>':'')+(qtOn(x)?'<li><b>Each question has its own timer ('+qtOn(x)+' seconds).</b> When it runs out you move to the next question automatically and cannot come back. Unanswered questions get no marks.</li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
+   +'<div class="oer-q" style="-webkit-user-select:text;user-select:text"><b>Before you start</b><ul class="oer-rules"><li>You have <b>'+x.durationMin+' minutes</b>. The timer is kept by the server and keeps running if you leave.</li><li>Your <b>camera must stay on</b> for the whole exam. A small photo of you is taken about every '+x.snapEverySec+' seconds and your lecturer will review them.</li><li>Do not leave this page or switch apps. Each time is recorded'+(x.maxLeaves>0?'; after '+x.maxLeaves+' the exam is submitted automatically':'')+'.</li><li>Use <b>one device</b> only. Copying and pasting is blocked.</li>'+(gOn(x)?'<li><b>Face guard:</b> keep your face inside the oval. The moment it leaves, you get a warning, and after 2 seconds the exam pauses and the questions are hidden. The timer keeps running. Move back into the oval to continue. Your face is also compared with your face at the start. This happens on your phone only and the face print is never sent or saved. If it does not match, the exam pauses, photos are taken and your lecturer reviews them.</li>':'')+'<li><b>Your camera photos:</b> the camera takes photos at random moments and when something unusual is noticed. They are used only to check the exam was taken fairly, are seen only by your lecturers and teaching assistants, and are deleted by your lecturer when no longer needed. Your fingerprint or face data stays on your phone; the portal only receives a yes or no. A flag is a question for a person to look at, not a decision.</li>'+(sOn(x)?'<li><b>Sound check:</b> the exam listens for sound levels through your microphone. Nothing is recorded or sent except a note that sound was heard and when. Only your lecturers and teaching assistants see these notes. A flag is a question for a person to look at, not a decision. You must allow the microphone to start.</li>':'')+(rcOn(x)?'<li><b>Identity re-check:</b> '+rcOn(x)+' time'+(rcOn(x)===1?'':'s')+' during the exam you will be asked to confirm with your fingerprint or face again. The timer keeps running.</li>':'')+(qtOn(x)?'<li><b>Each question has its own timer ('+qtOn(x)+' seconds).</b> When it runs out you move to the next question automatically and cannot come back. Unanswered questions get no marks.</li>':'')+(x.oneWay?'<li>Questions come <b>one at a time and you cannot go back</b>.</li>':'')+'</ul></div>'
    +'<div class="oer-q" style="text-align:center"><div style="position:relative;width:100%;max-width:320px;margin:12px auto"><video id="oerVid" class="oer-vid" style="margin:0" autoplay playsinline muted></video>'+(gOn(x)?'<svg id="oerOval" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"><ellipse cx="50" cy="48" rx="23" ry="35" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 2" vector-effect="non-scaling-stroke" id="oerOvE"/></svg>':'')+'</div><div id="oerCamMsg" class="oes-sub">Tap the button and allow the camera.</div>'
    +'<button type="button" class="oes-btn s" id="oerCamBtn" onclick="oesCam()">Turn on camera</button>'
    +(gOn(x)?'<div id="oerGchk" class="oes-sub" style="margin-top:8px"></div>':'')
    +(x.needsCode&&!resume?'<input type="text" id="oerCode" placeholder="Exam code from your lecturer" autocomplete="off">':'')
-   +'<label style="display:flex;gap:10px;align-items:flex-start;text-align:left;margin-top:14px;font-size:.86rem;text-transform:none;letter-spacing:0"><input type="checkbox" id="oerAgree" style="width:auto !important;margin-top:3px" onchange="oesReady()"> <span>I agree to be photographed during this exam and to follow the rules above.</span></label>'
+   +'<label style="display:flex;gap:10px;align-items:flex-start;text-align:left;margin-top:14px;font-size:.86rem;text-transform:none;letter-spacing:0"><input type="checkbox" id="oerAgree" style="width:auto !important;margin-top:3px" onchange="oesReady()"> <span>I agree to be photographed'+(sOn(x)?' and for sound levels to be monitored':'')+' during this exam and to follow the rules above.</span></label>'
    +'<button type="button" class="oes-btn" id="oerGo" disabled onclick="oesStart()">'+(resume?'Continue exam':'Start exam')+'</button>'
    +'<button type="button" class="oes-btn s" onclick="oesCancel()">Not now</button><div id="oerMsg"></div></div></div>');
 };
-window.oesCancel=function(){ try{ S&&S.stream&&S.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} closeRun(); S=null; oesInit(); };
+window.oesCancel=function(){ try{ S&&S.mic&&S.mic.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} try{ S&&S.stream&&S.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} closeRun(); S=null; oesInit(); };
 window.oesCam=async function(){
   var m=$('oerCamMsg');
   try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('This browser cannot use the camera. Please use Chrome or Safari.');
     S.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:480},height:{ideal:360}},audio:false});
     var v=$('oerVid'); v.srcObject=S.stream; await v.play().catch(function(){});
+    if(sOn(S.x)){ try{ S.mic=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }catch(e2){ S.mic=null; m.innerHTML='<span style="color:#dc2626">Microphone blocked. This exam needs the microphone. Allow it in your browser settings, then tap again.</span>'; $('oerCamBtn').style.display=''; oesReady(); return; } }
     m.textContent='Camera is on. Make sure your face is clearly visible.'; $('oerCamBtn').style.display='none'; if(gOn(S.x)) gCheck(); oesReady();
   }catch(e){ m.innerHTML='<span style="color:#dc2626">Camera blocked. Allow the camera for this site in your browser settings, then tap again. ('+esc(e.name==='NotAllowedError'?'permission denied':(e.message||'error'))+')</span>'; }
 };
-window.oesReady=function(){ var go=$('oerGo'); if(go) go.disabled=!(S&&S.stream&&S.stream.active&&$('oerAgree').checked&&(!gOn(S.x)||S.gOk)); };
+window.oesReady=function(){ var go=$('oerGo'); if(go) go.disabled=!(S&&S.stream&&S.stream.active&&$('oerAgree').checked&&(!gOn(S.x)||S.gOk)&&(!sOn(S.x)||(S.mic&&S.mic.active))); };
 /* ---- face guard: start check, saved baseline (items 11, 12, 18) ---- */
 function faceInfo(f,v){
   var kp=f.keypoints||[], bb=f.boundingBox||{}; var W=v.videoWidth||1, H=v.videoHeight||1;
@@ -204,7 +206,7 @@ function begin(){
   render();
   S.vid=$('oerRecV'); S.vid.srcObject=stream; S.vid.play().catch(function(){});
   S.tick=setInterval(tick,500); tick();
-  S.cam=setInterval(camCheck,2000); S.dwT=Date.now(); S.dwI=S.cur; rcPlan(); S.g={on:gOn(x)&&S.gOk===true&&!!S.base,state:'run',offAt:0,okAt:0,hold:0,pauses:0,warnMs:0,pauseMs:2000,backMs:1500}; try{ monStart(); }catch(e){}
+  S.cam=setInterval(camCheck,2000); S.dwT=Date.now(); S.dwI=S.cur; rcPlan(); S.g={on:gOn(x)&&S.gOk===true&&!!S.base,state:'run',offAt:0,okAt:0,hold:0,pauses:0,warnMs:0,pauseMs:2000,backMs:1500}; try{ monStart(); }catch(e){} try{ if(sOn(x)) sndStart(); }catch(e){}
   if(gOn(x)&&S.gOk==='manual'){ try{ call({action:'stu_oe_leave',id:x.id,kind:'guard_nocheck'}); }catch(e){} }
   S.onVis=function(){ if(!S||!S.running) return; if(document.hidden){ S.hiddenAt=Date.now(); } else if(S.hiddenAt){ S.hiddenAt=0; leave('leave'); } };
   document.addEventListener('visibilitychange',S.onVis);
@@ -321,6 +323,23 @@ function idChanged(dist){
   try{ sendSnap('face_changed'); }catch(e){} setTimeout(function(){ try{ if(S&&S.running) sendSnap('face_changed_after'); }catch(e){} },2500); setTimeout(function(){ try{ if(S&&S.running) sendSnap('face_changed_later'); }catch(e){} },8000);
   var msg='We cannot confirm that it is you. Look straight at the camera. Only the registered student may write this exam.';
   if(S.g&&S.g.on&&S.g.state!=='pause'){ S.g.idNeed=true; S.g.idOk=false; S.g.idUntil=now+15000; S.g.idMax=now+60000; S.g.why=msg; gPause(); } else if(!(S.g&&S.g.on)){ warn(msg); }
+}
+/* ---- sound check: the level is measured on the phone only; nothing is recorded or uploaded, only a note that sound was heard ---- */
+function sndStart(){
+  if(!S||!S.mic) return; var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+  var ctx=new AC(), src=ctx.createMediaStreamSource(S.mic), an=ctx.createAnalyser(); an.fftSize=1024; src.connect(an); S.sndCtx=ctx;
+  var buf=new Float32Array(an.fftSize), hist=[], base=[], last=0, ended=false;
+  S.sndT=setInterval(function(){
+    if(!S||!S.running) return;
+    try{ if(ctx.state==='suspended') ctx.resume(); }catch(e){}
+    var tr=S.mic.getAudioTracks()[0]; if(!tr||tr.readyState==='ended'){ if(!ended){ ended=true; try{ call({action:'stu_oe_leave',id:S.x.id,kind:'mic_off'}); }catch(e){} } return; }
+    an.getFloatTimeDomainData(buf); var q=0; for(var i=0;i<buf.length;i++) q+=buf[i]*buf[i]; var rms=Math.sqrt(q/buf.length);
+    if(base.length<20){ base.push(rms); return; }
+    if(!S.sndBase){ var b=base.slice().sort(function(x,y){return x-y;}); S.sndBase=Math.max(b[Math.floor(b.length/2)],0.004); }
+    var thr=Math.max(S.sndBase*3,0.03); hist.push(rms>thr?1:0); if(hist.length>6) hist.shift();
+    var hit=hist.reduce(function(x,y){return x+y;},0), now=Date.now();
+    if(hit>=4 && now-last>20000){ last=now; hist=[]; try{ call({action:'stu_oe_leave',id:S.x.id,kind:'sound_heard',note:'sustained sound, about '+Math.round(rms/S.sndBase)+'x the room level'}); }catch(e){} try{ sendSnap('sound_heard'); }catch(e){} }
+  },500);
 }
 function monStart(){
   var M=S.mon={last:{},lum:[],bad:{face:0,turn:0,multi:0},t0:Date.now(),n:0};

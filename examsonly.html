@@ -195,7 +195,7 @@ async function exEye(){ var i=$('exPw'), b=$('exEye'); var h=i.type==='password'
 async function exSignOut(){ try{ await supabaseClient.auth.signOut(); }catch(e){} location.reload(); }
 document.addEventListener('keydown',function(e){ if(e.key==='Enter' && !$('authCard').classList.contains('hidden')) exSignIn(); });
 </script>
-<script src="oexam-stu.js?v=23"></script>
+<script src="oexam-stu.js?v=24"></script>
 <script>exStart();</script>
 </body>
 </html>

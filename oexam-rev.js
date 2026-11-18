@@ -31,7 +31,7 @@ var RV=null, LVN={VS:'Very serious',S:'Serious',H:'High',M:'Medium',L:'Low'}, LV
 function eff(r){ return (r.final!=null)?r.final:((r.mcq||0)+r.written); }
 function rnd(x){ return Math.round(x*10)/10; }
 function lvTag(l){ return l?'<span class="rv-lv" style="background:'+LVC[l]+'">'+LVN[l]+'</span>':''; }
-var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',face_changed:'H',camera_off:'M',no_face:'L',flash:'L',guard_pause:'M',network_change:'L',recheck_failed:'M'};
+var RAWLV={phone_seen:'VS',other_device:'VS',multi_face:'S',leave:'S',fullscreen_exit:'S',head_turn:'H',face_changed:'H',camera_off:'M',no_face:'L',flash:'L',guard_pause:'M',network_change:'L',recheck_failed:'M',sound_heard:'L',mic_off:'M'};
 function lvLive(kinds,kc){ var best='',o=['VS','S','H','M','L'],n=0; Object.keys(kinds||{}).forEach(function(k){ var l=RAWLV[k]; if(!l) return; var dis=((kc||{})[k]||[0,0])[1]||0, left=(kinds[k]||0)-dis; if(left>0){ n+=left; if(!best||o.indexOf(l)<o.indexOf(best)) best=l; } });
   /* repeat escalation: 3 or more flags move a student up one level, 6 or more up two; never above Serious, and Very serious is only for a phone or another device */
   if(best && best!=='VS' && best!=='S'){ var up=n>=6?2:(n>=3?1:0), i=o.indexOf(best); best=o[Math.max(1,i-up)]; }

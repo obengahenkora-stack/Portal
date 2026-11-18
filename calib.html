@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Phone detection calibration</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:14px}
+h1{font-size:18px;margin:0 0 6px}p{font-size:13px;color:#94a3b8;margin:4px 0}
+.wrap{position:relative;max-width:640px;margin:10px 0}video{width:100%;border-radius:10px;background:#000;transform:scaleX(-1)}
+canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+button,select{padding:8px 12px;border-radius:8px;border:0;font-size:14px}
+button{background:#2563eb;color:#fff}
+#big{font-size:26px;font-weight:700;padding:10px;border-radius:10px;background:#1e293b;max-width:640px;text-align:center}
+#log{font-size:12px;color:#94a3b8;max-width:640px;max-height:160px;overflow:auto;white-space:pre-wrap}
+</style></head><body>
+<h1>Phone detection calibration</h1>
+<p>Press Start, then hold phones in front of the camera: different phones, flat, tilted, at the edge, dim light. Watch the number. Nothing is recorded or uploaded.</p>
+<div class="row"><button id="go">Start camera</button>
+<label>Model <select id="mdl"><option value="lite0">Fast (current)</option><option value="lite2">More accurate</option></select></label>
+<label>Show from score <input id="thr" type="range" min="10" max="90" value="30"> <b id="tv">0.30</b></label></div>
+<div class="wrap"><video id="v" playsinline muted></video><canvas id="c"></canvas></div>
+<div id="big">Waiting…</div>
+<p>Best score seen in this session: <b id="best">0.00</b> &nbsp; Detections: <b id="cnt">0</b></p>
+<div id="log"></div>
+<script type="module">
+import {FilesetResolver,ObjectDetector} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+const $=id=>document.getElementById(id);let det=null,run=false,best=0,cnt=0;
+const URLS={lite0:'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite',lite2:'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite2/float16/1/efficientdet_lite2.tflite'};
+$('thr').oninput=()=>{$('tv').textContent=($('thr').value/100).toFixed(2)};
+async function load(){const fs=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+det=await ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:URLS[$('mdl').value]},runningMode:'VIDEO',scoreThreshold:.1,maxResults:8,categoryAllowlist:['cell phone']});}
+$('mdl').onchange=async()=>{if(run){det=null;$('big').textContent='Loading model…';await load();}};
+$('go').onclick=async()=>{$('big').textContent='Loading…';
+try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});$('v').srcObject=s;await $('v').play();}catch(e){$('big').textContent='Camera blocked';return}
+await load();run=true;loop();};
+function loop(){if(!run)return;const v=$('v'),c=$('c');
+if(det&&v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
+const r=det.detectForVideo(v,performance.now()),min=$('thr').value/100;let top=0;
+for(const d of (r.detections||[])){const sc=d.categories[0].score;if(sc<min)continue;top=Math.max(top,sc);const b=d.boundingBox;
+x.strokeStyle=sc>=.55?'#22c55e':'#f59e0b';x.lineWidth=4;x.strokeRect(b.originX,b.originY,b.width,b.height);}
+const big=$('big');if(top){big.textContent='PHONE '+top.toFixed(2)+(top>=.55?'  (caught by current rule)':'  (missed by current rule)');big.style.background=top>=.55?'#166534':'#92400e';cnt++;$('cnt').textContent=cnt;
+if(top>best){best=top;$('best').textContent=best.toFixed(2)}
+$('log').textContent=new Date().toLocaleTimeString()+'  score '+top.toFixed(2)+'\n'+$('log').textContent.slice(0,1500);}
+else{big.textContent='No phone seen';big.style.background='#1e293b'}}
+setTimeout(loop,250);}
+</script></body></html>

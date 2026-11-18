@@ -28,3 +28,17 @@
     return true;
   };
 })();
+
+/* sdFetch: students and visitors read site-data.json through the cache worker (30 s copy, saves Supabase data); anyone signed in as staff, or any failure, reads Supabase directly. */
+(function(){
+  var PC='https://portal-cache.obengahenkora.workers.dev/site-data';
+  function staff(){ try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf('sb-mdbhlndjuddymvderuun')===0&&k.indexOf('auth-token')>0&&localStorage.getItem(k)) return true; } }catch(e){ return true; } return false; }
+  window.sdFetch=async function(url,opts){
+    try{
+      if(String(url).indexOf('/object/public/portal-data/site-data.json')>0 && !staff()){
+        var r=await fetch(PC); if(r.ok) return r;
+      }
+    }catch(e){}
+    return fetch(url,opts);
+  };
+})();

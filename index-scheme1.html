@@ -1192,7 +1192,7 @@ const SUPABASE_FILE = "site-data.json";
 
 async function fetchSupabaseData(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
+    const res = await sdFetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`);
     if(!res.ok) return {};
     return await res.json();
   }catch(e){

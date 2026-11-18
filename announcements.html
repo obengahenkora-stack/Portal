@@ -166,7 +166,7 @@ function formatDate(iso){
 
 async function fetchSupabaseData(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+    const res = await sdFetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
     if(!res.ok) return {};
     return await res.json();
   }catch(e){ return {}; }

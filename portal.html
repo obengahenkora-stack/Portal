@@ -1224,7 +1224,7 @@ async function fetchSupabaseData(strict){
     let _stf=false; try{ _stf = !!window._adminViaStaff || (typeof isAdmin==='function' && !!isAdmin()); }catch(e){ _stf=true; }
     if(!strict && !_stf && _sc && Date.now()-_sc.t < 30000) _txt = _sc.s;
     if(_txt === null){
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
+      const res = await ((!strict && !_stf && window.sdFetch) ? sdFetch : fetch)(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${SUPABASE_FILE}?t=${Date.now()}`, { cache: "no-store" });
       if(!res.ok){ if(strict) throw new Error('Could not reach the database ('+res.status+')'); return {}; }
       _txt = await res.text(); window.__sdC = { t: Date.now(), s: _txt };
     }
@@ -5734,7 +5734,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=9"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=223"></script>
+<script src="updates.js?v=224"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){

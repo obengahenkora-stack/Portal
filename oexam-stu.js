@@ -68,6 +68,7 @@ var S=null; // state of the running exam
 var GMARK=/\[\[(?:faceguard|sound|qtime=\d+|recheck=\d+)\]\]/ig;
 function rcOn(x){ var m=/\[\[recheck=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return Math.max(0,Math.min(3,n)); }
 function qtOn(x){ var m=/\[\[qtime=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return n>=10?Math.min(600,n):0; }
+function pStrict(x){ return !!(x&&/\[\[phonestrict\]\]/i.test(x.instructions||'')); }
 function sOn(x){ return !!(x&&/\[\[sound\]\]/i.test(x.instructions||'')); }
 function gOn(x){ return !!(x&&/\[\[faceguard\]\]/i.test(x.instructions||'')); }
 function insTxt(x){ return String((x&&x.instructions)||'').replace(GMARK,'').trim(); }
@@ -276,11 +277,11 @@ function warn(t){ var r=$('oeRun'); if(!r) return; var o=document.createElement(
 var _fd=null, _fdTry=false, _fdErr='', _od=null, _odTry=false;
 window.oesFdRetry=function(){ _fd=null; _fdTry=false; _fdErr=''; if(S&&$('oerGchk')){ S.gOk=false; gCheck(); } };
 async function odLoad(){
-  if(_od||_odTry) return _od; _odTry=true;
+  if(_od||_odTry) return _od; _odTry=true; var strict=pStrict(S&&S.x);
   try{
     var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
     var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite'},runningMode:'VIDEO',scoreThreshold:.55,maxResults:6,categoryAllowlist:['cell phone']});
+    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/'+(strict?'efficientdet_lite2/float16/1/efficientdet_lite2':'efficientdet_lite0/float16/1/efficientdet_lite0')+'.tflite'},runningMode:'VIDEO',scoreThreshold:strict?.35:.55,maxResults:6,categoryAllowlist:['cell phone']});
   }catch(e){ _od=null; }
   return _od;
 }
@@ -357,7 +358,7 @@ function monStart(){
       if(M.lum.length>=6){ var base=0,c=0; for(var k=0;k<M.lum.length-1;k++){ base+=M.lum[k]; c++; } base/=c; if(lum-base>38 && lum>110 && M.n>8) flag('flash'); }
     }catch(e){}
     // 1b) a phone held up in view (checked about every 2 seconds)
-    if(_od && M.n%3===0){ try{ var o=_od.detectForVideo(v,performance.now()); if(o&&o.detections&&o.detections.length){ M.ph++; M.phc=(o.detections[0].categories&&o.detections[0].categories[0]&&o.detections[0].categories[0].score)||0; if(M.ph>=3) flag('phone_seen','confidence '+M.phc.toFixed(2)+', '+M.ph+' checks'); } else M.ph=0; }catch(e){} }
+    if(_od && M.n%3===0){ try{ var o=_od.detectForVideo(v,performance.now()); if(o&&o.detections&&o.detections.length){ M.ph++; M.phc=(o.detections[0].categories&&o.detections[0].categories[0]&&o.detections[0].categories[0].score)||0; if(M.ph>=(pStrict(S.x)?2:3)) flag('phone_seen','confidence '+M.phc.toFixed(2)+', '+M.ph+' checks'); } else M.ph=0; }catch(e){} }
     if(S.idn&&M.n%4===0){ try{ idTick(v,M); }catch(e){} }
     // 2) faces and head turns (only if the helper loaded)
     if(_fd && M.n%1===0){

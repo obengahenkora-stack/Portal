@@ -204,8 +204,8 @@ window.oeNew=function(){
   E={id:'',course:COURSES[0]||'',title:'',instructions:'',start:s.toISOString(),end:e.toISOString(),durationMin:30,pickN:0,shuffleQ:true,shuffleOpt:true,oneWay:false,bioStart:true,snapEverySec:30,maxLeaves:3,code:'',status:'draft',questions:[]};
   addQ('mcq'); renderEdit();
 };
-var GM=/\s*\[\[(?:faceguard|sound|qtime=\d+|recheck=\d+)\]\]\s*/ig;
-function gmOut(){ var rm2=/\[\[recheck=(\d+)\]\]/i.exec(E.instructions||''); E.reCheck=rm2?parseInt(rm2[1],10):0; var qm=/\[\[qtime=(\d+)\]\]/i.exec(E.instructions||''); E.qTime=qm?parseInt(qm[1],10):0; E.faceGuard=/\[\[faceguard\]\]/i.test(E.instructions||''); E.soundCheck=/\[\[sound\]\]/i.test(E.instructions||''); E.instructions=String(E.instructions||'').replace(GM,'').trim(); (E.questions||[]).forEach(function(q){ if(q.type==='text'){ var m=VRE.exec(q.guide||''); if(m){ try{ var o=JSON.parse(m[1]); q.vr={on:true,v:o.v||{},f:o.f||'',tol:o.tol==null?1:o.tol}; }catch(e){} q.guide=String(q.guide).replace(VRE,'').trim(); } } }); }
+var GM=/\s*\[\[(?:faceguard|sound|phonestrict|qtime=\d+|recheck=\d+)\]\]\s*/ig;
+function gmOut(){ var rm2=/\[\[recheck=(\d+)\]\]/i.exec(E.instructions||''); E.reCheck=rm2?parseInt(rm2[1],10):0; var qm=/\[\[qtime=(\d+)\]\]/i.exec(E.instructions||''); E.qTime=qm?parseInt(qm[1],10):0; E.faceGuard=/\[\[faceguard\]\]/i.test(E.instructions||''); E.soundCheck=/\[\[sound\]\]/i.test(E.instructions||''); E.phoneStrict=/\[\[phonestrict\]\]/i.test(E.instructions||''); E.instructions=String(E.instructions||'').replace(GM,'').trim(); (E.questions||[]).forEach(function(q){ if(q.type==='text'){ var m=VRE.exec(q.guide||''); if(m){ try{ var o=JSON.parse(m[1]); q.vr={on:true,v:o.v||{},f:o.f||'',tol:o.tol==null?1:o.tol}; }catch(e){} q.guide=String(q.guide).replace(VRE,'').trim(); } } }); }
 window.oeEdit=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); renderEdit(); };
 window.oeCopy=function(i){ E=JSON.parse(JSON.stringify(LIST[i])); gmOut(); E.id=''; E.title=E.title+' (copy)'; E.status='draft'; E.questions.forEach(function(q){ q.id=uid(); }); renderEdit(); };
 window.oeDel=async function(i){
@@ -296,7 +296,7 @@ window.oeSave=async function(publish){
   if(publish && !E.questions.length){ msg('<div class="msg err">Add at least one question before publishing.</div>'); return; }
   if(publish && !confirm('Publish "'+E.title+'"?\n\nStudents on '+E.course+' will see it from '+fmt(E.start)+'.')) return;
   /* drop blank options but keep the correct answer pointing at the right one */
-  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft'; ex.instructions=String(ex.instructions||'').replace(GM,'').trim()+(E.faceGuard?' [[faceguard]]':'')+(E.soundCheck?' [[sound]]':'')+(E.qTime>=10?' [[qtime='+Math.min(600,E.qTime)+']]':'')+(E.reCheck>0?' [[recheck='+Math.min(3,E.reCheck)+']]':''); delete ex.faceGuard; delete ex.soundCheck; delete ex.qTime; delete ex.reCheck; ex.questions.forEach(function(q){ if(q.type==='text'){ var sp=vrSpecOf(q); delete q.vr; if(sp) q.guide=String(q.guide||'').replace(VRE,'').trim()+' [[var:'+JSON.stringify(sp)+']]'; } });
+  var ex=JSON.parse(JSON.stringify(E)); ex.status=publish?'published':'draft'; ex.instructions=String(ex.instructions||'').replace(GM,'').trim()+(E.faceGuard?' [[faceguard]]':'')+(E.soundCheck?' [[sound]]':'')+(E.phoneStrict?' [[phonestrict]]':'')+(E.qTime>=10?' [[qtime='+Math.min(600,E.qTime)+']]':'')+(E.reCheck>0?' [[recheck='+Math.min(3,E.reCheck)+']]':''); delete ex.faceGuard; delete ex.soundCheck; delete ex.phoneStrict; delete ex.qTime; delete ex.reCheck; ex.questions.forEach(function(q){ if(q.type==='text'){ var sp=vrSpecOf(q); delete q.vr; if(sp) q.guide=String(q.guide||'').replace(VRE,'').trim()+' [[var:'+JSON.stringify(sp)+']]'; } });
   ex.questions.forEach(function(q){ if(q.type==='mcq'){ var keep=[], na=0; q.options.forEach(function(o,k){ if(o.trim()){ if(k===q.answer) na=keep.length; keep.push(o.trim()); } }); q.options=keep; q.answer=na; } });
   msg('<div class="msg ok">Saving...</div>');
   try{ var r=await teamApi({action:'oe_save',exam:ex}); if(!r||!r.ok) throw new Error((r&&r.error)||'Could not save');
@@ -305,4 +305,4 @@ window.oeSave=async function(publish){
     await oeInit(); msg('<div class="msg ok">'+(publish?'Published.':'Saved as a draft.')+'</div>'); }
   catch(e){ msg('<div class="msg err">'+esc(e.message||'error')+'</div>'); }
 };
-})();
+})+sw('phoneStrict','Strict phone detection (more accurate)','Uses a more accurate phone finder that reacts faster. It catches phones held up, tilted or partly hidden more often. A little slower on weak phones. Try it on a practice exam first.')();

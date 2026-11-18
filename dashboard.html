@@ -1127,6 +1127,7 @@ async function _binCall(payload){
   var _roC=null;
   try{
     var _a0=String(payload&&payload.action||'');
+    if(/^stu_(as|exc)_/.test(_a0) && _a0!=='stu_as_list' && _a0!=='stu_exc_mine'){ window._freshUntil=Date.now()+75000; }
     if(_a0.indexOf('stu_exc_')===0 && _a0!=='stu_exc_mine'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_exc_mine')===0) sessionStorage.removeItem(k); }); }
     if((_a0==='stu_me'||_a0==='stu_exc_mine') && !window._asTest && !window._lookIdx && !window._adminViaStaff){
       var _s9=(await supabaseClient.auth.getSession()).data.session, _u9=(_s9&&_s9.user&&_s9.user.id)||'';
@@ -1143,6 +1144,14 @@ async function _binCall(payload){
   if(window._asTest) payload=Object.assign({},payload,{asTest:window._asTest});
   var body=JSON.stringify(payload), r=null, lastErr=null;
   var act=String(payload&&payload.action||''), isOe=act.indexOf('stu_oe_')===0;
+  /* the assignment list and the student's own excuse list are answered by the lighter, cached service first (it remembers the shared files for a minute); if it fails for any reason the main service answers as before */
+  if((act==='stu_as_list'||act==='stu_exc_mine') && h['x-student-token'] && !window._asTest && !window._lookIdx && !window._adminViaStaff){
+    try{
+      var lp=Object.assign({},payload); if(Date.now()<(window._freshUntil||0)) lp.fresh=true;
+      var rl2=await fetch(SUPABASE_URL+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify(lp)});
+      if(rl2.ok){ var jl2=await rl2.json(); if(jl2&&jl2.ok){ if(_roC){ try{ sessionStorage.setItem(_roC,JSON.stringify({t:Date.now(),j:jl2})); }catch(e){} } return jl2; } }
+    }catch(e){}
+  }
   var SBU=SUPABASE_URL+(isOe?'/functions/v1/exams':'/functions/v1/api');
   /* exams run on the fast Cloudflare service. Each exam sticks to one service for a student (remembered), and if Cloudflare cannot be reached when the student starts, that student uses the old route instead */
   var CFU='https://exams-api.obengahenkora.workers.dev/', pk='oeBk_'+(payload&&payload.id), pin='';
@@ -2523,7 +2532,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=1"></script>
-<script src="updates.js?v=235"></script>
+<script src="updates.js?v=236"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

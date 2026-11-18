@@ -815,6 +815,11 @@ function tick(){
   if(me && !me.staff && window.__cePause && Date.now()<window.__cePause){ if(S.started) stop(); return; }
   if(me && !me.staff && Date.now()>=Date.parse('2026-11-16T16:45:00Z') && Date.now()<Date.parse('2026-11-16T18:45:00Z')){ if(S.started) stop(); return; }
   if(!me){ if(S.started) stop(); return; }
+  /* students see the chat button only on the dashboard home (and its Chat tab); on every other card it is hidden and chat is not started. Staff and pages without the dashboard home are unchanged. */
+  try{ var _ov=document.getElementById('dashOverviewCard'), _ct=document.getElementById('dashChatCard');
+    if(!me.staff && _ov){ var _home=!_ov.classList.contains('pane-off') || (_ct && !_ct.classList.contains('pane-off'));
+      if(!_home){ if(S.root) S.root.style.display='none'; return; }
+      if(S.root) S.root.style.display=''; } }catch(e){}
   if(!S.started){ start(me); return; }
   if(S.me.id!==me.id){ stop(); start(me); return; }
   if(S.me.g!==me.g){ S.me.g=me.g; rememberGender(me.id,me.g); if(S.pres) track(S.pres); scheduleRender(); }

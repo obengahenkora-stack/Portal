@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'chat-cloudflare', date:'19 Nov 2026', title:'Chat moved to Cloudflare', all:[], student:[], staff:['Chat messages now go through a Cloudflare worker first, which takes the load off Supabase function calls. If the worker is ever unavailable, chat falls back to the old route automatically, so nothing should look different.'] },
     { id:'phone-strict', date:'18 Nov 2026', title:'Strict phone detection option', all:[], student:[], staff:['The exam editor now has a Strict phone detection switch. It uses a more accurate phone finder that needs a lower score and only 2 checks in a row, so phones held up, tilted or partly hidden are caught more often. Off keeps the current behaviour. Try it on a practice exam first.'] },
     { id:'lists-lighter', date:'18 Nov 2026', title:'Lighter assignment and excuse lists', all:[], student:[], staff:['The student Assignments and Excuses lists are now answered by the lighter cached service first (the main service is the fallback). Shared files are read once a minute for everyone instead of once per student, which cuts server calls. A student\'s own new submission shows at once.'] },
     { id:'wall-smaller', date:'18 Nov 2026', title:'Smaller Wall buttons', all:[], student:[], staff:['The Wall switch, pause button and exam tabs are now compact, so they no longer take up half the screen on a phone.'] },

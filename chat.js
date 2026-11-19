@@ -55,6 +55,7 @@ function peerOf(room){ var ids=String(room).slice(3).split('|'); return ids[0]==
 function namesGet(){ try{ return JSON.parse(localStorage.getItem('ceChatNames')||'{}'); }catch(e){ return {}; } }
 function rememberName(id,n){ if(!id||!n||id===(S.me&&S.me.id)) return; try{ var o=namesGet(); if(o[id]===n) return; o[id]=n; var k=Object.keys(o); if(k.length>300) delete o[k[0]]; localStorage.setItem('ceChatNames',JSON.stringify(o)); }catch(e){} }
 function nameOf(id){ return (S.dir&&S.dir[id])||S.dn[id]||(S.online[id]&&S.online[id].name)||namesGet()[id]||''; }
+var CF_CHAT='https://chat-api.obengahenkora.workers.dev/';
 function apiCall(payload){
   var cl=null; try{ cl=G('typeof supabaseClient!=="undefined"?supabaseClient:null'); }catch(e){}
   var adm=null; try{ adm=window._adminViaStaff||null; }catch(e){}
@@ -65,7 +66,9 @@ function apiCall(payload){
     _hc=h;
     var go=function(fn){ return fetch(G('SUPABASE_URL')+'/functions/v1/'+fn,{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); }); };
     if(payload&&payload.action==='stu_dir') return go('lite').then(function(j){ return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
-    if(payload&&payload.action==='chat_op'&&payload.op!=='owner_name_set') return go('chat').then(function(j){ if(j&&j.paused){ window.__cePause=Math.min(Number(j.until)||0,Date.now()+6*3600000); return j; } return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); });
+    var cf=function(){ return fetch(CF_CHAT,{method:'POST',headers:h,body:JSON.stringify(payload)}).then(function(r){ return r.json(); }); };
+    var paused=function(j){ window.__cePause=Math.min(Number(j.until)||0,Date.now()+6*3600000); return j; };
+    if(payload&&payload.action==='chat_op'&&payload.op!=='owner_name_set') return cf().then(function(j){ if(j&&j.paused) return paused(j); if(j&&j.ok) return j; throw 0; }).catch(function(){ return go('chat').then(function(j){ if(j&&j.paused) return paused(j); return (j&&j.ok)?j:go('api'); }).catch(function(){ return go('api'); }); });
     return go('api');
   });
 }

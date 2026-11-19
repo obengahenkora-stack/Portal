@@ -168,11 +168,14 @@ async function hRun(){
   HBUSY=false;
 }
 /* ---- live strip on each open exam card (refreshes every 30 s while this list is on screen) ---- */
-var LVT=0, LVALL={};
+var LVT=0, LVALL={}, LVF=0;
 function lvStart(){ if(LVT){ clearInterval(LVT); LVT=0; } if(!document.querySelector('.oe-lv')) return; lvPoll(); LVT=setInterval(function(){ if(!document.querySelector('.oe-lv')){ clearInterval(LVT); LVT=0; return; } lvPoll(); },30000); }
 async function lvPoll(){
   var els=[].slice.call(document.querySelectorAll('.oe-lv'));
-  for(var k=0;k<els.length;k++){ var id=els[k].id.replace('oeLv_',''); try{ var r=await teamApi({action:'rv_live',id:id}); lvDraw(id,r); }catch(e){ var b=$('oeLv_'+id); if(b) b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE: could not load ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; } }
+  var bad=0;
+  for(var k=0;k<els.length;k++){ var id=els[k].id.replace('oeLv_',''); try{ var r=await teamApi({action:'rv_live',id:id}); lvDraw(id,r); }catch(e){ bad++; var b=$('oeLv_'+id); if(b) b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE: could not load ('+esc(e.message||'error')+'). Trying again in 30 s.</div>'; } }
+  if(els.length&&bad===els.length) LVF++; else LVF=0;
+  if(LVF>=3){ if(LVT){ clearInterval(LVT); LVT=0; } LVF=0; els.forEach(function(b){ b.innerHTML='<div class="oe-sub" style="margin:0">&#9679; LIVE paused: your sign-in may have expired. Reload the page and sign in again.</div>'; }); }
 }
 function closeLive(){ var o=$('oeLvPop'); if(o) o.remove(); HSEL=''; document.body.style.overflow=''; if(HT){ clearInterval(HT); HT=0; } if(LVT){ clearInterval(LVT); LVT=0; } }
 window.oeLive=function(id){

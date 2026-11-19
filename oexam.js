@@ -236,6 +236,34 @@ window.oeAddOpt=function(i){ sync(); var q=E.questions[i]; if(q.options.length<6
 window.oeRemOpt=function(i,k){ sync(); var q=E.questions[i]; if(q.options.length>2){ q.options.splice(k,1); if(q.answer>=q.options.length) q.answer=0; else if(q.answer>k) q.answer--; renderEdit(); } };
 window.oeGrp=function(g){ sync(); var c=String(E.groups||''); c=c.indexOf(g)>=0?c.replace(g,''):(c+g).split('').sort().join(''); E.groups=c; renderEdit(); };
 function grpUi(){ var c=String(E.groups||''); return '<div class="oe-sw"><div><b style="font-size:.88rem">Who can take it</b><small>'+(c?'Only students in group '+c.split('').join(' + ')+' of this course will see and start this exam.':'All groups of this course (A, B and C together). Tick a group to limit the exam to it. Students in no group list will not see a limited exam.')+'</small></div><div style="display:flex;gap:6px">'+['A','B','C'].map(function(g){ return '<button type="button" class="oe-mini" style="min-width:38px;'+(c.indexOf(g)>=0?'background:#1d4ed8;color:#fff':'')+'" onclick="oeGrp(\''+g+'\')">'+g+'</button>'; }).join('')+'</div></div>'; }
+window.oeReword=async function(){
+  sync();
+  if(!E||!E.id){ msg('<div class="msg err">Save this exam as a draft first, then make group versions.</div>'); return; }
+  if(!E.questions.length){ msg('<div class="msg err">Add questions first.</div>'); return; }
+  var g=prompt('Make a reworded copy of this exam for which groups?\n\nType the letters, for example B C. Each group becomes its own DRAFT exam that you review before publishing.','B C'); if(!g) return;
+  var gs=[]; g.toUpperCase().replace(/[^A-Z]/g,'').split('').forEach(function(x){ if(gs.indexOf(x)<0) gs.push(x); }); gs=gs.slice(0,5); if(!gs.length) return;
+  var tok=''; try{ var sess=(await supabaseClient.auth.getSession()).data.session; tok=sess&&sess.access_token||''; }catch(e){}
+  if(!tok){ msg('<div class="msg err">Your sign-in expired. Reload the page and try again.</div>'); return; }
+  var base=JSON.parse(JSON.stringify(E)), made=[], unchanged=0, failed='';
+  for(var gi=0; gi<gs.length; gi++){
+    var L=gs[gi], C=JSON.parse(JSON.stringify(base)), qs=C.questions;
+    msg('<div class="msg ok">Rewording for group '+L+'... this takes about a minute. Please wait.</div>');
+    for(var i=0;i<qs.length;i+=6){
+      var part=qs.slice(i,i+6).map(function(q){ return {text:q.text,options:q.type==='mcq'?q.options:[]}; });
+      var res=null;
+      try{ var rr=await fetch(H_CF,{method:'POST',headers:{'Content-Type':'application/json','x-staff-token':tok},body:JSON.stringify({action:'staff_reword',id:base.id,questions:part})}); res=await rr.json(); }catch(e){ res=null; }
+      if(!res||!res.ok){ failed=(res&&res.error)||'The reword service did not answer'; break; }
+      res.items.forEach(function(it,k){ var q=qs[i+k]; if(it&&it.ok){ q.text=it.q; if(q.type==='mcq') q.options=it.o; } else unchanged++; });
+    }
+    if(failed) break;
+    qs.forEach(function(q){ q.id=uid(); });
+    C.id=''; C.title=(base.title||'Exam')+' - Group '+L; C.groups=L; C.status='draft';
+    E=C; renderEdit(); await oeSave(false); made.push(L);
+  }
+  var t=failed?('Stopped: '+failed+'.\n'):'';
+  t+=(made.length?'Made draft exam'+(made.length>1?'s':'')+' for group '+made.join(', ')+'. ':'No exams were made. ')+(unchanged?('\n'+unchanged+' question'+(unchanged>1?'s':'')+' could not be safely reworded and were left as the original. Please check them.'):'')+'\nOpen each draft, read the questions, then publish.';
+  try{ alert(t); }catch(e){}
+};
 window.oeTog=function(k){ sync(); E[k]=!E[k]; renderEdit(); };
 window.oeType=function(i,t){ sync(); var q=E.questions[i]; if(t==='text'){ q.type='text'; q.guide=q.guide||''; } else { q.type='mcq'; q.options=q.options&&q.options.length?q.options:['','','','']; q.answer=q.answer||0; } renderEdit(); };
 
@@ -279,7 +307,7 @@ function renderEdit(scrollEnd){
       +body+'<div style="margin-top:10px;max-width:140px"><div class="oe-l">Marks</div><input type="number" id="oeQm'+i+'" min="0" step="0.5" value="'+(q.marks==null?1:q.marks)+'"></div></div>';
   }).join('');
   h+='<div class="oe-row"><button type="button" class="oe-btn" onclick="oeImpOpen()">Import from a document</button></div><div class="oe-row"><button type="button" class="oe-btn s" onclick="oeAddQ(\'mcq\')">+ Multiple choice</button><button type="button" class="oe-btn s" onclick="oeAddQ(\'text\')">+ Written answer</button></div>'
-    +'<div class="oe-row" style="margin-top:18px"><button type="button" class="oe-btn s" onclick="oeSave(false)">Save draft</button><button type="button" class="oe-btn" onclick="oeSave(true)">Publish</button></div>'
+    +'<div class="oe-row" style="margin-top:18px"><button type="button" class="oe-btn s" onclick="oeSave(false)">Save draft</button><button type="button" class="oe-btn" onclick="oeSave(true)">Publish</button><button type="button" class="oe-btn s" onclick="oeReword()">Make group versions</button></div>'
     +'<button type="button" class="oe-btn s" style="margin-top:10px" onclick="oeInit()">Close without saving</button>';
   box.innerHTML=h;
   if(scrollEnd){ try{ var qs=box.querySelectorAll('.oe-q'); qs[qs.length-1].scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} }

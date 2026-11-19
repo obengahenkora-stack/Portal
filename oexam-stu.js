@@ -69,6 +69,7 @@ var GMARK=/\[\[(?:faceguard|sound|qtime=\d+|recheck=\d+)\]\]/ig;
 function rcOn(x){ var m=/\[\[recheck=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return Math.max(0,Math.min(3,n)); }
 function qtOn(x){ var m=/\[\[qtime=(\d+)\]\]/i.exec((x&&x.instructions)||''); var n=m?parseInt(m[1],10):0; return n>=10?Math.min(600,n):0; }
 function pStrict(x){ return !!(x&&/\[\[phonestrict\]\]/i.test(x.instructions||'')); }
+function nsOn(x){ return !!(x&&/\[\[noshot\]\]/i.test(x.instructions||'')); }
 function sOn(x){ return !!(x&&/\[\[sound\]\]/i.test(x.instructions||'')); }
 function gOn(x){ return !!(x&&/\[\[faceguard\]\]/i.test(x.instructions||'')); }
 function insTxt(x){ return String((x&&x.instructions)||'').replace(GMARK,'').trim(); }
@@ -79,7 +80,7 @@ function stopAll(){
   try{ S.stream&&S.stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
   document.removeEventListener('visibilitychange',S.onVis); window.removeEventListener('beforeunload',S.onUnload);
   ['copy','cut','paste','contextmenu','dragstart'].forEach(function(ev){ document.removeEventListener(ev,S.block,true); });
-  document.removeEventListener('fullscreenchange',S.onFs);
+  document.removeEventListener('fullscreenchange',S.onFs); try{ if(S.cvOn){ window.removeEventListener('blur',S.cvOn); window.removeEventListener('focus',S.cvOff); document.removeEventListener('keyup',S.keyup,true); var cvx=document.getElementById('oeCover'); if(cvx) cvx.remove(); S.cvOn=null; } }catch(e){}
   try{ document.removeEventListener('selectstart',S.noSel,true); document.removeEventListener('keydown',S.keys,true); if(S.wl) S.wl.release(); }catch(e){}
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   S.running=false;
@@ -218,6 +219,10 @@ function begin(){
   try{ var wm=document.createElement('div'); wm.id='oeWm'; var tx=((S.me&&S.me.index)||'')+' '+((S.me&&S.me.name)||''); var row=''; for(var i=0;i<8;i++) row+='<span>'+esc(tx)+'</span>'; var rows=''; for(var k=0;k<14;k++) rows+='<div>'+row+'</div>'; wm.innerHTML=rows; wm.style.cssText='position:fixed;inset:-20%;z-index:100001;pointer-events:none;overflow:hidden;transform:rotate(-24deg);opacity:.09;font:700 .95rem monospace;color:#000;line-height:3.2rem;white-space:nowrap;user-select:none'; $('oeRun').appendChild(wm); }catch(e){}
   S.noSel=function(e){ if(!S||!S.running) return; var t=e.target; if(!(t&&t.tagName==='TEXTAREA')) e.preventDefault(); }; document.addEventListener('selectstart',S.noSel,true);
   S.keys=function(e){ if(!S||!S.running) return; var k=(e.key||'').toLowerCase(); if(((e.ctrlKey||e.metaKey)&&['c','v','x','p','s','u','a'].indexOf(k)>=0&&!(k==='a'&&e.target&&e.target.tagName==='TEXTAREA'))||k==='printscreen'||k==='f12'){ e.preventDefault(); if(S.pasteN++<5) leave('paste_attempt'); } }; document.addEventListener('keydown',S.keys,true);
+  if(nsOn(x)){ try{ var cv=document.createElement('div'); cv.id='oeCover'; cv.style.cssText='position:fixed;inset:0;z-index:100002;background:#0b0b0c;color:#e5e7eb;display:none;align-items:center;justify-content:center;text-align:center;font:600 1rem system-ui;padding:20px'; cv.textContent='Exam hidden. Return to this window to continue.'; document.body.appendChild(cv);
+    S.cvOn=function(){ if(S&&S.running) cv.style.display='flex'; }; S.cvOff=function(){ cv.style.display='none'; };
+    window.addEventListener('blur',S.cvOn); window.addEventListener('focus',S.cvOff); document.addEventListener('visibilitychange',function(){ if(document.hidden) S.cvOn&&S.cvOn(); else if(document.hasFocus()) S.cvOff&&S.cvOff(); });
+    S.keyup=function(e){ if(!S||!S.running) return; var k=(e.key||'').toLowerCase(); if(k==='printscreen'||(e.metaKey&&e.shiftKey&&k==='s')){ S.cvOn(); if(S.pasteN++<5) leave('paste_attempt'); try{ navigator.clipboard&&navigator.clipboard.writeText(''); }catch(e2){} setTimeout(function(){ if(document.hasFocus()) S.cvOff(); },1200); } }; document.addEventListener('keyup',S.keyup,true); }catch(e){} }
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ S.wl=l; }).catch(function(){}); }catch(e){}
   nextSnap();
 }

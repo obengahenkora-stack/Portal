@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'script-checks', date:'20 Nov 2026', title:'Safer outside tools', all:[], student:[], staff:['The PDF, Word, Excel and zip tools the studio loads from other sites are now checked against a saved fingerprint, so a tampered copy would be refused.'] },
     { id:'fewer-calls-2', date:'20 Nov 2026', title:'Fewer server calls', all:[], student:['Your QR tag now reuses the codes already on your phone instead of asking the server each time you open it.'], staff:['The department list is remembered for 6 hours instead of being fetched on every page.'] },
     { id:'live-speed', date:'19 Nov 2026', title:'Exam health panel is calmer', all:[], student:[], staff:['The live check no longer waits on slow file reads, and the panel only turns red when a service is really slow (over 8 seconds).'] },
     { id:'live-pause', date:'19 Nov 2026', title:'Live and Wall stop when your sign-in expires', all:[], student:[], staff:['If your sign-in expires, the Live strip and the Photo wall now pause after 3 failed tries and tell you to reload and sign in again, instead of retrying forever and wasting server calls.'] },

@@ -79,12 +79,14 @@ function chatOp(op,extra,ka){
   return apiCall(p);
 }
 function loadDir(){ if(S.dir||S.dirLoading) return; S.dirLoading=1; var d={};
+  var skip=0; try{ var cd0=JSON.parse(sessionStorage.getItem('ceChatDir')||'null'); if(cd0&&cd0.d&&Date.now()-cd0.t<3600000){ d=cd0.d; if(cd0.sd) S.sd=cd0.sd; skip=1; } }catch(e){}
   var page=function(){ return apiCall({action:'stu_dir'}).then(function(j){ if(j&&j.ok&&j.names) Object.keys(j.names).forEach(function(k){ d[k]=j.names[k]; }); }); };
   var staff=function(){ return fetch(G('SUPABASE_URL')+'/functions/v1/lite',{method:'POST',headers:{'Content-Type':'application/json',apikey:G('SUPABASE_KEY')},body:JSON.stringify({action:'staff_names'})}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ if(j&&j.ok&&j.names){ S.sd=S.sd||{}; Object.keys(j.names).forEach(function(k){ d[k]=j.names[k]; S.sd[k]=j.names[k]; }); return; } return staff2(); }).catch(function(){ return staff2(); }); };
   var staff2=function(){ try{ var f=G('typeof fetchSupabaseData==="function"?fetchSupabaseData:null'); if(!f) return Promise.resolve(); return Promise.resolve(f()).then(function(data){
     ((data&&data.teamMembers)||[]).forEach(function(m){ if(m&&m.email&&m.name){ var kk='s'+hash(String(m.email).toLowerCase()), vv=String(m.name).trim().replace(/\s+/g,' '); d[kk]=vv; S.sd=S.sd||{}; S.sd[kk]=vv; } });
     try{ var oe=G('typeof OWNER_EMAIL!=="undefined"?OWNER_EMAIL:""'); if(oe) d['s'+hash(String(oe).toLowerCase())]=OWNER_FULL; }catch(e){} }).catch(function(){}); }catch(e){ return Promise.resolve(); } };
-  page().catch(function(){}).then(staff).then(function(){
+  (skip?Promise.resolve():page().catch(function(){}).then(staff)).then(function(){
+    if(!skip){ try{ sessionStorage.setItem('ceChatDir',JSON.stringify({t:Date.now(),d:d,sd:S.sd||null})); }catch(e){} }
     S.dir=d; applyNames(d);
     try{ if(S.me&&S.me.id===ownerId()&&d[ownerId()]){ var cu=(d[ownerId()]!==OWNER_FULL); if(S.me.name!==d[ownerId()]||S.me.custom!==cu){ S.me.name=d[ownerId()]; S.me.custom=cu; if(S.lounge) track(S.lounge); } } }catch(e){}
     var ids=[]; Object.keys(S.msgs).forEach(function(k){ S.msgs[k].forEach(function(m){ ids.push(m.from_id); }); }); Object.keys(S.dms).forEach(function(k){ if(S.dms[k].peer) ids.push(S.dms[k].peer); }); lsNeed(ids); }); }

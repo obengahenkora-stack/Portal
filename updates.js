@@ -1,6 +1,7 @@
 /* What's new: shown once per update, after sign-in. To announce something new, add a note at the TOP of NOTES with a new id. */
 (function(){
   var NOTES=[
+    { id:'fewer-calls-3', date:'20 Nov 2026', title:'Even fewer server calls', all:[], student:['Your exam list, class lists and the chat name list are now remembered for a few minutes, so pages open faster and use less data.'], staff:[] },
     { id:'script-checks', date:'20 Nov 2026', title:'Safer outside tools', all:[], student:[], staff:['The PDF, Word, Excel and zip tools the studio loads from other sites are now checked against a saved fingerprint, so a tampered copy would be refused.'] },
     { id:'fewer-calls-2', date:'20 Nov 2026', title:'Fewer server calls', all:[], student:['Your QR tag now reuses the codes already on your phone instead of asking the server each time you open it.'], staff:['The department list is remembered for 6 hours instead of being fetched on every page.'] },
     { id:'live-speed', date:'19 Nov 2026', title:'Exam health panel is calmer', all:[], student:[], staff:['The live check no longer waits on slow file reads, and the panel only turns red when a service is really slow (over 8 seconds).'] },

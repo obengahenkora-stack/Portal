@@ -296,7 +296,7 @@
     .hero-tabs{ margin:-30px 12px 20px !important; }
   }
 </style>
-<script src="db-sync.js?v=11"></script>
+<script src="db-sync.js?v=12"></script>
 <script src="filestore.js"></script>
 <script>
 /* hold the old screen back while a remembered student's new home loads (no flash on reload) */
@@ -1129,6 +1129,12 @@ async function _binCall(payload){
     var _a0=String(payload&&payload.action||'');
     if(/^stu_(as|exc)_/.test(_a0) && _a0!=='stu_as_list' && _a0!=='stu_exc_mine'){ window._freshUntil=Date.now()+75000; }
     if(_a0.indexOf('stu_exc_')===0 && _a0!=='stu_exc_mine'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_exc_mine')===0) sessionStorage.removeItem(k); }); }
+    if(_a0.indexOf('stu_oe_')===0 && _a0!=='stu_oe_list'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_oe_list')===0) sessionStorage.removeItem(k); }); }
+    if(_a0==='stu_oe_list' && !window._asTest && !window._lookIdx && !window._adminViaStaff){
+      var _sx=(await supabaseClient.auth.getSession()).data.session, _ux=(_sx&&_sx.user&&_sx.user.id)||'';
+      if(_ux){ _roC='ceRO:stu_oe_list:'+_ux; var _cx=JSON.parse(sessionStorage.getItem(_roC)||'null');
+        if(_cx && Date.now()-_cx.t<60000 && _cx.j && _cx.j.ok){ var _jx=Object.assign({},_cx.j); _jx.now=(Number(_cx.j.now)||_cx.t)+(Date.now()-_cx.t); return _jx; } }
+    }
     if((_a0==='stu_me'||_a0==='stu_exc_mine') && !window._asTest && !window._lookIdx && !window._adminViaStaff){
       var _s9=(await supabaseClient.auth.getSession()).data.session, _u9=(_s9&&_s9.user&&_s9.user.id)||'';
       if(_u9){ _roC='ceRO:'+_a0+':'+_u9; var _c1=JSON.parse(sessionStorage.getItem(_roC)||'null');
@@ -2516,7 +2522,7 @@ function renderWelcome(){
   });
 })();
 </script>
-<script src="chat.js?v=13"></script>
+<script src="chat.js?v=14"></script>
 <style>@media (max-width:640px){ body{padding-bottom:190px !important;} #dashAttendance,#dashScores{overflow-x:auto;-webkit-overflow-scrolling:touch;} #dashAttendance table td,#dashAttendance table th{padding-left:8px;padding-right:8px;} }</style>
 <script>
 (function(){ function mv(){ var w=document.querySelector('.wrap'), e=document.getElementById('whoBar'); if(!w||!e) return;
@@ -2532,7 +2538,7 @@ function renderWelcome(){
 <script src="stay.js?v=3"></script>
 <script src="as-stu.js?v=2"></script>
 <script src="depts.js?v=2"></script>
-<script src="updates.js?v=246"></script>
+<script src="updates.js?v=247"></script>
 <script src="bio.js?v=4"></script>
 <style>.ov-links{grid-template-columns:1fr !important;gap:10px !important}
 .ov-links .ov-link,.ov-links .ov-link:hover,.ov-links .ov-link:focus,.ov-links .ov-link:active{background:var(--card) !important;color:var(--ink) !important;border:1px solid var(--line) !important;border-radius:16px !important;box-shadow:none !important;transform:none !important;min-height:0 !important;padding:12px 14px !important;display:grid !important;grid-template-columns:46px 1fr;column-gap:14px;row-gap:2px;align-items:center !important;justify-content:stretch !important;text-align:left !important}

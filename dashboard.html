@@ -1116,10 +1116,11 @@ async function _binCall(payload){
       var stS=(await supabaseClient.auth.getSession()).data.session;
       if(stS && stS.access_token){
         var cached=null; try{ cached=JSON.parse(localStorage.getItem('stuBinCache1')||'null'); }catch(e){}
+        if(cached && cached.bin && cached.at && Date.now()-cached.at<300000 && Date.now()>=cached.at) return {ok:true,bin:cached.bin};
         var rl=await fetch(SUPABASE_URL+'/functions/v1/lite',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,'x-student-token':stS.access_token},body:JSON.stringify({action:'student_bin',since:(cached&&cached.v)||''})});
         var jl=await rl.json();
-        if(jl && jl.ok && jl.unchanged && cached && cached.bin) return {ok:true,bin:cached.bin};
-        if(jl && jl.ok && jl.bin){ try{ localStorage.setItem('stuBinCache1',JSON.stringify({v:jl.v,bin:jl.bin})); }catch(e){} return {ok:true,bin:jl.bin}; }
+        if(jl && jl.ok && jl.unchanged && cached && cached.bin){ try{ localStorage.setItem('stuBinCache1',JSON.stringify({v:cached.v,bin:cached.bin,at:Date.now()})); }catch(e){} return {ok:true,bin:cached.bin}; }
+        if(jl && jl.ok && jl.bin){ try{ localStorage.setItem('stuBinCache1',JSON.stringify({v:jl.v,bin:jl.bin,at:Date.now()})); }catch(e){} return {ok:true,bin:jl.bin}; }
       }
     }catch(e){}
   }
@@ -1130,15 +1131,16 @@ async function _binCall(payload){
     if(/^stu_(as|exc)_/.test(_a0) && _a0!=='stu_as_list' && _a0!=='stu_exc_mine'){ window._freshUntil=Date.now()+75000; }
     if(_a0.indexOf('stu_exc_')===0 && _a0!=='stu_exc_mine'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_exc_mine')===0) sessionStorage.removeItem(k); }); }
     if(_a0.indexOf('stu_oe_')===0 && _a0!=='stu_oe_list'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_oe_list')===0) sessionStorage.removeItem(k); }); }
-    if(_a0==='stu_oe_list' && !window._asTest && !window._lookIdx && !window._adminViaStaff){
+    if(_a0.indexOf('stu_as_')===0 && _a0!=='stu_as_list'){ Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceRO:stu_as_list')===0) sessionStorage.removeItem(k); }); }
+    if((_a0==='stu_oe_list'||_a0==='stu_as_list') && !window._asTest && !window._lookIdx && !window._adminViaStaff){
       var _sx=(await supabaseClient.auth.getSession()).data.session, _ux=(_sx&&_sx.user&&_sx.user.id)||'';
-      if(_ux){ _roC='ceRO:stu_oe_list:'+_ux; var _cx=JSON.parse(sessionStorage.getItem(_roC)||'null');
+      if(_ux){ _roC='ceRO:'+_a0+':'+_ux; var _cx=JSON.parse(sessionStorage.getItem(_roC)||'null');
         if(_cx && Date.now()-_cx.t<60000 && _cx.j && _cx.j.ok){ var _jx=Object.assign({},_cx.j); _jx.now=(Number(_cx.j.now)||_cx.t)+(Date.now()-_cx.t); return _jx; } }
     }
     if((_a0==='stu_me'||_a0==='stu_exc_mine') && !window._asTest && !window._lookIdx && !window._adminViaStaff){
       var _s9=(await supabaseClient.auth.getSession()).data.session, _u9=(_s9&&_s9.user&&_s9.user.id)||'';
       if(_u9){ _roC='ceRO:'+_a0+':'+_u9; var _c1=JSON.parse(sessionStorage.getItem(_roC)||'null');
-        if(_c1 && Date.now()-_c1.t<90000 && _c1.j && _c1.j.ok) return _c1.j; }
+        if(_c1 && Date.now()-_c1.t<(_a0==='stu_exc_mine'?300000:90000) && _c1.j && _c1.j.ok) return _c1.j; }
     }
   }catch(e){}
   var h={'Content-Type':'application/json',apikey:SUPABASE_KEY};

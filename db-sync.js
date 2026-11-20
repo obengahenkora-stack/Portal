@@ -21,21 +21,24 @@
       if(h['x-student-token'] && payload.action==='db_op' && payload.op==='getAll'){
         try{
           var li=String(window._lookIdx||''), ck='ceGA:'+payload.table+':'+(payload.order||'')+':'+li, now=Date.now();
-          try{ var c0=JSON.parse(sessionStorage.getItem(ck)||'null'); if(c0&&now-c0.t<(payload.table==='roster_entries'?600000:300000)&&c0.j&&c0.j.ok) return c0.j; }catch(e){}
+          var st=payload.table==='roster_entries'?localStorage:sessionStorage;
+          try{ var c0=JSON.parse(st.getItem(ck)||'null'); if(c0&&now-c0.t<(payload.table==='roster_entries'?1800000:300000)&&c0.j&&c0.j.ok) return c0.j; }catch(e){}
           var rl=await fetch(this.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order,idx:li})});
-          var jl=await rl.json(); if(jl&&jl.ok){ try{ if(!jl.rows||!jl.rows.length) throw 0; var sj=JSON.stringify({t:now,j:jl}); if(sj.length<1500000) sessionStorage.setItem(ck,sj); }catch(e){} return jl; }
+          var jl=await rl.json(); if(jl&&jl.ok){ try{ if(!jl.rows||!jl.rows.length) throw 0; var sj=JSON.stringify({t:now,j:jl}); if(sj.length<1500000) st.setItem(ck,sj); }catch(e){} return jl; }
         }catch(e){}
       }
       /* staff reading a whole table: the light service answers (remembered there for a minute); the main one is the fallback */
       /* remembered in this page only, so repeated reads do not download the same tables again: class lists 10 minutes (they rarely change), attendance 15 seconds (this also joins reads that arrive together). Any save by this page clears that table. */
       var GC=(window.__dbsGC=window.__dbsGC||{});
-      if(payload.action==='db_op' && payload.op!=='getAll' && payload.table){ Object.keys(GC).forEach(function(k){ if(k.indexOf(payload.table+'|')===0) delete GC[k]; }); }
+      if(payload.action==='db_op' && payload.op!=='getAll' && payload.table){ Object.keys(GC).forEach(function(k){ if(k.indexOf(payload.table+'|')===0) delete GC[k]; }); try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('ceGR:'+payload.table+'|')===0||k.indexOf('ceGA:'+payload.table+':')===0) localStorage.removeItem(k); }); }catch(e){} }
       if(h['x-staff-token'] && payload.action==='db_op' && payload.op==='getAll'){
         var gk=payload.table+'|'+(payload.order||''), ttl=payload.table==='roster_entries'?600000:15000, g0=GC[gk];
         if(g0 && Date.now()-g0.t<ttl){ try{ return await g0.p; }catch(e){ delete GC[gk]; } }
+        var rk='ceGR:'+gk, isR=payload.table==='roster_entries';
+        if(isR){ try{ var r0=JSON.parse(localStorage.getItem(rk)||'null'); if(r0&&Date.now()-r0.t<600000&&r0.j&&r0.j.ok){ GC[gk]={t:r0.t,p:Promise.resolve(r0.j)}; return r0.j; } }catch(e){} }
         var pr=(async function(self){
           var rs=await fetch(self.url+'/functions/v1/lite',{method:'POST',headers:h,body:JSON.stringify({action:'getall',table:payload.table,order:payload.order})});
-          var js=await rs.json(); if(js&&js.ok) return js; throw 0;
+          var js=await rs.json(); if(js&&js.ok){ if(isR){ try{ var sj2=JSON.stringify({t:Date.now(),j:js}); if(js.rows&&js.rows.length&&sj2.length<1500000) localStorage.setItem(rk,sj2); }catch(e){} } return js; } throw 0;
         })(this);
         GC[gk]={t:Date.now(),p:pr};
         try{ return await pr; }catch(e){ delete GC[gk]; }

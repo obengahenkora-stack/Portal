@@ -1,5 +1,6 @@
 /* ===== Exam Sessions: scan the barcode on a student's Exam Pass to mark them present ===== */
 (function(){
+function jq(s){return String(s==null?'':s).replace(/[^\w@.\- ]/g,function(c){return '\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);});}
 var QK='ceExamQueue';
 var S={course:'',date:'',roster:[],present:{},ready:false,busy:false};
 var SC=null, _flushing=null, _retryT=null, _inited=false;
@@ -103,7 +104,7 @@ function render(){
    +'<div class="ex-tabs"><button type="button" class="'+(tab==='in'?'on':'')+'" onclick="examTab(\'in\')">Present ('+(rows.length+ex.length)+')</button><button type="button" class="'+(tab==='out'?'on':'')+'" onclick="examTab(\'out\')">Not yet ('+abs.length+')</button></div>';
   if(tab==='in'){
     var any=false;
-    ex.forEach(function(k){ any=true; h+='<div class="ex-row" style="border-color:#f59e0b"><div><b>Extra candidate</b><small>'+escapeHtml(k)+roomTxt(k)+' · not on the class list</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[k])+'</div><button type="button" class="exb x" onclick="examRemove(\''+escapeHtml(k)+'\')">Remove</button></div></div>'; });
+    ex.forEach(function(k){ any=true; h+='<div class="ex-row" style="border-color:#f59e0b"><div><b>Extra candidate</b><small>'+escapeHtml(k)+roomTxt(k)+' · not on the class list</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[k])+'</div><button type="button" class="exb x" onclick="examRemove(\''+jq(k)+'\')">Remove</button></div></div>'; });
     rows.forEach(function(s){ any=true; var ix=escapeHtml(s.indexNumber), k=key(s.indexNumber); h+='<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+roomTxt(k)+'</small></div><div style="text-align:right"><div class="ex-t">'+hhmm(S.present[k])+'</div><button type="button" class="exb x" onclick="examRemove(\''+ix.replace(/'/g,'')+'\')">Remove</button></div></div>'; });
     if(!any) h+='<div class="empty">No one yet. Scan an exam pass and the name appears here.</div>';
   } else h+= abs.length ? abs.map(function(s){ var ix=escapeHtml(s.indexNumber); return '<div class="ex-row"><div><b>'+escapeHtml(s.name||s.indexNumber)+'</b><small>'+ix+'</small></div><button type="button" class="exb" onclick="examAdd(\''+ix.replace(/'/g,'')+'\')">Mark present</button></div>'; }).join('') : '<div class="empty">Everyone is present.</div>';
@@ -240,7 +241,7 @@ function handle(text){
   if(!idx) return;
   if(idx===SC.last && now-SC.lastAt<3000) return; SC.last=idx; SC.lastAt=now;
   var s=find(idx);
-  if(!s){ beep(false); if(S.present[key(idx)]){ beep(false); show('warn','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Extra candidate, already added'); return; } show('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list<br><button type="button" onclick="examExtra(\''+escapeHtml(idx)+'\')" style="margin-top:8px;background:#fff;color:#8a1f15;border:0;border-radius:999px;padding:8px 16px;font-weight:700">Add as extra candidate</button>'); return; }
+  if(!s){ beep(false); if(S.present[key(idx)]){ beep(false); show('warn','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Extra candidate, already added'); return; } show('bad','<div style="font-size:1.1rem">'+escapeHtml(idx)+'</div>Not on this class list<br><button type="button" onclick="examExtra(\''+jq(idx)+'\')" style="margin-top:8px;background:#fff;color:#8a1f15;border:0;border-radius:999px;padding:8px 16px;font-weight:700">Add as extra candidate</button>'); return; }
   if(S.present[key(s.indexNumber)]){ beep(false); show('warn','<div style="font-size:1.1rem">'+escapeHtml(s.name||idx)+'</div>Already marked present'); return; }
   beep(true); mark(s.indexNumber,true); SC.n++;
   var c=$('exN'); if(c) c.textContent=Object.keys(S.present).length+' of '+S.roster.length;

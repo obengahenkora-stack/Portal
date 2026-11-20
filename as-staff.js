@@ -1,5 +1,6 @@
 /* ===== Assignments (staff): set tasks with deadlines, review hand-ins, mark, release to Gradebook ===== */
 (function(){
+function jq(s){return String(s==null?'':s).replace(/[^\w@.\- ]/g,function(c){return '\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);});}
 function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function pad(n){return ('0'+n).slice(-2);}
@@ -98,9 +99,9 @@ window.asOpen=async function(i){
     +(s.text?'<div class="as-q"><div class="as-l">Answer</div><div style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(s.text)+'</div></div>':'')
     +(s.link?'<div class="as-q"><div class="as-l">Link</div>'+(linkOk?'<a href="'+esc(s.link)+'" target="_blank" rel="noopener noreferrer" style="overflow-wrap:anywhere">'+esc(s.link)+'</a>':esc(s.link))+'</div>':'')
     +(s.img?'<div class="as-q"><div class="as-l">Photo</div><img class="as-ph" src="'+s.img+'" onclick="asBig(this.src)"></div>':'')
-    +(s.hasFile&&!s.img?'<div class="as-q"><div class="as-l">File</div><div class="as-nm" style="overflow-wrap:anywhere">'+esc(s.fname)+'</div><button type="button" class="as-mini" style="margin-top:8px" onclick="asGetFile(\''+esc(s.email)+'\')">Download</button></div>':'')
+    +(s.hasFile&&!s.img?'<div class="as-q"><div class="as-l">File</div><div class="as-nm" style="overflow-wrap:anywhere">'+esc(s.fname)+'</div><button type="button" class="as-mini" style="margin-top:8px" onclick="asGetFile(\''+jq(s.email)+'\')">Download</button></div>':'')
     +'<div class="as-q"><div class="as-l">Mark (0 to '+j.max+')</div><input type="number" id="asG" step="0.5" min="0" max="'+j.max+'" value="'+(s.grade==null?'':s.grade)+'"><div class="as-l" style="margin-top:12px">Comment to student (optional)</div><textarea id="asCm">'+esc(s.comment)+'</textarea></div>'
-    +'<button type="button" class="as-btn" onclick="asGrade(\''+esc(s.email)+'\',1)">Save &amp; next</button><div class="as-row" style="margin-top:10px"><button type="button" class="as-mini" onclick="asGrade(\''+esc(s.email)+'\',0)">Save</button>'+(i>0?'<button type="button" class="as-mini" onclick="asOpen('+(i-1)+')">&larr; Previous</button>':'')+(i<D.rows.length-1?'<button type="button" class="as-mini" onclick="asOpen('+(i+1)+')">Next &rarr;</button>':'')+'</div>'; window.CURI=i; window.scrollTo(0,0); setTimeout(function(){try{$('asG').focus();}catch(e){}},50);
+    +'<button type="button" class="as-btn" onclick="asGrade(\''+jq(s.email)+'\',1)">Save &amp; next</button><div class="as-row" style="margin-top:10px"><button type="button" class="as-mini" onclick="asGrade(\''+jq(s.email)+'\',0)">Save</button>'+(i>0?'<button type="button" class="as-mini" onclick="asOpen('+(i-1)+')">&larr; Previous</button>':'')+(i<D.rows.length-1?'<button type="button" class="as-mini" onclick="asOpen('+(i+1)+')">Next &rarr;</button>':'')+'</div>'; window.CURI=i; window.scrollTo(0,0); setTimeout(function(){try{$('asG').focus();}catch(e){}},50);
   }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); asSubs(D.assignment.id); }
 };
 window.asGetFile=async function(em){ try{ var j=await api({action:'as_file',id:D.assignment.id,email:em}); dl(j); }catch(e){ msg('<div class="msg err">'+esc(e.message)+'</div>'); } };

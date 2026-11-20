@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.puter.com https://*.facebook.net https://*.facebook.com https://*.fbcdn.net https://*.twitter.com https://*.twimg.com https://*.x.com">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Student Assistant</title>
@@ -105,7 +106,7 @@ const SUPABASE_FILE = "site-data.json";
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = String(str || '');
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function fetchSupabaseData(){

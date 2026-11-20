@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.puter.com https://*.facebook.net https://*.facebook.com https://*.fbcdn.net https://*.twitter.com https://*.twimg.com https://*.x.com">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lecturer Studio</title>
@@ -368,7 +369,7 @@ let studioData = { courses: [], weeks: [], notes: [], questions: [], institution
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = String(str || '');
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function safeFileKey(email){
   return email.toLowerCase().replace(/[^a-z0-9]/g, '_');
@@ -410,7 +411,7 @@ async function renderAdminLecturerList(){
           <div style="font-size:0.78rem;color:var(--muted);">${escapeHtml(r.email)}${r.department ? ' — ' + escapeHtml(r.department) : ''}</div>
           <div style="font-size:0.72rem;color:var(--muted);">Last active: ${new Date(r.lastActive).toLocaleDateString()}</div>
         </div>
-        <button onclick="manageLecturer('${escapeHtml(r.email)}')">Manage</button>
+        <button onclick="manageLecturer(${escapeHtml(JSON.stringify(r.email))})">Manage</button>
       </div>
     `).join('');
   }catch(e){
@@ -483,7 +484,7 @@ async function signUp(){
   const password = document.getElementById('authPassword').value;
   const msg = document.getElementById('authMsg');
   if(!email || !password){ msg.innerHTML = '<div class="msg err">Enter an email and password.</div>'; return; }
-  if(password.length < 6){ msg.innerHTML = '<div class="msg err">Password must be at least 6 characters.</div>'; return; }
+  if(password.length<8){ msg.innerHTML = '<div class="msg err">Password must be at least 8 characters.</div>'; return; }
   if(!PW.confirmSignup('authPassword', msg)) return;
   msg.innerHTML = '<div class="msg ok">Creating account...</div>';
   const { data, error } = await supabaseClient.auth.signUp({ email, password });

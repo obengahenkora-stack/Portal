@@ -18,7 +18,8 @@ function apply(){
 }
 async function load(){
   if(window.ceDeptCached()) return;
-  try{ var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({action:'dept_list'})}); var j=await r.json();
+  try{ var j=null; try{ var r0=await fetch('https://portal-cache.obengahenkora.workers.dev/dept-list'); if(r0.ok) j=await r0.json(); }catch(e){}
+    if(!j||!j.ok){ var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({action:'dept_list'})}); j=await r.json(); }
     if(j&&j.ok&&Array.isArray(j.list)&&j.list.length){ LIST=j.list; try{ localStorage.setItem(KEY,JSON.stringify(LIST)); }catch(e){} stamp(); apply(); } }catch(e){}
 }
 function panel(){

@@ -4764,7 +4764,7 @@ async function loadConnectLists(){
     const names=visibleCourses(Object.keys(data.rosters||{})).sort();
     if(!names.length){ box.innerHTML='<div class="msg err">No class lists found.</div>'; return; }
     const meta=(await fetchBin().catch(()=>({}))).rosterMeta||{};
-    let DL=['Civil Engineering','Environmental Engineering']; try{ const dj=await teamApi({action:'dept_list'}); if(dj&&dj.ok&&dj.list&&dj.list.length) DL=dj.list; }catch(e){}
+    let DL=['Civil Engineering','Environmental Engineering']; try{ const cd=window.ceDeptCached&&window.ceDeptCached(); if(cd) DL=cd; else{ const dj=await teamApi({action:'dept_list'}); if(dj&&dj.ok&&dj.list&&dj.list.length){ DL=dj.list; if(window.ceDeptStore) window.ceDeptStore(dj.list); } } }catch(e){}
     Object.keys(meta).forEach(k=>{ const dd=meta[k]&&meta[k].dept; if(dd&&DL.indexOf(dd)<0) DL.push(dd); });
     let h='<table style="width:100%;margin-top:10px;"><tr><th>List</th><th>Level</th><th>Class</th><th>Department</th></tr>';
     names.forEach((n,i)=>{
@@ -4792,7 +4792,7 @@ async function saveConnectLists(){
 }
 
 async function srDeptInit(){
-  try{ if(window._srDeptDone) return; const r=await teamApi({action:'dept_list'}); if(!r||!r.ok||!r.list||!r.list.length) return; window._srDeptDone=1;
+  try{ if(window._srDeptDone) return; const cd=window.ceDeptCached&&window.ceDeptCached(); const r=cd?{ok:true,list:cd}:await teamApi({action:'dept_list'}); if(!r||!r.ok||!r.list||!r.list.length) return; if(!cd&&window.ceDeptStore) window.ceDeptStore(r.list); window._srDeptDone=1;
     const sel=document.getElementById('srDept'), cur=sel.value; sel.innerHTML='<option value="">Everyone (all departments)</option>'+r.list.map(d=>'<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>').join('')+'<option value="__none__">Department not set</option>'; sel.value=cur; }catch(e){}
 }
 async function buildRosterFromSignups(){
@@ -5734,7 +5734,7 @@ function updateWhoBar(){
 </script>
 <script src="chat.js?v=13"></script>
 <script src="darkfix.js"></script>
-<script src="updates.js?v=244"></script>
+<script src="updates.js?v=245"></script>
 <script src="bio.js?v=4"></script>
 <script>
 (function(){
@@ -5795,6 +5795,7 @@ function updateWhoBar(){
 <script src="atrisk.js?v=1"></script>
 <script src="usage.js?v=1"></script>
 <script src="absence.js?v=7"></script>
+<script>if(!window.ceDeptCached){window.ceDeptCached=function(){try{var at=+localStorage.getItem('ceDeptsAt')||0,c=JSON.parse(localStorage.getItem('ceDepts')||'null');if(Array.isArray(c)&&c.length&&Date.now()-at<21600000&&Date.now()>=at)return c.slice()}catch(e){}return null};window.ceDeptStore=function(l){try{if(Array.isArray(l)&&l.length){localStorage.setItem('ceDepts',JSON.stringify(l));localStorage.setItem('ceDeptsAt',String(Date.now()))}}catch(e){}}}</script>
 <script src="oexam.js?v=35"></script>
 <script src="oexam-imp.js?v=2"></script>
 <script src="notify.js?v=1"></script>

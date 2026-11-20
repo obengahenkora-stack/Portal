@@ -3,6 +3,9 @@
 var IDS=['deptGateSelect','linkDeptInput','profileDeptInput','adminRegisteredDeptFilter'], KEY='ceDepts', LIST=['Civil Engineering','Environmental Engineering'];
 try{ var c=JSON.parse(localStorage.getItem(KEY)||'null'); if(Array.isArray(c)&&c.length) LIST=c; }catch(e){}
 window.ceDepts=function(){return LIST.slice();};
+var TTL=6*3600*1000; function stamp(){ try{ localStorage.setItem('ceDeptsAt',String(Date.now())); }catch(e){} }
+window.ceDeptCached=function(){ try{ var at=+localStorage.getItem('ceDeptsAt')||0; var c=JSON.parse(localStorage.getItem(KEY)||'null'); if(Array.isArray(c)&&c.length&&Date.now()-at<TTL&&Date.now()>=at) return c.slice(); }catch(e){} return null; };
+window.ceDeptStore=function(l){ try{ if(Array.isArray(l)&&l.length){ localStorage.setItem(KEY,JSON.stringify(l)); stamp(); } }catch(e){} };
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function apply(){
   IDS.forEach(function(id){ var sel=document.getElementById(id); if(!sel) return; var cur=sel.value, keep=[], tail=[];
@@ -14,8 +17,9 @@ function apply(){
   draw();
 }
 async function load(){
+  if(window.ceDeptCached()) return;
   try{ var r=await fetch(SUPABASE_URL+'/functions/v1/api',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY},body:JSON.stringify({action:'dept_list'})}); var j=await r.json();
-    if(j&&j.ok&&Array.isArray(j.list)&&j.list.length){ LIST=j.list; try{ localStorage.setItem(KEY,JSON.stringify(LIST)); }catch(e){} apply(); } }catch(e){}
+    if(j&&j.ok&&Array.isArray(j.list)&&j.list.length){ LIST=j.list; try{ localStorage.setItem(KEY,JSON.stringify(LIST)); }catch(e){} stamp(); apply(); } }catch(e){}
 }
 function panel(){
   if(document.getElementById('deptPanel')) return document.getElementById('deptPanel');
@@ -33,7 +37,7 @@ function draw(){
 }
 async function save(list){
   var m=document.getElementById('deptMsg'); if(m) m.innerHTML='<div class="msg ok">Saving...</div>';
-  try{ var j=await _stu({action:'stu_dept_set',list:list}); if(!j||!j.ok) throw new Error((j&&j.error)||'Failed'); LIST=j.list; try{ localStorage.setItem(KEY,JSON.stringify(LIST)); }catch(e){} apply(); var m2=document.getElementById('deptMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.</div>'; }
+  try{ var j=await _stu({action:'stu_dept_set',list:list}); if(!j||!j.ok) throw new Error((j&&j.error)||'Failed'); LIST=j.list; try{ localStorage.setItem(KEY,JSON.stringify(LIST)); }catch(e){} stamp(); apply(); var m2=document.getElementById('deptMsg'); if(m2) m2.innerHTML='<div class="msg ok">Saved.</div>'; }
   catch(e){ if(m) m.innerHTML='<div class="msg err">'+esc(e.message||'error')+'</div>'; }
 }
 window.ceDeptAdd=function(){ var v=(document.getElementById('deptNew').value||'').trim(); if(!v) return; save(LIST.concat([v])); };

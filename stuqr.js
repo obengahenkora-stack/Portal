@@ -45,7 +45,7 @@
     var box=$('sqBody'); if(!box) return;
     box.innerHTML='<div class="empty">Loading your code...</div>';
     try{
-      try{ await fetchBatch(); }catch(e){ var cc=null; try{ cc=JSON.parse(localStorage.getItem('ceQrBatch')||'null'); }catch(x){} if(cc&&cc.B&&cc.email===key().split('|')[0]){ B=cc.B; } else throw e; }
+      var cc=null; try{ cc=JSON.parse(localStorage.getItem('ceQrBatch')||'null'); }catch(x){} var okc=false; try{ if(cc&&cc.B&&cc.email===key().split('|')[0]&&cc.B.sigs&&cc.B.date===new Date(Date.now()+cc.B.off).toISOString().slice(0,10)){ var lf=cc.B.sigs.length-(Math.floor((Date.now()+cc.B.off)/(cc.B.step*1000))-cc.B.slot); okc=lf>=120; } }catch(x){} if(okc){ B=cc.B; } else { try{ await fetchBatch(); }catch(e){ if(cc&&cc.B&&cc.email===key().split('|')[0]){ B=cc.B; } else throw e; } }
       await loadLib(); shown=-1;
       var name=myName();
       var first=name?name.trim().split(/\s+/)[0]:''; first=first?first.charAt(0).toUpperCase()+first.slice(1).toLowerCase():''; var hdr=(first?esc(first):'Student')+' QR Tag';

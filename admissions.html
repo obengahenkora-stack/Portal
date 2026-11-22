@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.puter.com https://*.facebook.net https://*.facebook.com https://*.fbcdn.net https://*.twitter.com https://*.twimg.com https://*.x.com">
+<title>Admissions check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* Calm single-column consultation desk: serif for the department's voice, sans for controls. Gold is used only for the rule and the send button. */
+:root{
+  --bg:#f6f7f4; --panel:#ffffff; --ink:#15201c; --muted:#5a6762; --line:#dde3de; --soft:#eef1ed;
+  --pine:#12392f; --pine-ink:#f3f6f3; --gold:#b98a2c; --gold-ink:#1a1405; --focus:#1f7a64;
+  --me:#12392f; --me-ink:#f3f6f3;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif; --sans:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1512; --panel:#131d19; --ink:#e9efeb; --muted:#9fb0a8; --line:#25332d; --soft:#192520;
+  --pine:#0a2019; --me:#2a5a4b; --focus:#6fd0b4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1512; --panel:#131d19; --ink:#e9efeb; --muted:#9fb0a8; --line:#25332d; --soft:#192520;
+  --pine:#0a2019; --me:#2a5a4b; --focus:#6fd0b4; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;margin:0;padding-bottom:48px}
+.gut{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.topnav{background:var(--pine);color:var(--pine-ink);padding-block:12px}
+.topnav .in{max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;justify-content:space-between}
+.topnav .brand{font-family:var(--serif);font-size:1.05rem;font-weight:500;color:var(--pine-ink);text-decoration:none;letter-spacing:.01em}
+.topnav .links{display:flex;flex-wrap:wrap;gap:4px 18px}
+.topnav .links a{color:#c3d3cb;text-decoration:none;font-size:.85rem}
+.topnav .links a:hover{color:#fff;text-decoration:underline;text-underline-offset:4px}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.hero{max-width:860px;margin:0 auto;padding-block:28px 18px}
+.badge{display:inline-block;font-size:.82rem;color:var(--muted);border:1px solid var(--line);background:var(--panel);padding:3px 12px;border-radius:999px}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.7rem,5vw,2.2rem);line-height:1.05;letter-spacing:-.015em;margin:16px 0 0;text-wrap:balance}
+.rule{width:56px;height:3px;background:var(--gold);border:0;margin:18px 0 16px}
+.lead{margin:0;max-width:56ch;font-family:var(--serif);font-size:1rem;line-height:1.55;color:var(--muted)}
+.wrap{max-width:860px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.chat{display:flex;flex-direction:column}
+.bar{padding:14px 22px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
+.bar b{font-family:var(--serif);font-size:1.05rem;font-weight:600}
+.bar small{color:var(--muted);font-size:.88rem}
+.dot{display:none}
+.log{padding:18px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:260px;max-height:520px}
+.msg{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.bot{align-self:flex-start;max-width:62ch;font-family:var(--serif);font-size:1rem;line-height:1.6;padding-left:14px;border-left:3px solid var(--gold)}
+.msg.me{align-self:flex-end;max-width:80%;background:var(--me);color:var(--me-ink);padding:8px 14px;border-radius:16px 16px 4px 16px;font-size:.92rem}
+.src{display:block;margin-top:8px;font-family:var(--sans);font-size:.84rem;color:var(--muted)}
+.typing{align-self:flex-start;color:var(--muted);font-size:.92rem;padding-left:19px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-self:flex-start;padding-left:19px}
+button{font:inherit;cursor:pointer}
+.act{background:var(--panel);border:1px solid var(--pine);color:var(--pine);padding:6px 15px;border-radius:999px;font-weight:600;font-size:.88rem}
+:root[data-theme="dark"] .act{border-color:var(--focus);color:var(--focus)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .act{border-color:var(--focus);color:var(--focus)}}
+.act:hover{background:var(--pine);color:var(--pine-ink)}
+.act[disabled]{opacity:.45;cursor:default}
+.try{padding:4px 22px 18px}
+.try p{margin:0 0 8px;color:var(--muted);font-size:.9rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--soft);border:1px solid var(--line);color:var(--ink);padding:5px 12px;border-radius:999px;font-size:.85rem}
+.chip:hover{border-color:var(--pine);background:var(--panel)}
+form{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line);background:var(--soft)}
+input{flex:1;min-width:0;font:inherit;padding:9px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink)}
+.send{background:var(--gold);color:var(--gold-ink);border:0;padding:9px 22px;border-radius:999px;font-weight:600}
+.send:hover{filter:brightness(1.07)}
+.more{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:26px}
+@media(max-width:760px){.more{grid-template-columns:minmax(0,1fr);gap:22px}}
+.side{border-top:1px solid var(--ink);padding-top:12px}
+.side h2{font-family:var(--serif);font-size:1.05rem;font-weight:600;margin:0 0 6px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto}
+.steps li{font-size:.9rem;color:var(--muted);padding-left:14px;position:relative}
+.steps li::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.steps li b{color:var(--ink);font-weight:600}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.sum{border:1px solid var(--line);background:var(--panel);padding:10px 14px;border-radius:10px;font-size:.88rem;margin-bottom:10px}
+.sum.hand{border-left:3px solid var(--gold)}
+.sum dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.sum dt{color:var(--muted)}.sum dd{margin:0}
+.rules{margin:0;padding-left:18px;font-size:.92rem;color:var(--ink)}
+.rules li+li{margin-top:6px}
+.reset{background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:999px;font-size:.85rem}
+.reset:hover{color:var(--ink);border-color:var(--ink)}
+
+.adm{margin-top:22px}
+.adm .bar b{font-size:1.05rem}
+.adm .body{padding:16px 20px 20px}
+.adm p.note{margin:0 0 14px;color:var(--muted);font-size:.88rem;max-width:68ch}
+.adm .row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px 12px;margin-bottom:8px;align-items:center}
+.adm label,.adm .lab{font-size:.9rem}
+.adm .lab small{color:var(--muted)}
+.adm select{font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);width:100%}
+.adm h3{font-family:var(--serif);font-size:.98rem;font-weight:600;margin:16px 0 8px}
+.adm .go{margin-top:14px;background:var(--gold);color:var(--gold-ink);border:0;padding:9px 22px;border-radius:999px;font-weight:600;font-size:.92rem}
+#admOut{margin-top:16px}
+.routes{margin-top:16px;font-size:.9rem}
+.routes summary{cursor:pointer;color:var(--pine);font-weight:600}
+:root[data-theme="dark"] .routes summary{color:var(--focus)}
+.routes ul{margin:10px 0 0;padding-left:18px}
+.routes li{margin:6px 0;color:var(--ink)}
+.res{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:12px 16px;background:var(--soft)}
+.res b.t{font-family:var(--serif);font-size:1.05rem;display:block;margin-bottom:6px}
+.res ul{margin:6px 0;padding:0;list-style:none;font-size:.9rem}
+.res li{padding-left:20px;position:relative;margin:3px 0}
+.res li::before{position:absolute;left:0;font-weight:700}
+.res li.ok::before{content:"\2713";color:#1f7a4d}
+.res li.no::before{content:"\2717";color:#b3412f}
+.res small{color:var(--muted);display:block;margin-top:8px}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<nav class="topnav gut"><div class="in"><a class="brand" href="index.html">Obeng-Ahenkora</a><span class="links"><a href="index.html">Home</a><a href="dashboard.html">Students Dashboard</a><a href="department-assistant.html">Ask the department</a><a href="portal.html">Staff</a></span></div></nav>
+<header class="hero gut">
+  <span class="badge">For prospective students</span>
+  <h1>Do you qualify?</h1>
+  <hr class="rule">
+  <p class="lead">Enter your WASSCE grades to see whether you meet the department's minimum entry requirements. Admission itself is decided by the university admissions office.</p>
+</header>
+<main class="wrap gut">
+  <section class="card adm" style="margin-top:0" id="admission" aria-label="Admission check">
+    <div class="bar"><b>Check if you qualify</b><small>For prospective students. Your grades stay on your device. Nothing is sent or saved.</small></div>
+    <div class="body">
+      <p class="note">Enter your WASSCE grades to see whether you meet the department's minimum entry requirements for a programme. Admission is decided by the university admissions office.</p>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><label for="admProg">Programme</label><select id="admProg"></select></div>
+      <h3>Core subjects</h3>
+      <div id="admCore"></div>
+      <h3>Elective science subjects</h3>
+      <div id="admElec"></div>
+      <button class="go" id="admGo" type="button">Check my grades</button>
+      <div id="admOut" aria-live="polite"></div>
+      <details class="routes"><summary>Other ways to apply (SSSCE, A Level, mature, HND, international)</summary><ul id="admMore"></ul></details>
+    </div>
+  </section>
+</main>
+<script>
+/* Admission check (WASSCE route). Runs only in the browser: grades are never sent anywhere.
+   Source: Department admission requirements document. Edit RULES if the requirements change. */
+(function(){
+  var RULES={
+    creditMax:6,  /* C6 is the weakest credit pass */
+    core:['English Language','Mathematics','Integrated Science'],
+    fixed:['Physics','Elective Mathematics'],
+    programmes:{
+      'BSc Civil Engineering':{third:['Chemistry','Technical Drawing','Geography']},
+      'BSc Environmental Engineering':{third:['Chemistry','Technical Drawing','Biology','Geography']}
+    }
+  };
+  var G=['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+  function esc(t){return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function gradeSel(id){var h='<select id="'+id+'" aria-label="Grade"><option value="">Grade</option>';G.forEach(function(g,i){h+='<option value="'+(i+1)+'">'+g+'</option>'});return h+'</select>'}
+  var prog=document.getElementById('admProg'),core=document.getElementById('admCore'),el=document.getElementById('admElec'),out=document.getElementById('admOut');
+  Object.keys(RULES.programmes).forEach(function(k){var o=document.createElement('option');o.textContent=k;prog.appendChild(o)});
+  RULES.core.forEach(function(c,i){core.insertAdjacentHTML('beforeend','<div class="row"><span class="lab">'+esc(c)+'</span>'+gradeSel('ac'+i)+'</div>')});
+  RULES.fixed.forEach(function(c,i){el.insertAdjacentHTML('beforeend','<div class="row"><span class="lab">'+esc(c)+'</span>'+gradeSel('af'+i)+'</div>')});
+  el.insertAdjacentHTML('beforeend','<div class="row"><select id="a3" aria-label="Third elective subject"></select>'+gradeSel('ag')+'</div>');
+  var third=document.getElementById('a3');
+  function fillThird(){third.innerHTML='';RULES.programmes[prog.value].third.forEach(function(t){var o=document.createElement('option');o.textContent=t;third.appendChild(o)});
+    var m=document.getElementById('admMore');if(m)m.innerHTML=MORE[prog.value]||''}
+  var MORE={
+    'BSc Civil Engineering':'<li><b>SSSCE:</b> credit passes (A to D) in the same six subjects.</li><li><b>GCE A Level:</b> passes in three subjects including Mathematics and two of Physics, Chemistry, Economics or Geography, plus the General Paper. Also five GCE O Level credits (grade 6) including English, Mathematics and a science subject.</li><li><b>Mature applicants:</b> at least 25 years old with proof of age, GCE O Level or SSSCE/WASSCE passes in English and Mathematics, at least two years in the construction industry, and a pass in the mature entrance examination (English, Mathematics, general knowledge) and an interview.</li><li><b>HND:</b> at least Second Class Lower, plus two years of working experience after the HND.</li><li><b>International:</b> any of the above, or an equivalent qualification from a recognised institution.</li>',
+    'BSc Environmental Engineering':'<li><b>SSSCE:</b> credit passes (A to D) in the same six subjects.</li><li><b>Mature students:</b> at least 25 years old by 1 September of the year of entry, original results slips, passes in the core subjects and three science electives, and a pass in the UENR entrance examination and/or an interview.</li><li><b>Professional and post-diploma:</b> a relevant Diploma or HND, an interview and two years of working experience after the qualification.</li><li><b>HND:</b> at least Second Class Lower, plus two years of working experience after the HND.</li><li><b>Foreign applicants:</b> equivalent qualifications (for example IB, IGCSE, GCSE or A Levels) are considered. Applicants whose first language is not English need IELTS 6.0, TOEFL paper 550 or TOEFL iBT 79, unless waived for English-speaking countries.</li>'
+  };
+  prog.onchange=fillThird;fillThird();
+  document.getElementById('admGo').onclick=function(){
+    var res=[],all=true;
+    var items=RULES.core.map(function(c,i){return {name:c,v:+document.getElementById('ac'+i).value}})
+      .concat(RULES.fixed.map(function(c,i){return {name:c,v:+document.getElementById('af'+i).value}}))
+      .concat([{name:third.value,v:+document.getElementById('ag').value}]);
+    if(items.some(function(x){return !x.v})){out.innerHTML='<div class="res"><b class="t">Some grades are missing</b>Please choose a grade for every subject, then check again.</div>';return}
+    items.forEach(function(x){var ok=x.v<=RULES.creditMax;if(!ok)all=false;res.push([ok,x.name+': '+G[x.v-1]+(ok?' (credit pass)':' (a credit pass, A1 to C6, is needed)')])});
+    var h='<div class="res"><b class="t">'+(all?'You meet the minimum WASSCE requirements for '+esc(prog.value):'You do not yet meet the minimum WASSCE requirements for '+esc(prog.value))+'</b><ul>';
+    res.forEach(function(r){h+='<li class="'+(r[0]?'ok':'no')+'">'+esc(r[1])+'</li>'});
+    h+='</ul><small>Meeting the minimum does not guarantee admission. Please confirm with the admissions office before you apply.'+(all?'':' If you do not qualify through WASSCE, see the other entry routes below.')+'</small></div>';
+    out.innerHTML=h;
+  };
+})();
+</script>
+</body>
+</html>

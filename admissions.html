@@ -211,7 +211,7 @@ h1{font-weight:600;font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing
     items.forEach(function(x){var ok=x.v<=RULES.creditMax;if(!ok)all=false;res.push([ok,x.name+': '+G[x.v-1]+(ok?' (credit pass)':' (a credit pass, A1 to C6, is needed)')])});
     var h='<div class="res"><b class="t">'+(all?'You meet the minimum WASSCE requirements for '+esc(prog.value):'You do not yet meet the minimum WASSCE requirements for '+esc(prog.value))+'</b><ul>';
     res.forEach(function(r){h+='<li class="'+(r[0]?'ok':'no')+'">'+esc(r[1])+'</li>'});
-    h+='</ul><small>Meeting the minimum does not guarantee admission. Please confirm with the admissions office before you apply.'+(all?'':' If you do not qualify through WASSCE, see the other entry routes below.')+'</small></div>';
+    h+='</ul>'+(all?'<p style="margin:10px 0 0"><b>Next step:</b> apply on the <a href="https://admissions.uenr.edu.gh" target="_blank" rel="noopener" style="color:#8de3ff">UENR admissions portal</a>. Read the <a href="https://uenr.edu.gh/admission-details/" target="_blank" rel="noopener" style="color:#8de3ff">application guidelines</a> first.</p>':'')+'<small>Meeting the minimum does not guarantee admission. Please confirm with the admissions office before you apply.'+(all?'':' If you do not qualify through WASSCE, see the other entry routes below.')+'</small></div>';
     out.innerHTML=h;
   };
 })();

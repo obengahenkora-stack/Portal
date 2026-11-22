@@ -160,10 +160,11 @@ h1{font-weight:600;font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing
 </header>
 <main class="wrap gut">
   <section class="card adm" style="margin-top:0" id="admission" aria-label="Admission check">
-    <div class="bar"><b>Check if you qualify</b><small>For prospective students. Your grades stay on your device. Nothing is sent or saved.</small></div>
+    <div class="bar"><b>Check if you qualify</b><small>For prospective students. Your grades and any file you upload stay on your device. Nothing is sent or saved.</small></div>
     <div class="body">
       <p class="note">Enter your WASSCE grades to see whether you meet the department's minimum entry requirements for a programme. Admission is decided by the university admissions office.</p>
       <div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><label for="admProg">Programme</label><select id="admProg"></select></div>
+      <div class="up" style="margin:0 0 12px"><b>Two ways to fill this in:</b> type the grades below, or upload a photo or PDF of your results and we will read the grades for you. You can correct anything before checking.<br><input type="file" id="admFile" accept="image/*,application/pdf" style="margin-top:8px"><div id="admRead" aria-live="polite" style="margin-top:6px"></div></div>
       <h3>Core subjects</h3>
       <div id="admCore"></div>
       <h3>Elective science subjects</h3>
@@ -174,6 +175,7 @@ h1{font-weight:600;font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing
     </div>
   </section>
 </main>
+<footer class="wrap gut" style="text-align:center;font-size:.85rem;opacity:.75;padding:18px 0">Designed by Nana Kwame Obeng-Ahenkora, PhD</footer>
 <script>
 /* Admission check (WASSCE route). Runs only in the browser: grades are never sent anywhere.
    Source: Department admission requirements document. Edit RULES if the requirements change. */
@@ -214,6 +216,60 @@ h1{font-weight:600;font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing
     res.forEach(function(r){h+='<li class="'+(r[0]?'ok':'no')+'">'+esc(r[1])+'</li>'});
     h+='</ul>'+(all?'<p style="margin:10px 0 0"><b>Next step:</b> apply on the <a href="https://admissions.uenr.edu.gh" target="_blank" rel="noopener" style="color:#8de3ff">UENR admissions portal</a>. Read the <a href="https://uenr.edu.gh/admission-details/" target="_blank" rel="noopener" style="color:#8de3ff">application guidelines</a> first.</p>':'')+'<small>Meeting the minimum does not guarantee admission. Please confirm with the admissions office before you apply.'+(all?'':' If you do not qualify through WASSCE, see the other entry routes below.')+'</small></div>';
     out.innerHTML=h;
+  };
+})();
+/* Read grades from a photo or PDF. Runs in the browser only (OCR via Tesseract.js, PDF via pdf.js). Nothing is uploaded to our servers. */
+(function(){
+  var f=document.getElementById('admFile'),msg=document.getElementById('admRead');if(!f)return;
+  var GR=['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+  var SUBJ=[['ac0',/ENGLISH/],['ac1',/(CORE\s*MATH|MATHEMATICS\s*\(?\s*CORE|^\s*MATHEMATICS\b(?!.*ELECT)|^\s*MATHS?\b(?!.*ELECT))/],['ac2',/INTEGRATED\s*SCI/],['af0',/PHYSICS/],['af1',/(ELECT\w*\s*MATH|MATH\w*\s*\(?\s*ELECT|FURTHER\s*MATH)/],['t:Chemistry',/CHEMISTRY/],['t:Technical Drawing',/TECHNICAL\s*DRAW/],['t:Geography',/GEOGRAPHY/],['t:Biology',/BIOLOGY/]];
+  function load(src){return new Promise(function(ok,no){var e=document.createElement('script');e.src=src;e.onload=ok;e.onerror=no;document.head.appendChild(e)})}
+  function parse(text){
+    var found=[],got={},thirds=[];
+    text.toUpperCase().split(/\n/).forEach(function(l){
+      var m=l.match(/\b([A-F])\s?([1-9])\b/g);if(!m)return;
+      var g=null;m.forEach(function(x){x=x.replace(/\s/,'');if(GR.indexOf(x)>-1)g=x});if(!g)return;
+      SUBJ.forEach(function(r){if(r[1].test(l)&&!(r[0] in got)){got[r[0]]=GR.indexOf(g)+1;found.push(r[0])}});
+    });
+    return got;
+  }
+  function apply(got){
+    var n=0,names=[];
+    ['ac0','ac1','ac2','af0','af1'].forEach(function(id){if(got[id]){document.getElementById(id).value=got[id];n++}});
+    var t=document.getElementById('a3');
+    for(var k in got){if(k.indexOf('t:')===0){var nm=k.slice(2);var opt=[].slice.call(t.options).filter(function(o){return o.textContent===nm})[0];if(opt){t.value=nm;document.getElementById('ag').value=got[k];n++;break}}}
+    return n;
+  }
+  f.onchange=async function(){
+    var file=f.files[0];if(!file)return;
+    msg.textContent='Reading your results... this can take up to a minute the first time.';
+    try{
+      var text='';
+      if(file.type==='application/pdf'){
+        await load('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        var pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+        for(var i=1;i<=Math.min(pdf.numPages,3);i++){
+          var pg=await pdf.getPage(i),tc=await pg.getTextContent(),lines={};
+          tc.items.forEach(function(it){var y=Math.round(it.transform[5]/4);(lines[y]=lines[y]||[]).push(it.str)});
+          text+=Object.keys(lines).sort(function(a,b){return b-a}).map(function(y){return lines[y].join(' ')}).join('\n')+'\n';
+        }
+        if(text.replace(/\W/g,'').length<40){
+          await load('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+          var p1=await pdf.getPage(1),vp=p1.getViewport({scale:2}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+          await p1.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          text=(await Tesseract.recognize(cv,'eng')).data.text;
+        }
+      }else{
+        await load('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+        text=(await Tesseract.recognize(file,'eng')).data.text;
+      }
+      var got=parse(text),n=apply(got);
+      if(n>=6)msg.innerHTML='<b>Done.</b> We read all six grades. Please check they match your results, correct any that are wrong, then press Check my grades.';
+      else if(n>0)msg.innerHTML='<b>We read '+n+' of 6 grades.</b> The picture was not fully clear. Please fill in the missing ones by hand, check the rest, then press Check my grades.';
+      else msg.innerHTML='<b>We could not read the grades from this file.</b> Try a clearer, straight, well-lit photo, or type the grades in below.';
+    }catch(e){msg.innerHTML='<b>We could not read this file.</b> Please type your grades in below.'}
+    f.value='';
   };
 })();
 </script>

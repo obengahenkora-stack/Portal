@@ -108,6 +108,33 @@ input{flex:1;min-width:0;font:inherit;padding:9px 16px;border:1px solid var(--li
 .res small{color:var(--muted);display:block;margin-top:8px}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 .logos{display:flex;gap:14px;align-items:center;margin-bottom:14px}.logos img{height:56px;width:auto;display:block}
+
+/* Design A: Aurora (dark glass) */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root:root:root{--bg:#070914;--panel:rgba(255,255,255,.06);--ink:#eef0ff;--muted:#b7bddf;--line:rgba(255,255,255,.14);--soft:rgba(255,255,255,.08);--pine:#0a0d24;--pine-ink:#eef0ff;--gold:#8de3ff;--gold-ink:#06101a;--focus:#8de3ff;--serif:'Space Grotesk',system-ui,sans-serif;--sans:'Space Grotesk',system-ui,sans-serif;color-scheme:dark}
+body{background:radial-gradient(900px 500px at 85% -10%,#3b2fb8 0%,transparent 60%),radial-gradient(700px 500px at 0% 100%,#0e6b7a 0%,transparent 60%),#070914 fixed;font-size:15px}
+.topnav{background:transparent;padding-block:20px}
+.topnav .in,.hero,.wrap{max-width:1160px}
+.topnav .links a{color:#aab1d8}
+.hero{padding-block:36px 24px}
+.badge{border:0;background:none;padding:0;color:#8de3ff;font-size:.95rem}
+h1{font-weight:600;font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing:-.03em}
+.rule{display:none}
+.lead{margin-top:22px;font-size:1.05rem;color:#b7bddf;max-width:46ch;font-family:var(--sans)}
+.logos{margin-bottom:22px}.logos a{display:block;padding:6px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}.logos img{height:44px}
+.card{border-radius:28px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(14px);overflow:visible}
+.adm{margin-top:0}
+.adm .bar{border-bottom:1px solid rgba(255,255,255,.14);padding:20px 28px}
+.adm .bar b{font-size:1.2rem;font-weight:600}
+.adm .body{padding:24px 28px 30px}
+.adm select{background:rgba(255,255,255,.08);color:#eef0ff;border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px 12px}
+.adm select option{background:#12152e;color:#eef0ff}
+.adm h3{font-family:var(--sans);color:#8de3ff;font-size:.9rem;font-weight:500}
+.adm .go{background:linear-gradient(90deg,#8de3ff,#b6f36b);color:#06101a;border-radius:16px;padding:14px 30px;font-size:1rem;font-weight:600}
+.res{background:rgba(182,243,107,.12);border:1px solid rgba(182,243,107,.4);border-left-width:1px;border-radius:18px}
+.res b.t{font-family:var(--sans);color:#d4ff9e;font-weight:600}
+.res li.ok::before{color:#b6f36b}.res li.no::before{color:#ff8a7a}
+.routes summary{color:#8de3ff}
 </style>
 </head>
 <body>

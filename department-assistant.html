@@ -94,9 +94,9 @@ aside{display:flex;flex-direction:column;gap:20px}
 <body>
 <nav class="topnav gut"><div class="in"><a class="brand" href="index.html">Obeng-Ahenkora</a><span class="links"><a href="index.html">Home</a><a href="dashboard.html">Students Dashboard</a><a href="portal.html">Staff</a></span></div></nav>
 <div class="hero gut"><div class="in">
-  <span class="badge">Preview: example answers only</span>
+  <span class="badge">Preview: test documents only</span>
   <h1>Ask the department. <em>Get a real answer.</em></h1>
-  <p class="lead">This is a preview. Every answer below is an example written for testing and is not official information. Soon, answers will come from the department's own documents. Please check anything important with the department office.</p>
+  <p class="lead">This is a preview. It is answering from a few test documents written only for testing, so its answers are not official information. Soon it will use the department's own documents. Please check anything important with the department office.</p>
 </div></div>
 <div class="wrap gut">
   <div class="grid">
@@ -125,7 +125,7 @@ aside{display:flex;flex-direction:column;gap:20px}
           <li>Answers only from department documents, and names the source.</li>
           <li>Never shows scores or personal data. Students must sign in for that.</li>
           <li>Offers only office-hour slots that are really open.</li>
-          <li>Passes angry, personal or unclear cases to a named staff member.</li>
+          <li>Passes angry, personal or unclear cases to a staff member.</li>
         </ul>
         <p style="margin:10px 0 0"><button class="reset" id="reset" type="button">Start over</button></p></div>
       </section>
@@ -140,10 +140,10 @@ aside{display:flex;flex-direction:column;gap:20px}
 
   var CHIPS=[
     ['programmes','What programmes does the department offer?'],
+    ['office','Where is the department office?'],
     ['book','I want to meet a lecturer'],
     ['scores','What is my score in CVE 301?'],
-    ['unfair','My result is unfair and I am very upset'],
-    ['exam','When is the CVE 301 exam?']
+    ['unfair','My result is unfair and I am very upset']
   ];
 
   /* Each scenario is a list of turns. type: bot | step | actions | summary */
@@ -207,7 +207,8 @@ aside{display:flex;flex-direction:column;gap:20px}
         box.querySelectorAll('button').forEach(function(x){x.disabled=true});
         if(a[1]==='slot') pickSlot(a[0]);
         else if(a[1]==='confirm') confirmBooking(a[0]);
-        else if(a[1]==='unfair'){addMsg('me',a[0]);play('unfair')}
+        else if(a[1]==='unfair'){addMsg('me',a[0]);play('unfair');sendHandoff('Student upset or complaint',lastQ||a[0])}
+        else if(a[1]==='handoff'){addMsg('me',a[0]);handoffNow()}
         else if(a[1]==='link'){addMsg('me',a[0]);say([{t:'bot',x:'In the real portal this button opens the sign-in page. It is only a sample here.'}])}
       };
       box.appendChild(b);
@@ -227,6 +228,13 @@ aside{display:flex;flex-direction:column;gap:20px}
     busy=false;
   }
   function play(key){return say(FLOWS[key])}
+  async function handoffNow(){
+    busy=true; addStep('<b>Passing</b> the question to staff');
+    var ok=await sendHandoff('Question the assistant could not answer',lastQ);
+    if(ok){ addMsg('bot','Done. I passed your question to the department staff. Please also keep your index number ready in case they contact you.'); addSummary('hand',[['To','Department staff'],['Reason','Assistant had no reliable answer'],['Question',lastQ.slice(0,140)],['Action','Please reply to the student']]); }
+    else addMsg('bot','I could not send that just now. Please try again in a moment, or visit the department office.');
+    busy=false;
+  }
 
   function pickSlot(slot){
     addMsg('me',slot);
@@ -253,25 +261,54 @@ aside{display:flex;flex-direction:column;gap:20px}
     btns.forEach(function(b){ if(b.textContent.indexOf('|')>-1){ var full=b.textContent; b.textContent=full.split('|')[0]; var old=b.onclick; b.onclick=function(){ if(busy)return; b.parentNode.querySelectorAll('button').forEach(function(x){x.disabled=true}); confirmBooking(full)} } else if(b.textContent==='No, cancel'){ b.onclick=function(){ if(busy)return; b.parentNode.querySelectorAll('button').forEach(function(x){x.disabled=true}); addMsg('me','No, cancel'); say([{t:'bot',x:'No problem, I released the slot. You can ask for another time any time.'}])} } });
   };
 
+  var API='https://assistant-api.obengahenkora.workers.dev', lastQ='';
   function route(text){
     var s=text.toLowerCase();
-    if(/(programme|program|course list|offer|degree|bsc|msc)/.test(s)) return 'programmes';
-    if(/(meet|book|office hour|appointment|see a lecturer|lecturer)/.test(s)) return 'book';
-    if(/(score|grade|mark|result.*(what|show)|gpa|cwa)/.test(s)&&!/(unfair|upset|wrong)/.test(s)) return 'scores';
-    if(/(unfair|upset|angry|cheat|wrong|complain|annoyed|furious|failed me|not fair)/.test(s)) return 'unfair';
-    if(/(exam|timetable|when is|date)/.test(s)) return 'exam';
+    if(/(meet|book|office hour|appointment|see a lecturer)/.test(s)) return 'book';
+    if(/(unfair|upset|angry|cheat|complain|annoyed|furious|failed me|not fair)/.test(s)) return 'unfair';
     return null;
+  }
+  function post(path,body){
+    return fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return {status:r.status,j:j}})});
+  }
+  function sendHandoff(topic,note){
+    return post('/handoff',{topic:topic,note:String(note).slice(0,500),contact:''}).then(function(){return true},function(){return false});
+  }
+  async function realAsk(text){
+    busy=true; lastQ=text;
+    addStep('<b>Searching</b> the department documents');
+    typing(true);
+    var res=null;
+    try{ res=await post('/ask',{q:text}); }catch(e){ res=null; }
+    typing(false);
+    if(!res||!res.j||!res.j.ok){
+      busy=false;
+      var msg=(res&&res.status===429)?'Too many questions at once. Please wait a minute and try again.':'I could not reach the assistant just now. Please try again in a moment.';
+      addStep('<b>Problem</b>: no answer received'); addMsg('bot',msg); return;
+    }
+    var j=res.j;
+    if(j.reason==='private'){
+      addStep('<b>Detected</b> a request for personal data. <b>Blocked</b>: not shared in chat');
+      addMsg('bot',j.answer);
+    } else if(j.confident){
+      var src=j.sources&&j.sources[0]?'Source: '+j.sources[0].title+(j.test?' (test document, not official)':''):'';
+      addStep('<b>Found</b> the answer in: '+esc(j.sources&&j.sources[0]?j.sources[0].title:'the documents'));
+      addMsg('bot',j.answer,src);
+    } else {
+      addStep('<b>Searched</b> department documents. <b>Found</b>: nothing reliable');
+      addMsg('bot',j.answer);
+      if(j.handoff){ addActions([['Yes, pass it on','handoff']]); }
+    }
+    busy=false;
   }
   function ask(text){
     if(busy||!text.trim())return;
+    text=text.trim().slice(0,400);
     addMsg('me',text);
     var k=route(text);
-    if(k) play(k);
-    else say([
-      {t:'step',x:'<b>Searched</b> department documents. <b>Found</b>: nothing reliable'},
-      {t:'bot',x:'I don’t have a reliable answer for that in the department documents, and I don’t want to guess. I can pass your question to a staff member. Would you like that?'},
-      {t:'actions',a:[['Yes, pass it on','unfair']]}
-    ]);
+    if(k==='book') play('book');
+    else if(k==='unfair'){ play('unfair'); sendHandoff('Student upset or complaint',text); }
+    else realAsk(text);
   }
 
   var chips=document.getElementById('chips');
@@ -286,7 +323,7 @@ aside{display:flex;flex-direction:column;gap:20px}
     log.innerHTML=''; steps.innerHTML='<li class="empty" style="padding-left:0">Nothing yet. Ask something and the steps appear here.</li>';
     sums.innerHTML='<p class="empty">Bookings and hand-offs are summarised here, so no request gets lost.</p>';
     stepCount=0; sumCount=0; busy=false;
-    addMsg('bot','Hello! I’m the department assistant (sample). I can answer questions about programmes, book an office hour, and pass tricky cases to a staff member. What would you like to know?');
+    addMsg('bot','Hello! I’m the department assistant (preview). I can answer questions from the department documents and pass tricky cases to a staff member. Office-hour booking is only a sample for now. What would you like to know?');
   }
   document.getElementById('reset').onclick=start;
   start();

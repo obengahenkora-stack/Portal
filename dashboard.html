@@ -1869,6 +1869,15 @@ async function loadDashboard(skipLock){
         const _mx = parseFloat(_am0[_bs0(r.course||'General').toLowerCase()+'|'+String(r.assessmentName||'Untitled').trim().toLowerCase()]);
         _cg[c].items.push({n:r.assessmentName||'Untitled', sc:r.score, mx:_mx>0?_mx:0});
       });
+      /* show every posted assessment for the course; where the student has no score it counts as 0 (matches the gradebook and the CA table) */
+      Object.keys(_am0).forEach(k => {
+        const i = k.indexOf('|'); if(i < 1) return;
+        const cn = k.slice(0, i), an = k.slice(i + 1), mxv = parseFloat(_am0[k]); if(!(mxv > 0)) return;
+        const gk = _co.filter(c => String(c).trim().toLowerCase() === cn)[0]; if(!gk) return;
+        if(_cg[gk].items.some(it => String(it.n).trim().toLowerCase() === an)) return;
+        const orig = (allRecords.filter(r => String(r.assessmentName||'').trim().toLowerCase() === an)[0] || {}).assessmentName;
+        _cg[gk].items.push({n: orig || an.replace(/\b\w/g, ch => ch.toUpperCase()), sc:'0', mx:mxv});
+      });
       html += '<div class="scx"><div class="scx-k">Academic Record</div>';
       _co.forEach(c => {
         const g=_cg[c]; const _m=String(c).match(/^(.*?)\s*[-\u2013]\s*([A-Za-z]{3,5}\s?\d{3})\s*(?:[-\u2013]\s*(Level\s*\d+))?\s*$/); let _cp=_m?{code:_m[2].toUpperCase(),title:_m[1],lv:_m[3]||''}:null; if(!_cp){ const _m2=String(c).match(/^([A-Za-z]{3,5}\s?\d{3})\s*[-–:]?\s*(.*?)\s*(?:\(?\b(?:L|Level\s*)(\d{3})\)?)?\s*$/); _cp=_m2?{code:_m2[1].toUpperCase(),title:_m2[2],lv:_m2[3]?'Level '+_m2[3]:''}:{code:c,title:'',lv:''}; } let ts=0, tm=0, any=false;

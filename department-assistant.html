@@ -81,6 +81,26 @@ input{flex:1;min-width:0;font:inherit;padding:9px 16px;border:1px solid var(--li
 .rules li+li{margin-top:6px}
 .reset{background:none;border:1px solid var(--line);color:var(--muted);padding:6px 14px;border-radius:999px;font-size:.85rem}
 .reset:hover{color:var(--ink);border-color:var(--ink)}
+
+.adm{margin-top:22px}
+.adm .bar b{font-size:1.05rem}
+.adm .body{padding:16px 20px 20px}
+.adm p.note{margin:0 0 14px;color:var(--muted);font-size:.88rem;max-width:68ch}
+.adm .row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px 12px;margin-bottom:8px;align-items:center}
+.adm label,.adm .lab{font-size:.9rem}
+.adm .lab small{color:var(--muted)}
+.adm select{font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);width:100%}
+.adm h3{font-family:var(--serif);font-size:.98rem;font-weight:600;margin:16px 0 8px}
+.adm .go{margin-top:14px;background:var(--gold);color:var(--gold-ink);border:0;padding:9px 22px;border-radius:999px;font-weight:600;font-size:.92rem}
+#admOut{margin-top:16px}
+.res{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:12px 16px;background:var(--soft)}
+.res b.t{font-family:var(--serif);font-size:1.05rem;display:block;margin-bottom:6px}
+.res ul{margin:6px 0;padding:0;list-style:none;font-size:.9rem}
+.res li{padding-left:20px;position:relative;margin:3px 0}
+.res li::before{position:absolute;left:0;font-weight:700}
+.res li.ok::before{content:"\2713";color:#1f7a4d}
+.res li.no::before{content:"\2717";color:#b3412f}
+.res small{color:var(--muted);display:block;margin-top:8px}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -101,6 +121,19 @@ input{flex:1;min-width:0;font:inherit;padding:9px 16px;border:1px solid var(--li
       <div class="chips" id="chips"></div>
     </div>
     <form id="f"><input id="q" placeholder="Type your question" autocomplete="off" aria-label="Your question"><button class="send" type="submit">Send</button></form>
+  </section>
+  <section class="card adm" id="admission" aria-label="Admission check">
+    <div class="bar"><b>Check if you qualify</b><small>For prospective students. Your grades stay on your device. Nothing is sent or saved.</small></div>
+    <div class="body">
+      <p class="note">Enter your WASSCE grades to see whether you meet the minimum entry requirements for a programme. The requirements used here are examples for testing and are not official. Admission is decided by the university admissions office.</p>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><label for="admProg">Programme</label><select id="admProg"></select></div>
+      <h3>Core subjects</h3>
+      <div id="admCore"></div>
+      <h3>Elective subjects (your best three)</h3>
+      <div id="admElec"></div>
+      <button class="go" id="admGo" type="button">Check my grades</button>
+      <div id="admOut" aria-live="polite"></div>
+    </div>
   </section>
   <div class="more">
     <section class="side"><h2>What it did</h2><ul class="steps" id="steps"><li class="empty" style="padding-left:0">Nothing yet. Ask a question and the steps appear here.</li></ul></section>
@@ -310,6 +343,51 @@ input{flex:1;min-width:0;font:inherit;padding:9px 16px;border:1px solid var(--li
   }
   document.getElementById('reset').onclick=start;
   start();
+})();
+
+/* Admission check. Runs only in the browser: grades are never sent anywhere. EXAMPLE rules: replace with the official entry requirements. */
+(function(){
+  var RULES={
+    official:false,
+    creditMax:6,        /* worst grade that counts as a credit pass (C6) */
+    maxAggregate:36,    /* best six: English, Maths, Science + three electives */
+    core:['English Language','Core Mathematics','Integrated Science'],
+    electives:['Elective Mathematics','Physics','Chemistry','Biology','General Science','Economics','Geography','Technical Drawing','Applied Electricity','Other subject'],
+    programmes:{
+      'BSc Civil Engineering':[{any:['Physics'],n:1,label:'Physics'},{any:['Elective Mathematics','Chemistry'],n:1,label:'Elective Mathematics or Chemistry'}],
+      'BSc Environmental Engineering':[{any:['Physics','Chemistry','Biology','Elective Mathematics'],n:2,label:'Two of Physics, Chemistry, Biology or Elective Mathematics'}]
+    }
+  };
+  var G=['A1','B2','B3','C4','C5','C6','D7','E8','F9'];
+  function esc(t){return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function gradeSel(id){var h='<select id="'+id+'" aria-label="Grade"><option value="">Grade</option>';G.forEach(function(g,i){h+='<option value="'+(i+1)+'">'+g+'</option>'});return h+'</select>'}
+  function subjSel(id,sel){var h='<select id="'+id+'" aria-label="Subject">';RULES.electives.forEach(function(e,i){h+='<option'+(i===sel?' selected':'')+'>'+esc(e)+'</option>'});return h+'</select>'}
+  var prog=document.getElementById('admProg'),core=document.getElementById('admCore'),el=document.getElementById('admElec'),out=document.getElementById('admOut');
+  Object.keys(RULES.programmes).forEach(function(k){var o=document.createElement('option');o.textContent=k;prog.appendChild(o)});
+  RULES.core.forEach(function(c,i){core.insertAdjacentHTML('beforeend','<div class="row"><span class="lab">'+esc(c)+'</span>'+gradeSel('ac'+i)+'</div>')});
+  for(var i=0;i<3;i++){el.insertAdjacentHTML('beforeend','<div class="row">'+subjSel('as'+i,i+1)+gradeSel('ae'+i)+'</div>')}
+  document.getElementById('admGo').onclick=function(){
+    var res=[],missing=false,sum=0,grades=[];
+    var coreG=RULES.core.map(function(c,i){var v=+document.getElementById('ac'+i).value;if(!v)missing=true;return {name:c,g:v}});
+    var elG=[0,1,2].map(function(i){var v=+document.getElementById('ae'+i).value;if(!v)missing=true;return {name:document.getElementById('as'+i).value,g:v}});
+    if(missing){out.innerHTML='<div class="res"><b class="t">Some grades are missing</b>Please choose a grade for every subject, then check again.</div>';return}
+    var names=elG.map(function(e){return e.name}).filter(function(n){return n!=='Other subject'});
+    if(new Set(names).size!==names.length){out.innerHTML='<div class="res"><b class="t">A subject is repeated</b>Please choose three different elective subjects.</div>';return}
+    coreG.concat(elG).forEach(function(x){sum+=x.g});
+    var all=true;
+    coreG.forEach(function(c){var ok=c.g<=RULES.creditMax;if(!ok)all=false;res.push([ok,c.name+': '+G[c.g-1]+(ok?' (credit pass)':' (a credit pass, C6 or better, is needed)')])});
+    var rules=RULES.programmes[prog.value]||[];
+    rules.forEach(function(r){
+      var hits=elG.filter(function(e){return r.any.indexOf(e.name)>-1&&e.g<=RULES.creditMax}).length;
+      var ok=hits>=r.n;if(!ok)all=false;res.push([ok,r.label+(ok?': met':': not met (a credit pass is needed)')]);
+    });
+    var agOk=sum<=RULES.maxAggregate;if(!agOk)all=false;
+    res.push([agOk,'Aggregate of your six subjects: '+sum+' (the limit is '+RULES.maxAggregate+', lower is better)']);
+    var h='<div class="res"><b class="t">'+(all?'You appear to meet the minimum requirements for '+esc(prog.value):'You do not yet meet the minimum requirements for '+esc(prog.value))+'</b><ul>';
+    res.forEach(function(r){h+='<li class="'+(r[0]?'ok':'no')+'">'+esc(r[1])+'</li>'});
+    h+='</ul><small>'+(RULES.official?'':'These requirements are examples for testing, not the official ones. ')+'Meeting the minimum does not guarantee admission. Please confirm with the admissions office before you apply.</small></div>';
+    out.innerHTML=h;
+  };
 })();
 </script>
 </body>

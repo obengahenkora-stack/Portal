@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://*.puter.com https://*.facebook.net https://*.facebook.com https://*.fbcdn.net https://*.twitter.com https://*.twimg.com https://*.x.com">
+<title>Department Assistant</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: full-width navy hero, then chat (left, orange/navy bubbles) and three colour-coded side cards (right). */
+:root{
+  --bg:#f1f4fb; --panel:#ffffff; --ink:#0b1b3a; --muted:#4d5f80; --line:#d3dcee;
+  --navy:#0b1b3a; --navy-ink:#ffffff; --orange:#ff5a1f; --orange-ink:#ffffff;
+  --aqua:#19d3c5; --sun:#ffc933; --ink-on-bright:#0b1b3a;
+  --bot:#0b1b3a; --bot-ink:#ffffff; --user:#ff5a1f; --user-ink:#ffffff; --soft:#e7ecf8;
+  --display:'Space Grotesk','Segoe UI',system-ui,sans-serif; --body:'Inter','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#07101f; --panel:#0f1b33; --ink:#eef2ff; --muted:#9db0d3; --line:#223356;
+  --navy:#13294f; --bot:#1b3670; --soft:#16264a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#07101f; --panel:#0f1b33; --ink:#eef2ff; --muted:#9db0d3; --line:#223356;
+  --navy:#13294f; --bot:#1b3670; --soft:#16264a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;margin:0;padding-bottom:36px}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero{background:var(--navy);color:var(--navy-ink);padding-block:28px 32px;margin-bottom:20px}
+.hero .in,.wrap{max-width:1100px;margin:0 auto}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--sun);color:var(--ink-on-bright);padding:5px 12px;border-radius:999px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(2.1rem,7vw,3.6rem);line-height:1.02;margin:14px 0 10px;text-wrap:balance;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--aqua)}
+.lead{margin:0;max-width:60ch;font-size:1.05rem;color:#cfd9f2}
+.grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:2px solid var(--navy);border-radius:16px;overflow:hidden}
+:root[data-theme="dark"] .card{border-color:var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .card{border-color:var(--line)}}
+.chat{display:flex;flex-direction:column;min-height:560px}
+.bar{padding:14px 18px;background:var(--orange);color:var(--orange-ink);display:flex;align-items:center;gap:12px}
+.dot{width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.35)}
+.bar b{font-family:var(--display);font-size:1.15rem}
+.bar small{opacity:.92}
+.log{flex:1;padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:540px}
+.msg{max-width:90%;padding:12px 15px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:1rem}
+.msg.bot{background:var(--bot);color:var(--bot-ink);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--user);color:var(--user-ink);align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
+.src{display:block;margin-top:8px;font-size:.8rem;color:var(--aqua);font-weight:600}
+.typing{color:var(--muted);font-style:italic;align-self:flex-start;font-size:.92rem}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-self:flex-start}
+button{font:inherit;cursor:pointer}
+.act{background:var(--sun);border:2px solid var(--sun);color:var(--ink-on-bright);padding:8px 16px;border-radius:999px;font-weight:700}
+.act:hover{filter:brightness(.95)}
+.act:focus-visible,.chip:focus-visible,.send:focus-visible,input:focus-visible,.reset:focus-visible{outline:3px solid var(--aqua);outline-offset:2px}
+.act[disabled]{opacity:.45;cursor:default}
+.try{padding:14px 18px;border-top:2px solid var(--soft)}
+.try p{margin:0 0 10px;color:var(--muted);font-size:.85rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel);border:2px solid var(--navy);color:var(--ink);padding:7px 14px;border-radius:999px;font-size:.92rem;font-weight:600}
+:root[data-theme="dark"] .chip{border-color:var(--aqua)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip{border-color:var(--aqua)}}
+.chip:hover{background:var(--aqua);border-color:var(--aqua);color:var(--ink-on-bright)}
+form{display:flex;gap:10px;padding:14px 18px;border-top:2px solid var(--soft);background:var(--soft)}
+input{flex:1;min-width:0;font:inherit;padding:11px 16px;border:2px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink)}
+.send{background:var(--navy);color:var(--navy-ink);border:0;padding:11px 22px;border-radius:999px;font-weight:700}
+:root[data-theme="dark"] .send{background:var(--orange)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .send{background:var(--orange)}}
+aside{display:flex;flex-direction:column;gap:20px}
+.side h2{font-family:var(--display);font-size:1.05rem;margin:0;padding:10px 18px;color:var(--ink-on-bright)}
+.side.s1 h2{background:var(--aqua)}.side.s2 h2{background:var(--sun)}.side.s3 h2{background:var(--orange);color:#fff}
+.side .body{padding:14px 18px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;max-height:230px;overflow-y:auto}
+.steps li{font-size:.9rem;padding-left:18px;position:relative;color:var(--muted)}
+.steps li::before{content:"";position:absolute;left:0;top:.45em;width:9px;height:9px;border-radius:50%;background:var(--aqua)}
+.steps li b{color:var(--ink);font-weight:700}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.sum{border:2px solid var(--aqua);padding:10px 14px;background:var(--soft);border-radius:12px;font-size:.9rem;margin-bottom:10px}
+.sum.hand{border-color:var(--orange)}
+.sum dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.sum dt{color:var(--muted);font-weight:600}.sum dd{margin:0}
+.rules{margin:0;padding-left:20px;font-size:.92rem;color:var(--ink)}
+.rules li+li{margin-top:6px}
+.reset{background:none;border:2px solid var(--line);color:var(--ink);padding:6px 14px;border-radius:999px;font-size:.85rem;font-weight:600}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+.topnav{background:var(--panel);border-bottom:2px solid var(--navy);padding-block:10px}
+.topnav .in{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:space-between}
+.topnav .brand{font-family:var(--display);font-weight:700;color:var(--ink);text-decoration:none}
+.topnav .links{display:flex;flex-wrap:wrap;gap:6px 16px}
+.topnav .links a{color:var(--muted);text-decoration:none;font-weight:600;font-size:.92rem}
+.topnav .links a:hover{color:var(--orange)}
+.topnav a:focus-visible{outline:3px solid var(--aqua);outline-offset:2px}
+</style>
+</head>
+<body>
+<nav class="topnav gut"><div class="in"><a class="brand" href="index.html">Obeng-Ahenkora</a><span class="links"><a href="index.html">Home</a><a href="dashboard.html">Students Dashboard</a><a href="portal.html">Staff</a></span></div></nav>
+<div class="hero gut"><div class="in">
+  <span class="badge">Preview: example answers only</span>
+  <h1>Ask the department. <em>Get a real answer.</em></h1>
+  <p class="lead">This is a preview. Every answer below is an example written for testing and is not official information. Soon, answers will come from the department's own documents. Please check anything important with the department office.</p>
+</div></div>
+<div class="wrap gut">
+  <div class="grid">
+    <section class="card chat" aria-label="Chat preview">
+      <div class="bar"><span class="dot"></span><b>Department Assistant</b><small>Civil &amp; Environmental Engineering</small></div>
+      <div class="log" id="log" aria-live="polite"></div>
+      <div class="try">
+        <p>Try one of these:</p>
+        <div class="chips" id="chips"></div>
+      </div>
+      <form id="f"><input id="q" placeholder="Type a question" autocomplete="off" aria-label="Your question"><button class="send" type="submit">Send</button></form>
+    </section>
+
+    <aside>
+      <section class="card side s1">
+        <h2>Behind the scenes</h2>
+        <div class="body"><ul class="steps" id="steps"><li class="empty" style="padding-left:0">Nothing yet. Ask something and the steps appear here.</li></ul></div>
+      </section>
+      <section class="card side s2">
+        <h2>Summary sent to staff</h2>
+        <div class="body"><div id="sums"><p class="empty">Bookings and hand-offs are summarised here, so no request gets lost.</p></div></div>
+      </section>
+      <section class="card side s3">
+        <h2>Rules it follows</h2>
+        <div class="body"><ul class="rules">
+          <li>Answers only from department documents, and names the source.</li>
+          <li>Never shows scores or personal data. Students must sign in for that.</li>
+          <li>Offers only office-hour slots that are really open.</li>
+          <li>Passes angry, personal or unclear cases to a named staff member.</li>
+        </ul>
+        <p style="margin:10px 0 0"><button class="reset" id="reset" type="button">Start over</button></p></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  var log=document.getElementById('log'), steps=document.getElementById('steps'), sums=document.getElementById('sums');
+  var busy=false, stepCount=0, sumCount=0;
+
+  var CHIPS=[
+    ['programmes','What programmes does the department offer?'],
+    ['book','I want to meet a lecturer'],
+    ['scores','What is my score in CVE 301?'],
+    ['unfair','My result is unfair and I am very upset'],
+    ['exam','When is the CVE 301 exam?']
+  ];
+
+  /* Each scenario is a list of turns. type: bot | step | actions | summary */
+  var FLOWS={
+    programmes:[
+      {t:'step',x:'<b>Looked up</b> the question in the Programme Handbook (sample)'},
+      {t:'bot',x:'The department offers these programmes (sample list):\n\n• BSc Civil Engineering\n• BSc Environmental Engineering\n• MSc Water and Environmental Engineering\n\nEach is four years full time, except the MSc.',s:'Source: Programme Handbook, section 2 (sample)'},
+      {t:'bot',x:'Would you like the course list for one of them?'}
+    ],
+    book:[
+      {t:'step',x:'<b>Checked</b> the office-hour calendar for open slots'},
+      {t:'bot',x:'Dr. Example (sample name) has these open office-hour slots this week. Pick one:'},
+      {t:'actions',a:[['Mon 10:00','slot'],['Wed 14:00','slot'],['Thu 09:30','slot']]}
+    ],
+    scores:[
+      {t:'step',x:'<b>Detected</b> a request for personal grades. <b>Blocked</b>: not shared in chat'},
+      {t:'bot',x:'Scores are private, so I can’t show them here. Please sign in to your student dashboard and open the Scores page. If a score looks wrong there, tell me and I will pass it to your lecturer.'},
+      {t:'actions',a:[['Open student dashboard','link'],['Report a wrong score','unfair']]}
+    ],
+    unfair:[
+      {t:'step',x:'<b>Detected</b> distress and a complaint. <b>Decision</b>: hand over to a person'},
+      {t:'bot',x:'I’m sorry. That sounds stressful, and it deserves a proper answer from a person, not from me. I’m passing this to the Exams Officer (sample) with a short summary, so you don’t have to explain it twice.'},
+      {t:'bot',x:'Please keep your index number and the course name ready. They normally reply within 2 working days (sample).'},
+      {t:'summary',kind:'hand',rows:[['To','Exams Officer (sample)'],['Reason','Student upset about a result'],['Course','Not given yet'],['Action','Please contact the student']]}
+    ],
+    exam:[
+      {t:'step',x:'<b>Searched</b> published timetables. <b>Found</b>: no confirmed date for CVE 301'},
+      {t:'bot',x:'I can’t see a confirmed date for CVE 301, and I won’t guess one. Timetables are published by the Exams Office on the Announcements page. I can alert you when one is posted if you like.'}
+    ]
+  };
+
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function scroll(){log.scrollTop=log.scrollHeight}
+  function addMsg(who,text,src){
+    var d=document.createElement('div'); d.className='msg '+who; d.textContent=text;
+    if(src){var s=document.createElement('span'); s.className='src'; s.textContent=src; d.appendChild(s)}
+    log.appendChild(d); scroll();
+  }
+  function addStep(html){
+    if(stepCount===0) steps.innerHTML='';
+    stepCount++; var li=document.createElement('li'); li.innerHTML=html; steps.appendChild(li); steps.scrollTop=steps.scrollHeight;
+  }
+  function addSummary(kind,rows){
+    if(sumCount===0) sums.innerHTML='';
+    sumCount++; var d=document.createElement('div'); d.className='sum'+(kind==='hand'?' hand':'');
+    var h='<dl>'; rows.forEach(function(r){h+='<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>'}); h+='</dl>'; d.innerHTML=h; sums.appendChild(d);
+  }
+  function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+  function typing(on){
+    var e=document.getElementById('typing');
+    if(on&&!e){e=document.createElement('div');e.id='typing';e.className='typing';e.textContent='Assistant is typing…';log.appendChild(e);scroll()}
+    if(!on&&e)e.remove();
+  }
+
+  function addActions(list){
+    var box=document.createElement('div'); box.className='actions';
+    list.forEach(function(a){
+      var b=document.createElement('button'); b.type='button'; b.className='act'; b.textContent=a[0];
+      b.onclick=function(){
+        if(busy)return;
+        box.querySelectorAll('button').forEach(function(x){x.disabled=true});
+        if(a[1]==='slot') pickSlot(a[0]);
+        else if(a[1]==='confirm') confirmBooking(a[0]);
+        else if(a[1]==='unfair'){addMsg('me',a[0]);play('unfair')}
+        else if(a[1]==='link'){addMsg('me',a[0]);say([{t:'bot',x:'In the real portal this button opens the sign-in page. It is only a sample here.'}])}
+      };
+      box.appendChild(b);
+    });
+    log.appendChild(box); scroll();
+  }
+
+  async function say(turns){
+    busy=true;
+    for(var i=0;i<turns.length;i++){
+      var t=turns[i];
+      if(t.t==='step'){addStep(t.x); await wait(350); continue}
+      if(t.t==='bot'){typing(true); await wait(650+Math.min(t.x.length*6,900)); typing(false); addMsg('bot',t.x,t.s); continue}
+      if(t.t==='actions'){addActions(t.a); continue}
+      if(t.t==='summary'){addSummary(t.kind,t.rows); continue}
+    }
+    busy=false;
+  }
+  function play(key){return say(FLOWS[key])}
+
+  function pickSlot(slot){
+    addMsg('me',slot);
+    say([
+      {t:'step',x:'<b>Held</b> the slot '+esc(slot)+' while the student confirms'},
+      {t:'bot',x:'To confirm: office hour with Dr. Example (sample), '+slot+', 20 minutes. Shall I book it?'},
+      {t:'actions',a:[['Yes, book it|'+slot,'confirm'],['No, cancel','cancel']]}
+    ]);
+  }
+  function confirmBooking(label){
+    var slot=label.split('|')[1]||'';
+    addMsg('me','Yes, book it');
+    say([
+      {t:'step',x:'<b>Booked</b> '+esc(slot)+' on the lecturer’s calendar and <b>sent</b> a summary to staff'},
+      {t:'bot',x:'Done. You are booked for '+slot+'. You will get a reminder the day before.'},
+      {t:'summary',kind:'book',rows:[['Type','Office-hour booking'],['Lecturer','Dr. Example (sample)'],['Time',slot],['Student','Verified by sign-in (sample)']]}
+    ]);
+  }
+  /* label text shown on the confirm button should not include the pipe part */
+  var origAdd=addActions;
+  addActions=function(list){
+    origAdd(list);
+    var btns=log.querySelectorAll('.actions:last-child .act');
+    btns.forEach(function(b){ if(b.textContent.indexOf('|')>-1){ var full=b.textContent; b.textContent=full.split('|')[0]; var old=b.onclick; b.onclick=function(){ if(busy)return; b.parentNode.querySelectorAll('button').forEach(function(x){x.disabled=true}); confirmBooking(full)} } else if(b.textContent==='No, cancel'){ b.onclick=function(){ if(busy)return; b.parentNode.querySelectorAll('button').forEach(function(x){x.disabled=true}); addMsg('me','No, cancel'); say([{t:'bot',x:'No problem, I released the slot. You can ask for another time any time.'}])} } });
+  };
+
+  function route(text){
+    var s=text.toLowerCase();
+    if(/(programme|program|course list|offer|degree|bsc|msc)/.test(s)) return 'programmes';
+    if(/(meet|book|office hour|appointment|see a lecturer|lecturer)/.test(s)) return 'book';
+    if(/(score|grade|mark|result.*(what|show)|gpa|cwa)/.test(s)&&!/(unfair|upset|wrong)/.test(s)) return 'scores';
+    if(/(unfair|upset|angry|cheat|wrong|complain|annoyed|furious|failed me|not fair)/.test(s)) return 'unfair';
+    if(/(exam|timetable|when is|date)/.test(s)) return 'exam';
+    return null;
+  }
+  function ask(text){
+    if(busy||!text.trim())return;
+    addMsg('me',text);
+    var k=route(text);
+    if(k) play(k);
+    else say([
+      {t:'step',x:'<b>Searched</b> department documents. <b>Found</b>: nothing reliable'},
+      {t:'bot',x:'I don’t have a reliable answer for that in the department documents, and I don’t want to guess. I can pass your question to a staff member. Would you like that?'},
+      {t:'actions',a:[['Yes, pass it on','unfair']]}
+    ]);
+  }
+
+  var chips=document.getElementById('chips');
+  CHIPS.forEach(function(c){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=c[1];
+    b.onclick=function(){ask(c[1])}; chips.appendChild(b);
+  });
+  document.getElementById('f').addEventListener('submit',function(e){
+    e.preventDefault(); var i=document.getElementById('q'); var v=i.value; i.value=''; ask(v);
+  });
+  function start(){
+    log.innerHTML=''; steps.innerHTML='<li class="empty" style="padding-left:0">Nothing yet. Ask something and the steps appear here.</li>';
+    sums.innerHTML='<p class="empty">Bookings and hand-offs are summarised here, so no request gets lost.</p>';
+    stepCount=0; sumCount=0; busy=false;
+    addMsg('bot','Hello! I’m the department assistant (sample). I can answer questions about programmes, book an office hour, and pass tricky cases to a staff member. What would you like to know?');
+  }
+  document.getElementById('reset').onclick=start;
+  start();
+})();
+</script>
+</body>
+</html>

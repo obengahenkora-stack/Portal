@@ -37,8 +37,8 @@ function loop(){if(!run)return;const v=$('v'),c=$('c');
 if(det&&v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
 const r=det.detectForVideo(v,performance.now()),min=$('thr').value/100;let top=0;
 for(const d of (r.detections||[])){const sc=d.categories[0].score;if(sc<min)continue;top=Math.max(top,sc);const b=d.boundingBox;
-x.strokeStyle=sc>=.55?'#22c55e':'#f59e0b';x.lineWidth=4;x.strokeRect(b.originX,b.originY,b.width,b.height);}
-const big=$('big');if(top){big.textContent='PHONE '+top.toFixed(2)+(top>=.55?'  (caught by current rule)':'  (missed by current rule)');big.style.background=top>=.55?'#166534':'#92400e';cnt++;$('cnt').textContent=cnt;
+x.strokeStyle=sc>=.35?'#22c55e':'#f59e0b';x.lineWidth=4;x.strokeRect(b.originX,b.originY,b.width,b.height);}
+const big=$('big');if(top){big.textContent='PHONE '+top.toFixed(2)+(top>=.35?'  (caught: counts toward a flag)':'  (too weak to count)');big.style.background=top>=.35?'#166534':'#92400e';cnt++;$('cnt').textContent=cnt;
 if(top>best){best=top;$('best').textContent=best.toFixed(2)}
 $('log').textContent=new Date().toLocaleTimeString()+'  score '+top.toFixed(2)+'\n'+$('log').textContent.slice(0,1500);}
 else{big.textContent='No phone seen';big.style.background='#1e293b'}}

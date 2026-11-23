@@ -286,7 +286,7 @@ async function odLoad(){
   try{
     var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
     var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/'+(strict?'efficientdet_lite2/float16/1/efficientdet_lite2':'efficientdet_lite0/float16/1/efficientdet_lite0')+'.tflite'},runningMode:'VIDEO',scoreThreshold:strict?.35:.55,maxResults:6,categoryAllowlist:['cell phone']});
+    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/'+(strict?'efficientdet_lite2/float16/1/efficientdet_lite2':'efficientdet_lite0/float16/1/efficientdet_lite0')+'.tflite'},runningMode:'VIDEO',scoreThreshold:.35,maxResults:6,categoryAllowlist:['cell phone']});
   }catch(e){ _od=null; }
   return _od;
 }
@@ -363,7 +363,7 @@ function monStart(){
       if(M.lum.length>=6){ var base=0,c=0; for(var k=0;k<M.lum.length-1;k++){ base+=M.lum[k]; c++; } base/=c; if(lum-base>38 && lum>110 && M.n>8) flag('flash'); }
     }catch(e){}
     // 1b) a phone held up in view (checked about every 2 seconds)
-    if(_od && M.n%3===0){ try{ var o=_od.detectForVideo(v,performance.now()); if(o&&o.detections&&o.detections.length){ M.ph++; M.phc=(o.detections[0].categories&&o.detections[0].categories[0]&&o.detections[0].categories[0].score)||0; if(M.ph>=(pStrict(S.x)?2:3)) flag('phone_seen','confidence '+M.phc.toFixed(2)+', '+M.ph+' checks'); } else M.ph=0; }catch(e){} }
+    if(_od && M.n%3===0){ try{ var o=_od.detectForVideo(v,performance.now()); var hit=!!(o&&o.detections&&o.detections.length); M.pw=(M.pw||[]); M.pw.push(hit?1:0); if(M.pw.length>6) M.pw.shift(); var pn=M.pw.reduce(function(a,b){return a+b;},0); if(hit){ M.ph++; M.phc=(o.detections[0].categories&&o.detections[0].categories[0]&&o.detections[0].categories[0].score)||0; /* a phone held up flickers between seen and not seen, so flag on 3 in a row, or on 4 of the last 6 checks */ if(M.ph>=(pStrict(S.x)?2:3)||pn>=4) flag('phone_seen','confidence '+M.phc.toFixed(2)+', '+M.ph+' in a row, '+pn+' of last '+M.pw.length+' checks'); } else M.ph=0; }catch(e){} }
     if(S.idn&&M.n%4===0){ try{ idTick(v,M); }catch(e){} }
     // 2) faces and head turns (only if the helper loaded)
     if(_fd && M.n%1===0){

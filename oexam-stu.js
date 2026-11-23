@@ -441,6 +441,8 @@ window.oesRcDo=async function(){ var m=$('oerRcM'); try{ var b=await bioCheck();
 window.oesRcSkip=function(){ var o=$('oerRc'); if(o) o.remove(); gLog('recheck_failed',true); };
 function camCheck(){
   if(!S||!S.running) return; var t=S.stream&&S.stream.getVideoTracks()[0], ok=t&&t.readyState==='live'&&!t.muted&&S.stream.active;
+  /* phones pause the camera for a moment (page in the background, a call, the screen dimming): only treat it as off after about 6 seconds in a row, and never while the page is hidden */
+  if(ok){ S.camBad=0; } else if(document.hidden){ S.camBad=0; return; } else { S.camBad=(S.camBad||0)+1; if(S.camBad<3) return; }
   if(!ok && !$('oerCamOv')){ leave('camera_off'); var r=$('oeRun'); var o=document.createElement('div'); o.id='oerCamOv'; o.className='oer-ov'; o.innerHTML='<div><div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">Camera is off</div><div style="line-height:1.5">Your camera must stay on during the exam. Turn it back on to continue. The timer is still running.</div><button type="button" class="oes-btn" onclick="oesCamBack()">Turn camera on</button><div id="oerCamErr" class="oes-sub"></div></div>'; r.appendChild(o); }
   else if(ok && $('oerCamOv')) $('oerCamOv').remove();
 }

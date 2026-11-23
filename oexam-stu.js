@@ -286,7 +286,9 @@ async function odLoad(){
   try{
     var m=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
     var fs=await m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
-    _od=await m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/'+(strict?'efficientdet_lite2/float16/1/efficientdet_lite2':'efficientdet_lite0/float16/1/efficientdet_lite0')+'.tflite'},runningMode:'VIDEO',scoreThreshold:.35,maxResults:6,categoryAllowlist:['cell phone']});
+    /* the more accurate model scored real phones clearly higher in calibration (0.53 to 0.81 against 0.32 to 0.77), so it is used for every exam; if it cannot load, the fast one takes over */
+    var mk=function(nm){ return m.ObjectDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/object_detector/'+nm+'/float16/1/'+nm+'.tflite'},runningMode:'VIDEO',scoreThreshold:.35,maxResults:6,categoryAllowlist:['cell phone']}); };
+    try{ _od=await mk('efficientdet_lite2'); }catch(e1){ _od=await mk('efficientdet_lite0'); }
   }catch(e){ _od=null; }
   return _od;
 }

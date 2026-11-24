@@ -5298,24 +5298,27 @@ async function startQrCheckin(){
 
   msg.innerHTML = '<div class="msg ok">Getting your location...</div>';
 
-  navigator.geolocation.getCurrentPosition(async (position) => {
-    const lat = position.coords.latitude;
+  /* take the most accurate location fix within a few seconds, not just the first one: the first reading indoors is often hundreds of metres off */
+  function bestFix(ms){return new Promise(function(res,rej){var best=null,id,done=false,lastErr=null,t;function fin(){if(done)return;done=true;try{navigator.geolocation.clearWatch(id);}catch(e){}clearTimeout(t);best?res(best):rej(lastErr||new Error('No location reading'));}t=setTimeout(fin,ms);id=navigator.geolocation.watchPosition(function(p){if(!best||p.coords.accuracy<best.coords.accuracy)best=p;if(p.coords.accuracy<=25)fin();},function(e){lastErr=e;if(e.code===1)fin();},{enableHighAccuracy:true,maximumAge:0,timeout:ms});});}
+  bestFix(14000).then(async (position) => {
+    const lat = position.coords.latitude, acc = position.coords.accuracy;
     const lng = position.coords.longitude;
-    await refreshQrSession(course, date, lat, lng);
+    await refreshQrSession(course, date, lat, lng, acc);
+    if(acc>100) setTimeout(()=>{ var m=document.getElementById('qrCheckinMsg'); if(m) m.innerHTML += '<div class="msg err">Your location is only accurate to about '+Math.round(acc)+' m. Students may be told they are too far. Open this on a phone, go near a window and start again for a better reading.</div>'; },300);
     qrSessionActive = true;
     document.getElementById('startQrBtn').classList.add('hidden');
     document.getElementById('stopQrBtn').classList.remove('hidden');
     document.getElementById('qrCheckinDisplay').classList.remove('hidden');
 
-    qrRefreshInterval = setInterval(() => refreshQrSession(course, date, lat, lng), 90000);
+    qrRefreshInterval = setInterval(() => refreshQrSession(course, date, lat, lng, acc), 90000);
     startQrCountdown();
     pollQrPresentCount(course, date);
   }, (err) => {
     msg.innerHTML = `<div class="msg err">Could not get your location: ${escapeHtml(err.message)}. Location access is required for QR check-in.</div>`;
-  }, { enableHighAccuracy: true, timeout: 10000 });
+  });
 }
 
-async function refreshQrSession(course, date, lat, lng){
+async function refreshQrSession(course, date, lat, lng, acc){
   const token = generateQrToken();
   const expiresAt = Date.now() + 90000;
   const sessionKey = `${course}__${date}`;
@@ -5324,7 +5327,7 @@ async function refreshQrSession(course, date, lat, lng){
     const qrData = await fetchQrSessions();
     const existing = qrData[sessionKey];
     const sessionStartTime = (existing && existing.sessionStartTime) ? existing.sessionStartTime : new Date().toISOString();
-    qrData[sessionKey] = { token, expiresAt, lat, lng, radius: 100, deviceLock: !(document.getElementById('qrDeviceLock') && !document.getElementById('qrDeviceLock').checked), course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
+    qrData[sessionKey] = { token, expiresAt, lat, lng, acc: Math.round(acc||0), radius: 100, deviceLock: !(document.getElementById('qrDeviceLock') && !document.getElementById('qrDeviceLock').checked), course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
     await saveQrSessions(qrData);
 
     const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;

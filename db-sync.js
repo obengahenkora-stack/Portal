@@ -142,8 +142,8 @@
     },
 
     /* QR check-in: the back end checks the QR code, time and place, then adds one student to one session */
-    qrCheckIn:async function(course,date,token,idx,lat,lng,pass){
-      var j=await this.api({action:'checkin',course:course,date:date,token:token,pass:pass||'',idx:String(idx).trim(),lat:lat,lng:lng});
+    qrCheckIn:async function(course,date,token,idx,lat,lng,pass,acc){
+      var j=await this.api({action:'checkin',course:course,date:date,token:token,pass:pass||'',idx:String(idx).trim(),lat:lat,lng:lng,acc:acc});
       return !!j.had;
     },
 

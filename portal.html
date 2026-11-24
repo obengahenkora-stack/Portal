@@ -869,6 +869,7 @@
       <div class="att-psub">Show the code. Students scan it with their phone. It refreshes every 90 seconds and only works within 100 m of you.</div>
       <details class="att-opt"><summary>Options</summary>
         <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0 2px;font-size:.88rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;"><input type="checkbox" id="qrDeviceLock" checked style="margin-top:3px;width:auto;"><span><b>One phone = one student</b> (recommended). Untick only for testing.</span></label>
+        <label style="display:flex;gap:8px;align-items:flex-start;margin:10px 0 2px;font-size:.88rem;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500;"><input type="checkbox" id="qrLocCheck" style="margin-top:3px;width:auto;"><span><b>Also check student location</b> (optional). Leave unticked when you project the QR in the room: the code changes every 90 seconds and each phone can check in one student. Tick it if the QR might be shared outside the room.</span></label>
       </details>
       <button id="startQrBtn" class="att-big" onclick="startQrCheckin()">Start QR session</button>
       <button id="stopQrBtn" onclick="stopQrCheckin()" class="secondary hidden" style="margin-top:8px;">Stop session</button>
@@ -5289,6 +5290,18 @@ async function startQrCheckin(){
 
   if(!course || !date){
     msg.innerHTML = '<div class="msg err">Select a course and date above first.</div>';
+    return;
+  }
+  if(!(document.getElementById('qrLocCheck') && document.getElementById('qrLocCheck').checked)){
+    /* no location check: the projected code is the proof of being in the room */
+    await refreshQrSession(course, date, undefined, undefined, 0, true);
+    qrSessionActive = true;
+    document.getElementById('startQrBtn').classList.add('hidden');
+    document.getElementById('stopQrBtn').classList.remove('hidden');
+    document.getElementById('qrCheckinDisplay').classList.remove('hidden');
+    qrRefreshInterval = setInterval(() => refreshQrSession(course, date, undefined, undefined, 0), 90000);
+    startQrCountdown();
+    pollQrPresentCount(course, date);
     return;
   }
   if(!navigator.geolocation){

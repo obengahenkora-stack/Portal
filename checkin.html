@@ -184,28 +184,32 @@ async function verifyAndShowForm(){
     return;
   }
 
-  if(!navigator.geolocation){
-    document.getElementById('statusView').innerHTML = "<div class=\"icon\">⚠️</div><h1>Location Not Supported</h1><p class=\"sub\">Your browser doesn't support location, which is required for check-in.</p>";
-    return;
-  }
 
   /* take the most accurate location fix within a few seconds, not just the first one: the first reading indoors is often hundreds of metres off */
 function bestFix(ms){return new Promise(function(res,rej){var best=null,id,done=false,lastErr=null,t;function fin(){if(done)return;done=true;try{navigator.geolocation.clearWatch(id);}catch(e){}clearTimeout(t);best?res(best):rej(lastErr||new Error('No location reading'));}t=setTimeout(fin,ms);id=navigator.geolocation.watchPosition(function(p){if(!best||p.coords.accuracy<best.coords.accuracy)best=p;if(p.coords.accuracy<=25)fin();},function(e){lastErr=e;if(e.code===1)fin();},{enableHighAccuracy:true,maximumAge:0,timeout:ms});});}
-bestFix(14000).then(async (position) => {
+(async () => {
     try{
       await checkIfStaffDevice();
+      if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+      /* try without location first: if the lecturer turned location checking off there is nothing to wait for; otherwise ask the phone for its location */
+      let probe = null; try{ probe = await DBS.api({action:'qr_check', course, date, token}); }catch(e0){ probe = null; }
+      let position = null;
+      if(!(probe && probe.ok) && probe && /location/i.test(probe.error || '')){
+        try{ position = await bestFix(14000); }catch(eP){ document.getElementById('statusView').innerHTML = '<div class="icon">📍</div><h1>Location Needed</h1><p class="sub">Please allow location access to check in. ('+escapeHtml(eP.message)+')</p>'; return; }
+      }
+      const pc = position ? position.coords : {};
 
       const sessionKey = `${course}__${date}`;
       if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
       /* staff scanning with a good location reading sets the classroom location from this phone (a laptop's own reading is often hundreds of metres off) */
       let anchored = false;
-      if(isStaffDevice && position.coords.accuracy <= 60){
+      if(isStaffDevice && position && pc.accuracy <= 60){
         try{
           const g = await DBS.api({action:'qr_get'}); const all = (g && g.data) || {}; const q0 = all[sessionKey];
-          if(q0 && q0.token === token){ q0.lat = position.coords.latitude; q0.lng = position.coords.longitude; q0.acc = Math.round(position.coords.accuracy); q0.anchored = true; await DBS.api({action:'qr_put', data: all}); anchored = true; await new Promise(r => setTimeout(r, 3500)); }
+          if(q0 && q0.token === token && q0.lat !== undefined){ q0.lat = pc.latitude; q0.lng = pc.longitude; q0.acc = Math.round(pc.accuracy); q0.anchored = true; await DBS.api({action:'qr_put', data: all}); anchored = true; await new Promise(r => setTimeout(r, 3500)); }
         }catch(eA){}
       }
-      let chk; try{ chk = await DBS.api({action:'qr_check', course, date, token, lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy}); }catch(e2){ chk = {ok:false, error: (e2 && e2.message) || ''}; }
+      let chk = (probe && probe.ok) ? probe : null; if(!chk){ try{ chk = await DBS.api({action:'qr_check', course, date, token, lat: pc.latitude, lng: pc.longitude, acc: pc.accuracy}); }catch(e2){ chk = {ok:false, error: (e2 && e2.message) || ''}; } }
       if(!chk || !chk.ok){
         const em = (chk && chk.error) || 'This QR code is no longer active.';
         const far = /classroom/i.test(em), loc = /location/i.test(em), old = /expired/i.test(em);
@@ -213,7 +217,7 @@ bestFix(14000).then(async (position) => {
         return;
       }
 
-      verifiedSession = { course, date, sessionKey, token, lock: chk.lock !== false, pass: chk.pass || '', lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy, startedBy: null };
+      verifiedSession = { course, date, sessionKey, token, lock: chk.lock !== false, pass: chk.pass || '', lat: pc.latitude, lng: pc.longitude, acc: pc.accuracy, startedBy: null };
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
@@ -235,9 +239,7 @@ bestFix(14000).then(async (position) => {
     }catch(e){
       document.getElementById('statusView').innerHTML = `<div class="icon">⚠️</div><h1>Something Went Wrong</h1><p class="sub">${escapeHtml(e.message)}</p>`;
     }
-  }, (err) => {
-    document.getElementById('statusView').innerHTML = `<div class="icon">📍</div><h1>Location Needed</h1><p class="sub">Please allow location access to check in. (${escapeHtml(err.message)})</p>`;
-  });
+  })();
 }
 
 let _dbsMigrated = null;

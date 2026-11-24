@@ -197,6 +197,14 @@ bestFix(14000).then(async (position) => {
 
       const sessionKey = `${course}__${date}`;
       if(!DBS.url) DBS.init(SUPABASE_URL, SUPABASE_KEY);
+      /* staff scanning with a good location reading sets the classroom location from this phone (a laptop's own reading is often hundreds of metres off) */
+      let anchored = false;
+      if(isStaffDevice && position.coords.accuracy <= 60){
+        try{
+          const g = await DBS.api({action:'qr_get'}); const all = (g && g.data) || {}; const q0 = all[sessionKey];
+          if(q0 && q0.token === token){ q0.lat = position.coords.latitude; q0.lng = position.coords.longitude; q0.acc = Math.round(position.coords.accuracy); q0.anchored = true; await DBS.api({action:'qr_put', data: all}); anchored = true; await new Promise(r => setTimeout(r, 3500)); }
+        }catch(eA){}
+      }
       let chk; try{ chk = await DBS.api({action:'qr_check', course, date, token, lat: position.coords.latitude, lng: position.coords.longitude, acc: position.coords.accuracy}); }catch(e2){ chk = {ok:false, error: (e2 && e2.message) || ''}; }
       if(!chk || !chk.ok){
         const em = (chk && chk.error) || 'This QR code is no longer active.';
@@ -209,6 +217,7 @@ bestFix(14000).then(async (position) => {
       document.getElementById('statusView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
+      if(anchored){ document.getElementById('checkinMsg').innerHTML = '<div class="msg ok">Classroom location set from this phone. Students can now scan.</div>'; }
       if(isStaffDevice){
         // Staff can check in multiple different students from the same device.
         document.getElementById('checkinIndexInput').value = '';

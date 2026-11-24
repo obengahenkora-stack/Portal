@@ -5303,8 +5303,8 @@ async function startQrCheckin(){
   bestFix(14000).then(async (position) => {
     const lat = position.coords.latitude, acc = position.coords.accuracy;
     const lng = position.coords.longitude;
-    await refreshQrSession(course, date, lat, lng, acc);
-    if(acc>100) setTimeout(()=>{ var m=document.getElementById('qrCheckinMsg'); if(m) m.innerHTML += '<div class="msg err">Your location is only accurate to about '+Math.round(acc)+' m. Students may be told they are too far. Open this on a phone, go near a window and start again for a better reading.</div>'; },300);
+    await refreshQrSession(course, date, lat, lng, acc, true);
+    if(acc>100) setTimeout(()=>{ var m=document.getElementById('qrCheckinMsg'); if(m) m.innerHTML += '<div class="msg err">Your location is only accurate to about '+Math.round(acc)+' m. Students may be told they are too far. Easiest fix: scan this QR once with your own phone, signed in, while standing in the classroom. It sets the classroom location from your phone.</div>'; },300);
     qrSessionActive = true;
     document.getElementById('startQrBtn').classList.add('hidden');
     document.getElementById('stopQrBtn').classList.remove('hidden');
@@ -5318,7 +5318,7 @@ async function startQrCheckin(){
   });
 }
 
-async function refreshQrSession(course, date, lat, lng, acc){
+async function refreshQrSession(course, date, lat, lng, acc, fresh){
   const token = generateQrToken();
   const expiresAt = Date.now() + 90000;
   const sessionKey = `${course}__${date}`;
@@ -5327,7 +5327,10 @@ async function refreshQrSession(course, date, lat, lng, acc){
     const qrData = await fetchQrSessions();
     const existing = qrData[sessionKey];
     const sessionStartTime = (existing && existing.sessionStartTime) ? existing.sessionStartTime : new Date().toISOString();
-    qrData[sessionKey] = { token, expiresAt, lat, lng, acc: Math.round(acc||0), radius: 100, deviceLock: !(document.getElementById('qrDeviceLock') && !document.getElementById('qrDeviceLock').checked), course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
+    /* if a staff phone has set the classroom location, keep it instead of this device's own reading */
+    const keepA = !fresh && existing && existing.anchored;
+    if(keepA){ lat = existing.lat; lng = existing.lng; acc = existing.acc; }
+    qrData[sessionKey] = { token, expiresAt, lat, lng, acc: Math.round(acc||0), anchored: !!keepA, radius: 100, deviceLock: !(document.getElementById('qrDeviceLock') && !document.getElementById('qrDeviceLock').checked), course, date, sessionStartTime, startedBy: (existing && existing.startedBy) || _actor() };
     await saveQrSessions(qrData);
 
     const siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + `checkin.html?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}&token=${encodeURIComponent(token)}`;

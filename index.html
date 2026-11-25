@@ -3521,14 +3521,24 @@ async function loadLeaderboard(){
   }
 }
 
-function pickRandomWinner(){
+async function pickRandomWinner(){
   const scores = window.leaderboardCache || [];
   if(scores.length === 0) return;
   const winner = scores[Math.floor(Math.random() * scores.length)];
+  /* index numbers are no longer in the public file: look the winner up in the private copy (staff only) */
+  let idx = winner.indexNumber || '';
+  if(!idx){
+    try{
+      const r = await window._bkScores({action:'list_private'});
+      const list = (r && r.json && r.json.scores) || [];
+      const m = list.find(x => x.playedAt === winner.playedAt && x.name === winner.name);
+      idx = m ? m.indexNumber : '';
+    }catch(e){}
+  }
   document.getElementById('randomWinnerResult').innerHTML = `
     <div class="msg ok" style="text-align:center;font-size:0.95rem;">
       🎉 <strong>${escapeHtml(winner.name)}</strong><br>
-      Index: ${escapeHtml(winner.indexNumber)} &middot; Score: ${winner.score}/${winner.total || 10}
+      ${idx ? 'Index: ' + escapeHtml(idx) + ' &middot; ' : ''}Score: ${winner.score}/${winner.total || 10}
     </div>
   `;
 }

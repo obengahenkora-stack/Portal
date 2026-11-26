@@ -1,5 +1,5 @@
 /* one-time clear of saved class lists on every device (26 Nov 2026 roster fix) */
-try{ if(localStorage.getItem('ceCacheV')!=='2611b'){ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('ceGA:')===0||k.indexOf('ceGR:')===0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceGA:')===0) sessionStorage.removeItem(k); }); localStorage.setItem('ceCacheV','2611b'); } }catch(e){}
+try{ if(localStorage.getItem('ceCacheV')!=='2611c'){ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('ceGA:')===0||k.indexOf('ceGR:')===0) localStorage.removeItem(k); }); Object.keys(sessionStorage).forEach(function(k){ if(k.indexOf('ceGA:')===0) sessionStorage.removeItem(k); }); localStorage.setItem('ceCacheV','2611c'); } }catch(e){}
 /* call tally: adds the action name to server call addresses so the logs show which calls are busiest (no data is added) */
 (function(){try{var f=window.fetch;if(!f||window.__actTag)return;window.__actTag=1;window.fetch=function(u,o){try{var s=typeof u==='string'?u:'';if(s.indexOf('/functions/v1/')>0&&s.indexOf('?')<0&&o&&typeof o.body==='string'){var m=/"action":"([a-z_0-9]{1,40})"/.exec(o.body.slice(0,300));if(m)u=s+'?a='+m[1];}}catch(e){}return f.call(this,u,o);};}catch(e){}})();
 /* db-sync.js — keeps attendance & class lists in real database tables (no more whole-file overwrites).

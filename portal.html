@@ -618,6 +618,7 @@
       <div class="gb-sub" id="gbSub">Edit any score. Changed scores turn amber until you save.</div></div>
       <div id="gbBar" class="hidden"><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div></div></div>
       <select id="gradebookLevel" onchange="renderGbLevel()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);margin:0 0 10px;width:100%;box-sizing:border-box"><option value="">Or view a whole level...</option><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <select id="gradebookProg" onchange="renderGbLevel()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);margin:0 0 10px;width:100%;box-sizing:border-box"><option value="">All programmes</option><option value="Civil Engineering">Civil Engineering</option><option value="Environmental Engineering">Environmental Engineering</option></select>
       <div id="gbLevelBox"></div>
       <select id="gradebookCourse" onchange="gbLevelClear();renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
       <div id="gbStats"></div>
@@ -2733,7 +2734,10 @@ async function renderGbLevel(){
   try{
     var r=await Promise.all([fetchVisibleRecords(),fetchSupabaseData(),fetchBin()]); var recs=r[0], data=r[1], bin=r[2];
     var names=courseBases(recs.map(function(x){ return x.course||'General'; }).concat(Object.keys(data.rosters||{})));
-    var courses=names.filter(function(c){ return _lvOf(c,recs)===lv; });
+    var meta=bin.rosterMeta||{}, prog=(document.getElementById('gradebookProg')||{}).value||'';
+    function metaOf(c){ var cb=lmBase(c).toLowerCase(), out={lv:'',dept:''}; Object.keys(meta).forEach(function(k){ if(lmBase(k).toLowerCase()===cb||k===c){ var m=meta[k]||{}; if(m.level&&!out.lv) out.lv=String(m.level); if(m.dept&&!out.dept) out.dept=m.dept; } }); return out; }
+    var shared=[];
+    var courses=names.filter(function(c){ var m=metaOf(c), cl=m.lv||_lvOf(c,recs); if(cl!==lv) return false; if(prog && m.dept && m.dept!==prog) return false; if(prog && !m.dept) shared.push(c); return true; });
     if(!courses.length){ box.innerHTML='<div class="empty">No courses found for Level '+lv+'. A course is placed by "Level '+lv+'" in its name.</div>'; return; }
     var stu={}, cells={}, info=[];
     courses.forEach(function(c){
@@ -2748,7 +2752,7 @@ async function renderGbLevel(){
     });
     var keys=Object.keys(stu).sort(function(a,b){ return String(stu[a].name||stu[a].index).localeCompare(String(stu[b].name||stu[b].index)); });
     _gbl={lv:lv,courses:courses,keys:keys,stu:stu,cells:cells,info:info};
-    var h='<div class="hint" style="margin:0 0 8px">Level '+lv+': '+courses.length+' course'+(courses.length===1?'':'s')+', '+keys.length+' student'+(keys.length===1?'':'s')+'. Each cell is the final out of 40. To change a mark, pick the course above.</div>';
+    var h='<div class="hint" style="margin:0 0 8px">Level '+lv+(prog?' ('+prog+')':'')+': '+courses.length+' course'+(courses.length===1?'':'s')+', '+keys.length+' student'+(keys.length===1?'':'s')+'. Each cell is the final out of 40. To change a mark, pick the course above.'+(shared.length?' No programme is set for: '+shared.map(escapeHtml).join(', ')+' (shown for both). Set it under Connect class lists.':'')+'</div>';
     h+='<div class="gb-tools"><input type="search" id="gbLvSearch" placeholder="Search name or index number" oninput="gbLvFilter()" autocomplete="off"><button type="button" onclick="downloadGbLevel()">Excel &#8681;</button></div>';
     h+='<div style="border:1px solid var(--line);border-radius:16px;max-height:68vh;overflow:auto"><table><tr><th>Student</th>'+courses.map(function(c){ return '<th>'+escapeHtml(c.replace(/\s*[-\u2013]?\s*\(?(?:level|lvl)\s*'+lv+'\)?/i,''))+'</th>'; }).join('')+'</tr>';
     h+='<tr style="background:rgba(14,165,233,.08)"><td><b style="font-size:.72rem">Class average</b></td>'+info.map(function(i){ return '<td><b>'+(i.avg===null?'-':i.avg)+'</b>'+(i.hasMax?'':'<div class="hint" style="margin:0;font-size:.6rem">no "out of" set</div>')+(i.fin?'<div class="hint" style="margin:0;font-size:.6rem">final</div>':'')+'</td>'; }).join('')+'</tr>';

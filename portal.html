@@ -617,7 +617,9 @@
       <div class="gb-head"><div class="gb-hl"><div class="gb-h">Gradebook</div>
       <div class="gb-sub" id="gbSub">Edit any score. Changed scores turn amber until you save.</div></div>
       <div id="gbBar" class="hidden"><button type="button" id="gbSaveTop" onclick="saveGradebookMarks()">Save changes</button><div class="gb-t"><b id="gbCount">No unsaved changes</b><span id="gbCountSub"></span></div></div></div>
-      <select id="gradebookCourse" onchange="renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
+      <select id="gradebookLevel" onchange="renderGbLevel()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);margin:0 0 10px;width:100%;box-sizing:border-box"><option value="">Or view a whole level...</option><option value="100">Level 100</option><option value="200">Level 200</option><option value="300">Level 300</option><option value="400">Level 400</option></select>
+      <div id="gbLevelBox"></div>
+      <select id="gradebookCourse" onchange="gbLevelClear();renderGradebook()" style="padding:11px 12px;border:1px solid var(--line);border-radius:12px;font-size:0.95rem;background:var(--card);color:var(--ink);"><option value="">Select a course...</option></select>
       <div id="gbStats"></div>
       <div id="gbPendingBox"></div>
       <div class="gb-tools"><input type="search" id="gbSearch" placeholder="Search name or index number" oninput="gbFilter()" autocomplete="off"><button type="button" onclick="downloadGradebook()">Excel &#8681;</button><button type="button" id="gbReupBtn" onclick="gbReupOpen()" style="border:2px solid #0d9488;color:#0d9488">&#10227; Re-upload</button><input type="file" id="gbReupFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="gbReupPick(this)"></div><div id="gbReup" class="hidden"></div>
@@ -2715,6 +2717,52 @@ function gbToggleFinal(el){
   _gb.finalPending=(el.checked===!!_gb.final)?null:el.checked;
   const sb=document.getElementById('gbSaveTop'); if(sb) sb.disabled=(_gb.final&&_gb.finalPending==null);
   gbStChip(); gbCount();
+}
+
+/* ---- Level view: pick a level and see every course of that level, with each student's final out of 40 (read-only) ---- */
+var _gbl=null;
+function gbLevelClear(){ var l=document.getElementById('gradebookLevel'); if(l) l.value=''; var b=document.getElementById('gbLevelBox'); if(b) b.innerHTML=''; _gbl=null; var d=document.getElementById('gradebookTable'); if(d) d.style.display=''; }
+function _lvOf(course,recs){ var m=String(course||'').match(/(?:level|lvl|\bl)\s*[-_:]?\s*([1-8])\s*0?0\b/i); if(m) return m[1]+'00'; var cm=String(course||'').match(/\b[A-Za-z]{3,5}\s*-?\s*([1-8])\d\d\b/); if(cm) return cm[1]+'00'; var r=(recs||[]).find(function(x){ return x.level && lmBase(x.course||'General').toLowerCase()===lmBase(course).toLowerCase(); }); if(r){ var d=String(r.level).match(/([1-8])/); if(d) return d[1]+'00'; } return ''; }
+async function renderGbLevel(){
+  var lv=document.getElementById('gradebookLevel').value, box=document.getElementById('gbLevelBox'), tb=document.getElementById('gradebookTable');
+  if(!lv){ gbLevelClear(); return; }
+  var cs=document.getElementById('gradebookCourse'); if(cs) cs.value='';
+  try{ await _renderGradebook(); }catch(e){}
+  if(tb) tb.style.display='none';
+  box.innerHTML='<div class="empty">Loading level '+lv+'...</div>';
+  try{
+    var r=await Promise.all([fetchVisibleRecords(),fetchSupabaseData(),fetchBin()]); var recs=r[0], data=r[1], bin=r[2];
+    var names=courseBases(recs.map(function(x){ return x.course||'General'; }).concat(Object.keys(data.rosters||{})));
+    var courses=names.filter(function(c){ return _lvOf(c,recs)===lv; });
+    if(!courses.length){ box.innerHTML='<div class="empty">No courses found for Level '+lv+'. A course is placed by "Level '+lv+'" in its name.</div>'; return; }
+    var stu={}, cells={}, info=[];
+    courses.forEach(function(c){
+      var cb=lmBase(c).toLowerCase(), cr=recs.filter(function(x){ return lmBase(x.course||'General').toLowerCase()===cb; });
+      var cols=[]; cr.forEach(function(x){ var a=x.assessmentName||'Untitled'; if(cols.indexOf(a)<0) cols.push(a); });
+      var ros=[]; Object.keys(data.rosters||{}).forEach(function(k){ if(lmBase(k).toLowerCase()===cb) ros=ros.concat(data.rosters[k]||[]); });
+      var per={}; ros.forEach(function(e){ var k=String(e.indexNumber||'').toLowerCase(); if(!k) return; per[k]=per[k]||{}; if(!stu[k]) stu[k]={index:e.indexNumber,name:e.name||''}; else if(!stu[k].name&&e.name) stu[k].name=e.name; });
+      cr.forEach(function(x){ var k=String(x.indexNumber||'').toLowerCase(); if(!k) return; per[k]=per[k]||{}; if(!stu[k]) stu[k]={index:x.indexNumber,name:''}; per[k][x.assessmentName||'Untitled']=x.score; });
+      var hasMax=cols.some(function(a){ return numOf(((bin.assessmentMax||{})[amKey(c,a)]))>0; }), vals=[];
+      Object.keys(per).forEach(function(k){ var f=finalOf(c,per[k],cols,bin); cells[k]=cells[k]||{}; cells[k][c]=f?f.final:null; if(f) vals.push(f.final); });
+      info.push({c:c,n:Object.keys(per).length,hasMax:hasMax,avg:vals.length?Math.round(vals.reduce(function(t,x){return t+x;},0)/vals.length*10)/10:null,fin:courseIsFinal(bin,c)});
+    });
+    var keys=Object.keys(stu).sort(function(a,b){ return String(stu[a].name||stu[a].index).localeCompare(String(stu[b].name||stu[b].index)); });
+    _gbl={lv:lv,courses:courses,keys:keys,stu:stu,cells:cells,info:info};
+    var h='<div class="hint" style="margin:0 0 8px">Level '+lv+': '+courses.length+' course'+(courses.length===1?'':'s')+', '+keys.length+' student'+(keys.length===1?'':'s')+'. Each cell is the final out of 40. To change a mark, pick the course above.</div>';
+    h+='<div class="gb-tools"><input type="search" id="gbLvSearch" placeholder="Search name or index number" oninput="gbLvFilter()" autocomplete="off"><button type="button" onclick="downloadGbLevel()">Excel &#8681;</button></div>';
+    h+='<div style="border:1px solid var(--line);border-radius:16px;max-height:68vh;overflow:auto"><table><tr><th>Student</th>'+courses.map(function(c){ return '<th>'+escapeHtml(c.replace(/\s*[-\u2013]?\s*\(?(?:level|lvl)\s*'+lv+'\)?/i,''))+'</th>'; }).join('')+'</tr>';
+    h+='<tr style="background:rgba(14,165,233,.08)"><td><b style="font-size:.72rem">Class average</b></td>'+info.map(function(i){ return '<td><b>'+(i.avg===null?'-':i.avg)+'</b>'+(i.hasMax?'':'<div class="hint" style="margin:0;font-size:.6rem">no "out of" set</div>')+(i.fin?'<div class="hint" style="margin:0;font-size:.6rem">final</div>':'')+'</td>'; }).join('')+'</tr>';
+    keys.forEach(function(k){ h+='<tr data-s="'+escapeHtml((String(stu[k].index||'')+' '+String(stu[k].name||'')).toLowerCase())+'"><td><div class="gb-nm">'+escapeHtml(stu[k].name||stu[k].index)+'</div>'+(stu[k].name?'<div class="gb-ix">'+escapeHtml(stu[k].index)+'</div>':'')+'</td>'+courses.map(function(c){ var v=(cells[k]||{})[c]; if(v===undefined) return '<td style="color:var(--muted)">&ndash;</td>'; if(v===null) return '<td style="color:var(--muted)">-</td>'; return '<td'+(v<20?' style="color:#b91c1c;font-weight:700"':'')+'>'+v+'</td>'; }).join('')+'</tr>'; });
+    box.innerHTML=h+'</table></div>';
+  }catch(e){ box.innerHTML='<div class="msg err">Could not open this level: '+escapeHtml(String((e&&e.message)||e))+'</div>'; }
+}
+function gbLvFilter(){ var q=String((document.getElementById('gbLvSearch')||{}).value||'').trim().toLowerCase(); document.querySelectorAll('#gbLevelBox tr[data-s]').forEach(function(tr){ tr.style.display=(!q||tr.getAttribute('data-s').indexOf(q)>=0)?'':'none'; }); }
+function downloadGbLevel(){
+  if(!_gbl){ alert('Pick a level first.'); return; }
+  var aoa=[['IndexNumber','Name'].concat(_gbl.courses)]; aoa.push(['Class average',''].concat(_gbl.info.map(function(i){ return i.avg===null?'':i.avg; })));
+  _gbl.keys.forEach(function(k){ aoa.push([_gbl.stu[k].index,_gbl.stu[k].name].concat(_gbl.courses.map(function(c){ var v=(_gbl.cells[k]||{})[c]; return (v===undefined||v===null)?'':v; }))); });
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),'Level '+_gbl.lv);
+  XLSX.writeFile(wb,'Level-'+_gbl.lv+'-finals-'+new Date().toISOString().split('T')[0]+'.xlsx');
 }
 function downloadGradebook(){
   if(!_gb.rows.length){ alert('Select a course with students first.'); return; }
